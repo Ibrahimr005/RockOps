@@ -113,26 +113,54 @@ public class OfferRequestItemService {
      */
     @Transactional
     public OfferRequestItemDTO updateRequestItem(UUID itemId, OfferRequestItemDTO dto, String username) {
-        OfferRequestItem item = offerRequestItemRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("Offer request item not found"));
+        System.out.println("=== UPDATE REQUEST ITEM DEBUG START ===");
+        System.out.println("Item ID: " + itemId);
 
-        double oldQuantity = item.getQuantity();
-        String oldComment = item.getComment();
+        try {
+            System.out.println("About to fetch item...");
+            OfferRequestItem item = offerRequestItemRepository.findByIdWithDetails(itemId)
+                    .orElseThrow(() -> new RuntimeException("Offer request item not found"));
 
-        // Update fields
-        item.setQuantity(dto.getQuantity());
-        item.setComment(dto.getComment());
-        item.setLastModifiedAt(LocalDateTime.now());
-        item.setLastModifiedBy(username);
+            System.out.println("Found item successfully");
+            System.out.println("Item object: " + item);
+            System.out.println("Item ID: " + item.getId());
+            System.out.println("Item type: " + item.getItemType());
+            System.out.println("Item type name: " + item.getItemType().getName());
 
-        OfferRequestItem updatedItem = offerRequestItemRepository.save(item);
+            double oldQuantity = item.getQuantity();
+            String oldComment = item.getComment();
 
-        // Record the modification
-        recordModification(item.getOffer(), RequestItemModification.ModificationAction.EDIT,
-                item.getItemType(), oldQuantity, dto.getQuantity(), oldComment, dto.getComment(), username,
-                "Updated item: " + item.getItemType().getName());
+            System.out.println("Old quantity: " + oldQuantity);
+            System.out.println("New quantity: " + dto.getQuantity());
 
-        return offerRequestItemMapper.toDTO(updatedItem);
+            // Update fields
+            item.setQuantity(dto.getQuantity());
+            item.setComment(dto.getComment());
+            item.setLastModifiedAt(LocalDateTime.now());
+            item.setLastModifiedBy(username);
+
+            System.out.println("About to save...");
+            OfferRequestItem updatedItem = offerRequestItemRepository.save(item);
+            System.out.println("Saved successfully");
+
+            System.out.println("About to record modification...");
+            recordModification(item.getOffer(), RequestItemModification.ModificationAction.EDIT,
+                    item.getItemType(), oldQuantity, dto.getQuantity(), oldComment, dto.getComment(), username,
+                    "Updated item: " + item.getItemType().getName());
+            System.out.println("Modification recorded");
+
+            System.out.println("About to map to DTO...");
+            OfferRequestItemDTO result = offerRequestItemMapper.toDTO(updatedItem);
+            System.out.println("=== UPDATE REQUEST ITEM DEBUG END ===");
+            return result;
+
+        } catch (Exception e) {
+            System.err.println("!!! EXCEPTION CAUGHT !!!");
+            System.err.println("Exception type: " + e.getClass().getName());
+            System.err.println("Exception message: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**

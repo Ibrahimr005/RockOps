@@ -4,6 +4,8 @@ import SubPageHeader from '../../../../components/common/SubPageHeader/SubPageHe
 import FinanceAssetCard from '../../../../components/Finance/FinanceAssetCard/FinanceAssetCard.jsx';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import { inventoryValuationService } from '../../../../services/finance/inventoryValuationService.js';
+import { equipmentFinanceService } from '../../../../services/finance/equipmentFinanceService.js';
+import { siteService } from '../../../../services/siteService.js';
 import { FiMapPin, FiPackage, FiTool, FiArchive, FiFilter } from 'react-icons/fi';
 import siteimgg from "../../../../assets/imgs/siteimgg.jpg";
 
@@ -19,11 +21,34 @@ const AssetValuesView = ({ showSnackbar }) => {
     const [expandedSite, setExpandedSite] = useState(null);
     const [expandedCategory, setExpandedCategory] = useState(null);
 
+    // Warehouse states
     const [warehousesData, setWarehousesData] = useState([]);
     const [expandedWarehouses, setExpandedWarehouses] = useState([]);
     const [warehouseTransactions, setWarehouseTransactions] = useState({});
     const [warehouseBreakdowns, setWarehouseBreakdowns] = useState({});
     const [transactionsLoading, setTransactionsLoading] = useState({});
+
+    // Equipment states
+    const [equipmentData, setEquipmentData] = useState([]);
+    const [expandedEquipment, setExpandedEquipment] = useState([]);
+    const [equipmentFinancials, setEquipmentFinancials] = useState({});
+    const [equipmentLoading, setEquipmentLoading] = useState({});
+
+
+    const formatCurrency = (value) => {
+        if (!value && value !== 0) return '0';
+        return Number(value).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+
+    const calculateWarehousesTotal = (site) => {
+        if (!site.warehouses || site.warehouses.length === 0) {
+            return 0;
+        }
+        return site.warehouses.reduce((sum, w) => sum + (w.totalValue || 0), 0);
+    };
 
     useEffect(() => {
         fetchAllSiteBalances();
@@ -33,6 +58,8 @@ const AssetValuesView = ({ showSnackbar }) => {
         setLoading(true);
         try {
             const data = await inventoryValuationService.getAllSiteBalances();
+            console.log('🔍 Site balances data:', data); // ADD THIS
+            console.log('🔍 First site:', data[0]); // ADD THIS
             setSitesData(data);
             setFilteredSitesData(data);
         } catch (error) {
@@ -71,6 +98,9 @@ const AssetValuesView = ({ showSnackbar }) => {
             setExpandedWarehouses([]);
             setWarehouseTransactions({});
             setWarehouseBreakdowns({});
+            setEquipmentData([]);
+            setExpandedEquipment([]);
+            setEquipmentFinancials({});
             return;
         }
 
@@ -79,6 +109,8 @@ const AssetValuesView = ({ showSnackbar }) => {
         setExpandedWarehouses([]);
         setWarehouseTransactions({});
         setWarehouseBreakdowns({});
+        setExpandedEquipment([]);
+        setEquipmentFinancials({});
 
         if (category === 'warehouses') {
             setLoading(true);
@@ -91,6 +123,34 @@ const AssetValuesView = ({ showSnackbar }) => {
             } finally {
                 setLoading(false);
             }
+        } else if (category === 'equipment') {
+            await handleViewEquipmentCategory(siteId);
+        }
+    };
+
+    const handleViewEquipmentCategory = async (siteId) => {
+        setLoading(true);
+        try {
+            const response = await siteService.getSiteEquipment(siteId);
+            console.log('Equipment response:', response); // Debug log
+
+            // Handle different response formats
+            const data = response.data || response || [];
+
+            // Ensure it's an array
+            if (Array.isArray(data)) {
+                setEquipmentData(data);
+            } else {
+                console.error('Equipment data is not an array:', data);
+                setEquipmentData([]);
+                showSnackbar('Invalid equipment data format', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to fetch equipment:', error);
+            setEquipmentData([]); // Set empty array on error
+            showSnackbar('Failed to load equipment', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -142,6 +202,38 @@ const AssetValuesView = ({ showSnackbar }) => {
             showSnackbar('Failed to load warehouse data', 'error');
         } finally {
             setTransactionsLoading(prev => ({ ...prev, [warehouseId]: false }));
+        }
+    };
+
+    const handleEquipmentExpand = async (equipmentId) => {
+        if (expandedEquipment.includes(equipmentId)) {
+            setExpandedEquipment(prev => prev.filter(id => id !== equipmentId));
+            setEquipmentFinancials(prev => {
+                const newFinancials = { ...prev };
+                delete newFinancials[equipmentId];
+                return newFinancials;
+            });
+            return;
+        }
+
+        setExpandedEquipment(prev => [...prev, equipmentId]);
+
+        if (equipmentFinancials[equipmentId]) {
+            return;
+        }
+
+        setEquipmentLoading(prev => ({ ...prev, [equipmentId]: true }));
+        try {
+            const financials = await equipmentFinanceService.getEquipmentFinancials(equipmentId);
+            setEquipmentFinancials(prev => ({
+                ...prev,
+                [equipmentId]: financials
+            }));
+        } catch (error) {
+            console.error('Failed to fetch equipment financials:', error);
+            showSnackbar('Failed to load equipment financials', 'error');
+        } finally {
+            setEquipmentLoading(prev => ({ ...prev, [equipmentId]: false }));
         }
     };
 
@@ -312,7 +404,7 @@ const AssetValuesView = ({ showSnackbar }) => {
                                     <FinanceAssetCard
                                         title={site.siteName}
                                         subtitle="Asset Categories"
-                                        value={site.totalValue?.toFixed(2) || '0.00'}
+                                        value={formatCurrency(site.totalValue)}
                                         imageUrl={site.photoUrl}
                                         imageFallback={siteimgg}
                                         variant="site"
@@ -322,7 +414,7 @@ const AssetValuesView = ({ showSnackbar }) => {
                                                 label: 'Warehouses',
                                                 icon: FiPackage,
                                                 count: site.totalWarehouses || 0,
-                                                value: site.totalValue?.toFixed(2) || '0.00',
+                                                value: site.totalWarehouseValue || 0, // Pass raw number
                                                 onViewDetails: () => handleViewCategory(site.siteId, 'warehouses'),
                                                 disabled: false,
                                                 isActive: expandedSite === site.siteId && expandedCategory === 'warehouses'
@@ -330,10 +422,10 @@ const AssetValuesView = ({ showSnackbar }) => {
                                             {
                                                 label: 'Equipment',
                                                 icon: FiTool,
-                                                count: 0,
-                                                value: '0.00',
+                                                count: site.equipmentCount || 0,
+                                                value: site.totalEquipmentValue?.toFixed(2) || '0.00',
                                                 onViewDetails: () => handleViewCategory(site.siteId, 'equipment'),
-                                                disabled: true,
+                                                disabled: false,
                                                 isActive: expandedSite === site.siteId && expandedCategory === 'equipment'
                                             },
                                             {
@@ -348,7 +440,7 @@ const AssetValuesView = ({ showSnackbar }) => {
                                         ]}
                                     />
 
-                                    {/* Expanded Category */}
+                                    {/* Expanded Warehouses Category */}
                                     {expandedSite === site.siteId && expandedCategory === 'warehouses' && (
                                         <div className="category-expanded">
                                             <div className="category-section-header">
@@ -366,7 +458,7 @@ const AssetValuesView = ({ showSnackbar }) => {
                                                             <FinanceAssetCard
                                                                 title={warehouse.warehouseName}
                                                                 subtitle={`${warehouse.totalItems || 0} items`}
-                                                                value={warehouse.totalValue?.toFixed(2) || '0.00'}
+                                                                value={formatCurrency(warehouse.totalValue)}
                                                                 icon={FiPackage}
                                                                 variant="nested"
                                                                 size="compact"
@@ -463,16 +555,128 @@ const AssetValuesView = ({ showSnackbar }) => {
                                         </div>
                                     )}
 
-                                    {/* Coming Soon Categories */}
+                                    {/* Expanded Equipment Category */}
                                     {expandedSite === site.siteId && expandedCategory === 'equipment' && (
-                                        <div className="category-expanded coming-soon">
-                                            <div className="coming-soon-message">
-                                                <FiTool size={24} />
-                                                <span>Equipment tracking coming soon</span>
+                                        <div className="category-expanded">
+                                            <div className="category-section-header">
+                                                <h3 className="category-section-title">
+                                                    <FiTool size={16} />
+                                                    Equipment
+                                                </h3>
+                                                <span className="category-section-count">{equipmentData.length} Total</span>
+                                            </div>
+
+                                            <div className="equipment-list">
+                                                {equipmentData.map((equipment, equipmentIndex) => (
+                                                    <React.Fragment key={equipment.id}>
+                                                        <div className="equipment-item">
+                                                            <FinanceAssetCard
+                                                                title={equipment.name}
+                                                                subtitle={`${equipment.type?.name || 'Equipment'} • ${equipment.model}`}
+                                                                value={formatCurrency(equipment.egpPrice)}
+                                                                icon={FiTool}
+                                                                variant="nested"
+                                                                size="compact"
+                                                                showValueLabel={true}
+                                                                badge={
+                                                                    equipment.status === 'IN_MAINTENANCE'
+                                                                        ? {
+                                                                            text: 'In Maintenance',
+                                                                            variant: 'warning'
+                                                                        }
+                                                                        : equipment.status === 'RUNNING'
+                                                                            ? {
+                                                                                text: 'Active',
+                                                                                variant: 'success'
+                                                                            }
+                                                                            : null
+                                                                }
+                                                                isExpanded={expandedEquipment.includes(equipment.id)}
+                                                                onExpand={() => handleEquipmentExpand(equipment.id)}
+                                                            />
+
+                                                            {/* Financial Breakdown - Only When Expanded */}
+                                                            {/* Financial Breakdown - Only When Expanded */}
+                                                            {expandedEquipment.includes(equipment.id) && (
+                                                                <div className="equipment-financial-section">
+                                                                    {equipmentLoading[equipment.id] ? (
+                                                                        <div className="loading-state">
+                                                                            <div className="spinner"></div>
+                                                                            <p>Loading financials...</p>
+                                                                        </div>
+                                                                    ) : equipmentFinancials[equipment.id] ? (
+                                                                        <>
+                                                                            <div className="financial-summary">
+                                                                                <div className="financial-summary-header">
+                                                                                    <span className="summary-title">Value Composition</span>
+                                                                                    <span className="summary-updated">
+                            Last updated: {formatDate(equipmentFinancials[equipment.id].lastUpdated)}
+                        </span>
+                                                                                </div>
+
+                                                                                <div className="breakdown-grid">
+                                                                                    {/* Purchase Price Card */}
+                                                                                    <div className="breakdown-item equipment-purchase">
+                                                                                        <div className="breakdown-item-header">
+                                                                                            <span className="item-name">Purchase Price</span>
+                                                                                            <span className="item-value">
+                                    {formatCurrency(equipmentFinancials[equipment.id].purchasePrice)} EGP
+                                </span>
+                                                                                        </div>
+                                                                                        <div className="breakdown-item-details">
+                                                                                            <span className="item-description">Original equipment cost</span>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    {/* Current Inventory Card */}
+                                                                                    <div className="breakdown-item equipment-inventory">
+                                                                                        <div className="breakdown-item-header">
+                                                                                            <span className="item-icon">📦</span>
+                                                                                            <span className="item-name">Current Inventory</span>
+                                                                                            <span className="item-value">
+                                    {formatCurrency(equipmentFinancials[equipment.id].currentInventoryValue)} EGP
+                                </span>
+                                                                                        </div>
+                                                                                        <div className="breakdown-item-details">
+                                                                                            <span className="item-description">Value of unused consumables</span>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    {/* Total Expenses Card */}
+                                                                                    <div className="breakdown-item equipment-expenses">
+                                                                                        <div className="breakdown-item-header">
+                                                                                            <span className="item-icon">📉</span>
+                                                                                            <span className="item-name">Total Expenses</span>
+                                                                                            <span className="item-value">
+                                    {formatCurrency(equipmentFinancials[equipment.id].totalExpenses)} EGP
+                                </span>
+                                                                                        </div>
+                                                                                        <div className="breakdown-item-details">
+                                                                                            <span className="item-description">Consumables used historically</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </>
+                                                                    ) : (
+                                                                        <div className="empty-breakdown">
+                                                                            <p>No financial data available</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}                                                        </div>
+
+                                                        {/* Equipment Separator */}
+                                                        {equipmentIndex < equipmentData.length - 1 && (
+                                                            <div className="equipment-separator"></div>
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
                                             </div>
                                         </div>
                                     )}
 
+                                    {/* Coming Soon Fixed Assets */}
                                     {expandedSite === site.siteId && expandedCategory === 'fixedAssets' && (
                                         <div className="category-expanded coming-soon">
                                             <div className="coming-soon-message">

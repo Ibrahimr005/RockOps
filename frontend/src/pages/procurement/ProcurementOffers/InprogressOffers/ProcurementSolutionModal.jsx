@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiPlusCircle } from 'react-icons/fi';
+import { FiX, FiCheck } from 'react-icons/fi';
 import './ProcurementSolutionModal.scss';
 
 const ProcurementSolutionModal = ({
@@ -88,10 +88,24 @@ const ProcurementSolutionModal = ({
         }
     };
 
-    // Handle form submission
+// Handle form submission
     const handleSubmit = (e) => {
-        e.preventDefault(); // Prevent default form submission
-        onSave(formData);
+        e.preventDefault();
+
+        // Send itemTypeId instead of requestOrderItemId
+        const submissionData = {
+            itemTypeId: requestItem.itemTypeId, // Use itemTypeId from requestItem
+            merchantId: formData.merchantId,
+            currency: formData.currency,
+            quantity: formData.quantity,
+            unitPrice: formData.unitPrice,
+            totalPrice: formData.totalPrice,
+            estimatedDeliveryDays: formData.estimatedDeliveryDays,
+            deliveryNotes: formData.deliveryNotes,
+            comment: mode === 'edit' ? formData.comment : undefined
+        };
+
+        onSave(submissionData);
     };
 
     // Handle backdrop click
@@ -104,98 +118,83 @@ const ProcurementSolutionModal = ({
     if (!isVisible || !requestItem) return null;
 
     return (
-        <div className="procurement-modal-overlay-inprogress" onClick={handleBackdropClick}>
-            <div className="procurement-modal-container-inprogress">
-                <div className="procurement-modal-header-inprogress">
-                    <h4 className="procurement-modal-title-inprogress">
+        <div className="modal-backdrop" onClick={handleBackdropClick}>
+            <div className="modal-content modal-lg procurement-solution-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h2 className="modal-title">
                         {mode === 'edit' ? 'Edit' : 'Add'} Procurement Solution for: {requestItem.itemType?.name || 'Item'}
-                    </h4>
-                    <button
-                        className="procurement-modal-close-button-inprogress"
-                        onClick={onClose}
-                        type="button"
-                    >
-                        <FiX size={20} />
+                    </h2>
+                    <button className="btn-close" onClick={onClose} type="button">
+                        <FiX />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="procurement-modal-body-inprogress">
-                        {/* Merchant Selection */}
-                        <div className="procurement-form-group-inprogress">
-                            <label className="procurement-form-label-inprogress">
-                                Merchant <span className="required-asterisk">*</span>
-                            </label>
-                            <select
-                                className="procurement-form-select-inprogress"
-                                value={formData.merchantId}
-                                onChange={(e) => handleFieldChange('merchantId', e.target.value)}
-                                required
-                            >
-                                <option value="">Select a merchant</option>
-                                {merchants.map(merchant => (
-                                    <option key={merchant.id} value={merchant.id}>
-                                        {merchant.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Currency Selection */}
-                        <div className="procurement-form-group-inprogress">
-                            <label className="procurement-form-label-inprogress">
-                                Currency <span className="required-asterisk">*</span>
-                            </label>
-                            <select
-                                className="procurement-form-select-inprogress"
-                                value={formData.currency}
-                                onChange={(e) => handleFieldChange('currency', e.target.value)}
-                                required
-                            >
-                                <option value="EGP">EGP (Egyptian Pound)</option>
-                                <option value="USD">USD (US Dollar)</option>
-                                <option value="EUR">EUR (Euro)</option>
-                                <option value="GBP">GBP (British Pound)</option>
-                                <option value="JPY">JPY (Japanese Yen)</option>
-                                <option value="CAD">CAD (Canadian Dollar)</option>
-                                <option value="AUD">AUD (Australian Dollar)</option>
-                                <option value="CHF">CHF (Swiss Franc)</option>
-                                <option value="CNY">CNY (Chinese Yuan)</option>
-                                <option value="INR">INR (Indian Rupee)</option>
-                                <option value="SGD">SGD (Singapore Dollar)</option>
-                            </select>
-                        </div>
-
-                        {/* Quantity and Unit Price Row */}
-                        <div className="procurement-form-row-inprogress">
-                            <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                                <label className="procurement-form-label-inprogress">
-                                    Quantity <span className="required-asterisk">*</span>
-                                </label>
-                                <div className="procurement-form-input-container-inprogress procurement-form-input-with-unit-inprogress">
-                                    <input
-                                        type="number"
-                                        className="procurement-form-input-inprogress procurement-form-input-with-unit-suffix-inprogress"
-                                        min="1"
-                                        value={formData.quantity}
-                                        onChange={handleQuantityChange}
-                                        placeholder="Enter quantity"
+                    <div className="modal-body">
+                        <div className="solution-form">
+                            {/* Merchant and Currency Row */}
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Merchant <span className="required">*</span></label>
+                                    <select
+                                        value={formData.merchantId}
+                                        onChange={(e) => handleFieldChange('merchantId', e.target.value)}
                                         required
-                                    />
-                                    <div className="procurement-unit-suffix-inprogress">
-                                        {requestItem.itemType?.measuringUnit || 'units'}
-                                    </div>
+                                    >
+                                        <option value="">Select a merchant</option>
+                                        {merchants.map(merchant => (
+                                            <option key={merchant.id} value={merchant.id}>
+                                                {merchant.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Currency <span className="required">*</span></label>
+                                    <select
+                                        value={formData.currency}
+                                        onChange={(e) => handleFieldChange('currency', e.target.value)}
+                                        required
+                                    >
+                                        <option value="EGP">EGP (Egyptian Pound)</option>
+                                        <option value="USD">USD (US Dollar)</option>
+                                        <option value="EUR">EUR (Euro)</option>
+                                        <option value="GBP">GBP (British Pound)</option>
+                                        <option value="JPY">JPY (Japanese Yen)</option>
+                                        <option value="CAD">CAD (Canadian Dollar)</option>
+                                        <option value="AUD">AUD (Australian Dollar)</option>
+                                        <option value="CHF">CHF (Swiss Franc)</option>
+                                        <option value="CNY">CNY (Chinese Yuan)</option>
+                                        <option value="INR">INR (Indian Rupee)</option>
+                                        <option value="SGD">SGD (Singapore Dollar)</option>
+                                    </select>
                                 </div>
                             </div>
 
-                            <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                                <label className="procurement-form-label-inprogress">
-                                    Unit Price <span className="required-asterisk">*</span>
-                                </label>
-                                <div className="procurement-form-input-container-inprogress">
+                            {/* Quantity and Unit Price Row */}
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Quantity <span className="required">*</span></label>
+                                    <div className="input-with-unit">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={formData.quantity}
+                                            onChange={handleQuantityChange}
+                                            placeholder="Enter quantity"
+                                            required
+                                        />
+                                        <span className="unit-badge">
+                                            {requestItem.itemType?.measuringUnit || 'units'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Unit Price <span className="required">*</span></label>
                                     <input
                                         type="number"
-                                        className="procurement-form-input-inprogress"
                                         step="0.01"
                                         min="0"
                                         value={formData.unitPrice}
@@ -205,31 +204,27 @@ const ProcurementSolutionModal = ({
                                     />
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Total Price and Delivery Row */}
-                        <div className="procurement-form-row-inprogress">
-                            <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                                <label className="procurement-form-label-inprogress">Total Price</label>
-                                <div className="procurement-form-input-container-inprogress procurement-form-input-with-currency-inprogress">
-                                    <input
-                                        type="text"
-                                        className="procurement-form-input-inprogress procurement-form-input-readonly-inprogress"
-                                        value={formData.totalPrice.toFixed(2)}
-                                        readOnly
-                                    />
-                                    <div className="procurement-currency-prefix-inprogress">{formData.currency}</div>
+                            {/* Total Price and Delivery Row */}
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Total Price</label>
+                                    <div className="input-with-unit">
+                                        <input
+                                            type="text"
+                                            value={formData.totalPrice.toFixed(2)}
+                                            readOnly
+                                        />
+                                        <span className="unit-badge currency">
+                                            {formData.currency}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                                <label className="procurement-form-label-inprogress">
-                                    Est. Delivery (days) <span className="required-asterisk">*</span>
-                                </label>
-                                <div className="procurement-form-input-container-inprogress">
+                                <div className="form-group">
+                                    <label>Est. Delivery (days) <span className="required">*</span></label>
                                     <input
                                         type="number"
-                                        className="procurement-form-input-inprogress"
                                         min="1"
                                         value={formData.estimatedDeliveryDays}
                                         onChange={(e) => handleFieldChange('estimatedDeliveryDays', parseInt(e.target.value) || 7)}
@@ -237,50 +232,43 @@ const ProcurementSolutionModal = ({
                                     />
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Delivery Notes */}
-                        <div className="procurement-form-group-inprogress">
-                            <label className="procurement-form-label-inprogress">Delivery Notes</label>
-                            <textarea
-                                className="procurement-form-textarea-inprogress"
-                                value={formData.deliveryNotes}
-                                onChange={(e) => handleFieldChange('deliveryNotes', e.target.value)}
-                                placeholder="Any special delivery instructions"
-                                rows={3}
-                            />
-                        </div>
-
-                        {/* Comments (only show in edit mode) */}
-                        {mode === 'edit' && (
-                            <div className="procurement-form-group-inprogress">
-                                <label className="procurement-form-label-inprogress">Comments</label>
+                            {/* Delivery Notes */}
+                            <div className="form-group-full">
+                                <label>Delivery Notes</label>
                                 <textarea
-                                    className="procurement-form-textarea-inprogress"
-                                    value={formData.comment}
-                                    onChange={(e) => handleFieldChange('comment', e.target.value)}
-                                    placeholder="Additional comments about this item"
+                                    value={formData.deliveryNotes}
+                                    onChange={(e) => handleFieldChange('deliveryNotes', e.target.value)}
+                                    placeholder="Any special delivery instructions"
                                     rows={3}
                                 />
                             </div>
-                        )}
+
+                            {/* Comments (only show in edit mode) */}
+                            {mode === 'edit' && (
+                                <div className="form-group-full">
+                                    <label>Comments</label>
+                                    <textarea
+                                        value={formData.comment}
+                                        onChange={(e) => handleFieldChange('comment', e.target.value)}
+                                        placeholder="Additional comments about this item"
+                                        rows={3}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="procurement-modal-footer-inprogress">
-                        <button
-                            type="button"
-                            className="btn-cancel"
-                            onClick={onClose}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="btn-primary"
-                        >
-                            <FiPlusCircle size={16} />
-                            {mode === 'edit' ? 'Save Changes' : 'Add to Offer'}
-                        </button>
+                    <div className="modal-footer">
+                        <div className="footer-left"></div>
+                        <div className="footer-right">
+                            <button type="button" className="btn-cancel" onClick={onClose}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="btn-save">
+                                <FiCheck /> {mode === 'edit' ? 'Save Changes' : 'Add to Offer'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

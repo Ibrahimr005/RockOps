@@ -1,0 +1,107 @@
+.pending-transactions {
+    width: 100%;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-approved {
+    background: rgba(76, 175, 80, 0.1);
+    color: var(--color-success);
+}
+
+.status-pending {
+    background: rgba(255, 152, 0, 0.1);
+    color: var(--color-warning);
+}
+
+.status-rejected {
+    background: rgba(244, 67, 54, 0.1);
+    color: var(--color-danger);
+}
+
+.action-approve {
+    color: var(--color-success) !important;
+}
+
+.action-reject {
+    color: var(--color-danger) !important;
+}
+
+.reject-modal {
+    max-width: 500px;
+    width: 90%;
+}
+
+.reject-info {
+    background: var(--color-surface-secondary);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.reject-info strong {
+    color: var(--color-primary);
+}
+
+.btn-danger {
+    background: var(--color-danger);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background var(--transition-fast) ease;
+}
+
+.btn-danger:hover {
+    background: var(--color-danger-hover);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--color-text-primary);
+}
+
+.form-group textarea {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    resize: vertical;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+}

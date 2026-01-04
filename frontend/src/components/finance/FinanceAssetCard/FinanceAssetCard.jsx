@@ -19,6 +19,16 @@ const FinanceAssetCard = ({
                               showValueLabel = false,
                               className = ''
                           }) => {
+
+
+    const formatCurrency = (value) => {
+        if (!value && value !== 0) return '0.00';
+        return Number(value).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+
     return (
         <div className={`finance-asset-card variant-${variant} size-${size} ${isExpanded ? 'expanded' : ''} ${className}`}>
             <div className="finance-card-header" onClick={onExpand && !categoryBreakdown.length ? onExpand : undefined}>
@@ -100,7 +110,7 @@ const FinanceAssetCard = ({
                             </div>
                             <div className="breakdown-value">
                                 <span className="breakdown-value-label">Value:</span>
-                                <span className="breakdown-amount">{category.value}</span>
+                                <span className="breakdown-amount">{formatCurrency(category.value)}</span>
                             </div>
                             {!category.disabled ? (
                                 <button

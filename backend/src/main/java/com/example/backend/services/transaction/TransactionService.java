@@ -590,7 +590,7 @@ public class TransactionService {
                 }
                 System.out.println("⚙️ Set equipmentReceivedQuantity: " + item.getEquipmentReceivedQuantity());
             }
-            
+
             // Set receivedQuantity for warehouse validation (mainly used in warehouse-to-warehouse)
             item.setReceivedQuantity(receivedQuantity);
 
@@ -613,17 +613,17 @@ public class TransactionService {
 
             if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
                 // Equipment-involved transaction: Use clear fields
-                warehouseSentQuantity = (transaction.getSentFirst().equals(transaction.getSenderId())) 
+                warehouseSentQuantity = (transaction.getSentFirst().equals(transaction.getSenderId()))
                     ? item.getQuantity() : receivedQuantity;
                 equipmentReceivedQuantity = item.getEquipmentReceivedQuantity();
-                
+
                 System.out.printf("📦➡️⚙️ EQUIPMENT TRANSACTION: Warehouse sent %d, Equipment received %d%n",
                         warehouseSentQuantity, equipmentReceivedQuantity);
             } else {
                 // Warehouse-to-warehouse: Use traditional logic (no changes to ensure compatibility)
                 int senderClaimedQuantity;
                 int receiverClaimedQuantity;
-                
+
                 if (transaction.getSentFirst().equals(transaction.getSenderId())) {
                     senderClaimedQuantity = item.getQuantity();
                     receiverClaimedQuantity = receivedQuantity;
@@ -631,10 +631,10 @@ public class TransactionService {
                     receiverClaimedQuantity = item.getQuantity();
                     senderClaimedQuantity = receivedQuantity;
                 }
-                
+
                 warehouseSentQuantity = senderClaimedQuantity;
                 equipmentReceivedQuantity = receiverClaimedQuantity; // This will be used as receiverClaimedQuantity
-                
+
                 System.out.printf("📦➡️📦 WAREHOUSE TRANSACTION: Sender claims %d, Receiver claims %d%n",
                         senderClaimedQuantity, receiverClaimedQuantity);
             }
@@ -1316,41 +1316,81 @@ public class TransactionService {
         System.out.println("   - ItemType: " + itemType.getName());
         System.out.println("   - Quantity: " + quantity);
         System.out.println("   - Transaction Purpose: " + transaction.getPurpose());
-        
+
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
 
-        // ALWAYS create consumables for equipment receivers, regardless of transaction purpose
-        // The status depends on the transaction purpose
-                System.out.println("✅ DEBUG: Creating consumables for equipment receiver - purpose: " + transaction.getPurpose());
-        
+        // 💰 NEW: Get unit price from warehouse items in this transaction
+        Double unitPrice = null;
+        if (transaction.getSenderType() == PartyType.WAREHOUSE) {
+            // Find the transaction item for this itemType
+            TransactionItem txItem = transaction.getItems().stream()
+                    .filter(item -> item.getItemType().getId().equals(itemType.getId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (txItem != null && txItem.getDeductedItems() != null && !txItem.getDeductedItems().isEmpty()) {
+                // Use the first price from deducted items (FIFO)
+                Map<String, Object> firstDeduction = txItem.getDeductedItems().get(0);
+                unitPrice = (Double) firstDeduction.get("unitPrice");
+                System.out.println("💰 Found unit price from warehouse transfer: " + unitPrice);
+            } else {
+                // Fallback: lookup price from sender warehouse
+                List<Item> warehouseItems = itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatus(
+                        itemType.getId(), transaction.getSenderId(), ItemStatus.IN_WAREHOUSE);
+
+                unitPrice = warehouseItems.stream()
+                        .map(Item::getUnitPrice)
+                        .filter(price -> price != null && price > 0)
+                        .findFirst()
+                        .orElse(null);
+
+                System.out.println("💰 Fallback: Found unit price from warehouse: " + unitPrice);
+            }
+        }
+
         if (transaction.getPurpose() == TransactionPurpose.CONSUMABLE) {
             System.out.println("✅ DEBUG: Transaction purpose is CONSUMABLE - creating IN_WAREHOUSE consumable");
-            // For consumables transactions, add to available inventory
-            // Check if there's already a consumable entry for this item type with IN_WAREHOUSE status
+
             Consumable existingConsumable = consumableRepository.findByEquipmentIdAndItemTypeIdAndStatus(
-                equipmentId, itemType.getId(), ItemStatus.IN_WAREHOUSE);
-            
+                    equipmentId, itemType.getId(), ItemStatus.IN_WAREHOUSE);
+
             if (existingConsumable != null) {
                 // Update existing consumable quantity
                 existingConsumable.setQuantity(existingConsumable.getQuantity() + quantity);
                 existingConsumable.setTransaction(transaction);
+
+                // 💰 NEW: Update unit price if we have one
+                if (unitPrice != null) {
+                    existingConsumable.setUnitPrice(unitPrice);
+                    existingConsumable.setTotalValue(existingConsumable.getQuantity() * unitPrice);
+                }
+
                 consumableRepository.save(existingConsumable);
                 System.out.println("✅ Updated existing consumable inventory: +" + quantity + " " + itemType.getName() +
-                    " (New total: " + existingConsumable.getQuantity() + ")");
+                        " @ " + unitPrice + " EGP (Total value: " + existingConsumable.getTotalValue() + " EGP)");
             } else {
                 // Create new consumable entry for available inventory
                 Consumable availableConsumable = new Consumable();
                 availableConsumable.setEquipment(equipment);
                 availableConsumable.setItemType(itemType);
                 availableConsumable.setQuantity(quantity);
-                availableConsumable.setStatus(ItemStatus.IN_WAREHOUSE); // Use IN_WAREHOUSE for available consumables
+                availableConsumable.setStatus(ItemStatus.IN_WAREHOUSE);
                 availableConsumable.setTransaction(transaction);
+
+                // 💰 NEW: Set unit price and calculate total value
+                if (unitPrice != null) {
+                    availableConsumable.setUnitPrice(unitPrice);
+                    availableConsumable.setTotalValue(quantity * unitPrice);
+                }
+
                 consumableRepository.save(availableConsumable);
-                System.out.println("✅ Added new consumable to equipment inventory: " + quantity + " " + itemType.getName());
+                System.out.println("✅ Added new consumable to equipment inventory: " + quantity + " " + itemType.getName() +
+                        " @ " + unitPrice + " EGP (Total value: " + availableConsumable.getTotalValue() + " EGP)");
             }
         } else {
             System.out.println("✅ DEBUG: Transaction purpose is NOT CONSUMABLE (" + transaction.getPurpose() + ") - creating CONSUMED entry");
+
             // For maintenance or other transactions, create consumed entry
             Consumable consumedConsumable = new Consumable();
             consumedConsumable.setEquipment(equipment);
@@ -1358,11 +1398,18 @@ public class TransactionService {
             consumedConsumable.setQuantity(quantity);
             consumedConsumable.setStatus(ItemStatus.CONSUMED);
             consumedConsumable.setTransaction(transaction);
+
+            // 💰 NEW: Set unit price and calculate total value for consumed items too
+            if (unitPrice != null) {
+                consumedConsumable.setUnitPrice(unitPrice);
+                consumedConsumable.setTotalValue(quantity * unitPrice);
+            }
+
             consumableRepository.save(consumedConsumable);
-            System.out.println("✅ Created CONSUMED entry for maintenance/other transaction: " + quantity + " " + itemType.getName());
+            System.out.println("✅ Created CONSUMED entry for maintenance/other transaction: " + quantity + " " + itemType.getName() +
+                    " @ " + unitPrice + " EGP (Total value: " + consumedConsumable.getTotalValue() + " EGP)");
         }
     }
-
     // ========================================
     // VALIDATION AND UTILITY METHODS (UNCHANGED)
     // ========================================

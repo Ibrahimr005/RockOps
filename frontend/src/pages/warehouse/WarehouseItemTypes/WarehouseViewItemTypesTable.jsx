@@ -258,7 +258,7 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                 loading={loading}
                 emptyMessage="No item types found. Try adjusting your search or add a new item type"
                 actions={actions}
-                showAddButton={userRole === "WAREHOUSE_MANAGER" || userRole === "ADMIN"}
+                showAddButton={userRole === "WAREHOUSE_MANAGER" || userRole === "ADMIN" || userRole === "PROCUREMENT"}
                 addButtonText="Add Item Type"
                 addButtonIcon={<FaPlus />}
                 onAddClick={() => openItemModal()}

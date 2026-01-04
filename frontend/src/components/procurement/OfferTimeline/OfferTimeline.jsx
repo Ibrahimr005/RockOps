@@ -111,19 +111,10 @@ const OfferTimeline = ({
             });
         }
 
-        // DEBUG LOGGING - Add this right before calling addPendingSteps
-        console.log('=== TIMELINE DEBUG ===');
-        console.log('offer.status:', offer?.status);
-        console.log('timelineEvents:', timelineEvents);
-        console.log('timelineEvents length:', timelineEvents.length);
-        console.log('has OFFER_SUBMITTED:', timelineEvents.some(e => e.eventType === 'OFFER_SUBMITTED'));
-        console.log('steps before addPendingSteps:', steps);
 
         // 4. Add pending steps based on current status
         addPendingSteps(steps, offer);
 
-        console.log('steps after addPendingSteps:', steps);
-        console.log('=== END TIMELINE DEBUG ===');
 
         return steps;
     };
@@ -211,21 +202,19 @@ const OfferTimeline = ({
     const addPendingSteps = (steps, offer) => {
         if (!offer) return;
 
-        console.log('addPendingSteps called with offer.status:', offer.status);
+
 
         // Get the latest timeline event to understand current state
         const latestEvent = timelineEvents.length > 0 ? timelineEvents[timelineEvents.length - 1] : null;
-        console.log('latestEvent:', latestEvent);
+
 
         // 1. If offer is INPROGRESS or UNSTARTED, show procurement solutions step
         const isInProgressOrUnstarted = (offer.status === 'INPROGRESS' || offer.status === 'UNSTARTED');
         const hasNoSubmittedEvent = !timelineEvents.some(e => e.eventType === 'OFFER_SUBMITTED');
 
-        console.log('isInProgressOrUnstarted:', isInProgressOrUnstarted);
-        console.log('hasNoSubmittedEvent:', hasNoSubmittedEvent);
 
         if (isInProgressOrUnstarted) {
-            console.log('Adding procurement solutions step');
+
             steps.push({
                 id: 'pending-procurement-solutions',
                 title: 'Adding Procurement Solutions',

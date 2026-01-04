@@ -154,22 +154,31 @@ public class DeliveryProcessingService {
             }
         }
     }
-
     private void updatePOStatus(PurchaseOrder po) {
-        boolean anyDisputed = po.getPurchaseOrderItems().stream()
-                .anyMatch(item -> "DISPUTED".equals(item.getStatus()));
+        boolean hasItemsToArrive = false;
+        boolean hasDisputedItems = false;
 
-        if (anyDisputed) {
-            po.setStatus("DISPUTED");
-        } else {
-            boolean allCompleted = po.getPurchaseOrderItems().stream()
-                    .allMatch(item -> "COMPLETED".equals(item.getStatus()));
-
-            if (allCompleted) {
-                po.setStatus("COMPLETED");
-            } else {
-                po.setStatus("PARTIAL");
+        for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
+            // Check if item has disputed/unresolved issues
+            if ("DISPUTED".equals(item.getStatus())) {
+                hasDisputedItems = true;
             }
+
+            // Check if item still needs delivery
+            if (!"COMPLETED".equals(item.getStatus())) {
+                hasItemsToArrive = true;
+            }
+        }
+
+        // Set status based on conditions
+        if (hasDisputedItems && hasItemsToArrive) {
+            po.setStatus("PARTIAL_DISPUTED"); // Both conditions
+        } else if (hasDisputedItems) {
+            po.setStatus("DISPUTED"); // Only issues
+        } else if (hasItemsToArrive) {
+            po.setStatus("PARTIAL"); // Only pending items
+        } else {
+            po.setStatus("COMPLETED"); // Everything done
         }
     }
 

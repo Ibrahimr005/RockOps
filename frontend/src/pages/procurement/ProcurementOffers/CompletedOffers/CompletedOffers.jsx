@@ -55,12 +55,23 @@ const CompletedOffers = ({
     };
 
     // Group offer items by itemType - only show items that have been through finance review
+// Group offer items by itemType
     const getOfferItemsByItemType = () => {
-        if (!activeOffer || !activeOffer.offerItems) return {};
+        if (!activeOffer || !activeOffer.offerItems) {
+            console.log('No active offer or offer items');
+            return {};
+        }
+
+        console.log('Active offer items:', activeOffer.offerItems);
+        console.log('Active offer items count:', activeOffer.offerItems.length);
 
         const itemsMap = {};
 
         activeOffer.offerItems.forEach(offerItem => {
+            console.log('Processing offer item:', offerItem);
+            console.log('Item type:', offerItem.itemType);
+            console.log('Finance status:', offerItem.financeStatus);
+
             // Only include items that have been through finance review
             if (offerItem.financeStatus === 'ACCEPTED' || offerItem.financeStatus === 'REJECTED') {
                 const itemTypeId = offerItem.itemType?.id;
@@ -77,13 +88,17 @@ const CompletedOffers = ({
                         };
                     }
                     itemsMap[itemTypeId].offerItems.push(offerItem);
+                } else {
+                    console.warn('Offer item missing itemType:', offerItem);
                 }
+            } else {
+                console.log('Skipping item - finance status:', offerItem.financeStatus);
             }
         });
 
+        console.log('Final items map:', itemsMap);
         return itemsMap;
     };
-
     // Fetch purchase order when active offer changes
     React.useEffect(() => {
         if (activeOffer && activeOffer.status === 'COMPLETED') {
@@ -142,7 +157,7 @@ const CompletedOffers = ({
                                 <div className="procurement-title-section">
                                     <h2 className="procurement-main-title">{activeOffer.title}</h2>
                                     <div className="procurement-header-meta">
-                                        <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
+                                        <span className={`procurement-status-badge-it status-${activeOffer.status.toLowerCase()}`}>
                                             {formatStatus(activeOffer.status)}
                                         </span>
                                         <span className="procurement-meta-item">

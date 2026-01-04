@@ -27,6 +27,7 @@ const PurchaseOrderDetailsPage = () => {
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
     const [activeTab, setActiveTab] = useState('overview');
+    const fromState = location.state?.from;
 
     // Get user role
     useEffect(() => {
@@ -162,11 +163,24 @@ const PurchaseOrderDetailsPage = () => {
     };
 
     // IntroCard props
-    const breadcrumbs = [
-        { label: 'Warehouse', onClick: () => navigate('/warehouse') },
-        { label: 'Purchase Orders', onClick: () => navigate(-1) },
-        { label: `PO #${purchaseOrder.poNumber}` }
-    ];
+    const breadcrumbs = (() => {
+        if (fromState === 'warehouse') {
+            const warehouseId = location.state?.warehouseId;
+            const warehouseName = location.state?.warehouseName || 'Warehouse';
+
+            return [
+                { label: 'Warehouses', onClick: () => navigate('/warehouses') },
+                { label: warehouseName, onClick: () => navigate(`/warehouses/${warehouseId}`) },
+                { label: `PO #${purchaseOrder.poNumber}` }
+            ];
+        } else {
+            // Default to procurement breadcrumbs
+            return [
+                { label: 'Purchase Orders', onClick: () => navigate('/procurement/purchase-orders') },
+                { label: `PO #${purchaseOrder.poNumber}` }
+            ];
+        }
+    })();
 
     const stats = [
         {

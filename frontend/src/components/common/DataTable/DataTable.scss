@@ -91,11 +91,25 @@
 
     .rockops-table__th,
     .rockops-table__cell {
-      &[data-flex-weight="1"] { width: 1fr; }
-      &[data-flex-weight="2"] { width: 2fr; }
-      &[data-flex-weight="3"] { width: 3fr; }
-      &[data-flex-weight="4"] { width: 4fr; }
-      &[data-flex-weight="5"] { width: 5fr; }
+      &[data-flex-weight="1"] {
+        width: 1fr;
+      }
+
+      &[data-flex-weight="2"] {
+        width: 2fr;
+      }
+
+      &[data-flex-weight="3"] {
+        width: 3fr;
+      }
+
+      &[data-flex-weight="4"] {
+        width: 4fr;
+      }
+
+      &[data-flex-weight="5"] {
+        width: 5fr;
+      }
     }
   }
 
@@ -298,6 +312,7 @@
     cursor: pointer;
 
     @media (hover: none) {
+
       // Add visual feedback for touch devices
       &:active {
         background-color: #e0e7ff;
@@ -552,7 +567,8 @@
     }
   }
 
-  &.approve, &.resolve {
+  &.approve,
+  &.resolve {
     color: #10b981;
     background-color: rgba(16, 185, 129, 0.1);
 
@@ -570,7 +586,8 @@
     }
   }
 
-  &.edit, &.primary {
+  &.edit,
+  &.primary {
     color: #3b82f6;
     background-color: rgba(59, 130, 246, 0.1);
 
@@ -588,7 +605,8 @@
     }
   }
 
-  &.delete, &.danger {
+  &.delete,
+  &.danger {
     color: #ef4444;
     background-color: rgba(239, 68, 68, 0.1);
 
@@ -619,10 +637,11 @@
     }
   }
 
-  // Simplified tooltip - hidden on mobile
-  &[title]:hover:before {
+  // Custom tooltip using data-tooltip attribute
+  // We use data-tooltip to avoid the native browser tooltip overlap (which happens with title attribute)
+  &[data-tooltip]:hover:before {
     @media (min-width: 769px) {
-      content: attr(title);
+      content: attr(data-tooltip);
       position: fixed !important;
       bottom: auto !important;
       left: 50% !important;
@@ -648,7 +667,7 @@
     }
   }
 
-  &[title]:hover:after {
+  &[data-tooltip]:hover:after {
     @media (min-width: 769px) {
       content: '';
       position: fixed !important;
@@ -1299,7 +1318,8 @@
     position: relative;
   }
 
-  input, select {
+  input,
+  select {
     width: 100%;
     padding: 0.625rem 0.875rem;
     border: 1px solid #d1d5db;
@@ -1411,7 +1431,9 @@
   }
 
   &.has-filter {
-    input, select {
+
+    input,
+    select {
       border-color: #3b82f6;
       box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
 
@@ -2163,7 +2185,9 @@
 
 /* Animations */
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes slideDown {
@@ -2171,6 +2195,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2182,6 +2207,7 @@
     opacity: 0;
     transform: translateY(-5px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

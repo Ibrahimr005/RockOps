@@ -23,7 +23,7 @@ const ContactTypeManagement = () => {
         description: '',
         isActive: true
     });
-    
+
     // Confirmation dialog state
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [contactTypeToDelete, setContactTypeToDelete] = useState(null);
@@ -38,7 +38,7 @@ const ContactTypeManagement = () => {
     // Check permissions (maintenance managers and admins)
     // Handle both 'role' (singular) and 'roles' (plural) properties
     const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
-    const hasManagementAccess = userRoles.some(role => 
+    const hasManagementAccess = userRoles.some(role =>
         [ROLES.ADMIN, ROLES.MAINTENANCE_MANAGER].includes(role)
     );
 
@@ -49,7 +49,7 @@ const ContactTypeManagement = () => {
         try {
             setLoading(true);
             const response = await contactTypeService.getAllContactTypesForManagement();
-            
+
             // Admin sees all contact types, others see only active ones
             const isAdmin = userRoles.includes(ROLES.ADMIN);
             const filteredContactTypes = isAdmin ? response : response.filter(contactType => contactType.isActive);
@@ -61,17 +61,17 @@ const ContactTypeManagement = () => {
             }));
 
             setContactTypes(transformedContactTypes);
-            
+
             if (filteredContactTypes.length === 0) {
                 showInfo(isAdmin ? 'No contact types found. Add your first contact type!' : 'No active contact types found.');
             }
             setLoading(false);
         } catch (err) {
             console.error('Fetch error:', err);
-            
+
             // Extract the actual error message from the backend
             let errorMessage = 'An error occurred';
-            
+
             if (err.response?.data?.message) {
                 errorMessage = err.response.data.message;
             } else if (err.response?.data) {
@@ -79,7 +79,7 @@ const ContactTypeManagement = () => {
             } else if (err.message) {
                 errorMessage = err.message;
             }
-            
+
             showError(`Failed to load contact types: ${errorMessage}`);
             setError(`Failed to load contact types: ${errorMessage}`);
             setLoading(false);
@@ -124,7 +124,7 @@ const ContactTypeManagement = () => {
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!formData.name.trim()) {
             showError('Contact type name is required');
             return;
@@ -138,15 +138,15 @@ const ContactTypeManagement = () => {
                 await contactTypeService.createContactType(formData);
                 showSuccess('Contact type created successfully');
             }
-            
+
             setShowModal(false);
             fetchContactTypes();
         } catch (err) {
             console.error('Form submission error:', err);
-            
+
             // Extract the actual error message from the backend
             let errorMessage = 'An error occurred';
-            
+
             if (err.response?.data?.message) {
                 errorMessage = err.response.data.message;
             } else if (err.response?.data) {
@@ -154,7 +154,7 @@ const ContactTypeManagement = () => {
             } else if (err.message) {
                 errorMessage = err.message;
             }
-            
+
             // Handle specific error cases
             if (err.response?.status === 409 || errorMessage.toLowerCase().includes('already exists')) {
                 // Show the detailed backend message which explains case-insensitive matching
@@ -191,10 +191,10 @@ const ContactTypeManagement = () => {
             setContactTypeToDelete(null);
         } catch (err) {
             console.error('Delete error:', err);
-            
+
             // Extract the actual error message from the backend
             let errorMessage = 'An error occurred';
-            
+
             if (err.response?.data?.message) {
                 errorMessage = err.response.data.message;
             } else if (err.response?.data) {
@@ -202,7 +202,7 @@ const ContactTypeManagement = () => {
             } else if (err.message) {
                 errorMessage = err.message;
             }
-            
+
             showError(`Failed to delete contact type: ${errorMessage}`);
         } finally {
             setIsDeleting(false);
@@ -272,14 +272,18 @@ const ContactTypeManagement = () => {
                             <button
                                 className="rockops-table__action-button primary"
                                 onClick={() => handleEdit(row)}
-                                title="Edit Contact Type"
+                                title={undefined}
+                                data-tooltip="Edit Contact Type"
+                                aria-label="Edit Contact Type"
                             >
                                 <FaEdit />
                             </button>
                             <button
                                 className="rockops-table__action-button danger"
                                 onClick={() => handleDelete(row)}
-                                title="Delete Contact Type"
+                                title={undefined}
+                                data-tooltip="Delete Contact Type"
+                                aria-label="Delete Contact Type"
                             >
                                 <FaTrash />
                             </button>
@@ -292,13 +296,13 @@ const ContactTypeManagement = () => {
 
     // Custom dropdown filters
     const [statusFilter, setStatusFilter] = useState('all');
-    
+
     const customFilters = [
         {
             label: 'Status',
             component: (
-                <select 
-                    value={statusFilter} 
+                <select
+                    value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="filter-select"
                 >
@@ -321,8 +325,8 @@ const ContactTypeManagement = () => {
     if (!hasManagementAccess) {
         return (
             <div className="contact-type-management">
-                <PageHeader 
-                    title="Contact Types" 
+                <PageHeader
+                    title="Contact Types"
                     subtitle="Manage different types of contacts"
                     icon={<FaUsers />}
                 />
@@ -336,8 +340,8 @@ const ContactTypeManagement = () => {
 
     return (
         <div className="contact-type-management">
-            <PageHeader 
-                title="Contact Types" 
+            <PageHeader
+                title="Contact Types"
                 subtitle="Manage different types of contacts"
                 icon={<FaUsers />}
             />

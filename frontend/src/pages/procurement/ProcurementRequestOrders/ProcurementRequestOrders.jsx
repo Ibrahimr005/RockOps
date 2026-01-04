@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import "./ProcurementRequestOrder.scss";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"
-import IncomingRequestOrders from './IncomingRequests/IncomingRequestOrders';
-import ApprovedRequestOrders from './ApprovedRequests/ApprovedRequestOrders';
+import DraftRequestOrders from './DraftRequests/DraftRequestOrders.jsx';
+import IncomingRequestOrders from './IncomingRequests/IncomingRequestOrders.jsx';
+import ApprovedRequestOrders from './ApprovedRequests/ApprovedRequestOrders.jsx';
 import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 import Tabs from "../../../components/common/Tabs/Tabs.jsx"
 import { requestOrderService } from '../../../services/procurement/requestOrderService.js';
 
 const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
-    const { theme } = useTheme(); // Use the same theme context as Sidebar
+    const { theme } = useTheme();
     const [requestOrders, setRequestOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -19,8 +20,9 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
 
+
     // Tab state
-    const [activeTab, setActiveTab] = useState('incoming'); // 'incoming' or 'approved'
+    const [activeTab, setActiveTab] = useState('drafts'); // 'drafts', 'incoming', or 'approved'
 
     useEffect(() => {
         fetchRequestOrders();
@@ -40,10 +42,10 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
         }
     };
 
-    const handleInfoClick = () => {
-        // Handle info button click - you can customize this
-        console.log('Info button clicked');
-    };
+    const draftOrders = useMemo(() =>
+            requestOrders.filter(order => order.status === 'DRAFT'),
+        [requestOrders]
+    );
 
     const pendingOrders = useMemo(() =>
             requestOrders.filter(order => order.status === 'PENDING'),
@@ -55,18 +57,6 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
         [requestOrders]
     );
 
-    // Prepare stats data for the intro card
-    const statsData = [
-        {
-            value: pendingOrders.length,
-            label: 'Pending Requests'
-        },
-        {
-            value: approvedOrders.length,
-            label: 'Approved Requests'
-        }
-    ];
-
     return (
         <div className="pro-ro-procurement-requests-container">
             <PageHeader
@@ -76,6 +66,11 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
 
             <Tabs
                 tabs={[
+                    {
+                        id: 'drafts',
+                        label: 'Draft Requests',
+                        badge: draftOrders.length
+                    },
                     {
                         id: 'incoming',
                         label: 'Incoming Requests',
@@ -93,16 +88,22 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
             {/* Table Container with Theme Support */}
             <div className="pro-ro-table-container">
                 {/* Conditionally render the appropriate table based on active tab */}
-                {activeTab === 'incoming' ? (
+                {activeTab === 'drafts' ? (
+                    <DraftRequestOrders
+                        onDataChange={fetchRequestOrders}
+                        requestOrders={draftOrders}
+                        loading={loading}
+                    />
+                ) : activeTab === 'incoming' ? (
                     <IncomingRequestOrders
                         onDataChange={fetchRequestOrders}
-                        requestOrders={pendingOrders}  // Use memoized data
+                        requestOrders={pendingOrders}
                         loading={loading}
                     />
                 ) : (
                     <ApprovedRequestOrders
                         onDataChange={fetchRequestOrders}
-                        requestOrders={approvedOrders}  // Use memoized data
+                        requestOrders={approvedOrders}
                         loading={loading}
                     />
                 )}

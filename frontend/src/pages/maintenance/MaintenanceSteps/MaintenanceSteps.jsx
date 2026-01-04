@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar, FaTimes, FaEllipsisV, FaPlus, FaSearch, FaFilter } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar, FaTools, FaTimes, FaEllipsisV, FaPlus, FaSearch, FaFilter, FaClipboardList } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -353,224 +353,262 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
         );
     }
 
+    const breadcrumbs = [
+        {
+            label: 'Maintenance',
+            icon: <FaTools />,
+            onClick: () => navigate('/maintenance')
+        },
+        {
+            label: 'Records',
+            icon: <FaClipboardList />,
+            onClick: () => navigate('/maintenance/records')
+        },
+        {
+            label: maintenanceRecord ? maintenanceRecord.title || maintenanceRecord.equipmentName || 'Record' : 'Steps',
+            icon: <FaClipboardList />
+        }
+    ];
+
+    const stats = [
+        {
+            label: 'Total Steps',
+            value: maintenanceSteps.length
+        },
+        {
+            label: 'Completed',
+            value: maintenanceSteps.filter(s => s.isCompleted).length
+        },
+        {
+            label: 'Total Cost',
+            value: formatCurrency(maintenanceSteps.reduce((total, step) => {
+                const cost = step.isCompleted && step.actualCost ? step.actualCost : step.stepCost;
+                return total + (cost || 0);
+            }, 0))
+        }
+    ];
+
     return (
-        <div className="maintenance-steps">
-            <PageHeader
-                title="Maintenance Steps"
-                subtitle={maintenanceRecord ? `Equipment: ${maintenanceRecord.equipmentInfo} - ${maintenanceRecord.initialIssueDescription}` : ''}
-            />
-
-            {/* Header with Search and Add Button */}
-            <div className="steps-header">
-                <div className="search-container">
-                    <FaSearch className="search-icon" />
-                    <input
-                        type="text"
-                        placeholder="Search steps..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                    />
-                </div>
-                <button
-                    className="add-step-btn"
-                    onClick={() => handleOpenModal()}
-                    disabled={maintenanceRecord?.status === 'COMPLETED'}
-                >
-                    <FaPlus /> New Step
-                </button>
+        <div className="maintenance-steps-view">
+            <div className="intro-card-wrapper">
+                {/* Using standard page header if IntroCard is not suitable or available context is limited, 
+                     but user asked for DirectPurchaseDetailView look. DirectPurchase uses IntroCard. 
+                     We need to import IntroCard. I'll stick to the requested look. 
+                  */}
             </div>
 
-            {/* Cost Summary */}
-            <div className="cost-summary">
-                <div className="summary-label">Expected Total Cost</div>
-                <div className="summary-value">
-                    {formatCurrency(maintenanceSteps.reduce((total, step) => {
-                        const cost = step.isCompleted && step.actualCost ? step.actualCost : step.stepCost;
-                        return total + (cost || 0);
-                    }, 0))}
+            <div className="detail-content">
+                {/* Header Card similar to DirectPurchaseDetailView's IntroCard equivalent or header section */}
+                <div className="info-card header-card">
+                    <div className="header-content">
+                        <div className="header-left">
+                            <h1>Maintenance Steps</h1>
+                            {maintenanceRecord && (
+                                <p className="subtitle">
+                                    {maintenanceRecord.equipmentInfo} - {maintenanceRecord.initialIssueDescription}
+                                </p>
+                            )}
+                        </div>
+                        <div className="header-right">
+                            {!maintenanceRecord?.status || maintenanceRecord.status !== 'COMPLETED' ? (
+                                <button
+                                    className="add-step-btn"
+                                    onClick={() => handleOpenModal()}
+                                >
+                                    <FaPlus /> New Step
+                                </button>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    <div className="stats-row">
+                        {stats.map((stat, index) => (
+                            <div key={index} className="stat-item">
+                                <label>{stat.label}</label>
+                                <div className="stat-value">{stat.value}</div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            </div>
 
-            {/* Workflow Steps */}
-            <div className="workflow-steps-section">
-                <h3 className="section-title">Workflow Steps</h3>
-
-                {loading ? (
-                    <div className="loading-container">
-                        <div className="loading-spinner">Loading steps...</div>
+                <div className="info-card steps-card">
+                    <div className="card-header-row">
+                        <h3>Workflow Steps</h3>
+                        <div className="search-container">
+                            <FaSearch className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Search steps..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                            />
+                        </div>
                     </div>
-                ) : filteredSteps.length === 0 ? (
-                    <div className="empty-state">
-                        <p>No maintenance steps found. Create your first step to get started.</p>
-                    </div>
-                ) : (
-                    <div className="steps-container">
-                        {filteredSteps.map((step, index) => {
-                            const isTransport = step.stepType?.toUpperCase() === 'TRANSPORT';
-                            const displayLocation = isTransport
-                                ? (step.isCompleted ? step.toLocation : step.fromLocation)
-                                : step.fromLocation;
-                            const locationLabel = isTransport
-                                ? (step.isCompleted ? 'Destination' : 'From')
-                                : 'Current Location';
 
-                            return (
-                                <div key={step.id} className={`step-card ${step.isCompleted ? 'completed' : ''}`}>
-                                    {/* Card Header */}
-                                    <div className="step-card-header">
-                                        <div className="step-header-left">
-                                            <div className="step-number">Step {index + 1}</div>
-                                            <div className="step-type-name">{step.stepType?.replace('_', ' ')}</div>
-                                            {step.isFinalStep && (
-                                                <FaStar className="final-star-icon" title="Final Step" />
-                                            )}
+                    {loading ? (
+                        <div className="loading-container">
+                            <div className="loading-spinner">Loading steps...</div>
+                        </div>
+                    ) : filteredSteps.length === 0 ? (
+                        <div className="empty-state">
+                            <p>No maintenance steps found. Create your first step to get started.</p>
+                        </div>
+                    ) : (
+                        <div className="steps-container">
+                            {filteredSteps.map((step, index) => {
+                                const isTransport = step.stepType?.toUpperCase() === 'TRANSPORT';
+
+                                return (
+                                    <div key={step.id} className={`step-item ${step.isCompleted ? 'completed' : 'in-progress'}`}>
+                                        <div className="step-header">
+                                            <div className="step-header-left">
+                                                <div className="step-number">Step {index + 1}</div>
+                                                <h3>{step.stepType?.replace('_', ' ')}</h3>
+                                                {step.isFinalStep && (
+                                                    <span className="final-badge" title="Final Step"><FaStar /> Final</span>
+                                                )}
+                                                {getStatusBadge(step)}
+                                            </div>
+                                            <div className="step-header-right">
+                                                <div className="menu-container">
+                                                    <button
+                                                        className="menu-trigger"
+                                                        onClick={() => setActiveMenuId(activeMenuId === step.id ? null : step.id)}
+                                                    >
+                                                        <FaEllipsisV />
+                                                    </button>
+                                                    {activeMenuId === step.id && (
+                                                        <>
+                                                            <div className="menu-backdrop" onClick={() => setActiveMenuId(null)} />
+                                                            <div className="menu-dropdown">
+                                                                <button
+                                                                    className="menu-item"
+                                                                    onClick={() => handleViewStep(step)}
+                                                                >
+                                                                    <FaEye /> View Details
+                                                                </button>
+                                                                {!step.isCompleted && (
+                                                                    <>
+                                                                        <button
+                                                                            className="menu-item"
+                                                                            onClick={() => handleOpenModal(step)}
+                                                                        >
+                                                                            <FaEdit /> Edit
+                                                                        </button>
+                                                                        <button
+                                                                            className="menu-item complete"
+                                                                            onClick={() => handleCompleteStep(step)}
+                                                                        >
+                                                                            <FaCheck /> Complete
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                                {shouldShowMarkAsFinal(step) && (
+                                                                    <button
+                                                                        className="menu-item warning"
+                                                                        onClick={() => handleMarkAsFinal(step.id)}
+                                                                    >
+                                                                        <FaStar /> Mark as Final
+                                                                    </button>
+                                                                )}
+                                                                {!step.isCompleted && (
+                                                                    <button
+                                                                        className="menu-item danger"
+                                                                        onClick={() => {
+                                                                            if (window.confirm(`Are you sure you want to delete this maintenance step?`)) {
+                                                                                handleDeleteStep(step.id);
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <FaTrash /> Delete
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="step-header-right">
-                                            {getStatusBadge(step)}
-                                            <div className="menu-container">
-                                                <button
-                                                    className="menu-trigger"
-                                                    onClick={() => setActiveMenuId(activeMenuId === step.id ? null : step.id)}
-                                                >
-                                                    <FaEllipsisV />
-                                                </button>
-                                                {activeMenuId === step.id && (
-                                                    <>
-                                                        <div className="menu-backdrop" onClick={() => setActiveMenuId(null)} />
-                                                        <div className="menu-dropdown">
-                                                            <button
-                                                                className="menu-item"
-                                                                onClick={() => handleViewStep(step)}
-                                                            >
-                                                                <FaEye /> View Details
-                                                            </button>
-                                                            {!step.isCompleted && (
-                                                                <>
-                                                                    <button
-                                                                        className="menu-item"
-                                                                        onClick={() => handleOpenModal(step)}
-                                                                    >
-                                                                        <FaEdit /> Edit
-                                                                    </button>
-                                                                    <button
-                                                                        className="menu-item complete"
-                                                                        onClick={() => handleCompleteStep(step)}
-                                                                    >
-                                                                        <FaCheck /> Complete
-                                                                    </button>
-                                                                </>
-                                                            )}
-                                                            {shouldShowMarkAsFinal(step) && (
-                                                                <button
-                                                                    className="menu-item warning"
-                                                                    onClick={() => handleMarkAsFinal(step.id)}
-                                                                >
-                                                                    <FaStar /> Mark as Final
-                                                                </button>
-                                                            )}
-                                                            {!step.isCompleted && (
-                                                                <button
-                                                                    className="menu-item danger"
-                                                                    onClick={() => {
-                                                                        if (window.confirm(`Are you sure you want to delete this maintenance step?`)) {
-                                                                            handleDeleteStep(step.id);
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <FaTrash /> Delete
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </>
+
+                                        <div className="step-body">
+                                            <div className="step-info-grid">
+                                                <div className="step-info-item">
+                                                    <label>Responsible Person</label>
+                                                    <div>
+                                                        <FaUser className="icon" /> {step.responsiblePerson}
+                                                    </div>
+                                                </div>
+
+                                                <div className="step-info-item">
+                                                    <label>Start Date</label>
+                                                    <div><FaClock className="icon" /> {formatDate(step.startDate)}</div>
+                                                </div>
+
+                                                <div className="step-info-item">
+                                                    <label>Expected End</label>
+                                                    <div><FaClock className="icon" /> {formatDate(step.expectedEndDate)}</div>
+                                                </div>
+
+                                                {step.actualEndDate && (
+                                                    <div className="step-info-item">
+                                                        <label>Actual End</label>
+                                                        <div><FaCheck className="icon" /> {formatDate(step.actualEndDate)}</div>
+                                                    </div>
+                                                )}
+
+                                                {/* Logic Fix: Show From AND To for Transport */}
+                                                {(isTransport || step.fromLocation) && (
+                                                    <div className="step-info-item">
+                                                        <label>{isTransport ? 'From Location' : 'Current Location'}</label>
+                                                        <div><FaMapMarkerAlt className="icon" /> {step.fromLocation || 'Not set'}</div>
+                                                    </div>
+                                                )}
+
+                                                {isTransport && (
+                                                    <div className="step-info-item">
+                                                        <label>To Location</label>
+                                                        <div><FaMapMarkerAlt className="icon" /> {step.toLocation || 'Not set'}</div>
+                                                    </div>
                                                 )}
                                             </div>
+
+                                            <div className="step-costs">
+                                                <div className="cost-row">
+                                                    <span>Expected Cost:</span>
+                                                    <strong>{formatCurrency(step.expectedCost || step.stepCost)}</strong>
+                                                </div>
+                                                {step.downPayment > 0 && (
+                                                    <div className="cost-row">
+                                                        <span>Down Payment:</span>
+                                                        <strong>{formatCurrency(step.downPayment)}</strong>
+                                                    </div>
+                                                )}
+                                                <div className="cost-row remaining">
+                                                    <span>Remaining:</span>
+                                                    <strong>{formatCurrency(step.remaining)}</strong>
+                                                </div>
+                                                {step.isCompleted && step.actualCost && (
+                                                    <div className="cost-row actual">
+                                                        <span>Actual Cost:</span>
+                                                        <strong>{formatCurrency(step.actualCost)}</strong>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {step.description && (
+                                                <div className="step-description">
+                                                    <label>Description</label>
+                                                    <p>{step.description}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-
-                                    {/* Card Body */}
-                                    <div className="step-card-body">
-                                        {/* Responsible Person */}
-                                        <div className="step-info-row">
-                                            <FaUser className="info-icon" />
-                                            <div className="info-content">
-                                                <div className="info-label">Responsible Person</div>
-                                                <div className="info-value">{step.responsiblePerson}</div>
-                                            </div>
-                                        </div>
-
-                                        {/* Actual End Date (only if completed) */}
-                                        {step.actualEndDate && (
-                                            <div className="step-info-row">
-                                                <FaClock className="info-icon" />
-                                                <div className="info-content">
-                                                    <div className="info-label">Actual End</div>
-                                                    <div className="info-value">{formatDate(step.actualEndDate)}</div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Expected End Date (if not completed) */}
-                                        {!step.isCompleted && (
-                                            <div className="step-info-row">
-                                                <FaClock className="info-icon" />
-                                                <div className="info-content">
-                                                    <div className="info-label">Expected End</div>
-                                                    <div className="info-value">{formatDate(step.expectedEndDate)}</div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Costs */}
-                                        <div className="step-info-row">
-                                            <div className="info-icon">$</div>
-                                            <div className="info-content">
-                                                <div className="info-label">Costs</div>
-                                                <div className="info-value costs-row">
-                                                    <span className="cost-item">
-                                                        Expected: {formatCurrency(step.expectedCost || step.stepCost)}
-                                                    </span>
-                                                    {step.downPayment > 0 && (
-                                                        <span className="cost-item">
-                                                            Down Payment: {formatCurrency(step.downPayment)}
-                                                        </span>
-                                                    )}
-                                                    <span className="cost-item">
-                                                        Remaining: {formatCurrency(step.remaining)}
-                                                    </span>
-                                                    {step.isCompleted && step.actualCost && (
-                                                        <span className="cost-item actual">
-                                                            Actual: {formatCurrency(step.actualCost)}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Description */}
-                                        <div className="step-info-row description-row">
-                                            <div className="info-content full-width">
-                                                <div className="info-label">Description</div>
-                                                <div className="info-value description">{step.description}</div>
-                                            </div>
-                                        </div>
-
-                                        {/* Location */}
-                                        {displayLocation && (
-                                            <div className="step-info-row">
-                                                <FaMapMarkerAlt className="info-icon" />
-                                                <div className="info-content">
-                                                    <div className="info-label">{locationLabel}</div>
-                                                    <div className="info-value">{displayLocation}</div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Modals */}

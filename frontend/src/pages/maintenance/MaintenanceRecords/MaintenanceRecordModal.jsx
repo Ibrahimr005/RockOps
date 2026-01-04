@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaTimes, FaSave, FaTools, FaUser } from 'react-icons/fa';
 import contactService from '../../../services/contactService.js';
 import { equipmentService } from '../../../services/equipmentService.js';
@@ -12,6 +13,7 @@ import '../../../styles/modal-styles.scss';
 import './MaintenanceRecordModal.scss';
 
 const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         siteId: '',
         equipmentId: '',
@@ -104,7 +106,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 expectedCompletionDate: editingRecord.expectedCompletionDate ?
                     editingRecord.expectedCompletionDate.split('T')[0] : '',
                 estimatedCost: editingRecord.totalCost || editingRecord.estimatedCost || '',
-                responsibleUserId: editingRecord.responsibleUserId || ''
+                responsibleUserId: editingRecord.responsibleUserId || editingRecord.responsibleUser?.id || editingRecord.assignedUser?.id || editingRecord.userId || ''
             });
         } else if (currentUser) {
             setFormData({
@@ -150,7 +152,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
     // Filter equipment based on selected site
     const getFilteredEquipment = () => {
         if (!formData.siteId) {
-            return [];
+            return equipmentList;
         }
 
         if (formData.siteId === 'NONE') {
@@ -245,198 +247,204 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 </div>
                 <div className="modal-body">
 
-                <form onSubmit={handleSubmit} className="maintenance-record-form" id="maintenance-record-form">
-                    <div className="form-section">
-                        <h3>Equipment Information</h3>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="siteId">Site (for filtering)</label>
-                                <select
-                                    id="siteId"
-                                    name="siteId"
-                                    value={formData.siteId}
-                                    onChange={handleInputChange}
-                                >
-                                    <option value="">Select Site First</option>
-                                    {siteList.map(site => (
-                                        <option key={site.id} value={site.id}>
-                                            {site.name}
-                                        </option>
-                                    ))}
-                                    <option value="NONE">None (Equipment without site)</option>
-                                </select>
-                                <span className="field-hint">
-                                    Select a site to filter equipment, or "None" for equipment without a site
-                                </span>
-                            </div>
+                    <form onSubmit={handleSubmit} className="maintenance-record-form" id="maintenance-record-form">
+                        <div className="form-section">
+                            <h3>Equipment Information</h3>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="siteId">Site (for filtering)</label>
+                                    <select
+                                        id="siteId"
+                                        name="siteId"
+                                        value={formData.siteId}
+                                        onChange={handleInputChange}
+                                    >
+                                        <option value="">All Sites</option>
+                                        {siteList.map(site => (
+                                            <option key={site.id} value={site.id}>
+                                                {site.name}
+                                            </option>
+                                        ))}
+                                        <option value="NONE">None (Equipment without site)</option>
+                                    </select>
+                                    <span className="field-hint">
+                                        Filter equipment by site, or select "All Sites" to see everything
+                                    </span>
+                                </div>
 
-                            <div className="form-group">
-                                <label htmlFor="equipmentId">Equipment <span className="required">*</span></label>
-                                <select
-                                    id="equipmentId"
-                                    name="equipmentId"
-                                    value={formData.equipmentId}
-                                    onChange={handleInputChange}
-                                    className={errors.equipmentId ? 'error' : ''}
-                                    disabled={!formData.siteId || loading}
-                                >
-                                    <option value="">
-                                        {!formData.siteId ? 'Select Site First' : 'Select Equipment'}
-                                    </option>
-                                    {getFilteredEquipment().map(equipment => (
-                                        <option key={equipment.id} value={equipment.id}>
-                                            {equipment.name} - {equipment.model}
+                                <div className="form-group">
+                                    <label htmlFor="equipmentId">Equipment <span className="required">*</span></label>
+                                    <select
+                                        id="equipmentId"
+                                        name="equipmentId"
+                                        value={formData.equipmentId}
+                                        onChange={handleInputChange}
+                                        className={errors.equipmentId ? 'error' : ''}
+                                        disabled={loading}
+                                    >
+                                        <option value="">
+                                            Select Equipment
                                         </option>
-                                    ))}
-                                </select>
-                                {errors.equipmentId && <span className="error-message">{errors.equipmentId}</span>}
-                                {!formData.siteId && <span className="field-hint">Please select a site first</span>}
-                            </div>
-                        </div>
-
-                        {formData.equipmentId && (
-                            <div className="equipment-details">
-                                <div className="equipment-info">
-                                    <strong>Selected Equipment:</strong>
-                                    <div>{getSelectedEquipment()?.name}</div>
-                                    <div className="equipment-subtitle">
-                                        {getSelectedEquipment()?.model} • {getSelectedEquipment()?.type?.name}
-                                    </div>
+                                        {getFilteredEquipment().map(equipment => (
+                                            <option key={equipment.id} value={equipment.id}>
+                                                {equipment.name} - {equipment.model}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.equipmentId && <span className="error-message">{errors.equipmentId}</span>}
+                                    {!formData.siteId && <span className="field-hint">Please select a site first</span>}
                                 </div>
                             </div>
-                        )}
-                    </div>
 
-                    <div className="form-section">
-                        <h3>Issue Details</h3>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="issueDate">Issue Date <span className="required">*</span></label>
-                                <input
-                                    type="date"
-                                    id="issueDate"
-                                    name="issueDate"
-                                    value={formData.issueDate}
-                                    onChange={handleInputChange}
-                                    placeholder="dd-mm-yyyy"
-                                    className={errors.issueDate ? 'error' : ''}
-                                />
-                                {errors.issueDate && <span className="error-message">{errors.issueDate}</span>}
-                            </div>
-
-                            {editingRecord && editingRecord.creationDate && (
-                                <div className="form-group">
-                                    <label>Created On</label>
-                                    <input
-                                        type="text"
-                                        value={new Date(editingRecord.creationDate).toLocaleString()}
-                                        readOnly
-                                        className="readonly-field"
-                                    />
+                            {formData.equipmentId && (
+                                <div className="equipment-details">
+                                    <div className="equipment-info">
+                                        <strong>Selected Equipment:</strong>
+                                        <div>{getSelectedEquipment()?.name}</div>
+                                        <div className="equipment-subtitle">
+                                            {getSelectedEquipment()?.model} • {getSelectedEquipment()?.type?.name}
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="form-group">
-                            <label htmlFor="sparePartName">Spare Part Name / Item to Maintain <span className="required">*</span></label>
-                            <input
-                                type="text"
-                                id="sparePartName"
-                                name="sparePartName"
-                                value={formData.sparePartName}
-                                onChange={handleInputChange}
-                                placeholder="Enter the spare part or item that needs maintenance..."
-                                maxLength={255}
-                                className={errors.sparePartName ? 'error' : ''}
-                            />
-                            {errors.sparePartName && <span className="error-message">{errors.sparePartName}</span>}
-                        </div>
+                        <div className="form-section">
+                            <h3>Issue Details</h3>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="issueDate">Issue Date <span className="required">*</span></label>
+                                    <input
+                                        type="date"
+                                        id="issueDate"
+                                        name="issueDate"
+                                        value={formData.issueDate}
+                                        onChange={handleInputChange}
+                                        placeholder="dd-mm-yyyy"
+                                        className={errors.issueDate ? 'error' : ''}
+                                    />
+                                    {errors.issueDate && <span className="error-message">{errors.issueDate}</span>}
+                                </div>
 
-                        <div className="form-group">
-                            <label htmlFor="initialIssueDescription">Issue Description <span className="required">*</span></label>
-                            <textarea
-                                id="initialIssueDescription"
-                                name="initialIssueDescription"
-                                value={formData.initialIssueDescription}
-                                onChange={handleInputChange}
-                                placeholder="Describe the issue or maintenance requirement..."
-                                rows={4}
-                                className={errors.initialIssueDescription ? 'error' : ''}
-                            />
-                            {errors.initialIssueDescription && <span className="error-message">{errors.initialIssueDescription}</span>}
-                        </div>
-                    </div>
+                                {editingRecord && editingRecord.creationDate && (
+                                    <div className="form-group">
+                                        <label>Created On</label>
+                                        <input
+                                            type="text"
+                                            value={new Date(editingRecord.creationDate).toLocaleString()}
+                                            readOnly
+                                            className="readonly-field"
+                                        />
+                                    </div>
+                                )}
+                            </div>
 
-                    <div className="form-section">
-                        <h3>Schedule & Cost</h3>
-                        <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="expectedCompletionDate">Expected Completion Date <span className="required">*</span></label>
+                                <label htmlFor="sparePartName">Spare Part Name / Item to Maintain <span className="required">*</span></label>
                                 <input
-                                    type="date"
-                                    id="expectedCompletionDate"
-                                    name="expectedCompletionDate"
-                                    value={formData.expectedCompletionDate}
+                                    type="text"
+                                    id="sparePartName"
+                                    name="sparePartName"
+                                    value={formData.sparePartName}
                                     onChange={handleInputChange}
-                                    placeholder="dd-mm-yyyy"
-                                    className={errors.expectedCompletionDate ? 'error' : ''}
+                                    placeholder="Enter the spare part or item that needs maintenance..."
+                                    maxLength={255}
+                                    className={errors.sparePartName ? 'error' : ''}
                                 />
-                                {errors.expectedCompletionDate && <span className="error-message">{errors.expectedCompletionDate}</span>}
+                                {errors.sparePartName && <span className="error-message">{errors.sparePartName}</span>}
                             </div>
 
                             <div className="form-group">
-                                <label htmlFor="estimatedCost">Estimated Cost</label>
-                                <input
-                                    type="number"
-                                    id="estimatedCost"
-                                    name="estimatedCost"
-                                    value={formData.estimatedCost}
+                                <label htmlFor="initialIssueDescription">Issue Description <span className="required">*</span></label>
+                                <textarea
+                                    id="initialIssueDescription"
+                                    name="initialIssueDescription"
+                                    value={formData.initialIssueDescription}
                                     onChange={handleInputChange}
-                                    placeholder="0.00"
-                                    step="0.01"
-                                    min="0"
-                                    className={errors.estimatedCost ? 'error' : ''}
+                                    placeholder="Describe the issue or maintenance requirement..."
+                                    rows={4}
+                                    className={errors.initialIssueDescription ? 'error' : ''}
                                 />
-                                {errors.estimatedCost && <span className="error-message">{errors.estimatedCost}</span>}
+                                {errors.initialIssueDescription && <span className="error-message">{errors.initialIssueDescription}</span>}
                             </div>
                         </div>
-                    </div>
 
-                    <div className="form-section">
-                        <h3>Responsible Person</h3>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="responsibleUserId">Assign To</label>
-                                <select
-                                    id="responsibleUserId"
-                                    name="responsibleUserId"
-                                    value={formData.responsibleUserId}
-                                    onChange={handleInputChange}
-                                    className={errors.responsibleUserId ? 'error' : ''}
-                                >
-                                    <option value="">Select User (Optional)</option>
-                                    {maintenanceUsers.map(user => (
-                                        <option key={user.id} value={user.id}>
-                                            {user.firstName} {user.lastName} - {user.role}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.responsibleUserId && <span className="error-message">{errors.responsibleUserId}</span>}
-                                <span className="field-hint">
-                                    Assign this maintenance record to a user (Admin, Maintenance Manager, or Maintenance Employee)
-                                </span>
+                        <div className="form-section">
+                            <h3>Schedule & Cost</h3>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="expectedCompletionDate">Expected Completion Date <span className="required">*</span></label>
+                                    <input
+                                        type="date"
+                                        id="expectedCompletionDate"
+                                        name="expectedCompletionDate"
+                                        value={formData.expectedCompletionDate}
+                                        onChange={handleInputChange}
+                                        placeholder="dd-mm-yyyy"
+                                        className={errors.expectedCompletionDate ? 'error' : ''}
+                                    />
+                                    {errors.expectedCompletionDate && <span className="error-message">{errors.expectedCompletionDate}</span>}
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="estimatedCost">Estimated Cost</label>
+                                    <input
+                                        type="number"
+                                        id="estimatedCost"
+                                        name="estimatedCost"
+                                        value={formData.estimatedCost}
+                                        onChange={handleInputChange}
+                                        placeholder="0.00"
+                                        step="0.01"
+                                        min="0"
+                                        className={errors.estimatedCost ? 'error' : ''}
+                                        onWheel={(e) => e.target.blur()}
+                                        onFocus={(e) => {
+                                            if (e.target.value === '0' || e.target.value === 0) {
+                                                handleInputChange({ target: { name: 'estimatedCost', value: '' } });
+                                            }
+                                        }}
+                                    />
+                                    {errors.estimatedCost && <span className="error-message">{errors.estimatedCost}</span>}
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                </form>
+                        <div className="form-section">
+                            <h3>Responsible Person</h3>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="responsibleUserId">Assign To</label>
+                                    <select
+                                        id="responsibleUserId"
+                                        name="responsibleUserId"
+                                        value={formData.responsibleUserId}
+                                        onChange={handleInputChange}
+                                        className={errors.responsibleUserId ? 'error' : ''}
+                                    >
+                                        <option value="">Select User (Optional)</option>
+                                        {maintenanceUsers.map(user => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.firstName} {user.lastName} - {t(`roles.${user.role}`, user.role)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.responsibleUserId && <span className="error-message">{errors.responsibleUserId}</span>}
+                                    <span className="field-hint">
+                                        Assign this maintenance record to a user (Admin, Maintenance Manager, or Maintenance Employee)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
                 </div>
                 <div className="modal-footer">
                     <button type="button" className="btn-cancel" onClick={onClose}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" form="maintenance-record-form">
-                        <FaSave />
+
                         {editingRecord ? 'Update Record' : 'Create Record'}
                     </button>
                 </div>

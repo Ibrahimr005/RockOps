@@ -187,6 +187,7 @@ const InWarehouseItems = ({
                 const currentQuantity = item.quantity || 0;
                 const minQuantity = item.itemType?.minQuantity || 0;
                 const quantityNeeded = Math.max(0, minQuantity - currentQuantity);
+
                 return {
                     itemTypeId: item.itemType.id,
                     quantity: quantityNeeded,
@@ -194,8 +195,6 @@ const InWarehouseItems = ({
                 };
             });
             onRestockItems(itemsToRestock);
-        } else {
-            handleOpenAddItemModal();
         }
     };
 

@@ -6,8 +6,14 @@ const DisputedPurchaseOrders = ({ orders, isLoading, onShowSnackbar }) => {
     const navigate = useNavigate();
 
     const handleRowClick = (purchaseOrder) => {
-        navigate(`/procurement/purchase-orders/details/${purchaseOrder.id}`);
-        // Should default to overview, NOT issues tab
+        // You need to pass warehouseId and warehouseData as props from parent
+        navigate(`/procurement/purchase-orders/details/${purchaseOrder.id}`, {
+            state: {
+                from: 'warehouse',
+                warehouseId: purchaseOrder.requestOrder?.requesterId, // Get from PO data
+                warehouseName: purchaseOrder.requestOrder?.requesterName || 'Warehouse'
+            }
+        });
     };
 
     const disputedOrderColumns = [

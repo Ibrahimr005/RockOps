@@ -4,48 +4,48 @@ import * as XLSX from 'xlsx';
 import './DataTable.scss';
 
 const DataTable = ({
-                       data = [],
-                       columns = [],
-                       itemsPerPageOptions = [5, 10, 15, 20],
-                       defaultItemsPerPage = 10,
-                       defaultSortField = null,
-                       defaultSortDirection = 'asc',
-                       onRowClick = null,
-                       loading = false,
-                       tableTitle = '',
-                       showSearch = true,
-                       showFilters = true,
-                       filterableColumns = [],
-                       customFilters = [],
-                       className = '',
-                       actions = [], // Array of action objects
-                       actionsColumnWidth = '120px', // Default width for actions column
-                       emptyMessage = 'No data available', // Custom empty message
-                       // Add button props
-                       showAddButton = false,
-                       addButtonText = 'Add New',
-                       addButtonIcon = <FaPlus />,
-                       onAddClick = null,
-                       addButtonProps = {},
-                       // Empty value handling props
-                       emptyValueText = 'N/A',
-                       emptyValuesByColumn = {},
-                       // NEW Excel export props
-                       showExportButton = false, // Whether to show the export button
-                       exportButtonText = 'Export Excel', // Text for the export button
-                       exportButtonIcon = <FaFileExcel />, // Icon for the export button
-                       exportFileName = 'table_data', // Default filename (without extension)
-                       exportButtonProps = {}, // Additional props for the export button
-                       exportAllData = false, // If true, exports all data; if false, exports only filtered/sorted data
-                       excludeColumnsFromExport = [], // Array of column accessors to exclude from export
-                       customExportHeaders = {}, // Object mapping column accessors to custom export headers
-                       onExportStart = null, // Callback when export starts
-                       onExportComplete = null, // Callback when export completes
-                       onExportError = null, // Callback when export fails
-                       exportColumnWidths = {}, // Object mapping column accessors to specific widths
-                       enableTextWrapping = true, // Enable text wrapping in exported Excel
-                       preventTextOverflow = false, // Explicitly prevent text overflow for rightmost columns
-                   }) => {
+    data = [],
+    columns = [],
+    itemsPerPageOptions = [5, 10, 15, 20],
+    defaultItemsPerPage = 10,
+    defaultSortField = null,
+    defaultSortDirection = 'asc',
+    onRowClick = null,
+    loading = false,
+    tableTitle = '',
+    showSearch = true,
+    showFilters = true,
+    filterableColumns = [],
+    customFilters = [],
+    className = '',
+    actions = [], // Array of action objects
+    actionsColumnWidth = '120px', // Default width for actions column
+    emptyMessage = 'No data available', // Custom empty message
+    // Add button props
+    showAddButton = false,
+    addButtonText = 'Add New',
+    addButtonIcon = <FaPlus />,
+    onAddClick = null,
+    addButtonProps = {},
+    // Empty value handling props
+    emptyValueText = 'N/A',
+    emptyValuesByColumn = {},
+    // NEW Excel export props
+    showExportButton = false, // Whether to show the export button
+    exportButtonText = 'Export Excel', // Text for the export button
+    exportButtonIcon = <FaFileExcel />, // Icon for the export button
+    exportFileName = 'table_data', // Default filename (without extension)
+    exportButtonProps = {}, // Additional props for the export button
+    exportAllData = false, // If true, exports all data; if false, exports only filtered/sorted data
+    excludeColumnsFromExport = [], // Array of column accessors to exclude from export
+    customExportHeaders = {}, // Object mapping column accessors to custom export headers
+    onExportStart = null, // Callback when export starts
+    onExportComplete = null, // Callback when export completes
+    onExportError = null, // Callback when export fails
+    exportColumnWidths = {}, // Object mapping column accessors to specific widths
+    enableTextWrapping = true, // Enable text wrapping in exported Excel
+    preventTextOverflow = false, // Explicitly prevent text overflow for rightmost columns
+}) => {
     // States for pagination
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
@@ -201,7 +201,7 @@ const DataTable = ({
     }, [data, searchTerm, columns, emptyValueText, emptyValuesByColumn]);
 
     // Apply column filters
-// Apply column filters
+    // Apply column filters
     const filtered = useMemo(() => {
         if (Object.keys(filters).length === 0) return searchFiltered;
 
@@ -415,21 +415,21 @@ const DataTable = ({
             const rows = dataToExport.map(item => {
                 const rowData = exportableColumns.map(column => {
                     const exportValue = getExportValue(item, column.accessor, column);
-                    
+
                     // Debug logging for problematic values
                     if (typeof exportValue === 'string' && exportValue.includes('A')) {
                         console.log(`Export value for ${column.accessor}:`, exportValue, 'Original:', item[column.accessor]);
                     }
-                    
+
                     return exportValue;
                 });
-                
+
                 // Only add spacer columns if explicitly requested to prevent text overflow
                 if (preventTextOverflow) {
                     // Add empty spacer columns to prevent text overflow
                     rowData.push('', '', ''); // Add 3 empty columns
                 }
-                
+
                 return rowData;
             });
 
@@ -456,26 +456,26 @@ const DataTable = ({
                         return String(value).length;
                     })
                 );
-                
+
                 let calculatedWidth = Math.max(headerLength, maxDataLength, 10);
-                
+
                 // Check if explicit width is specified for this column
                 if (exportColumnWidths[column.accessor]) {
                     calculatedWidth = exportColumnWidths[column.accessor];
                 } else {
                     // Apply smart width limits for different column types
-                    if (column.accessor === 'description' || 
+                    if (column.accessor === 'description' ||
                         (column.header && column.header.toLowerCase().includes('description'))) {
                         // Limit description columns to reasonable width (Excel will wrap text)
                         calculatedWidth = Math.min(calculatedWidth, 50);
-                    } else if (column.accessor.includes('Types') || 
-                              column.accessor.includes('Equipment') ||
-                              (column.header && (column.header.toLowerCase().includes('types') || 
-                                               column.header.toLowerCase().includes('equipment')))) {
+                    } else if (column.accessor.includes('Types') ||
+                        column.accessor.includes('Equipment') ||
+                        (column.header && (column.header.toLowerCase().includes('types') ||
+                            column.header.toLowerCase().includes('equipment')))) {
                         // Limit columns containing type lists to reasonable width
                         calculatedWidth = Math.min(calculatedWidth, 40);
-                    } else if (column.accessor === 'name' || 
-                              (column.header && column.header.toLowerCase().includes('name'))) {
+                    } else if (column.accessor === 'name' ||
+                        (column.header && column.header.toLowerCase().includes('name'))) {
                         // Name columns should have moderate width
                         calculatedWidth = Math.min(calculatedWidth, 25);
                     } else {
@@ -483,10 +483,10 @@ const DataTable = ({
                         calculatedWidth = Math.min(calculatedWidth, 30);
                     }
                 }
-                
+
                 return { width: calculatedWidth };
             });
-            
+
             // Add spacer column widths if we added spacer columns
             if (preventTextOverflow) {
                 // Add widths for the spacer columns (small width)
@@ -494,10 +494,10 @@ const DataTable = ({
             }
 
             worksheet['!cols'] = colWidths;
-            
+
             // Get worksheet range for formatting and row heights
             const range = XLSX.utils.decode_range(worksheet['!ref']);
-            
+
             // Apply text wrapping and formatting if enabled
             if (enableTextWrapping) {
                 for (let row = range.s.r; row <= range.e.r; row++) {
@@ -505,18 +505,18 @@ const DataTable = ({
                         const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
                         if (worksheet[cellAddress]) {
                             if (!worksheet[cellAddress].s) worksheet[cellAddress].s = {};
-                            worksheet[cellAddress].s.alignment = { 
-                                wrapText: true, 
+                            worksheet[cellAddress].s.alignment = {
+                                wrapText: true,
                                 vertical: 'top',
                                 horizontal: 'left'
                             };
-                            
+
                             // Add special formatting for description columns
                             const columnInfo = exportableColumns[col];
-                            if (columnInfo && (columnInfo.accessor === 'description' || 
+                            if (columnInfo && (columnInfo.accessor === 'description' ||
                                 (columnInfo.header && columnInfo.header.toLowerCase().includes('description')))) {
                                 worksheet[cellAddress].s.alignment.shrinkToFit = false;
-                                
+
                                 // If this is the rightmost column, prevent text overflow
                                 if (col === range.e.c) {
                                     // Force text to stay within cell boundaries
@@ -531,7 +531,7 @@ const DataTable = ({
                     }
                 }
             }
-            
+
             // Set default row heights for better text display
             if (!worksheet['!rows']) worksheet['!rows'] = [];
             for (let i = 0; i <= range.e.r; i++) {
@@ -548,7 +548,7 @@ const DataTable = ({
             const filename = `${exportFileName}_${timestamp}.xlsx`;
 
             // Write and download the file with explicit UTF-8 encoding
-            XLSX.writeFile(workbook, filename, { 
+            XLSX.writeFile(workbook, filename, {
                 bookType: 'xlsx',
                 type: 'binary',
                 compression: true
@@ -582,7 +582,7 @@ const DataTable = ({
     const getFilterOptions = (columnAccessor) => {
         // Find the column definition to check for custom filter logic
         const column = filterableColumns.find(col => col.accessor === columnAccessor);
-        
+
         if (column && column.customFilterAccessor) {
             // For columns with custom filter accessor (like array fields)
             const allValues = [];
@@ -602,7 +602,7 @@ const DataTable = ({
             });
             return [...new Set(allValues)].sort();
         }
-        
+
         // Default behavior for simple columns
         const values = data.map(row => {
             const value = getValue(row, columnAccessor);
@@ -758,12 +758,12 @@ const DataTable = ({
 
             {/* Simple Table Count */}
             <div className="rockops-table__simple-count">
-  <span className="count-text">
-    Showing {sortedData.length} of {data.length} results
-      {activeFiltersCount > 0 && (
-          <span className="filter-indicator"> • {activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''}</span>
-      )}
-  </span>
+                <span className="count-text">
+                    Showing {sortedData.length} of {data.length} results
+                    {activeFiltersCount > 0 && (
+                        <span className="filter-indicator"> • {activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''}</span>
+                    )}
+                </span>
 
             </div>
 
@@ -914,165 +914,163 @@ const DataTable = ({
                     <div style={{ position: 'relative' }}>
                         <table ref={tableRef} className="rockops-table">
                             <thead className="rockops-table__header">
-                            <tr>
-                                {columns.map((column, index) => (
-                                    <th
-                                        key={index}
-                                        className={`rockops-table__th ${
-                                            column.sortable !== false ? 'rockops-table__th--sortable' : ''
-                                        } ${
-                                            sortField === column.accessor ? `sorted-${sortDirection}` : ''
-                                        }`}
-                                        style={{
-                                            textAlign: column.align || 'left',
-                                            minWidth: column.minWidth || 'auto'
-                                        }}
-                                        data-flex-weight={column.flexWeight || 1}
-                                        onClick={() => column.sortable !== false ? handleSort(column.accessor) : null}
-                                    >
-                                        <div className="rockops-table__th-content">
-                                            <span>{column.header}</span>
-                                            {column.sortable !== false && (
-                                                <span className="rockops-table__sort-icon">
-                                                    {sortField === column.accessor ? (
-                                                        sortDirection === 'asc' ? <FaSortUp /> : <FaSortDown />
-                                                    ) : (
-                                                        <FaSort />
-                                                    )}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </th>
-                                ))}
+                                <tr>
+                                    {columns.map((column, index) => (
+                                        <th
+                                            key={index}
+                                            className={`rockops-table__th ${column.sortable !== false ? 'rockops-table__th--sortable' : ''
+                                                } ${sortField === column.accessor ? `sorted-${sortDirection}` : ''
+                                                }`}
+                                            style={{
+                                                textAlign: column.align || 'left',
+                                                minWidth: column.minWidth || 'auto'
+                                            }}
+                                            data-flex-weight={column.flexWeight || 1}
+                                            onClick={() => column.sortable !== false ? handleSort(column.accessor) : null}
+                                        >
+                                            <div className="rockops-table__th-content">
+                                                <span>{column.header}</span>
+                                                {column.sortable !== false && (
+                                                    <span className="rockops-table__sort-icon">
+                                                        {sortField === column.accessor ? (
+                                                            sortDirection === 'asc' ? <FaSortUp /> : <FaSortDown />
+                                                        ) : (
+                                                            <FaSort />
+                                                        )}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </th>
+                                    ))}
 
-                                {/* Actions column if actions array is provided */}
-                                {actions.length > 0 && (
-                                    <th
-                                        className="rockops-table__th rockops-table__th--actions"
-                                        style={{
-                                            textAlign: 'left',
-                                            minWidth: actionsColumnWidth
-                                        }}
-                                        data-flex-weight={1}
-                                    >
-                                        <div className="rockops-table__th-content">
-                                            <span>Actions</span>
-                                        </div>
-                                    </th>
-                                )}
-                            </tr>
+                                    {/* Actions column if actions array is provided */}
+                                    {actions.length > 0 && (
+                                        <th
+                                            className="rockops-table__th rockops-table__th--actions"
+                                            style={{
+                                                textAlign: 'left',
+                                                minWidth: actionsColumnWidth
+                                            }}
+                                            data-flex-weight={1}
+                                        >
+                                            <div className="rockops-table__th-content">
+                                                <span>Actions</span>
+                                            </div>
+                                        </th>
+                                    )}
+                                </tr>
                             </thead>
 
                             <tbody style={{ position: 'relative' }}>
-                            {paginatedData.length === 0 ? (
-                                <>
-                                    <tr style={{ height: '200px' }}>
-                                        {allColumns.map((_, index) => (
-                                            <td key={index} style={{ border: 'none', padding: 0 }}></td>
-                                        ))}
-                                    </tr>
-                                    {/* Empty State Overlay - Positioned absolutely over the tbody */}
-                                    <div className="rockops-table__empty-overlay">
-                                        <div className="rockops-table__empty">
-                                            <p>{activeFiltersCount > 0 ? 'No results match your filters' : emptyMessage}</p>
-                                            {activeFiltersCount > 0 && (
-                                                <button className="rockops-table__btn rockops-table__btn--secondary" onClick={clearFilters}>
-                                                    Clear Filters
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                paginatedData.map((row, rowIndex) => (
-                                    <tr
-                                        key={rowIndex}
-                                        className={`rockops-table__row ${onRowClick ? 'rockops-table__row--clickable' : ''}`}
-                                        onClick={() => onRowClick && onRowClick(row)}
-                                    >
-                                        {columns.map((column, colIndex) => (
-                                            <td
-                                                key={colIndex}
-                                                className={`rockops-table__cell ${column.className || ''} ${isEmpty(getValue(row, column.accessor)) ? 'rockops-table__cell--empty' : ''}`}
-                                                style={{
-                                                    textAlign: column.align || 'left',
-                                                    minWidth: column.minWidth || 'auto',
-                                                    ...(column.cellStyle ? column.cellStyle(row, getValue(row, column.accessor)) : {})
-                                                }}
-                                                data-flex-weight={column.flexWeight || 1}
-                                            >
-                                                {column.render ? (
-                                                    column.render(row, getValue(row, column.accessor))
-                                                ) : (
-                                                    getDisplayValue(row, column.accessor, column.accessor)
+                                {paginatedData.length === 0 ? (
+                                    <>
+                                        <tr style={{ height: '200px' }}>
+                                            {allColumns.map((_, index) => (
+                                                <td key={index} style={{ border: 'none', padding: 0 }}></td>
+                                            ))}
+                                        </tr>
+                                        {/* Empty State Overlay - Positioned absolutely over the tbody */}
+                                        <div className="rockops-table__empty-overlay">
+                                            <div className="rockops-table__empty">
+                                                <p>{activeFiltersCount > 0 ? 'No results match your filters' : emptyMessage}</p>
+                                                {activeFiltersCount > 0 && (
+                                                    <button className="rockops-table__btn rockops-table__btn--secondary" onClick={clearFilters}>
+                                                        Clear Filters
+                                                    </button>
                                                 )}
-                                            </td>
-                                        ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    paginatedData.map((row, rowIndex) => (
+                                        <tr
+                                            key={rowIndex}
+                                            className={`rockops-table__row ${onRowClick ? 'rockops-table__row--clickable' : ''}`}
+                                            onClick={() => onRowClick && onRowClick(row)}
+                                        >
+                                            {columns.map((column, colIndex) => (
+                                                <td
+                                                    key={colIndex}
+                                                    className={`rockops-table__cell ${column.className || ''} ${isEmpty(getValue(row, column.accessor)) ? 'rockops-table__cell--empty' : ''}`}
+                                                    style={{
+                                                        textAlign: column.align || 'left',
+                                                        minWidth: column.minWidth || 'auto',
+                                                        ...(column.cellStyle ? column.cellStyle(row, getValue(row, column.accessor)) : {})
+                                                    }}
+                                                    data-flex-weight={column.flexWeight || 1}
+                                                >
+                                                    {column.render ? (
+                                                        column.render(row, getValue(row, column.accessor))
+                                                    ) : (
+                                                        getDisplayValue(row, column.accessor, column.accessor)
+                                                    )}
+                                                </td>
+                                            ))}
 
-                                        {/* Actions column */}
-                                        {actions.length > 0 && (
-                                            <td
-                                                className="rockops-table__cell rockops-table__cell--actions"
-                                                style={{
-                                                    textAlign: 'left',
-                                                    minWidth: actionsColumnWidth
-                                                }}
-                                                data-flex-weight={1}
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                {actions.length > 2 ? (
-                                                    // Dropdown menu for 3+ actions
-                                                    <div className={`rockops-table__actions ${activeActionRow === rowIndex ? 'dropdown-open' : ''}`}>
-                                                        <button
-                                                            className="rockops-table__action-toggle"
-                                                            onClick={(e) => toggleActionsMenu(e, rowIndex)}
-                                                            aria-label="Toggle actions menu"
-                                                        >
-                                                            <FaEllipsisV />
-                                                        </button>
+                                            {/* Actions column */}
+                                            {actions.length > 0 && (
+                                                <td
+                                                    className="rockops-table__cell rockops-table__cell--actions"
+                                                    style={{
+                                                        textAlign: 'left',
+                                                        minWidth: actionsColumnWidth
+                                                    }}
+                                                    data-flex-weight={1}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    {actions.length > 2 ? (
+                                                        // Dropdown menu for 3+ actions
+                                                        <div className={`rockops-table__actions ${activeActionRow === rowIndex ? 'dropdown-open' : ''}`}>
+                                                            <button
+                                                                className="rockops-table__action-toggle"
+                                                                onClick={(e) => toggleActionsMenu(e, rowIndex)}
+                                                                aria-label="Toggle actions menu"
+                                                            >
+                                                                <FaEllipsisV />
+                                                            </button>
 
-                                                        {activeActionRow === rowIndex && (
-                                                            <div className="rockops-table__actions-dropdown">
-                                                                {actions
-                                                                    .filter(action => !action.show || action.show(row))
-                                                                    .map((action, idx) => (
+                                                            {activeActionRow === rowIndex && (
+                                                                <div className="rockops-table__actions-dropdown">
+                                                                    {actions
+                                                                        .filter(action => !action.show || action.show(row))
+                                                                        .map((action, idx) => (
+                                                                            <button
+                                                                                key={idx}
+                                                                                className={`rockops-table__action-item ${action.className || ''}`}
+                                                                                onClick={(e) => handleActionClick(e, action, row)}
+                                                                                disabled={action.isDisabled ? action.isDisabled(row) : false}
+                                                                            >
+                                                                                {action.icon && <span className="rockops-table__action-icon">{action.icon}</span>}
+                                                                                <span>{action.label}</span>
+                                                                            </button>
+                                                                        ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        // Inline buttons for 1-2 actions
+                                                        <div className="rockops-table__actions-inline">
+                                                            {actions
+                                                                .filter(action => !action.show || action.show(row))
+                                                                .map((action, idx) => (
                                                                     <button
                                                                         key={idx}
-                                                                        className={`rockops-table__action-item ${action.className || ''}`}
+                                                                        className={`rockops-table__action-button ${action.className || ''}`}
                                                                         onClick={(e) => handleActionClick(e, action, row)}
                                                                         disabled={action.isDisabled ? action.isDisabled(row) : false}
+                                                                        aria-label={action.label}
+                                                                        data-tooltip={action.label}
                                                                     >
-                                                                        {action.icon && <span className="rockops-table__action-icon">{action.icon}</span>}
-                                                                        <span>{action.label}</span>
+                                                                        {action.icon}
                                                                     </button>
                                                                 ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    // Inline buttons for 1-2 actions
-                                                    <div className="rockops-table__actions-inline">
-                                                        {actions
-                                                            .filter(action => !action.show || action.show(row))
-                                                            .map((action, idx) => (
-                                                            <button
-                                                                key={idx}
-                                                                className={`rockops-table__action-button ${action.className || ''}`}
-                                                                onClick={(e) => handleActionClick(e, action, row)}
-                                                                disabled={action.isDisabled ? action.isDisabled(row) : false}
-                                                                aria-label={action.label}
-                                                                title={action.label}
-                                                            >
-                                                                {action.icon}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))
-                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            )}
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>

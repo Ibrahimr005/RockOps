@@ -2,6 +2,7 @@ package com.example.backend.services.finance.inventoryValuation;
 
 import com.example.backend.dto.finance.inventoryValuation.*;
 import com.example.backend.models.PartyType;
+import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.finance.inventoryValuation.ApprovalStatus;
 import com.example.backend.models.finance.inventoryValuation.ItemPriceApproval;
 import com.example.backend.models.notification.NotificationType;
@@ -233,6 +234,9 @@ public class InventoryValuationService {
     /**
      * Get all warehouse balances for a site
      */
+    /**
+     * Get all warehouse balances for a site
+     */
     public SiteBalanceDTO getSiteBalance(UUID siteId) {
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new IllegalArgumentException("Site not found"));
@@ -241,20 +245,39 @@ public class InventoryValuationService {
                 .map(warehouse -> getWarehouseBalance(warehouse.getId()))
                 .collect(Collectors.toList());
 
-        // ✅ CALCULATE from warehouse balances, don't use cached value
-        Double totalValue = warehouseBalances.stream()
+        // Calculate warehouse total value
+        Double totalWarehouseValue = warehouseBalances.stream()
                 .mapToDouble(WarehouseBalanceDTO::getTotalValue)
                 .sum();
+
+        // Get equipment count
+        int equipmentCount = site.getEquipment() != null ? site.getEquipment().size() : 0;
+
+        // Calculate equipment value
+        Double totalEquipmentValue = 0.0;
+        if (site.getEquipment() != null) {
+            totalEquipmentValue = site.getEquipment().stream()
+                    .mapToDouble(Equipment::getEgpPrice)
+                    .sum();
+        }
+
+        // Total site value = warehouses + equipment
+        Double totalValue = totalWarehouseValue + totalEquipmentValue;
 
         return SiteBalanceDTO.builder()
                 .siteId(site.getId())
                 .siteName(site.getName())
-                .totalValue(totalValue) // ✅ USE FRESH CALCULATION
+                .totalValue(totalValue)
                 .totalWarehouses(site.getWarehouses().size())
+                .equipmentCount(equipmentCount)
+                .totalEquipmentValue(totalEquipmentValue)
+                .totalWarehouseValue(totalWarehouseValue) // ADD THIS
                 .warehouses(warehouseBalances)
                 .build();
     }
-
+    /**
+     * Get all site balances
+     */
     /**
      * Get all site balances
      */
@@ -262,7 +285,7 @@ public class InventoryValuationService {
         List<Site> sites = siteRepository.findAll();
 
         return sites.stream()
-                .map(site -> getSiteBalance(site.getId()))
+                .map(site -> getSiteBalance(site.getId())) // This will now include equipment data
                 .collect(Collectors.toList());
     }
 

@@ -15,7 +15,13 @@ import java.util.UUID;
 public class SiteBalanceDTO {
     private UUID siteId;
     private String siteName;
-    private Double totalValue;
+    private Double totalValue; // Total site value (warehouses + equipment)
     private Integer totalWarehouses;
+
+    private Integer equipmentCount;
+    private Double totalEquipmentValue;
+
+    private Double totalWarehouseValue; // ADD THIS - just warehouses
+
     private List<WarehouseBalanceDTO> warehouses;
 }

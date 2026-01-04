@@ -92,7 +92,7 @@ const WarehouseViewTransactionsTable = ({
       id: "validated",
       label: "Validated Transactions",
       component: ValidatedTransactionsTable,
-      showBadge: true,
+      showBadge: false,
       count: badgeCounts.validated
     }
   ];

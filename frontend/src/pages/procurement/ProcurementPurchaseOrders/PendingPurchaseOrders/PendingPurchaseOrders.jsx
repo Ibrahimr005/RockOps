@@ -26,9 +26,10 @@ const PendingPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataChan
 
 
     const handleRowClick = (row) => {
-        navigate(`/procurement/purchase-orders/details/${row.id}`);
+        navigate(`/procurement/purchase-orders/details/${row.id}`, {
+            state: { from: 'procurement' }
+        });
     };
-
 
     const handleCloseModal = () => {
         setShowViewModal(false);
@@ -54,7 +55,9 @@ const PendingPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataChan
             setShowNotification(true);
 
             // Refresh the list
-            await fetchPendingPurchaseOrders();
+            if (onDataChange) {
+                onDataChange();
+            }
         } catch (err) {
             console.error('Error validating purchase order:', err);
             setNotificationMessage(`Error: ${err.message || 'Failed to validate purchase order'}`);

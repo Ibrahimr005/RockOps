@@ -10,6 +10,7 @@ import com.example.backend.repositories.procurement.OfferRequestItemRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 // Use fully qualified names for POI classes to avoid conflict with iText
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -40,14 +41,20 @@ public class RFQService {
      * Export RFQ to Excel
      */
     public byte[] exportRFQ(RFQExportRequest request) throws IOException {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("RFQ");
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("RFQ");
 
         boolean isArabic = "ar".equalsIgnoreCase(request.getLanguage());
 
-        // Create header style
+        // Set RTL if language is Arabic
+        if (isArabic) {
+            sheet.setRightToLeft(true);
+        }
+
+        // Create styles
         CellStyle headerStyle = createHeaderStyle(workbook);
-        CellStyle dataStyle = createDataStyle(workbook);
+        CellStyle lockedStyle = createLockedStyle(workbook);      // Read-only cells
+        CellStyle unlockedStyle = createUnlockedStyle(workbook);  // Editable cells
         CellStyle formulaStyle = createFormulaStyle(workbook);
 
         // Create header row
@@ -65,30 +72,30 @@ public class RFQService {
         for (RFQExportRequest.RFQItemSelection item : request.getItems()) {
             Row row = sheet.createRow(rowNum);
 
-            // Item Name (Column A)
+            // Item Name (Column A) - LOCKED
             Cell itemNameCell = row.createCell(0);
             itemNameCell.setCellValue(item.getItemTypeName());
-            itemNameCell.setCellStyle(dataStyle);
+            itemNameCell.setCellStyle(lockedStyle);
 
-            // Measuring Unit (Column B)
+            // Measuring Unit (Column B) - LOCKED
             Cell unitCell = row.createCell(1);
             unitCell.setCellValue(item.getMeasuringUnit());
-            unitCell.setCellStyle(dataStyle);
+            unitCell.setCellStyle(lockedStyle);
 
-            // Requested Quantity (Column C)
+            // Requested Quantity (Column C) - LOCKED
             Cell requestedQtyCell = row.createCell(2);
             requestedQtyCell.setCellValue(formatNumber(item.getRequestedQuantity(), isArabic));
-            requestedQtyCell.setCellStyle(dataStyle);
+            requestedQtyCell.setCellStyle(lockedStyle);
 
-            // Response Quantity (Column D) - Empty for merchant to fill
+            // Response Quantity (Column D) - UNLOCKED (merchant can edit)
             Cell responseQtyCell = row.createCell(3);
-            responseQtyCell.setCellStyle(dataStyle);
+            responseQtyCell.setCellStyle(unlockedStyle);
 
-            // Unit Price (Column E) - Empty for merchant to fill
+            // Unit Price (Column E) - UNLOCKED (merchant can edit)
             Cell unitPriceCell = row.createCell(4);
-            unitPriceCell.setCellStyle(dataStyle);
+            unitPriceCell.setCellStyle(unlockedStyle);
 
-            // Total Price (Column F) - Formula
+            // Total Price (Column F) - Formula - LOCKED
             Cell totalPriceCell = row.createCell(5);
             String formula = String.format("D%d*E%d", rowNum + 1, rowNum + 1);
             totalPriceCell.setCellFormula(formula);
@@ -100,8 +107,12 @@ public class RFQService {
         // Auto-size columns
         for (int i = 0; i < headers.length; i++) {
             sheet.autoSizeColumn(i);
-            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000); // Add some padding
+            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
         }
+
+        // PROTECT THE SHEET - This is the key part!
+        // Only unlocked cells can be edited
+        sheet.protectSheet(""); // Empty password, or add a password if you want
 
         // Write to byte array
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -397,9 +408,74 @@ public class RFQService {
     }
 
     private CellStyle createFormulaStyle(Workbook workbook) {
-        CellStyle style = createDataStyle(workbook);
+        CellStyle style = workbook.createCellStyle();
+
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        // Light blue background for formulas
+        style.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        Font font = workbook.createFont();
+        font.setBold(true);
+        style.setFont(font);
+
+        // Lock formula cells
+        style.setLocked(true);
+
+        return style;
+    }
+
+    private CellStyle createLockedStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+
+        // Set borders
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        // Set background color (light gray to indicate read-only)
+        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        // Set font
+        Font font = workbook.createFont();
+        font.setBold(false);
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+
+        // Lock the cell
+        style.setLocked(true);
+
+        return style;
+    }
+
+    private CellStyle createUnlockedStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+
+        // Set borders
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        // Set background color (white or light yellow to indicate editable)
         style.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        // Set font
+        Font font = workbook.createFont();
+        font.setBold(false);
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+
+        // UNLOCK the cell (this is editable)
+        style.setLocked(false);
+
         return style;
     }
 
