@@ -676,8 +676,20 @@ export const OFFER_ENDPOINTS = {
     CONTINUE_AND_RETURN: (offerId) => `/api/v1/offers/${offerId}/continue-and-return`,
 
     UPDATE_FINANCE_VALIDATION_STATUS: (id) => `/api/v1/offers/${id}/finance-validation-status`,
+    // Request Items Modification endpoints
+    REQUEST_ITEMS: (offerId) => `/api/procurement/offers/${offerId}/request-items`,
+    REQUEST_ITEMS_INITIALIZE: (offerId) => `/api/procurement/offers/${offerId}/request-items/initialize`,
+    REQUEST_ITEM_BY_ID: (offerId, itemId) => `/api/procurement/offers/${offerId}/request-items/${itemId}`,
+    REQUEST_ITEMS_HISTORY: (offerId) => `/api/procurement/offers/${offerId}/request-items/history`,
 
 
+};
+
+export const RFQ_ENDPOINTS = {
+    BASE: '/api/procurement/rfq',
+    EXPORT: '/api/procurement/rfq/export',
+    IMPORT_PREVIEW: (offerId) => `/api/procurement/rfq/${offerId}/import/preview`,
+    IMPORT_CONFIRM: (offerId) => `/api/procurement/rfq/${offerId}/import/confirm`,
 };
 
 // Updated Candidate module endpoints
@@ -968,5 +980,39 @@ export const LOAN_ENDPOINTS = {
     ACTIVE_LOANS: '/api/v1/payroll/loans/active',
     PENDING_LOANS: '/api/v1/payroll/loans/pending',
     STATISTICS: '/api/v1/payroll/loans/statistics'
+};
+
+// Finance - Inventory Valuation Endpoints
+export const INVENTORY_VALUATION_ENDPOINTS = {
+    BASE: '/api/finance/inventory-valuation',
+
+    // Pending Approvals
+    PENDING_APPROVALS: '/api/finance/inventory-valuation/pending-approvals',
+    PENDING_APPROVALS_BY_WAREHOUSE: (warehouseId) => `/api/finance/inventory-valuation/pending-approvals/warehouse/${warehouseId}`,
+
+    // Approval Actions
+    APPROVE_ITEM: (itemId) => `/api/finance/inventory-valuation/approve/${itemId}`,
+    APPROVE_BULK: '/api/finance/inventory-valuation/approve/bulk',
+
+    // Warehouse Balances
+    WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/balance`,
+    RECALCULATE_WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/recalculate-balance`,
+
+    // Site Balances
+    SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/balance`,
+    ALL_SITE_BALANCES: '/api/finance/inventory-valuation/sites/balances',
+    RECALCULATE_SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/recalculate-balance`,
+    APPROVAL_HISTORY: '/api/finance/inventory-valuation/approval-history',
+    WAREHOUSE_ITEMS_BREAKDOWN: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/items-breakdown`,
+    WAREHOUSE_TRANSACTIONS: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/transactions`
+};
+
+// Finance - Equipment Finance Endpoints
+export const EQUIPMENT_FINANCE_ENDPOINTS = {
+    BASE: '/api/v1/finance/equipment',
+
+    // Equipment Financials
+    EQUIPMENT_FINANCIALS: (equipmentId) => `/api/v1/finance/equipment/${equipmentId}/financials`,
+    UPDATE_EQUIPMENT_FINANCIALS: (equipmentId) => `/api/v1/finance/equipment/${equipmentId}/update-financials`,
 };
 

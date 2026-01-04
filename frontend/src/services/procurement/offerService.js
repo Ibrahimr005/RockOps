@@ -202,4 +202,16 @@ export const offerService = {
         const response = await apiClient.put(`${OFFER_ENDPOINTS.UPDATE_ITEM_FINANCE_STATUS(itemId)}?${params}`);
         return response.data || response;
     },
+
+    confirmRFQImport: async (offerId, merchantId, validRowIds, preview) => {
+        const params = new URLSearchParams();
+        params.append('merchantId', merchantId);
+        validRowIds.forEach(id => params.append('validRowIds', id));
+
+        const response = await apiClient.post(
+            `${OFFER_ENDPOINTS.BASE}/${offerId}/rfq-import/confirm?${params.toString()}`,
+            preview
+        );
+        return response.data || response;
+    },
 };

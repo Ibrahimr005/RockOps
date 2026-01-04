@@ -1,0 +1,221 @@
+// Only custom styles for this modal - modal base styles come from existing classes
+
+// Item Details Section
+.price-modal-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 16px;
+  background: var(--color-surface-hover);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+  margin-top: 1rem;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+
+  .detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+
+    .detail-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+  }
+}
+
+// Price Input
+.price-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-bottom: 30px;
+  margin-top: 3rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .input-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+
+    .required {
+      color: var(--color-danger);
+      margin-left: 2px;
+    }
+  }
+
+  .input-with-prefix {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      width: 18px;
+      height: 18px;
+      color: var(--color-text-secondary);
+      pointer-events: none;
+    }
+
+    .price-input {
+      flex: 1;
+      padding: 12px 16px 12px 42px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      background: var(--color-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      transition: all 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+
+      &.error {
+        border-color: var(--color-danger);
+      }
+
+      &::placeholder {
+        color: var(--color-text-secondary);
+        opacity: 0.6;
+      }
+    }
+
+    .input-suffix {
+      position: absolute;
+      right: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      pointer-events: none;
+    }
+  }
+
+  .error-message {
+    font-size: 12px;
+    color: var(--color-danger);
+    margin-top: -4px;
+  }
+}
+
+.suggested-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+
+  .suggested-info {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    .suggested-label {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+    }
+
+    .suggested-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+  }
+
+  .use-suggested-link {
+    background: transparent;
+    border: none;
+    color: var(--color-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--color-primary);
+      color: white;
+    }
+  }
+}
+
+// Total Calculation
+.total-section {
+  padding: 16px;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .calculation-line {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+
+    .calc-text {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  .total-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .total-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .total-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .detail-row {
+    grid-template-columns: 1fr;
+  }
+}

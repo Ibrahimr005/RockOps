@@ -310,7 +310,7 @@ const EquipmentDetails = () => {
                     )}
                 </div>
                 {/* Tab Content */}
-                <div className="tab-content">
+                <div className="tab-content-equ">
                     {activeTab === "dashboard" && (
                         <div className="tab-panel">
                             <div className="tab-content-container">

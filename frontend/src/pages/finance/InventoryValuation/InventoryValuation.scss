@@ -1,0 +1,65 @@
+.inventory-valuation-page {
+  .valuation-section {
+    margin-top: 5rem;
+
+    &:not(:last-child) {
+      padding-bottom: 48px;
+      position: relative;
+
+      &::after {
+        content: '';
+        display: block;
+        height: 2px;
+        background: linear-gradient(
+                        to right,
+                        transparent 0%,
+                        var(--color-primary) 20%,
+                        var(--color-primary) 80%,
+                        transparent 100%
+        );
+       margin-top: 11rem;
+        margin-bottom: 4rem;
+        position: relative;
+        opacity: 0.4;
+      }
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: 95px;
+        transform: translateX(-50%);
+        width: 10px;
+        height: 10px;
+        background: var(--color-primary);
+        border: 3px solid var(--color-surface);
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px var(--color-primary);
+        z-index: 1;
+      }
+    }
+
+    .custom-tabs,
+    .tab-content,
+    .asset-values-view {
+      margin-left: 1.5rem;
+    }
+  }
+
+  // Add the dot for section separator
+  .valuation-section:not(:last-child)::after {
+    &::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px;
+      height: 12px;
+      background: var(--color-primary);
+      border: 3px solid var(--color-surface);
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px var(--color-primary);
+    }
+  }
+}

@@ -13,20 +13,22 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Site {
+public class Site
+{
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
-
     private String name;
     private String physicalAddress;
     private String companyAddress;
@@ -41,8 +43,9 @@ public class Site {
     @JsonIgnore
     private List<SitePartner> sitePartners = new ArrayList<>();
 
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL)
-    @JsonBackReference
+
+    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL) // Equipment is the owner
+    @JsonBackReference // Prevents infinite loop
     private List<Equipment> equipment;
 
     @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -53,16 +56,16 @@ public class Site {
     @JsonBackReference
     private List<Employee> employees;
 
-    // CHANGED: From @OneToMany to @ManyToMany (mappedBy)
-    @ManyToMany(mappedBy = "sites")
+    @ManyToMany(mappedBy = "sites", fetch = FetchType.LAZY)
     @JsonBackReference
-    private List<Merchant> merchants;
+    @Builder.Default
+    private List<Merchant> merchants = new ArrayList<>();
 
     @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<FixedAssets> fixedAssets;
 
-    // Helper methods remain the same
+    // Helper methods to get counts
     @Transient
     private int equipmentCount;
 
@@ -74,6 +77,15 @@ public class Site {
 
     @Transient
     private int merchantCount;
+
+    // Add these fields to your existing Site model:
+
+    @Column(name = "total_balance")
+    private Double totalBalance = 0.0; // Sum of all warehouse balances in this site
+
+    @Column(name = "balance_updated_at")
+    private LocalDateTime balanceUpdatedAt;
+
 
     public int getEquipmentCount() {
         return equipment != null ? equipment.size() : 0;
@@ -106,4 +118,5 @@ public class Site {
     public void setMerchantCount(int merchantCount) {
         this.merchantCount = merchantCount;
     }
+
 }

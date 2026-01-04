@@ -11,6 +11,7 @@ import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,23 @@ public class ItemTypeService {
         }
         if (requestBody.containsKey("serialNumber")) {
             itemType.setSerialNumber((String) requestBody.get("serialNumber"));
+        }
+        if (requestBody.containsKey("basePrice")) {
+            Object basePriceObj = requestBody.get("basePrice");
+            if (basePriceObj != null) {
+                if (basePriceObj instanceof Number) {
+                    itemType.setBasePrice(((Number) basePriceObj).doubleValue());
+                } else if (basePriceObj instanceof String) {
+                    try {
+                        itemType.setBasePrice(Double.parseDouble((String) basePriceObj));
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Invalid base price format");
+                    }
+                }
+                itemType.setBasePriceUpdatedAt(LocalDateTime.now());
+                // Assuming you have a way to get current username, otherwise use "SYSTEM"
+                itemType.setBasePriceUpdatedBy("SYSTEM"); // Replace with actual username if available
+            }
         }
 
         if (requestBody.containsKey("itemCategory")) {
@@ -131,6 +149,22 @@ public class ItemTypeService {
         if (requestBody.containsKey("comment")) {
             String comment = (String) requestBody.get("comment");
             existingItemType.setComment((comment == null || comment.trim().isEmpty()) ? "No comment" : comment);
+        }
+        if (requestBody.containsKey("basePrice")) {
+            Object basePriceObj = requestBody.get("basePrice");
+            if (basePriceObj != null) {
+                if (basePriceObj instanceof Number) {
+                    existingItemType.setBasePrice(((Number) basePriceObj).doubleValue());
+                } else if (basePriceObj instanceof String) {
+                    try {
+                        existingItemType.setBasePrice(Double.parseDouble((String) basePriceObj));
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Invalid base price format");
+                    }
+                }
+                existingItemType.setBasePriceUpdatedAt(LocalDateTime.now());
+                existingItemType.setBasePriceUpdatedBy("SYSTEM"); // Replace with actual username if available
+            }
         }
 
         ItemType updatedItemType = itemTypeRepository.save(existingItemType);

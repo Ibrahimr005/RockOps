@@ -481,9 +481,9 @@ const Sidebar = () => {
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
-                    title: 'Fixed Assets',
+                    title: 'Inventory Valuation',
                     icon: <FaBuilding/>,
-                    path: '/finance/fixed-assets',
+                    path: '/finance/inventory-valuation',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
                 {

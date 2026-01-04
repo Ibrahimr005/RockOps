@@ -4,8 +4,11 @@ import com.example.backend.dto.procurement.*;
 import com.example.backend.mappers.procurement.*;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.*;
+import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.merchant.MerchantRepository;
+import com.example.backend.repositories.warehouse.ItemRepository;
+import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,10 +29,13 @@ public class OfferService {
     private final RequestOrderRepository requestOrderRepository;
     private final RequestOrderItemRepository requestOrderItemRepository;
     private final MerchantRepository merchantRepository;
+
+    private final ItemTypeRepository itemTypeRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final OfferTimelineService timelineService;
     private final PaymentRequestService paymentRequestService;
+    private final OfferRequestItemService offerRequestItemService;
 
     // Add mappers
     private final OfferMapper offerMapper;
@@ -44,6 +50,7 @@ public class OfferService {
                         RequestOrderRepository requestOrderRepository,
                         RequestOrderItemRepository requestOrderItemRepository,
                         MerchantRepository merchantRepository,
+                        ItemTypeRepository itemTypeRepository ,
                         PurchaseOrderRepository purchaseOrderRepository,
                         PurchaseOrderItemRepository purchaseOrderItemRepository,
                         OfferTimelineService timelineService,
@@ -52,7 +59,7 @@ public class OfferService {
                         PurchaseOrderMapper purchaseOrderMapper,
                         RequestOrderMapper requestOrderMapper,
                         OfferTimelineEventMapper timelineEventMapper,
-                        PaymentRequestService paymentRequestService) {
+                        PaymentRequestService paymentRequestService,OfferRequestItemService offerRequestItemService) {
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.requestOrderRepository = requestOrderRepository;
@@ -66,7 +73,9 @@ public class OfferService {
         this.purchaseOrderMapper = purchaseOrderMapper;
         this.requestOrderMapper = requestOrderMapper;
         this.timelineEventMapper = timelineEventMapper;
+        this.itemTypeRepository = itemTypeRepository;
         this.paymentRequestService = paymentRequestService;
+        this.offerRequestItemService = offerRequestItemService;
 
         // ADD THIS LINE:
         System.out.println("🚀🚀🚀 OfferService initialized! PaymentRequestService is: " + (this.paymentRequestService != null ? "AVAILABLE ✓" : "NULL ✗"));
@@ -150,18 +159,60 @@ public class OfferService {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
+        // Get effective request items for this offer
+        List<OfferRequestItemDTO> effectiveItems = offerRequestItemService.getEffectiveRequestItems(offerId);
+
         List<OfferItem> savedItems = new ArrayList<>();
 
         for (OfferItemDTO dto : offerItemDTOs) {
-            // Find the request order item
-            RequestOrderItem requestOrderItem = requestOrderItemRepository.findById(dto.getRequestOrderItemId())
-                    .orElseThrow(() -> new RuntimeException("Request Order Item not found"));
-
             // Find the merchant
             Merchant merchant = merchantRepository.findById(dto.getMerchantId())
                     .orElseThrow(() -> new RuntimeException("Merchant not found"));
 
-            // Create OfferItem using simple setters
+            // Find the item type
+            UUID itemTypeId = dto.getItemTypeId();
+            if (itemTypeId == null) {
+                throw new RuntimeException("Item type ID is required");
+            }
+
+            ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                    .orElseThrow(() -> new RuntimeException("Item type not found: " + itemTypeId));
+
+            // Find the effective request item for this item type
+            OfferRequestItemDTO effectiveItem = effectiveItems.stream()
+                    .filter(item -> item.getItemTypeId().equals(itemTypeId))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Item type not found in request items: " + itemTypeId));
+
+            // Get or create RequestOrderItem
+            RequestOrderItem requestOrderItem;
+            RequestOrder requestOrder = offer.getRequestOrder();
+
+            if (effectiveItem.getOriginalRequestOrderItemId() != null) {
+                // This is a modified quantity of an existing item - link to original
+                requestOrderItem = requestOrderItemRepository.findById(effectiveItem.getOriginalRequestOrderItemId())
+                        .orElseThrow(() -> new RuntimeException("Original request order item not found"));
+            } else {
+                // This is a NEW item added via "Modify Items"
+                // Check if a RequestOrderItem already exists for this item type
+                Optional<RequestOrderItem> existingItem = requestOrder.getRequestItems().stream()
+                        .filter(item -> item.getItemType().getId().equals(itemTypeId))
+                        .findFirst();
+
+                if (existingItem.isPresent()) {
+                    requestOrderItem = existingItem.get();
+                } else {
+                    // Create a new RequestOrderItem for this newly added item
+                    requestOrderItem = new RequestOrderItem();
+                    requestOrderItem.setRequestOrder(requestOrder);
+                    requestOrderItem.setItemType(itemType);
+                    requestOrderItem.setQuantity((int) effectiveItem.getQuantity());
+                    requestOrderItem.setComment("Added during offer modification - OfferRequestItem ID: " + effectiveItem.getId());
+                    requestOrderItem = requestOrderItemRepository.save(requestOrderItem);
+                }
+            }
+
+            // Create OfferItem
             OfferItem offerItem = new OfferItem();
             offerItem.setQuantity(dto.getQuantity());
             offerItem.setUnitPrice(dto.getUnitPrice());
@@ -170,7 +221,7 @@ public class OfferService {
             offerItem.setMerchant(merchant);
             offerItem.setOffer(offer);
             offerItem.setRequestOrderItem(requestOrderItem);
-            offerItem.setItemType(requestOrderItem.getItemType());
+            offerItem.setItemType(itemType);
             offerItem.setEstimatedDeliveryDays(dto.getEstimatedDeliveryDays());
             offerItem.setDeliveryNotes(dto.getDeliveryNotes());
             offerItem.setComment(dto.getComment());
@@ -181,7 +232,6 @@ public class OfferService {
 
         return offerItemMapper.toDTOList(savedItems);
     }
-
     /**
      * Updated method to use timeline service
      */
@@ -273,9 +323,13 @@ public class OfferService {
     @Transactional
     public void deleteOfferItem(UUID offerItemId) {
         try {
+            System.out.println("=== DEBUG: Deleting offer item " + offerItemId + " ===");
+
             // Find the offer item first
             OfferItem offerItem = offerItemRepository.findById(offerItemId)
                     .orElseThrow(() -> new RuntimeException("Offer Item not found with ID: " + offerItemId));
+
+            System.out.println("✓ Found offer item: " + offerItem.getId());
 
             // Store the parent offer ID before deleting
             UUID offerId = null;
@@ -283,21 +337,46 @@ public class OfferService {
                 offerId = offerItem.getOffer().getId();
             }
 
+            // CRITICAL: Check if this offer item is linked to a purchase order item
+            if (offerItem.getPurchaseOrderItem() != null) {
+                System.out.println("WARNING: Offer item is linked to purchase order item: " +
+                        offerItem.getPurchaseOrderItem().getId());
+                throw new RuntimeException("Cannot delete offer item that is linked to a purchase order. " +
+                        "Please delete or unlink the purchase order first.");
+            }
+
+            // Check if this offer item has any OfferRequestItems pointing to it
+            // (This shouldn't normally happen, but let's be safe)
+            System.out.println("DEBUG: Checking for OfferRequestItem dependencies...");
+
             // Delete the offer item directly
+            System.out.println("DEBUG: Deleting offer item from database...");
             offerItemRepository.delete(offerItem);
+            offerItemRepository.flush(); // Force the delete to execute immediately
+
+            System.out.println("✓ Offer item deleted from database");
 
             // If we have a parent offer ID, update its cache
             if (offerId != null) {
-                Offer parentOffer = offerRepository.findById(offerId)
-                        .orElse(null);
+                System.out.println("DEBUG: Refreshing parent offer cache...");
+                Offer parentOffer = offerRepository.findById(offerId).orElse(null);
 
-                if (parentOffer != null && parentOffer.getOfferItems() != null) {
-                    // Force refresh the cache by removing any reference to the deleted item
+                if (parentOffer != null) {
+                    // Force refresh the offer items collection
+                    parentOffer.getOfferItems().size(); // This triggers lazy loading
                     parentOffer.getOfferItems().removeIf(item -> item.getId().equals(offerItemId));
                     offerRepository.save(parentOffer);
+                    System.out.println("✓ Parent offer cache updated");
                 }
             }
+
+            System.out.println("=== DEBUG: Delete completed successfully ===");
+
         } catch (Exception e) {
+            System.err.println("=== ERROR in deleteOfferItem ===");
+            System.err.println("Error type: " + e.getClass().getSimpleName());
+            System.err.println("Error message: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to delete offer item: " + e.getMessage(), e);
         }
     }
@@ -1348,20 +1427,6 @@ public List<OfferDTO> getFinanceCompletedOffers() {
         }
     }
 
-//    @Transactional
-//    public void finalizeSpecificItems(List<UUID> offerItemIds, String username) {
-//        List<OfferItem> items = offerItemRepository.findAllById(offerItemIds);
-//
-//        for (OfferItem item : items) {
-//            if (!"ACCEPTED".equals(item.getFinanceStatus())) {
-//                throw new IllegalStateException("Cannot finalize item " + item.getId() + " - not finance accepted");
-//            }
-//
-//            item.setFinalized(true);
-//            offerItemRepository.save(item);
-//        }
-//    }
-
     @Transactional
     public void finalizeSpecificItems(List<UUID> offerItemIds, String username) {
         List<OfferItem> items = offerItemRepository.findAllById(offerItemIds);
@@ -1379,6 +1444,92 @@ public List<OfferDTO> getFinanceCompletedOffers() {
             item.setFinalized(true);
             offerItemRepository.save(item);
         }
+    }
+    /**
+     * Confirm and import RFQ response data
+     */
+    @Transactional
+    public List<OfferItemDTO> confirmRFQImport(UUID offerId, UUID merchantId, List<UUID> validRowIds,
+                                               RFQImportPreviewDTO preview, String username) {
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new RuntimeException("Merchant not found"));
+
+        // Get the request order from the offer
+        RequestOrder requestOrder = offer.getRequestOrder();
+        if (requestOrder == null) {
+            throw new RuntimeException("Offer has no associated request order");
+        }
+
+        List<OfferItem> createdItems = new ArrayList<>();
+
+        // Get effective request items for this offer using OfferRequestItemService
+        List<OfferRequestItemDTO> effectiveItems = offerRequestItemService.getEffectiveRequestItems(offerId);
+
+        // Filter only valid rows that user selected
+        List<RFQImportPreviewDTO.RFQImportRow> rowsToImport = preview.getRows().stream()
+                .filter(row -> row.isValid() && validRowIds.contains(row.getItemTypeId()))
+                .toList();
+
+        for (RFQImportPreviewDTO.RFQImportRow row : rowsToImport) {
+            // Find the effective request item for this item type
+            OfferRequestItemDTO effectiveItem = effectiveItems.stream()
+                    .filter(item -> item.getItemTypeId().equals(row.getItemTypeId()))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Item type not found in request items: " + row.getItemTypeId()));
+
+            // Create offer item from imported data
+            OfferItem offerItem = new OfferItem();
+            offerItem.setOffer(offer);
+            offerItem.setMerchant(merchant);
+
+            ItemType itemType = itemTypeRepository.findById(row.getItemTypeId())
+                    .orElseThrow(() -> new RuntimeException("Item type not found"));
+            offerItem.setItemType(itemType);
+
+            // Handle linking to RequestOrderItem
+            RequestOrderItem requestOrderItem;
+
+            if (effectiveItem.getOriginalRequestOrderItemId() != null) {
+                // This is a modified quantity of an existing item - link to original
+                requestOrderItem = requestOrderItemRepository.findById(effectiveItem.getOriginalRequestOrderItemId())
+                        .orElseThrow(() -> new RuntimeException("Original request order item not found"));
+            } else {
+                // This is a NEW item added via "Modify Items"
+                // Check if a RequestOrderItem already exists for this item type
+                Optional<RequestOrderItem> existingItem = requestOrder.getRequestItems().stream()
+                        .filter(item -> item.getItemType().getId().equals(row.getItemTypeId()))
+                        .findFirst();
+
+                if (existingItem.isPresent()) {
+                    // Found existing RequestOrderItem with same item type
+                    requestOrderItem = existingItem.get();
+                } else {
+                    // Create a new RequestOrderItem for this newly added item
+                    requestOrderItem = new RequestOrderItem();
+                    requestOrderItem.setRequestOrder(requestOrder);
+                    requestOrderItem.setItemType(itemType);
+                    requestOrderItem.setQuantity(effectiveItem.getQuantity()); // Use quantity from OfferRequestItem
+                    requestOrderItem.setComment("Added during RFQ modification - ID: " + effectiveItem.getId());
+
+                    // Save the new RequestOrderItem
+                    requestOrderItem = requestOrderItemRepository.save(requestOrderItem);
+                }
+            }
+
+            offerItem.setRequestOrderItem(requestOrderItem);
+            offerItem.setQuantity(row.getResponseQuantity());
+            offerItem.setUnitPrice(row.getUnitPrice());
+            offerItem.setTotalPrice(row.getTotalPrice());
+            offerItem.setCurrency("EGP"); // Default, can be added to import later
+
+            OfferItem savedItem = offerItemRepository.save(offerItem);
+            createdItems.add(savedItem);
+        }
+
+        return offerItemMapper.toDTOList(createdItems);
     }
 
     /**

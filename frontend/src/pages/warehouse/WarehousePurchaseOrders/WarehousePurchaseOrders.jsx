@@ -68,13 +68,18 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
         }
     };
 
-    // Filter orders by status for each tab
+// Filter orders by status for each tab
     const awaitingOrders = allOrders.filter(order =>
-        order.status === 'PENDING' || order.status === 'DISPUTED'
+        order.status === 'PENDING' ||
+        order.status === 'PROCESSING' ||
+        order.status === 'SHIPPED' ||
+        order.status === 'PARTIAL' ||
+        order.status === 'PARTIAL_DISPUTED' // ADD THIS LINE
     );
 
     const disputedOrders = allOrders.filter(order =>
-        order.status === 'DISPUTED'
+        order.status === 'DISPUTED' ||
+        order.status === 'PARTIAL_DISPUTED' // ADD THIS LINE
     );
 
     const completedOrders = allOrders.filter(order =>
