@@ -405,6 +405,14 @@ export const FINANCE_ENDPOINTS = {
             HISTORY: '/api/v1/finance/payments/history'
         },
 
+        // Refund Tracking
+        REFUNDS: {
+            BASE: '/api/finance/refunds',
+            BY_ID: (id) => `/api/finance/refunds/${id}`,
+            BY_STATUS: (status) => `/api/finance/refunds/status/${status}`,
+            CONFIRM: (id) => `/api/finance/refunds/${id}/confirm`
+        },
+
         // Dashboard
         DASHBOARD: {
             SUMMARY: '/api/v1/finance/dashboard/summary',
