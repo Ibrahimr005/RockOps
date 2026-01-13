@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { FiDollarSign, FiFileText, FiCreditCard, FiGrid } from 'react-icons/fi';
+import {FiDollarSign, FiFileText, FiCreditCard, FiGrid, FiRefreshCw} from 'react-icons/fi';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import Dashboard from './Dashboard/Dashboard';
 import OfferReviewsList from './OfferReviews/OfferReviewsList';
 import PaymentRequestsList from './PaymentRequests/PaymentRequestsList';
 import PaymentsList from './Payments/PaymentsList';
+import RefundTracking from './RefundTracking/RefundTracking';
 import './AccountsPayable.scss';
 
 const AccountsPayable = () => {
@@ -20,6 +21,8 @@ const AccountsPayable = () => {
                 return <PaymentRequestsList />;
             case 'payments':
                 return <PaymentsList />;
+            case 'refund-tracking':
+                return <RefundTracking />;
             default:
                 return <Dashboard />;
         }
@@ -65,6 +68,14 @@ const AccountsPayable = () => {
                     >
                         <FiCreditCard />
                         <span>Payments</span>
+                    </button>
+
+                    <button
+                        className={`tab-button ${activeTab === 'refund-tracking' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('refund-tracking')}
+                    >
+                        <FiRefreshCw />
+                        <span>Refund Tracking</span>
                     </button>
                 </div>
 
