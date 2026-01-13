@@ -321,13 +321,10 @@ $gray-900: var(--color-text-dark);
     color: var(--color-text-primary); /* black in light, white in dark */
   }
 
-
   &.status-submitted, &.status-sent, &.status-finalizing {
     background-color: var(--color-warning-light);
     color: var(--section-background-color);
   }
-
-
 
   &.status-manageraccepted {
     background-color: var(--color-success-light);
@@ -350,6 +347,22 @@ $gray-900: var(--color-text-dark);
   }
 
   &.status-finance_partially_accepted {
+    background-color: var(--color-warning-light);
+    color: var(--section-background-color);
+  }
+
+  // Add these two for the header badge
+  &.status-accepted {
+    background-color: var(--color-success-light);
+    color: var(--section-background-color);
+  }
+
+  &.status-rejected {
+    background-color: var(--color-danger-light);
+    color: var(--section-background-color);
+  }
+
+  &.status-partial {
     background-color: var(--color-warning-light);
     color: var(--section-background-color);
   }

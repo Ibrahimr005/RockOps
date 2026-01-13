@@ -297,43 +297,114 @@ public class AccountPayablePaymentService {
         }
     }
 
+//    private void updatePurchaseOrderPaymentStatus(UUID purchaseOrderId) {
+//        PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
+//                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
+//
+//        // Get payment request for this PO
+//        PaymentRequest paymentRequest = paymentRequestRepository.findByPurchaseOrderId(purchaseOrderId)
+//                .orElse(null);
+//
+//        if (paymentRequest == null) {
+//            return;
+//        }
+//
+//        // Update PO payment status based on payment request status
+//        com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus newStatus;
+//
+//        switch (paymentRequest.getStatus()) {
+//            case PENDING:
+//                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.REQUESTED;
+//                break;
+//            case APPROVED:
+//                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.APPROVED;
+//                break;
+//            case PARTIALLY_PAID:
+//                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PARTIALLY_PAID;
+//                break;
+//            case PAID:
+//                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PAID;
+//                break;
+//            case REJECTED:
+//                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PAYMENT_FAILED;
+//                break;
+//            default:
+//                return;
+//        }
+//
+//        po.setPaymentStatus(newStatus);
+//        po.setTotalPaidAmount(paymentRequest.getTotalPaidAmount());
+//        purchaseOrderRepository.save(po);
+//
+//        // TODO: Check if PO should be marked as completed (if both received and paid)
+//    }
+
+    /**
+     * FIXED VERSION - Replace updatePurchaseOrderPaymentStatus method
+     *
+     * File: AccountPayablePaymentService.java
+     * Lines: ~308-340
+     */
+
     private void updatePurchaseOrderPaymentStatus(UUID purchaseOrderId) {
         PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
 
-        // Get payment request for this PO
-        PaymentRequest paymentRequest = paymentRequestRepository.findByPurchaseOrderId(purchaseOrderId)
-                .orElse(null);
+        // ✅ FIXED: Get ALL payment requests for this PO (not just one)
+        List<PaymentRequest> paymentRequests = paymentRequestRepository.findAllByPurchaseOrderId(purchaseOrderId);
 
-        if (paymentRequest == null) {
+        if (paymentRequests == null || paymentRequests.isEmpty()) {
             return;
         }
 
-        // Update PO payment status based on payment request status
+        // ✅ Calculate overall payment status based on ALL payment requests
+        boolean allPaid = true;
+        boolean anyPaid = false;
+        boolean anyApproved = false;
+        BigDecimal totalPaidAmount = BigDecimal.ZERO;
+
+        for (PaymentRequest pr : paymentRequests) {
+            switch (pr.getStatus()) {
+                case PAID:
+                    anyPaid = true;
+                    totalPaidAmount = totalPaidAmount.add(pr.getTotalPaidAmount());
+                    break;
+                case PARTIALLY_PAID:
+                    anyPaid = true;
+                    allPaid = false;
+                    totalPaidAmount = totalPaidAmount.add(pr.getTotalPaidAmount());
+                    break;
+                case APPROVED:
+                    anyApproved = true;
+                    allPaid = false;
+                    break;
+                case PENDING:
+                case REJECTED:
+                    allPaid = false;
+                    break;
+            }
+        }
+
+        // ✅ Determine PO payment status based on all payment requests
         com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus newStatus;
 
-        switch (paymentRequest.getStatus()) {
-            case PENDING:
-                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.REQUESTED;
-                break;
-            case APPROVED:
-                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.APPROVED;
-                break;
-            case PARTIALLY_PAID:
-                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PARTIALLY_PAID;
-                break;
-            case PAID:
-                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PAID;
-                break;
-            case REJECTED:
-                newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PAYMENT_FAILED;
-                break;
-            default:
-                return;
+        if (allPaid && paymentRequests.stream().allMatch(pr -> pr.getStatus() ==
+                com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus.PAID)) {
+            // All payment requests are fully paid
+            newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PAID;
+        } else if (anyPaid) {
+            // At least one payment request has been paid (fully or partially)
+            newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PARTIALLY_PAID;
+        } else if (anyApproved) {
+            // At least one payment request is approved but not paid yet
+            newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.APPROVED;
+        } else {
+            // No payments made yet
+            newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.REQUESTED;
         }
 
         po.setPaymentStatus(newStatus);
-        po.setTotalPaidAmount(paymentRequest.getTotalPaidAmount());
+        po.setTotalPaidAmount(totalPaidAmount);
         purchaseOrderRepository.save(po);
 
         // TODO: Check if PO should be marked as completed (if both received and paid)

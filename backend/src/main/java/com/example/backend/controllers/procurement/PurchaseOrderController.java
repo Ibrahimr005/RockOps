@@ -234,6 +234,75 @@ public class PurchaseOrderController {
             ));
         }
     }
+
+//    // REPLACE THIS ENTIRE METHOD in PurchaseOrderController.java
+//
+//    @PostMapping("/offers/{offerId}/finalize")
+//    public ResponseEntity<?> finalizeOffer(
+//            @PathVariable UUID offerId,
+//            @RequestBody Map<String, Object> requestBody,
+//            @AuthenticationPrincipal UserDetails userDetails) {
+//
+//        try {
+//            @SuppressWarnings("unchecked")
+//            List<String> finalizedItemIdStrings = (List<String>) requestBody.get("finalizedItemIds");
+//
+//            if (finalizedItemIdStrings == null || finalizedItemIdStrings.isEmpty()) {
+//                return ResponseEntity.badRequest().body(Map.of(
+//                        "message", "No finalized items provided",
+//                        "success", false
+//                ));
+//            }
+//
+//            List<UUID> finalizedItemIds = finalizedItemIdStrings.stream()
+//                    .map(UUID::fromString)
+//                    .collect(Collectors.toList());
+//
+//            String username = userDetails.getUsername();
+//
+//            // ✅ CHANGED: Call the NEW multi-merchant method instead of the old one
+//            Map<String, Object> result = purchaseOrderService.createPurchaseOrdersFromAcceptedItems(
+//                    offerId,
+//                    finalizedItemIds,
+//                    username
+//            );
+//
+//            // ✅ CHANGED: Return the complete result from the service
+//            // This includes: purchaseOrders (list), paymentRequests (list), and message
+//            Map<String, Object> response = new HashMap<>();
+//            response.put("success", true);
+//            response.putAll(result); // Add all fields from service result
+//
+//            return ResponseEntity.ok(response);
+//
+//        } catch (IllegalStateException e) {
+//            System.err.println("Business logic error: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(Map.of(
+//                    "message", e.getMessage(),
+//                    "success", false
+//            ));
+//        } catch (ClassCastException e) {
+//            System.err.println("Invalid request format: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(Map.of(
+//                    "message", "Invalid request format",
+//                    "success", false
+//            ));
+//        } catch (IllegalArgumentException e) {
+//            System.err.println("Invalid UUID format: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(Map.of(
+//                    "message", "Invalid UUID format: " + e.getMessage(),
+//                    "success", false
+//            ));
+//        } catch (Exception e) {
+//            System.err.println("Error finalizing offer " + offerId + ": " + e.getMessage());
+//            e.printStackTrace();
+//            return ResponseEntity.internalServerError().body(Map.of(
+//                    "message", "Unexpected error: " + e.getMessage(),
+//                    "success", false
+//            ));
+//        }
+//    }
+
     @PostMapping("/{id}/process-delivery")
     public ResponseEntity<?> processDelivery(
             @PathVariable UUID id,

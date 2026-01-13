@@ -911,6 +911,13 @@ export const financeService = {
 
             review: (reviewData) => {
                 return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.REVIEW, reviewData);
+            },
+            reviewItems: (reviewData) => {
+                console.log('📤 Calling reviewItems API with data:', reviewData);
+                return apiClient.post(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.REVIEW_ITEMS,
+                    reviewData
+                );
             }
         },
 
@@ -999,6 +1006,66 @@ export const financeService = {
 
             getMerchants: () => {
                 return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.DASHBOARD.MERCHANTS);
+            }
+        }
+    },
+
+    // Inside financeService.accountsPayable, add:
+
+// Refund Tracking
+    refunds: {
+        getAllRefunds: async () => {
+            try {
+                console.log('Fetching all refund requests');
+                const response = await apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.BASE);
+                console.log('Refunds response:', response);
+                return response.data || response;
+            } catch (error) {
+                console.error('Error fetching refunds:', error);
+                throw error;
+            }
+        },
+
+        getRefundsByStatus: async (status) => {
+            try {
+                console.log(`Fetching refunds with status: ${status}`);
+                const response = await apiClient.get(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.BY_STATUS(status)
+                );
+                console.log('Refunds by status response:', response);
+                return response.data || response;
+            } catch (error) {
+                console.error(`Error fetching refunds with status ${status}:`, error);
+                throw error;
+            }
+        },
+
+        getRefundById: async (id) => {
+            try {
+                console.log(`Fetching refund: ${id}`);
+                const response = await apiClient.get(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.BY_ID(id)
+                );
+                console.log('Refund details response:', response);
+                return response.data || response;
+            } catch (error) {
+                console.error(`Error fetching refund ${id}:`, error);
+                throw error;
+            }
+        },
+
+        confirmRefund: async (id, confirmData) => {
+            try {
+                console.log(`Confirming refund: ${id}`, confirmData);
+                const response = await apiClient.post(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.CONFIRM(id),
+                    confirmData
+                );
+                console.log('Confirm refund response:', response);
+                return response.data || response;
+            } catch (error) {
+                console.error(`Error confirming refund ${id}:`, error);
+                throw error;
             }
         }
     }

@@ -1,0 +1,745 @@
+.logistics-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  // ============================================================================
+  // LOADING & EMPTY STATES
+  // ============================================================================
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+
+    p {
+      font-size: 14px;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+    background: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+
+    .empty-icon {
+      margin-bottom: 20px;
+      color: var(--color-text-muted);
+      opacity: 0.3;
+    }
+
+    h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    p {
+      margin: 0 0 24px 0;
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+  }
+
+  // ============================================================================
+  // SUMMARY CARD - REDESIGNED TO BE MORE COMPACT
+  // ============================================================================
+  .logistics-summary-card {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+
+    .summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+
+      .summary-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        svg {
+          color: var(--color-primary);
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .btn-primary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+
+      .summary-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 12px 16px;
+        background: var(--color-surface-secondary);
+        border: 1px solid var(--border-color-light);
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-fast);
+
+        .summary-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--color-text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--color-text-primary);
+
+          &.logistics-cost {
+            color: var(--color-warning);
+          }
+        }
+
+        &.grand-total {
+          background: var(--color-edit-bg);
+          border-color: var(--color-primary);
+
+          .summary-label {
+            color: var(--color-primary);
+          }
+
+          .summary-value {
+            color: var(--color-primary);
+            font-size: 16px;
+          }
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // SECTION STYLES
+  // ============================================================================
+  .logistics-section {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    padding: 24px;
+
+    .section-title {
+      margin: 0 0 20px 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border-color-light);
+
+      svg {
+        color: var(--color-primary);
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  // ============================================================================
+  // DELIVERY CARD - ENHANCED
+  // ============================================================================
+  .deliveries-list {
+    display: flex;
+    flex-direction: column;
+    gap: 70px;
+    margin-top: 3rem;
+  }
+
+  .delivery-card {
+    background: var(--color-surface-secondary);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    transition: all var(--transition-fast);
+
+    &:hover {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .delivery-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color-light);
+
+      .delivery-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: var(--color-primary);
+        color: var(--color-text-inverse);
+        border-radius: 50%;
+        font-size: 14px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .delivery-info {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        flex: 1;
+
+        .delivery-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          background: var(--color-edit-bg);
+          border-radius: var(--radius-sm);
+          flex-shrink: 0;
+
+          svg {
+            width: 20px;
+            height: 20px;
+            color: var(--color-primary);
+          }
+        }
+
+        .delivery-details {
+          flex: 1;
+
+          .delivery-title {
+            margin: 0 0 8px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+          }
+
+          .delivery-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+
+            span {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 13px;
+              color: var(--color-text-secondary);
+              font-weight: 500;
+
+              svg {
+                width: 14px;
+                height: 14px;
+                color: var(--color-text-muted);
+              }
+            }
+          }
+        }
+      }
+
+      .btn-add-logistics {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: var(--color-surface);
+        border: 1px solid var(--border-color-light);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-primary);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        white-space: nowrap;
+
+        svg {
+          width: 14px;
+          height: 14px;
+        }
+
+        &:hover {
+          background: var(--color-primary);
+          color: var(--color-text-inverse);
+          border-color: var(--color-primary);
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-sm);
+        }
+      }
+    }
+
+    // NEW: Delivery Items Section
+    // NEW: Delivery Items Section - Styled like Overview Tab
+    // Delivery Items Section - Refined Card Design
+    // Delivery Items Section - Larger Cards with Collapse
+    // Delivery Items Section - Connected Design with Grey Cards
+    .delivery-items {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border-color-light);
+      background: var(--color-surface); // Black/dark background for whole section
+      border: 1px solid var(--border-color-light);
+      border-radius: var(--radius-sm);
+      padding: 16px; // Add padding around the whole section
+
+      .delivery-items-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        padding: 10px 12px;
+        background: transparent; // Remove background
+        border: none; // Remove border
+        border-bottom: 1px solid var(--border-color-light); // Just bottom border
+        border-radius: 0; // Remove border radius
+        cursor: pointer;
+        transition: all var(--transition-fast);
+
+        &:hover {
+          background: var(--color-surface-hover);
+          border-radius: var(--radius-sm); // Add radius on hover
+        }
+
+        .header-content {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .collapse-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          transition: transform var(--transition-fast);
+
+          svg {
+            width: 14px;
+            height: 14px;
+            color: var(--color-text-muted);
+          }
+
+          &.collapsed {
+            transform: rotate(-90deg);
+          }
+        }
+      }
+
+      .delivery-items-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 1.5rem; // Space after header
+
+        .delivery-item-card {
+          background: var(--color-surface-secondary); // Grey background like overview
+          border: 1px solid var(--border-color-light);
+          border-radius: var(--radius-sm);
+          padding: 16px;
+          transition: all var(--transition-fast);
+
+          &:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+          }
+
+          .item-card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+
+            .item-card-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 32px;
+              height: 32px;
+              background: var(--color-primary);
+              border-radius: var(--radius-sm);
+              flex-shrink: 0;
+
+              svg {
+                width: 16px;
+                height: 16px;
+                color: var(--color-text-inverse);
+              }
+            }
+
+            .item-card-info {
+              flex: 1;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+
+              .item-card-name {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--color-text-primary);
+                line-height: 1.3;
+              }
+
+              .item-card-category {
+                font-size: 10px;
+                font-weight: 500;
+                color: var(--color-text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+              }
+            }
+          }
+
+          .item-card-divider {
+            height: 1px;
+            background: var(--border-color-light);
+            margin: 10px 0;
+          }
+
+          .item-card-quantity {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .quantity-label {
+              font-size: 11px;
+              font-weight: 600;
+              color: var(--color-text-secondary);
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+            }
+
+            .quantity-value {
+              font-size: 13px;
+              font-weight: 700;
+              color: var(--color-primary);
+            }
+          }
+        }
+      }
+    }
+
+    .logistics-entries {
+      margin-top: 16px;
+      background: var(--color-surface);
+      border: 1px solid var(--border-color-light);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+
+      .logistics-entries-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        padding: 10px 12px;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--border-color-light);
+        border-radius: 0;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+
+        &:hover {
+          background: var(--color-surface-hover);
+          border-radius: var(--radius-sm);
+        }
+
+        .header-content {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .collapse-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          transition: transform var(--transition-fast);
+
+          svg {
+            width: 14px;
+            height: 14px;
+            color: var(--color-text-muted);
+          }
+
+          &.collapsed {
+            transform: rotate(-90deg);
+          }
+        }
+      }
+
+      .logistics-entries-list {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        margin-top: 2rem;
+      }
+    }
+
+    .no-logistics {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 20px;
+      background: var(--color-surface);
+      border: 1px dashed var(--border-color-medium);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      font-size: 13px;
+      font-style: italic;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  // ============================================================================
+  // LOGISTICS CARD - FIXED ICON SIZES
+  // ============================================================================
+  .standalone-logistics-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 1rem;
+  }
+
+  .logistics-card {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    transition: all var(--transition-fast);
+
+    &:hover {
+      border-color: var(--color-primary);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    &.standalone {
+      background: var(--color-surface-secondary);
+      border: 1px solid var(--color-warning-light);
+      border-left: 4px solid var(--color-warning);
+    }
+
+    .logistics-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color-light);
+
+      .logistics-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: var(--color-warning-light);
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+
+        svg {
+          width: 18px;
+          height: 18px;
+          color: var(--color-text-inverse);
+        }
+      }
+
+      .logistics-main-info {
+        flex: 1;
+        min-width: 0;
+
+        .logistics-amount {
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--color-text-primary);
+          margin-bottom: 4px;
+        }
+
+        .logistics-company {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--color-text-secondary);
+        }
+      }
+
+      .logistics-actions {
+        display: flex;
+        gap: 8px;
+
+        .action-button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border: none;
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+
+          // FIXED: Ensure SVG icons are properly sized
+          svg {
+            width: 16px !important;
+            height: 16px !important;
+            flex-shrink: 0;
+          }
+
+          &.edit {
+            background: var(--color-edit-bg);
+            color: var(--color-edit);
+
+            &:hover {
+              background: var(--color-edit-bg-hover);
+              transform: scale(1.1);
+            }
+          }
+
+          &.delete {
+            background: var(--color-delete-bg);
+            color: var(--color-delete);
+
+            &:hover {
+              background: var(--color-delete-bg-hover);
+              transform: scale(1.1);
+            }
+          }
+        }
+      }
+    }
+
+    .logistics-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      .logistics-detail {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+
+        svg {
+          width: 14px;
+          height: 14px;
+          color: var(--color-text-muted);
+          flex-shrink: 0;
+        }
+
+        .detail-label {
+          font-weight: 600;
+          color: var(--color-text-secondary);
+        }
+
+        .detail-value {
+          font-weight: 500;
+          color: var(--color-text-primary);
+        }
+
+        &.notes {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 6px;
+          padding: 10px;
+          background: var(--color-surface-secondary);
+          border-radius: var(--radius-sm);
+
+          .detail-value {
+            font-style: italic;
+            line-height: 1.5;
+          }
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // RESPONSIVE DESIGN
+  // ============================================================================
+  @media (max-width: 768px) {
+    gap: 20px;
+
+    .logistics-summary-card {
+      padding: 20px;
+
+      .summary-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .logistics-section {
+      padding: 20px;
+    }
+
+    .delivery-card {
+      padding: 16px;
+
+      .delivery-header {
+        flex-wrap: wrap;
+
+        .btn-add-logistics {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    }
+  }
+}

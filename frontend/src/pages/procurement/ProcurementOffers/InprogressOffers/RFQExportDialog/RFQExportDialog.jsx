@@ -41,12 +41,7 @@ const RFQExportDialog = ({ isVisible, onClose, offer, requestItems }) => {
             setSelectedItems([]);
         } else {
             setSelectedItems(requestItems.map(item => item.id));
-            // Reset quantities to original when selecting all
-            const itemsWithQty = {};
-            requestItems.forEach(item => {
-                itemsWithQty[item.id] = item.quantity;
-            });
-            setSelectedItemsWithQuantities(itemsWithQty);
+
         }
     };
 
@@ -134,6 +129,10 @@ const RFQExportDialog = ({ isVisible, onClose, offer, requestItems }) => {
     if (!isVisible) return null;
 
     const handleQuantityChange = (itemId, value) => {
+        // Find the item to get max quantity
+        const item = requestItems.find(i => i.id === itemId);
+        const maxQuantity = item ? item.quantity : Infinity;
+
         // Allow empty string for clearing
         if (value === '') {
             setSelectedItemsWithQuantities(prev => ({
@@ -144,14 +143,22 @@ const RFQExportDialog = ({ isVisible, onClose, offer, requestItems }) => {
         }
 
         // Parse the value
-        const numValue = value === '' ? '' : parseFloat(value);
+        const numValue = parseFloat(value);
 
-        // Only update if it's a valid number or empty
-        if (value === '' || (!isNaN(numValue) && numValue > 0)) {
-            setSelectedItemsWithQuantities(prev => ({
-                ...prev,
-                [itemId]: value === '' ? '' : numValue
-            }));
+        // Validate: must be a valid number, greater than 0, and not exceed max
+        if (!isNaN(numValue) && numValue > 0) {
+            if (numValue > maxQuantity) {
+                // Don't allow exceeding max quantity
+                setSelectedItemsWithQuantities(prev => ({
+                    ...prev,
+                    [itemId]: maxQuantity
+                }));
+            } else {
+                setSelectedItemsWithQuantities(prev => ({
+                    ...prev,
+                    [itemId]: numValue
+                }));
+            }
         }
     };
 
@@ -268,16 +275,17 @@ const RFQExportDialog = ({ isVisible, onClose, offer, requestItems }) => {
                                                     type="number"
                                                     min="0.01"
                                                     step="0.01"
+                                                    max={item.quantity} // Add max attribute
                                                     value={selectedItemsWithQuantities[item.id] !== undefined
                                                         ? selectedItemsWithQuantities[item.id]
                                                         : item.quantity}
                                                     onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                                                    onFocus={(e) => e.target.select()} // Select all on focus for easy editing
+                                                    onFocus={(e) => e.target.select()}
                                                     disabled={!selectedItems.includes(item.id)}
                                                     onClick={(e) => e.stopPropagation()}
+                                                    placeholder={`Max: ${item.quantity}`} // Add placeholder
                                                 />
-                                            </div>
-                                        </div>
+                                            </div>                                        </div>
                                     ))}
                                 </div>
                             ) : (

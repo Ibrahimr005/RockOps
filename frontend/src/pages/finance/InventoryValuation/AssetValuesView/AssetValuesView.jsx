@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './AssetValuesView.scss';
 import SubPageHeader from '../../../../components/common/SubPageHeader/SubPageHeader';
-import FinanceAssetCard from '../../../../components/Finance/FinanceAssetCard/FinanceAssetCard.jsx';
+import FinanceAssetCard from '../../../../components/finance/FinanceAssetCard/FinanceAssetCard.jsx';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import { inventoryValuationService } from '../../../../services/finance/inventoryValuationService.js';
 import { equipmentFinanceService } from '../../../../services/finance/equipmentFinanceService.js';
@@ -12,6 +12,7 @@ import siteimgg from "../../../../assets/imgs/siteimgg.jpg";
 const AssetValuesView = ({ showSnackbar }) => {
     const [sitesData, setSitesData] = useState([]);
     const [loading, setLoading] = useState(false);
+
 
     // Filter states
     const [showFilterModal, setShowFilterModal] = useState(false);

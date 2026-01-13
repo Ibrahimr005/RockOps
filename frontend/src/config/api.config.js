@@ -376,7 +376,8 @@ export const FINANCE_ENDPOINTS = {
             PENDING: '/api/v1/finance/offer-reviews/pending',
             BY_STATUS: (status) => `/api/v1/finance/offer-reviews/status/${status}`,
             BY_OFFER: (offerId) => `/api/v1/finance/offer-reviews/offer/${offerId}`,
-            REVIEW: '/api/v1/finance/offer-reviews/review'
+            REVIEW: '/api/v1/finance/offer-reviews/review',
+            REVIEW_ITEMS: '/api/v1/finance/offer-reviews/review-items'
         },
 
         // Payment Requests
@@ -402,6 +403,14 @@ export const FINANCE_ENDPOINTS = {
             TODAY: '/api/v1/finance/payments/today',
             BY_MERCHANT: (merchantId) => `/api/v1/finance/payments/merchant/${merchantId}`,
             HISTORY: '/api/v1/finance/payments/history'
+        },
+
+        // Refund Tracking
+        REFUNDS: {
+            BASE: '/api/finance/refunds',
+            BY_ID: (id) => `/api/finance/refunds/${id}`,
+            BY_STATUS: (status) => `/api/finance/refunds/status/${status}`,
+            CONFIRM: (id) => `/api/finance/refunds/${id}/confirm`
         },
 
         // Dashboard
@@ -1019,3 +1028,21 @@ export const EQUIPMENT_FINANCE_ENDPOINTS = {
     UPDATE_EQUIPMENT_FINANCIALS: (equipmentId) => `/api/v1/finance/equipment/${equipmentId}/update-financials`,
 };
 
+export const LOGISTICS_ENDPOINTS = {
+    BASE: '/api/procurement/logistics',
+
+    // Get all logistics for a purchase order
+    BY_PURCHASE_ORDER: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}`,
+
+    // Get total logistics cost
+    TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total`,
+
+    // Create new logistics
+    CREATE: '/api/procurement/logistics',
+
+    // Update logistics
+    UPDATE: (id) => `/api/procurement/logistics/${id}`,
+
+    // Delete logistics
+    DELETE: (id) => `/api/procurement/logistics/${id}`
+};

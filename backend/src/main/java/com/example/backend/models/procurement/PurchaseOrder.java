@@ -66,4 +66,8 @@ public class PurchaseOrder {
 
     @Column(name = "total_paid_amount", precision = 15, scale = 2)
     private BigDecimal totalPaidAmount;
+
+    @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Logistics> logistics = new ArrayList<>();
 }

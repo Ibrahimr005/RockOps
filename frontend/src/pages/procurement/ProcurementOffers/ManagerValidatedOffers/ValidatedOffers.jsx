@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle,
     FiX, FiRefreshCw, FiUser, FiCalendar, FiDollarSign, FiInbox,
@@ -12,6 +12,7 @@ import RequestOrderDetails from '../../../../components/procurement/RequestOrder
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import Snackbar from '../../../../components/common/Snackbar/Snackbar.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
+import { offerRequestItemService } from '../../../../services/procurement/offerRequestItemService.js';
 import { offerService } from '../../../../services/procurement/offerService.js';
 
 
@@ -35,6 +36,7 @@ const ValidatedOffers = ({
     const [isDeleting, setIsDeleting] = useState(false);
     const [isRetrying, setIsRetrying] = useState(false);
     const [isProcessingFinance, setIsProcessingFinance] = useState(false);
+    const [effectiveRequestItems, setEffectiveRequestItems] = useState([]);
 
     // Finance review states
     // const [showFinanceReview, setShowFinanceReview] = useState(false);
@@ -48,6 +50,7 @@ const ValidatedOffers = ({
             item => item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId
         );
     };
+
 
     // Initialize finance decisions when starting finance review
     const initializeFinanceDecisions = () => {
@@ -89,6 +92,8 @@ const ValidatedOffers = ({
             [itemId]: reason
         }));
     };
+
+
 
     // Calculate overall finance status based on item decisions
     const calculateOverallFinanceStatus = () => {
@@ -295,6 +300,44 @@ const ValidatedOffers = ({
         }
     };
 
+    // Add totals by currency helper
+    const getTotalsByCurrency = (offer) => {
+        if (!offer || !offer.offerItems || offer.offerItems.length === 0) return {};
+
+        const totals = {};
+
+        offer.offerItems.forEach(item => {
+            const currency = item.currency || 'EGP';
+            const amount = item.totalPrice ? parseFloat(item.totalPrice) : 0;
+
+            if (!totals[currency]) {
+                totals[currency] = 0;
+            }
+
+            totals[currency] += amount;
+        });
+
+        return totals;
+    };
+
+    useEffect(() => {
+        const loadEffectiveItems = async () => {
+            if (activeOffer && activeOffer.id) {
+                try {
+                    const items = await offerRequestItemService.getEffectiveRequestItems(activeOffer.id);
+                    setEffectiveRequestItems(items);
+                } catch (error) {
+                    console.error('Error loading effective request items:', error);
+                    setEffectiveRequestItems(activeOffer.requestOrder?.requestItems || []);
+                }
+            } else {
+                setEffectiveRequestItems([]);
+            }
+        };
+
+        loadEffectiveItems();
+    }, [activeOffer]);
+
     // Handle confirmed retry
     const confirmRetry = async () => {
         setIsRetrying(true);
@@ -477,8 +520,17 @@ const ValidatedOffers = ({
                                 <div className="procurement-submitted-details-manager">
                                     <h4>Procurement Solutions</h4>
                                     <div className="procurement-submitted-items-manager">
-                                        {activeOffer.requestOrder?.requestItems?.map(requestItem => {
-                                            const offerItems = getOfferItemsForRequestItem(requestItem.id);
+                                        {effectiveRequestItems?.map(requestItem => {
+                                            const itemTypeId = requestItem.itemTypeId || requestItem.itemType?.id;
+                                            const offerItems = activeOffer.offerItems.filter(
+                                                item => item.itemType?.id === itemTypeId
+                                            );
+
+                                            // Only show items that have offer items
+                                            if (offerItems.length === 0) return null;
+
+                                            const itemTypeName = requestItem.itemTypeName || requestItem.itemType?.name || 'Item';
+                                            const itemTypeMeasuringUnit = requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units';
 
                                             return (
                                                 <div key={requestItem.id} className="procurement-submitted-item-card-manager">
@@ -487,49 +539,46 @@ const ValidatedOffers = ({
                                                             <div className="item-icon-container-manager">
                                                                 <FiPackage size={22} />
                                                             </div>
-                                                            <h5>{requestItem.itemType?.name || 'Item'}</h5>
+                                                            <h5>{itemTypeName}</h5>
                                                         </div>
                                                         <div className="submitted-item-quantity-manager">
-                                                            {requestItem.quantity} {requestItem.itemType.measuringUnit}
+                                                            {requestItem.quantity} {itemTypeMeasuringUnit}
                                                         </div>
                                                     </div>
 
-                                                    {offerItems.length > 0 && (
-                                                        <div className="submitted-offer-solutions-manager">
-                                                            <table className="procurement-offer-entries-table-manager">
-                                                                <thead>
-                                                                <tr>
-                                                                    <th>Merchant</th>
-                                                                    <th>Quantity</th>
-                                                                    <th>Unit Price</th>
-                                                                    <th>Total</th>
-                                                                    <th>Est. Delivery</th>
-                                                                    <th>Finance Status</th>
+                                                    <div className="submitted-offer-solutions-manager">
+                                                        <table className="procurement-offer-entries-table-manager">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>Merchant</th>
+                                                                <th>Quantity</th>
+                                                                <th>Unit Price</th>
+                                                                <th>Total</th>
+                                                                <th>Est. Delivery</th>
+                                                                <th>Finance Status</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {offerItems.map((offerItem, idx) => (
+                                                                <tr key={offerItem.id || idx}>
+                                                                    <td>{offerItem.merchant?.name || 'Unknown'}</td>
+                                                                    <td>{offerItem.quantity} {itemTypeMeasuringUnit}</td>
+                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice).toFixed(2)}</td>
+                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice).toFixed(2)}</td>
+                                                                    <td>{offerItem.estimatedDeliveryDays ? `${offerItem.estimatedDeliveryDays} days` : 'N/A'}</td>
+                                                                    <td>
+                                <span className={`submitted-offer-finance-status-badge ${(offerItem.financeStatus || 'PENDING').toLowerCase()}`}>
+                                    {offerItem.financeStatus || 'PENDING'}
+                                </span>
+                                                                    </td>
                                                                 </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                {offerItems.map((offerItem, idx) => (
-                                                                    <tr key={offerItem.id || idx}>
-                                                                        <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                        <td>{offerItem.quantity} {requestItem.itemType.measuringUnit}</td>
-                                                                        <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
-                                                                        <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
-                                                                        <td>{offerItem.estimatedDeliveryDays} days</td>
-                                                                        <td>
-                                                                            <span className={`submitted-offer-finance-status-badge ${(offerItem.financeStatus || 'PENDING').toLowerCase()}`}>
-                                                                                {offerItem.financeStatus || 'PENDING'}
-                                                                            </span>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    )}
+                                                            ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             );
-                                        })}
-                                    </div>
+                                        })}                                    </div>
                                 </div>
 
                                 {/* Total Summary - exactly like submitted offers */}
@@ -543,7 +592,14 @@ const ValidatedOffers = ({
                                     <div className="summary-item total-value">
                                         <FiDollarSign size={18} />
                                         <span className="summary-label">Total Value:</span>
-                                        <span className="summary-value total">${getTotalPrice(activeOffer).toFixed(2)}</span>
+                                        <span className="summary-value total">
+    {Object.entries(getTotalsByCurrency(activeOffer)).map(([currency, total], idx) => (
+        <span key={currency} style={{ marginLeft: idx > 0 ? '8px' : '0' }}>
+            {idx > 0 && '+ '}
+            {currency} {total.toFixed(2)}
+        </span>
+    ))}
+</span>
                                     </div>
                                 </div>
                             </div>

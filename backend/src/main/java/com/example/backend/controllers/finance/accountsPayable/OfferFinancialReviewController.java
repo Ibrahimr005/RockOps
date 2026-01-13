@@ -2,6 +2,8 @@ package com.example.backend.controllers.finance.accountsPayable;
 
 import com.example.backend.dto.finance.accountsPayable.OfferFinancialReviewRequestDTO;
 import com.example.backend.dto.finance.accountsPayable.OfferFinancialReviewResponseDTO;
+import com.example.backend.dto.finance.accountsPayable.ReviewOfferItemsDTO;
+import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
 import com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus;
 import com.example.backend.models.user.User;
 import com.example.backend.services.finance.accountsPayable.OfferFinancialReviewService;
@@ -127,5 +129,11 @@ public class OfferFinancialReviewController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error processing review: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/review-items")
+    public ResponseEntity<OfferFinancialReview> reviewOfferItems(@RequestBody ReviewOfferItemsDTO request) {
+        OfferFinancialReview review = reviewService.reviewOfferItems(request);
+        return ResponseEntity.ok(review);
     }
 }

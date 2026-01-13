@@ -117,12 +117,15 @@ const ProcurementSolutionModal = ({
 
     if (!isVisible || !requestItem) return null;
 
+    console.log("=== REQUEST ITEM DEBUG ===");
+    console.log("Full requestItem object:", requestItem);
+
     return (
         <div className="modal-backdrop" onClick={handleBackdropClick}>
             <div className="modal-content modal-lg procurement-solution-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2 className="modal-title">
-                        {mode === 'edit' ? 'Edit' : 'Add'} Procurement Solution for: {requestItem.itemType?.name || 'Item'}
+                        {mode === 'edit' ? 'Edit' : 'Add'} Procurement Solution for: {requestItem.itemTypeName || 'Item'}
                     </h2>
                     <button className="btn-close" onClick={onClose} type="button">
                         <FiX />
@@ -186,7 +189,7 @@ const ProcurementSolutionModal = ({
                                             required
                                         />
                                         <span className="unit-badge">
-                                            {requestItem.itemType?.measuringUnit || 'units'}
+                                            {requestItem.itemTypeMeasuringUnit || 'units'}
                                         </span>
                                     </div>
                                 </div>

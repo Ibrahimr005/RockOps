@@ -207,7 +207,6 @@ public class OfferService {
                     requestOrderItem.setRequestOrder(requestOrder);
                     requestOrderItem.setItemType(itemType);
                     requestOrderItem.setQuantity((int) effectiveItem.getQuantity());
-                    requestOrderItem.setComment("Added during offer modification - OfferRequestItem ID: " + effectiveItem.getId());
                     requestOrderItem = requestOrderItemRepository.save(requestOrderItem);
                 }
             }
@@ -517,17 +516,31 @@ public class OfferService {
         return offerItemMapper.toDTO(savedItem);
     }
 
-    public List<OfferDTO> getFinanceCompletedOffers() {
-        List<Offer> offers = offerRepository.findAll().stream()
-                .filter(offer ->
-                        "FINANCE_ACCEPTED".equals(offer.getFinanceStatus()) ||
-                                "FINANCE_REJECTED".equals(offer.getFinanceStatus()) ||
-                                "FINANCE_PARTIALLY_ACCEPTED".equals(offer.getFinanceStatus())
-                )
-                .collect(Collectors.toList());
+//    public List<OfferDTO> getFinanceCompletedOffers() {
+//        List<Offer> offers = offerRepository.findAll().stream()
+//                .filter(offer ->
+//                        "FINANCE_ACCEPTED".equals(offer.getFinanceStatus()) ||
+//                                "FINANCE_REJECTED".equals(offer.getFinanceStatus()) ||
+//                                "FINANCE_PARTIALLY_ACCEPTED".equals(offer.getFinanceStatus())
+//                )
+//                .collect(Collectors.toList());
+//
+//        return offerMapper.toDTOList(offers);
+//    }
+// ✅ CORRECT: Only return offers that are STILL in MANAGERACCEPTED status
+public List<OfferDTO> getFinanceCompletedOffers() {
+    List<Offer> offers = offerRepository.findAll().stream()
+            .filter(offer ->
+                    "MANAGERACCEPTED".equals(offer.getStatus()) && // ✅ ADDED: Must still be in manager accepted
+                            offer.getFinanceStatus() != null && // ✅ ADDED: Must have finance status
+                            ("FINANCE_ACCEPTED".equals(offer.getFinanceStatus()) ||
+                                    "FINANCE_REJECTED".equals(offer.getFinanceStatus()) ||
+                                    "FINANCE_PARTIALLY_ACCEPTED".equals(offer.getFinanceStatus()))
+            )
+            .collect(Collectors.toList());
 
-        return offerMapper.toDTOList(offers);
-    }
+    return offerMapper.toDTOList(offers);
+}
 
     @Transactional
     public OfferDTO completeFinanceReview(UUID offerId, String username) {
@@ -637,7 +650,11 @@ public class OfferService {
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         // Verify that the offer has been finance reviewed
-        if (!Arrays.asList("FINANCE_PARTIALLY_ACCEPTED", "FINANCE_ACCEPTED").contains(originalOffer.getStatus())) {
+//        if (!Arrays.asList("FINANCE_PARTIALLY_ACCEPTED", "FINANCE_ACCEPTED").contains(originalOffer.getStatus())) {
+//            throw new IllegalStateException("Only finance reviewed offers can be processed with continue and return");
+//        }
+        // ✅ CORRECT: Check financeStatus, not status
+        if (!Arrays.asList("FINANCE_PARTIALLY_ACCEPTED", "FINANCE_ACCEPTED").contains(originalOffer.getFinanceStatus())) {
             throw new IllegalStateException("Only finance reviewed offers can be processed with continue and return");
         }
 
@@ -1494,7 +1511,6 @@ public class OfferService {
                     requestOrderItem.setRequestOrder(requestOrder);
                     requestOrderItem.setItemType(itemType);
                     requestOrderItem.setQuantity(effectiveItem.getQuantity()); // Use quantity from OfferRequestItem
-                    requestOrderItem.setComment("Added during RFQ modification - ID: " + effectiveItem.getId());
 
                     // Save the new RequestOrderItem
                     requestOrderItem = requestOrderItemRepository.save(requestOrderItem);
@@ -1505,7 +1521,8 @@ public class OfferService {
             offerItem.setQuantity(row.getResponseQuantity());
             offerItem.setUnitPrice(row.getUnitPrice());
             offerItem.setTotalPrice(row.getTotalPrice());
-            offerItem.setCurrency("EGP"); // Default, can be added to import later
+            offerItem.setCurrency(row.getCurrency() != null ? row.getCurrency() : "EGP"); // Use currency from import
+            offerItem.setEstimatedDeliveryDays(row.getEstimatedDeliveryDays()); // ADD THIS LINE
 
             OfferItem savedItem = offerItemRepository.save(offerItem);
             createdItems.add(savedItem);
@@ -1566,6 +1583,54 @@ public class OfferService {
         } else {
             throw new RuntimeException("Invalid decision: " + decision + ". Must be APPROVE or REJECT");
         }
+
+        Offer savedOffer = offerRepository.save(offer);
+        return offerMapper.toDTO(savedOffer);
+    }
+
+    /**
+     * Complete finance review with item-level decisions
+     * This method creates the timeline event for finance review completion
+     */
+    @Transactional
+    public OfferDTO completeItemLevelFinanceReview(UUID offerId, String reviewerUsername) {
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+        // Get the financeStatus that was already set
+        String financeStatus = offer.getFinanceStatus();
+
+        // Determine timeline event type
+        TimelineEventType timelineEventType;
+        if ("FINANCE_REJECTED".equals(financeStatus)) {
+            timelineEventType = TimelineEventType.FINANCE_REJECTED;
+        } else if ("FINANCE_ACCEPTED".equals(financeStatus)) {
+            timelineEventType = TimelineEventType.FINANCE_ACCEPTED;
+        } else if ("FINANCE_PARTIALLY_ACCEPTED".equals(financeStatus)) {
+            timelineEventType = TimelineEventType.FINANCE_PARTIALLY_ACCEPTED;
+        } else {
+            timelineEventType = TimelineEventType.FINANCE_PROCESSING;
+        }
+
+        // Count accepted and rejected items for the notes
+        long acceptedCount = offer.getOfferItems().stream()
+                .filter(item -> "ACCEPTED".equals(item.getFinanceStatus()))
+                .count();
+        long rejectedCount = offer.getOfferItems().stream()
+                .filter(item -> "REJECTED".equals(item.getFinanceStatus()))
+                .count();
+
+        // Create timeline event
+        String notes = String.format("Finance review completed: %d accepted, %d rejected",
+                acceptedCount, rejectedCount);
+        timelineService.createTimelineEvent(
+                offer,
+                timelineEventType,
+                reviewerUsername,
+                notes,
+                "MANAGERACCEPTED",
+                "MANAGERACCEPTED"
+        );
 
         Offer savedOffer = offerRepository.save(offer);
         return offerMapper.toDTO(savedOffer);

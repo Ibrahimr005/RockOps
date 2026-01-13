@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { FiPackage, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiPackage, FiAlertCircle, FiCheckCircle, FiTruck } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import Snackbar from '../../../components/common/Snackbar2/Snackbar2';
@@ -8,6 +8,8 @@ import Tabs from '../../../components/common/Tabs/Tabs'; // Add this import
 import OverviewTab from './tabs/OverviewTab/OverviewTab';
 import ReceivingTab from './tabs/ReceivingTab/ReceivingTab2';
 import IssuesTab from './tabs/IssuesTab/IssuesTab';
+import LogisticsTab from './tabs/LogisticsTab/LogisticsTab';
+
 import './PurchaseOrderDetailsPage.scss';
 
 const PurchaseOrderDetailsPage = () => {
@@ -198,6 +200,7 @@ const PurchaseOrderDetailsPage = () => {
     ];
 
     // Build tabs array based on user role
+// In the getTabs function, add the Logistics tab after the Issues tab:
     const getTabs = () => {
         const tabs = [
             {
@@ -227,8 +230,20 @@ const PurchaseOrderDetailsPage = () => {
             });
         }
 
+        // ADD THIS: Logistics tab for PROCUREMENT or ADMIN
+        if (userRole === 'PROCUREMENT' || userRole === 'ADMIN') {
+            tabs.push({
+                id: 'logistics',
+                label: 'Logistics',
+                icon: <FiTruck />
+            });
+        }
+
         return tabs;
     };
+
+// In the tab content section, add this after the Issues tab:
+
 
     return (
         <div className="po-details-page">
@@ -266,6 +281,14 @@ const PurchaseOrderDetailsPage = () => {
                         issues={issues}
                         onRefresh={fetchPurchaseOrderData}
                         onResolveSuccess={handleIssuesResolved}
+                        onError={(msg) => showSnackbar(msg, 'error')}
+                    />
+                )}
+
+                {activeTab === 'logistics' && (userRole === 'PROCUREMENT' || userRole === 'ADMIN') && (
+                    <LogisticsTab
+                        purchaseOrder={purchaseOrder}
+                        onSuccess={(msg) => showSnackbar(msg, 'success')}
                         onError={(msg) => showSnackbar(msg, 'error')}
                     />
                 )}
