@@ -789,7 +789,7 @@ import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle,
     FiX, FiFileText, FiDollarSign, FiList,
-    FiUser, FiCalendar, FiFlag, FiTrendingUp, FiRefreshCw, FiTrash2, FiArrowRight
+    FiUser, FiCalendar, FiFlag, FiTrendingUp, FiRefreshCw, FiTrash2, FiArrowRight,FiAlertCircle
 } from 'react-icons/fi';
 
 import "../ProcurementOffers.scss";
@@ -799,6 +799,7 @@ import ConfirmationDialog from '../../../../components/common/ConfirmationDialog
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
 import { offerService } from '../../../../services/procurement/offerService.js';
+import { offerRequestItemService } from '../../../../services/procurement/offerRequestItemService.js';
 
 const FinanceValidatedOffers = ({
                                     offers,
@@ -823,6 +824,12 @@ const FinanceValidatedOffers = ({
     const [isRetrying, setIsRetrying] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isContinuing, setIsContinuing] = useState(false);
+    const [effectiveRequestItems, setEffectiveRequestItems] = useState([]);
+    const [continueDialogType, setContinueDialogType] = useState('finalize'); // 'finalize' or 'continueReturn'
+    const [showRejectionModal, setShowRejectionModal] = useState(false);
+    const [selectedRejectionReason, setSelectedRejectionReason] = useState('');
+    const [selectedMerchantName, setSelectedMerchantName] = useState('');
+    const [selectedItemName, setSelectedItemName] = useState('');
 
     // Show notification
     const showNotification = (message, type = 'success') => {
@@ -874,10 +881,54 @@ const FinanceValidatedOffers = ({
         setShowContinueConfirm(true);
     };
 
-    const confirmContinue = async () => {
+// Simple finalize (for full fulfillment)
+    const handleFinalizeClick = () => {
+        setShowContinueConfirm(true); // Reuse the same dialog
+    };
+
+    const confirmFinalize = async () => {
         setIsContinuing(true);
         try {
-            console.log('Starting continue process for accepted items...');
+            console.log('Finalizing offer with full fulfillment...');
+
+            // Just update status to FINALIZING
+            await offerService.updateStatus(activeOffer.id, 'FINALIZING');
+
+            showNotification('Offer has been sent to finalization.', 'success');
+
+            // Switch to finalize tab
+            if (onOfferFinalized) {
+                const finalizedOffer = {
+                    ...activeOffer,
+                    status: 'FINALIZING'
+                };
+                onOfferFinalized(finalizedOffer);
+            }
+
+            // Remove from current tab
+            if (onDeleteOffer) {
+                onDeleteOffer(activeOffer.id);
+            }
+
+            setShowContinueConfirm(false);
+
+        } catch (error) {
+            console.error('Error finalizing offer:', error);
+            showNotification('Failed to finalize offer. Please try again.', 'error');
+        } finally {
+            setIsContinuing(false);
+        }
+    };
+
+// Continue and Return (for partial fulfillment)
+    const handleContinueAndReturnClick = () => {
+        setShowContinueConfirm(true);
+    };
+
+    const confirmContinueAndReturn = async () => {
+        setIsContinuing(true);
+        try {
+            console.log('Starting continue and return process...');
 
             const result = await offerService.continueAndReturnOffer(activeOffer.id);
             console.log('Backend result:', result);
@@ -885,11 +936,11 @@ const FinanceValidatedOffers = ({
             let successMessage = '';
 
             if (result.acceptedOfferId && result.newOfferId) {
-                successMessage = 'Accepted items sent to finalization. New offer created for rejected items.';
+                successMessage = 'Accepted items sent to finalization. New offer created for remaining quantities.';
             } else if (result.acceptedOfferId) {
                 successMessage = 'Accepted items sent to finalization.';
             } else if (result.newOfferId) {
-                successMessage = 'New offer created for rejected items.';
+                successMessage = 'New offer created for remaining quantities.';
             }
 
             showNotification(successMessage, 'success');
@@ -901,19 +952,13 @@ const FinanceValidatedOffers = ({
                     id: result.acceptedOfferId,
                     status: 'FINALIZING'
                 };
-
                 console.log('Switching to finalize tab with offer:', finalizedOffer);
                 onOfferFinalized(finalizedOffer);
             }
 
-            // Handle new offer for rejected items
+            // Handle new offer for rejected items (don't auto-switch)
             if (result.newOfferId && onRetryOffer) {
-                const newOffer = {
-                    id: result.newOfferId,
-                    status: 'INPROGRESS'
-                };
-                // Don't switch automatically - just notify
-                console.log('New offer created for rejected items:', newOffer);
+                console.log('New offer created for rejected items:', result.newOfferId);
             }
 
             // Remove current offer from finance validated tab
@@ -924,12 +969,13 @@ const FinanceValidatedOffers = ({
             setShowContinueConfirm(false);
 
         } catch (error) {
-            console.error('Error in continue process:', error);
+            console.error('Error in continue and return:', error);
             showNotification('Failed to process offer. Please try again.', 'error');
         } finally {
             setIsContinuing(false);
         }
     };
+
 
     const cancelContinue = () => {
         setShowContinueConfirm(false);
@@ -1014,45 +1060,219 @@ const FinanceValidatedOffers = ({
     };
 
     // Render action buttons
+// Render action buttons based on fulfillment status
     const renderActionButtons = () => {
         if (!activeOffer) return null;
 
-        const hasAccepted = hasAcceptedItems();
+        const { hasFullFulfillment, hasAcceptedItems } = calculateFulfillmentStatus(activeOffer);
 
-        return (
-            <div className="procurement-details-header">
-                {hasAccepted && (
+        if (hasFullFulfillment) {
+            // Case 1: Full fulfillment - Show Finalize option
+            return (
+                <div className="action-buttons-group">
                     <button
                         className="btn-primary"
-                        onClick={handleContinueClick}
+                        onClick={() => {
+                            setContinueDialogType('finalize');
+                            handleFinalizeClick();
+                        }}
                         disabled={loading || isContinuing}
-                        title="Move accepted items to finalization"
+                        title="Requested quantities met or exceeded - proceed to finalization"
+                        style={{ marginRight: '10px' }}
+                    >
+                        <FiCheckCircle />
+                        {isContinuing ? 'Processing...' : 'Finalize Offer'}
+                    </button>
+                    <button
+                        className="btn-primary"
+                        onClick={handleRetryClick}
+                        disabled={loading || isRetrying}
+                        title="Start over with entire quantity"
+                        style={{ marginRight: '10px' }}
+                    >
+                        <FiRefreshCw />
+                        {isRetrying ? 'Creating...' : 'Retry Offer'}
+                    </button>
+                    <button
+                        className="btn-primary"
+                        onClick={handleDeleteClick}
+                        disabled={loading || isDeleting}
+                        title="Delete this offer permanently"
+                    >
+                        <FiTrash2 />
+                        {isDeleting ? 'Deleting...' : 'Delete Offer'}
+                    </button>
+                </div>
+            );
+        } else if (hasAcceptedItems) {
+            // Case 2: Partial fulfillment - Show Continue & Return
+            return (
+                <div className="action-buttons-group">
+                    <button
+                        className="btn-primary"
+                        onClick={() => {
+                            setContinueDialogType('continueReturn');
+                            handleContinueAndReturnClick();
+                        }}
+                        disabled={loading || isContinuing}
+                        title="Continue with accepted items and create new offer for remaining quantities"
+                        style={{ marginRight: '10px' }}
                     >
                         <FiArrowRight />
-                        {isContinuing ? 'Processing...' : 'Continue to Finalize'}
+                        {isContinuing ? 'Processing...' : 'Continue & Return'}
                     </button>
-                )}
-                <button
-                    className="btn-primary"
-                    onClick={handleRetryClick}
-                    disabled={loading || isRetrying}
-                    title="Create new offer for all items"
-                >
-                    <FiRefreshCw />
-                    {isRetrying ? 'Creating...' : 'Retry Offer'}
-                </button>
-                <button
-                    className="btn-primary"
-                    onClick={handleDeleteClick}
-                    disabled={loading || isDeleting}
-                    title="Delete this offer permanently"
-                >
-                    <FiTrash2 />
-                    {isDeleting ? 'Deleting...' : 'Delete Offer'}
-                </button>
-            </div>
-        );
+                    <button
+                        className="btn-primary"
+                        onClick={handleRetryClick}
+                        disabled={loading || isRetrying}
+                        title="Start over with entire quantity"
+                        style={{ marginRight: '10px' }}
+                    >
+                        <FiRefreshCw />
+                        {isRetrying ? 'Creating...' : 'Retry Entire Offer'}
+                    </button>
+                    <button
+                        className="btn-primary"
+                        onClick={handleDeleteClick}
+                        disabled={loading || isDeleting}
+                        title="Delete this offer permanently"
+                    >
+                        <FiTrash2 />
+                        {isDeleting ? 'Deleting...' : 'Delete Offer'}
+                    </button>
+                </div>
+            );
+        } else {
+            // Case 3: Nothing accepted - Only retry or delete
+            return (
+                <div className="action-buttons-group">
+                    <button
+                        className="btn-primary"
+                        onClick={handleRetryClick}
+                        disabled={loading || isRetrying}
+                        title="Create a new offer"
+                        style={{ marginRight: '10px' }}
+                    >
+                        <FiRefreshCw />
+                        {isRetrying ? 'Creating...' : 'Retry Offer'}
+                    </button>
+                    <button
+                        className="btn-primary"
+                        onClick={handleDeleteClick}
+                        disabled={loading || isDeleting}
+                        title="Delete this offer permanently"
+                    >
+                        <FiTrash2 />
+                        {isDeleting ? 'Deleting...' : 'Delete Offer'}
+                    </button>
+                </div>
+            );
+        }
     };
+    // Add totals by currency helper
+    const getTotalsByCurrency = (offer) => {
+        if (!offer || !offer.offerItems || offer.offerItems.length === 0) return {};
+
+        const totals = {};
+
+        offer.offerItems
+            .filter(item => item.financeStatus === 'ACCEPTED')
+            .forEach(item => {
+                const currency = item.currency || 'EGP';
+                const amount = item.totalPrice ? parseFloat(item.totalPrice) : 0;
+
+                if (!totals[currency]) {
+                    totals[currency] = 0;
+                }
+
+                totals[currency] += amount;
+            });
+
+        return totals;
+    };
+
+    // Calculate fulfillment status
+    const calculateFulfillmentStatus = (offer) => {
+        if (!offer?.requestOrder?.requestItems || !effectiveRequestItems) {
+            return { hasFullFulfillment: false, hasAcceptedItems: false, fulfillmentDetails: {} };
+        }
+
+        const acceptedQuantities = {};
+        const requestedQuantities = {};
+
+        // Use effective request items instead of original
+        effectiveRequestItems.forEach(requestItem => {
+            const itemTypeId = requestItem.itemTypeId || requestItem.itemType?.id;
+            requestedQuantities[itemTypeId] = requestItem.quantity;
+
+            const offerItems = offer.offerItems.filter(
+                item => item.itemType?.id === itemTypeId
+            );
+
+            acceptedQuantities[itemTypeId] = offerItems
+                .filter(item => item.financeStatus === 'ACCEPTED')
+                .reduce((sum, item) => sum + item.quantity, 0);
+        });
+
+        // Check if we have full fulfillment
+        const hasFullFulfillment = Object.keys(requestedQuantities).every(itemTypeId =>
+            acceptedQuantities[itemTypeId] >= requestedQuantities[itemTypeId]
+        );
+
+        // Check if we have any accepted items
+        const hasAcceptedItems = Object.values(acceptedQuantities).some(qty => qty > 0);
+
+        return {
+            hasFullFulfillment,
+            hasAcceptedItems,
+            acceptedQuantities,
+            requestedQuantities
+        };
+    };
+
+    const handleViewRejectionReason = (offerItem, itemName) => {
+        setSelectedRejectionReason(offerItem.rejectionReason || 'No reason provided');
+        setSelectedMerchantName(offerItem.merchant?.name || 'Unknown Merchant');
+        setSelectedItemName(itemName);
+        setShowRejectionModal(true);
+    };
+
+    const closeRejectionModal = () => {
+        setShowRejectionModal(false);
+        setSelectedRejectionReason('');
+        setSelectedMerchantName('');
+        setSelectedItemName('');
+    };
+
+
+    useEffect(() => {
+        const loadEffectiveItems = async () => {
+            if (activeOffer && activeOffer.id) {
+                try {
+                    const items = await offerRequestItemService.getEffectiveRequestItems(activeOffer.id);
+                    setEffectiveRequestItems(items);
+                } catch (error) {
+                    console.error('Error loading effective request items:', error);
+                    setEffectiveRequestItems(activeOffer.requestOrder?.requestItems || []);
+                }
+            } else {
+                setEffectiveRequestItems([]);
+            }
+        };
+
+        loadEffectiveItems();
+    }, [activeOffer]);
+
+    useEffect(() => {
+        if (activeOffer && activeOffer.offerItems && activeOffer.offerItems.length > 0) {
+            console.log("=== OFFER ITEM DEBUG ===");
+            console.log("First offer item:", activeOffer.offerItems[0]);
+            console.log("Rejection reason:", activeOffer.offerItems[0].rejectionReason);
+            console.log("Finance rejection reason:", activeOffer.offerItems[0].financeRejectionReason);
+            console.log("All keys:", Object.keys(activeOffer.offerItems[0]));
+            console.log("========================");
+        }
+    }, [activeOffer]);
 
     return (
         <div className="procurement-offers-main-content">
@@ -1078,9 +1298,8 @@ const FinanceValidatedOffers = ({
                             <div
                                 key={offer.id}
                                 className={`procurement-item-card-finance ${activeOffer?.id === offer.id ? 'selected' : ''}
-                                ${offer.status === 'FINANCE_ACCEPTED' || offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'card-accepted' :
-                                    offer.status === 'FINANCE_REJECTED' ? 'card-rejected' : 'card-partial'}`}
-                                onClick={() => setActiveOffer(offer)}
+    ${offer.financeStatus === 'FINANCE_ACCEPTED' || offer.financeStatus === 'FINANCE_PARTIALLY_ACCEPTED' ? 'card-accepted' :
+                                    offer.financeStatus === 'FINANCE_REJECTED' ? 'card-rejected' : 'card-partial'}`}                                onClick={() => setActiveOffer(offer)}
                             >
                                 <div className="procurement-item-header">
                                     <h4>{offer.title}</h4>
@@ -1091,14 +1310,13 @@ const FinanceValidatedOffers = ({
                                     </span>
                                 </div>
                                 <div className="procurement-item-footer">
-                                    <span className={`procurement-item-status ${
-                                        offer.status === 'FINANCE_ACCEPTED' ? 'status-accepted' :
-                                            offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'status-partial' :
-                                                'status-rejected'
-                                    }`}>
-                                        {formatStatus(offer.status)}
-                                    </span>
-                                </div>
+<span className={`procurement-item-status ${
+    offer.financeStatus === 'FINANCE_ACCEPTED' ? 'status-accepted' :
+        offer.financeStatus === 'FINANCE_PARTIALLY_ACCEPTED' ? 'status-partial' :
+            'status-rejected'
+}`}>
+    {formatStatus(offer.financeStatus)}
+</span>                                </div>
                             </div>
                         ))}
                     </div>
@@ -1114,12 +1332,12 @@ const FinanceValidatedOffers = ({
                             <div className="procurement-details-title">
                                 <h2>{activeOffer.title}</h2>
                                 <span className={`procurement-status-badge ${
-                                    activeOffer.status === 'FINANCE_ACCEPTED' ? 'status-accepted' :
-                                        activeOffer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'status-partial' :
+                                    activeOffer.financeStatus === 'FINANCE_ACCEPTED' ? 'status-accepted' :
+                                        activeOffer.financeStatus === 'FINANCE_PARTIALLY_ACCEPTED' ? 'status-partial' :
                                             'status-rejected'
                                 }`}>
-                                    {formatStatus(activeOffer.status)}
-                                </span>
+    {formatStatus(activeOffer.financeStatus)}
+</span>
                             </div>
 
                             {/* Action Buttons */}
@@ -1152,8 +1370,17 @@ const FinanceValidatedOffers = ({
                                         Review the finance team's decisions for each item below.
                                     </p>
                                     <div className="procurement-submitted-items-finance">
-                                        {activeOffer.requestOrder?.requestItems?.map(requestItem => {
-                                            const offerItems = getOfferItemsForRequestItem(requestItem.id);
+                                        {effectiveRequestItems?.map(requestItem => {
+                                            const itemTypeId = requestItem.itemTypeId || requestItem.itemType?.id;
+                                            const offerItems = activeOffer.offerItems.filter(
+                                                item => item.itemType?.id === itemTypeId
+                                            );
+
+                                            // Only show items that have offer items
+                                            if (offerItems.length === 0) return null;
+
+                                            const itemTypeName = requestItem.itemTypeName || requestItem.itemType?.name || 'Item';
+                                            const itemTypeMeasuringUnit = requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units';
 
                                             return (
                                                 <div key={requestItem.id} className="procurement-submitted-item-card-finance">
@@ -1162,57 +1389,60 @@ const FinanceValidatedOffers = ({
                                                             <div className="item-icon-container-finance">
                                                                 <FiPackage size={22} />
                                                             </div>
-                                                            <h5>{requestItem.itemType?.name || 'Item'}</h5>
+                                                            <h5>{itemTypeName}</h5>
                                                         </div>
                                                         <div className="submitted-item-quantity-finance">
-                                                            {requestItem.quantity} {requestItem.itemType?.measuringUnit}
+                                                            {requestItem.quantity} {itemTypeMeasuringUnit}
                                                         </div>
                                                     </div>
 
-                                                    {offerItems.length > 0 && (
-                                                        <div className="submitted-offer-solutions-finance">
-                                                            <table className="procurement-offer-entries-table-finance">
-                                                                <thead>
-                                                                <tr>
-                                                                    <th>Merchant</th>
-                                                                    <th>Quantity</th>
-                                                                    <th>Unit Price</th>
-                                                                    <th>Total</th>
-                                                                    <th>Finance Decision</th>
+                                                    <div className="submitted-offer-solutions-finance">
+                                                        <table className="procurement-offer-entries-table-finance">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>Merchant</th>
+                                                                <th>Quantity</th>
+                                                                <th>Unit Price</th>
+                                                                <th>Total</th>
+                                                                <th>Finance Decision</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {offerItems.map((offerItem, idx) => (
+                                                                <tr key={offerItem.id || idx} className={
+                                                                    offerItem.financeStatus === 'ACCEPTED' ? 'finance-accepted' :
+                                                                        offerItem.financeStatus === 'REJECTED' ? 'finance-rejected' : ''
+                                                                }>
+                                                                    <td>{offerItem.merchant?.name || 'Unknown'}</td>
+                                                                    <td>{offerItem.quantity} {itemTypeMeasuringUnit}</td>
+                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice || 0).toFixed(2)}</td>
+                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice || 0).toFixed(2)}</td>
+                                                                    <td>
+                                                                        <div className="finance-status-cell">
+                                    <span className={`finance-item-status status-${(offerItem.financeStatus || '').toLowerCase()}`}>
+                                        {formatFinanceStatus(offerItem.financeStatus)}
+                                    </span>
+                                                                            {offerItem.financeStatus === 'REJECTED' && offerItem.rejectionReason && (
+                                                                                <button
+                                                                                    className="rejection-reason-button"
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        handleViewRejectionReason(offerItem, itemTypeName);
+                                                                                    }}
+                                                                                    title="View rejection reason"
+                                                                                >
+                                                                                    <FiAlertCircle size={16} />
+                                                                                </button>
+                                                                            )}                                                                        </div>
+                                                                    </td>
                                                                 </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                {offerItems.map((offerItem, idx) => (
-                                                                    <tr key={offerItem.id || idx} className={
-                                                                        offerItem.financeStatus === 'ACCEPTED' ? 'finance-accepted' :
-                                                                            offerItem.financeStatus === 'REJECTED' ? 'finance-rejected' : ''
-                                                                    }>
-                                                                        <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                        <td>{offerItem.quantity} {requestItem.itemType?.measuringUnit}</td>
-                                                                        <td>${parseFloat(offerItem.unitPrice || 0).toFixed(2)}</td>
-                                                                        <td>${parseFloat(offerItem.totalPrice || 0).toFixed(2)}</td>
-                                                                        <td>
-                                                                            <div className="finance-status-cell">
-                                                                                <span className={`finance-item-status status-${(offerItem.financeStatus || '').toLowerCase()}`}>
-                                                                                    {formatFinanceStatus(offerItem.financeStatus)}
-                                                                                </span>
-                                                                                {offerItem.financeStatus === 'REJECTED' && offerItem.rejectionReason && (
-                                                                                    <span className="rejection-reason-tooltip" title={offerItem.rejectionReason}>
-                                                                                        <FiX size={14} />
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    )}
+                                                            ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             );
-                                        })}
-                                    </div>
+                                        })}                                    </div>
                                 </div>
 
                                 {/* Summary Section */}
@@ -1241,8 +1471,13 @@ const FinanceValidatedOffers = ({
                                         <FiDollarSign size={18} />
                                         <span className="summary-label-finance">Total Approved Value:</span>
                                         <span className="summary-value-finance total-finance">
-                                            ${getTotalAcceptedPrice(activeOffer).toFixed(2)}
-                                        </span>
+    {Object.entries(getTotalsByCurrency(activeOffer)).map(([currency, total], idx) => (
+        <span key={currency} style={{ marginLeft: idx > 0 ? '8px' : '0' }}>
+            {idx > 0 && '+ '}
+            {currency} {total.toFixed(2)}
+        </span>
+    ))}
+</span>
                                     </div>
                                 </div>
                             </div>
@@ -1273,14 +1508,19 @@ const FinanceValidatedOffers = ({
             />
 
             {/* Continue Confirmation Dialog */}
+            {/* Dynamic Confirmation Dialog */}
             <ConfirmationDialog
                 isVisible={showContinueConfirm}
-                type="info"
-                title="Continue to Finalize"
-                message="Accepted items will proceed to the finalization stage. Are you sure you want to continue?"
-                confirmText="Continue"
+                type={continueDialogType === 'finalize' ? 'success' : 'info'}
+                title={continueDialogType === 'finalize' ? 'Finalize Offer' : 'Continue & Return'}
+                message={
+                    continueDialogType === 'finalize'
+                        ? 'Are you sure you want to finalize this offer? Accepted items will proceed to the finalization stage.'
+                        : 'Accepted items will proceed to finalization, and a new offer will be created for the remaining quantities. This action cannot be undone.'
+                }
+                confirmText={continueDialogType === 'finalize' ? 'Finalize' : 'Continue & Return'}
                 cancelText="Cancel"
-                onConfirm={confirmContinue}
+                onConfirm={continueDialogType === 'finalize' ? confirmFinalize : confirmContinueAndReturn}
                 onCancel={cancelContinue}
                 isLoading={isContinuing}
                 showIcon={true}
@@ -1316,6 +1556,49 @@ const FinanceValidatedOffers = ({
                 showIcon={true}
                 size="large"
             />
+
+            {/* Rejection Reason Modal */}
+            {/* Rejection Reason Modal */}
+            {showRejectionModal && (
+                <div className="modal-backdrop" onClick={closeRejectionModal}>
+                    <div className="modal-content modal-md rejection-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">
+                                <FiAlertCircle style={{ color: 'var(--color-danger)' }} />
+                                Rejection Details
+                            </h2>
+                            <button className="btn-close" onClick={closeRejectionModal}>
+                                <FiX />
+                            </button>
+                        </div>
+
+                        <div className="modal-body">
+                            <div className="rejection-details">
+                                <div className="rejection-field">
+                                    <label>Merchant</label>
+                                    <div className="field-value">{selectedMerchantName}</div>
+                                </div>
+
+                                <div className="rejection-field">
+                                    <label>Item</label>
+                                    <div className="field-value">{selectedItemName}</div>
+                                </div>
+
+                                <div className="rejection-field">
+                                    <label>Rejection Reason</label>
+                                    <div className="field-value reason-text">{selectedRejectionReason}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="modal-btn-secondary" onClick={closeRejectionModal}>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -1016,3 +1016,21 @@ export const EQUIPMENT_FINANCE_ENDPOINTS = {
     UPDATE_EQUIPMENT_FINANCIALS: (equipmentId) => `/api/v1/finance/equipment/${equipmentId}/update-financials`,
 };
 
+export const LOGISTICS_ENDPOINTS = {
+    BASE: '/api/procurement/logistics',
+
+    // Get all logistics for a purchase order
+    BY_PURCHASE_ORDER: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}`,
+
+    // Get total logistics cost
+    TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total`,
+
+    // Create new logistics
+    CREATE: '/api/procurement/logistics',
+
+    // Update logistics
+    UPDATE: (id) => `/api/procurement/logistics/${id}`,
+
+    // Delete logistics
+    DELETE: (id) => `/api/procurement/logistics/${id}`
+};

@@ -10,6 +10,7 @@ import com.example.backend.repositories.procurement.OfferRequestItemRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 // Use fully qualified names for POI classes to avoid conflict with iText
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,141 @@ public class RFQService {
         this.itemTypeRepository = itemTypeRepository;
     }
 
+    private void addCurrencyDropdown(XSSFSheet sheet, int firstRow, int lastRow, int col) {
+        DataValidationHelper validationHelper = sheet.getDataValidationHelper();
+        DataValidationConstraint constraint = validationHelper.createExplicitListConstraint(
+                new String[]{"EGP", "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "SGD"}
+        );
+
+        CellRangeAddressList addressList = new CellRangeAddressList(firstRow, lastRow, col, col);
+        DataValidation dataValidation = validationHelper.createValidation(constraint, addressList);
+        dataValidation.setSuppressDropDownArrow(true);
+        dataValidation.setShowErrorBox(true);
+        sheet.addValidationData(dataValidation);
+    }
+    private CellStyle createNumberStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setLocked(true);
+
+        return style;
+    }
+
+    private CellStyle createSummaryLabelStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 14);
+        style.setFont(font);
+
+        style.setAlignment(HorizontalAlignment.RIGHT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+
+        return style;
+    }
+
+    private CellStyle createSummaryValueStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+
+        style.setBorderTop(BorderStyle.MEDIUM);
+        style.setBorderBottom(BorderStyle.MEDIUM);
+        style.setBorderLeft(BorderStyle.MEDIUM);
+        style.setBorderRight(BorderStyle.MEDIUM);
+
+        style.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 14);
+        style.setFont(font);
+
+        style.setLocked(true);
+
+        return style;
+    }
+
+    private CellStyle createDeliveryUnlockedStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        style.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        Font font = workbook.createFont();
+        font.setBold(false);
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setLocked(false); // Unlocked
+
+        return style;
+    }
+
+    private CellStyle createDeliveryFormulaStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        style.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setLocked(true); // Locked because it's a formula
+
+        return style;
+    }
+
+    private void addNumberValidation(XSSFSheet sheet, int firstRow, int lastRow, int col) {
+        DataValidationHelper validationHelper = sheet.getDataValidationHelper();
+
+        // Create constraint for whole numbers greater than 0
+        DataValidationConstraint constraint = validationHelper.createNumericConstraint(
+                DataValidationConstraint.ValidationType.INTEGER,
+                DataValidationConstraint.OperatorType.GREATER_THAN,
+                "0",
+                null
+        );
+
+        CellRangeAddressList addressList = new CellRangeAddressList(firstRow, lastRow, col, col);
+        DataValidation dataValidation = validationHelper.createValidation(constraint, addressList);
+
+        // Set error message
+        dataValidation.setShowErrorBox(true);
+        dataValidation.setErrorStyle(DataValidation.ErrorStyle.STOP);
+        dataValidation.createErrorBox("Invalid Input", "Please enter a valid number greater than 0");
+
+        sheet.addValidationData(dataValidation);
+    }
     /**
      * Export RFQ to Excel
      */
@@ -46,16 +182,19 @@ public class RFQService {
 
         boolean isArabic = "ar".equalsIgnoreCase(request.getLanguage());
 
-        // Set RTL if language is Arabic
         if (isArabic) {
             sheet.setRightToLeft(true);
         }
 
         // Create styles
         CellStyle headerStyle = createHeaderStyle(workbook);
-        CellStyle lockedStyle = createLockedStyle(workbook);      // Read-only cells
-        CellStyle unlockedStyle = createUnlockedStyle(workbook);  // Editable cells
+        CellStyle lockedStyle = createLockedStyle(workbook);
+        CellStyle unlockedStyle = createUnlockedStyle(workbook);
         CellStyle formulaStyle = createFormulaStyle(workbook);
+        CellStyle numberStyle = createNumberStyle(workbook);
+        CellStyle summaryStyle = createSummaryStyle(workbook);
+        CellStyle deliveryUnlockedStyle = createDeliveryUnlockedStyle(workbook);
+        CellStyle deliveryFormulaStyle = createDeliveryFormulaStyle(workbook);
 
         // Create header row
         Row headerRow = sheet.createRow(0);
@@ -72,47 +211,107 @@ public class RFQService {
         for (RFQExportRequest.RFQItemSelection item : request.getItems()) {
             Row row = sheet.createRow(rowNum);
 
-            // Item Name (Column A) - LOCKED
-            Cell itemNameCell = row.createCell(0);
+            // # Column (A) - LOCKED
+            Cell numberCell = row.createCell(0);
+            setCellValueWithArabicSupport(numberCell, rowNum, isArabic);
+            numberCell.setCellStyle(numberStyle);
+
+            // Item Name (Column B) - LOCKED
+            Cell itemNameCell = row.createCell(1);
             itemNameCell.setCellValue(item.getItemTypeName());
             itemNameCell.setCellStyle(lockedStyle);
 
-            // Measuring Unit (Column B) - LOCKED
-            Cell unitCell = row.createCell(1);
+            // Measuring Unit (Column C) - LOCKED
+            Cell unitCell = row.createCell(2);
             unitCell.setCellValue(item.getMeasuringUnit());
             unitCell.setCellStyle(lockedStyle);
 
-            // Requested Quantity (Column C) - LOCKED
-            Cell requestedQtyCell = row.createCell(2);
-            requestedQtyCell.setCellValue(formatNumber(item.getRequestedQuantity(), isArabic));
+            // Requested Quantity (Column D) - LOCKED
+            Cell requestedQtyCell = row.createCell(3);
+            if (isArabic) {
+                requestedQtyCell.setCellValue(formatNumber(item.getRequestedQuantity(), isArabic));
+            } else {
+                requestedQtyCell.setCellValue(item.getRequestedQuantity());
+            }
             requestedQtyCell.setCellStyle(lockedStyle);
 
-            // Response Quantity (Column D) - UNLOCKED (merchant can edit)
-            Cell responseQtyCell = row.createCell(3);
+            // Response Quantity (Column E) - UNLOCKED
+            Cell responseQtyCell = row.createCell(4);
             responseQtyCell.setCellStyle(unlockedStyle);
 
-            // Unit Price (Column E) - UNLOCKED (merchant can edit)
-            Cell unitPriceCell = row.createCell(4);
+            // Currency (Column F) - DROPDOWN - UNLOCKED
+            Cell currencyCell = row.createCell(5);
+            currencyCell.setCellValue("EGP");
+            currencyCell.setCellStyle(unlockedStyle);
+
+            // Unit Price (Column G) - UNLOCKED
+            Cell unitPriceCell = row.createCell(6);
             unitPriceCell.setCellStyle(unlockedStyle);
 
-            // Total Price (Column F) - Formula - LOCKED
-            Cell totalPriceCell = row.createCell(5);
-            String formula = String.format("D%d*E%d", rowNum + 1, rowNum + 1);
+            // Total Price (Column H) - Formula - LOCKED
+            Cell totalPriceCell = row.createCell(7);
+            String formula = String.format("E%d*G%d", rowNum + 1, rowNum + 1);
             totalPriceCell.setCellFormula(formula);
             totalPriceCell.setCellStyle(formulaStyle);
+
+            // Estimated Delivery Days (Column I)
+            Cell deliveryCell = row.createCell(8);
+            if (rowNum == 1) {
+                // First row is editable
+                if (isArabic) {
+                    deliveryCell.setCellValue(convertToArabicNumerals("7")); // Default value in Arabic
+                } else {
+                    deliveryCell.setCellValue(7);
+                }
+                deliveryCell.setCellStyle(deliveryUnlockedStyle);
+            } else {
+                // Other rows reference the first row
+                deliveryCell.setCellFormula("$I$2");
+                deliveryCell.setCellStyle(deliveryFormulaStyle);
+            }
 
             rowNum++;
         }
 
+        // Add currency dropdown validation
+        addCurrencyDropdown(sheet, 1, rowNum - 1, 5);
+
+        // Add number validation for delivery days
+        addNumberValidation(sheet, 1, rowNum - 1, 8);
+
+        // Add summary row (directly under the data)
+        Row summaryRow = sheet.createRow(rowNum);
+
+        // Empty cells before totals
+        for (int i = 0; i < 4; i++) {
+            summaryRow.createCell(i);
+        }
+
+        // Total Response Quantity (Column E)
+        Cell totalQtyCell = summaryRow.createCell(4);
+        totalQtyCell.setCellFormula(String.format("SUM(E2:E%d)", rowNum));
+        totalQtyCell.setCellStyle(summaryStyle);
+
+        // Empty cells for F and G
+        summaryRow.createCell(5);
+        summaryRow.createCell(6);
+
+        // Total Price (Column H)
+        Cell totalPriceCell = summaryRow.createCell(7);
+        totalPriceCell.setCellFormula(String.format("SUM(H2:H%d)", rowNum));
+        totalPriceCell.setCellStyle(summaryStyle);
+
         // Auto-size columns
         for (int i = 0; i < headers.length; i++) {
             sheet.autoSizeColumn(i);
-            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1500);
         }
 
-        // PROTECT THE SHEET - This is the key part!
-        // Only unlocked cells can be edited
-        sheet.protectSheet(""); // Empty password, or add a password if you want
+        // Make first column (numbers) narrower
+        sheet.setColumnWidth(0, 2000);
+
+        // PROTECT THE SHEET
+        sheet.protectSheet("");
 
         // Write to byte array
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -121,7 +320,6 @@ public class RFQService {
 
         return outputStream.toByteArray();
     }
-
     /**
      * Import and preview RFQ response
      */
@@ -159,10 +357,17 @@ public class RFQService {
         int validRows = 0;
         int invalidRows = 0;
 
-        // Skip header row, start from row 1
+        // CHANGED: Skip header row (0), start from row 1, and stop when we hit empty rows or summary
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             if (row == null) continue;
+
+            // ADDED: Check if this is a summary row by checking if column B (item name) is empty
+            Cell itemNameCell = row.getCell(1);
+            if (itemNameCell == null || itemNameCell.getCellType() == CellType.BLANK) {
+                // This is likely the summary row or empty row, stop parsing
+                break;
+            }
 
             RFQImportPreviewDTO.RFQImportRow importRow = parseRow(row, i + 1, itemTypeMap, requestItemIdMap);
             rows.add(importRow);
@@ -197,8 +402,10 @@ public class RFQService {
         importRow.setValid(true);
 
         try {
-            // Column A: Item Name
-            Cell itemNameCell = row.getCell(0);
+            // Column A: # (Row number) - Skip this
+
+            // Column B: Item Name
+            Cell itemNameCell = row.getCell(1);
             if (itemNameCell == null || itemNameCell.getCellType() == CellType.BLANK) {
                 importRow.setValid(false);
                 importRow.setErrorMessage("Item name is required");
@@ -207,13 +414,25 @@ public class RFQService {
             String itemName = getCellValueAsString(itemNameCell);
             importRow.setItemName(itemName);
 
-            // Column B: Measuring Unit
-            Cell unitCell = row.getCell(1);
+            // Column C: Measuring Unit
+            Cell unitCell = row.getCell(2);
             String measuringUnit = unitCell != null ? getCellValueAsString(unitCell) : "";
             importRow.setMeasuringUnit(measuringUnit);
 
-            // Column D: Response Quantity (Column C is requested quantity, we skip it)
-            Cell responseQtyCell = row.getCell(3);
+            // Column D: Requested Quantity (READ this for display)
+            Cell requestedQtyCell = row.getCell(3);
+            Double requestedQuantity = null;
+            if (requestedQtyCell != null) {
+                try {
+                    requestedQuantity = getNumericCellValue(requestedQtyCell);
+                } catch (Exception e) {
+                    // Ignore errors for requested quantity since it's just for display
+                }
+            }
+            importRow.setRequestedQuantity(requestedQuantity);
+
+            // Column E: Response Quantity
+            Cell responseQtyCell = row.getCell(4);
             if (responseQtyCell == null || responseQtyCell.getCellType() == CellType.BLANK) {
                 importRow.setValid(false);
                 importRow.setErrorMessage("Response quantity is required");
@@ -228,8 +447,22 @@ public class RFQService {
             }
             importRow.setResponseQuantity(responseQuantity);
 
-            // Column E: Unit Price
-            Cell unitPriceCell = row.getCell(4);
+            // Column F: Currency
+            Cell currencyCell = row.getCell(5);
+            String currency = "EGP"; // Default
+            if (currencyCell != null) {
+                currency = getCellValueAsString(currencyCell).toUpperCase();
+                // Validate currency
+                if (!isValidCurrency(currency)) {
+                    importRow.setValid(false);
+                    importRow.setErrorMessage("Invalid currency: " + currency);
+                    return importRow;
+                }
+            }
+            importRow.setCurrency(currency);
+
+            // Column G: Unit Price
+            Cell unitPriceCell = row.getCell(6);
             if (unitPriceCell == null || unitPriceCell.getCellType() == CellType.BLANK) {
                 importRow.setValid(false);
                 importRow.setErrorMessage("Unit price is required");
@@ -244,8 +477,8 @@ public class RFQService {
             }
             importRow.setUnitPrice(BigDecimal.valueOf(unitPrice));
 
-            // Column F: Total Price (can be formula or value)
-            Cell totalPriceCell = row.getCell(5);
+            // Column H: Total Price (can be formula or value)
+            Cell totalPriceCell = row.getCell(7);
             double totalPrice;
             if (totalPriceCell != null && totalPriceCell.getCellType() == CellType.FORMULA) {
                 totalPrice = totalPriceCell.getNumericCellValue();
@@ -256,6 +489,17 @@ public class RFQService {
                 totalPrice = responseQuantity * unitPrice;
             }
             importRow.setTotalPrice(BigDecimal.valueOf(totalPrice));
+
+            // Column I: Delivery Days
+            Cell deliveryDaysCell = row.getCell(8);
+            Integer deliveryDays = null;
+            if (deliveryDaysCell != null) {
+                double deliveryValue = getNumericCellValue(deliveryDaysCell);
+                if (deliveryValue > 0) {
+                    deliveryDays = (int) deliveryValue;
+                }
+            }
+            importRow.setEstimatedDeliveryDays(deliveryDays);
 
             // Match item to ItemType
             String itemKey = itemName.toLowerCase().trim();
@@ -278,27 +522,43 @@ public class RFQService {
         return importRow;
     }
 
+    private boolean isValidCurrency(String currency) {
+        String[] validCurrencies = {"EGP", "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "SGD"};
+        for (String valid : validCurrencies) {
+            if (valid.equals(currency)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Helper methods
      */
     private String[] getHeaders(boolean isArabic) {
         if (isArabic) {
             return new String[]{
+                    "#",                    // Number
                     "اسم الصنف",           // Item Name
                     "وحدة القياس",         // Measuring Unit
                     "الكمية المطلوبة",     // Requested Quantity
                     "كمية الاستجابة",      // Response Quantity
+                    "العملة",              // Currency
                     "سعر الوحدة",         // Unit Price
-                    "السعر الإجمالي"      // Total Price
+                    "السعر الإجمالي",     // Total Price
+                    "أيام التسليم"        // Delivery Days
             };
         } else {
             return new String[]{
+                    "#",                    // Number
                     "Item Name",
                     "Measuring Unit",
                     "Requested Quantity",
                     "Response Quantity",
+                    "Currency",
                     "Unit Price",
-                    "Total Price"
+                    "Total Price",
+                    "Delivery Days"
             };
         }
     }
@@ -306,10 +566,19 @@ public class RFQService {
     private String formatNumber(double number, boolean isArabic) {
         if (isArabic) {
             // Convert to Arabic numerals
-            String numStr = String.valueOf((int) number);
+            String numStr = String.format("%.0f", number); // Handle decimals properly
             return convertToArabicNumerals(numStr);
         }
-        return String.valueOf((int) number);
+        return String.format("%.0f", number);
+    }
+
+    private void setCellValueWithArabicSupport(Cell cell, double value, boolean isArabic) {
+        if (isArabic) {
+            String arabicValue = convertToArabicNumerals(String.format("%.0f", value));
+            cell.setCellValue(arabicValue);
+        } else {
+            cell.setCellValue(value);
+        }
     }
 
     private String convertToArabicNumerals(String number) {
@@ -381,18 +650,24 @@ public class RFQService {
 
     private CellStyle createHeaderStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
+
+        // Lightest blue background (Pale Blue)
+        style.setFillForegroundColor(IndexedColors.PALE_BLUE.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
         Font font = workbook.createFont();
         font.setBold(true);
         font.setFontHeightInPoints((short) 12);
+        font.setColor(IndexedColors.BLACK.getIndex());
         style.setFont(font);
-        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        style.setBorderBottom(BorderStyle.THIN);
-        style.setBorderTop(BorderStyle.THIN);
-        style.setBorderLeft(BorderStyle.THIN);
-        style.setBorderRight(BorderStyle.THIN);
+
+        style.setBorderBottom(BorderStyle.MEDIUM);
+        style.setBorderTop(BorderStyle.MEDIUM);
+        style.setBorderLeft(BorderStyle.MEDIUM);
+        style.setBorderRight(BorderStyle.MEDIUM);
         style.setAlignment(HorizontalAlignment.CENTER);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+
         return style;
     }
 
@@ -415,7 +690,6 @@ public class RFQService {
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
 
-        // Light blue background for formulas
         style.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
@@ -423,33 +697,31 @@ public class RFQService {
         font.setBold(true);
         style.setFont(font);
 
-        // Lock formula cells
+        style.setAlignment(HorizontalAlignment.CENTER); // CENTER
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
         style.setLocked(true);
 
         return style;
     }
-
     private CellStyle createLockedStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
 
-        // Set borders
         style.setBorderTop(BorderStyle.THIN);
         style.setBorderBottom(BorderStyle.THIN);
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
 
-        // Set background color (light gray to indicate read-only)
         style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        // Set font
         Font font = workbook.createFont();
         font.setBold(false);
         font.setFontHeightInPoints((short) 11);
         style.setFont(font);
 
-        // Lock the cell
         style.setLocked(true);
+        style.setAlignment(HorizontalAlignment.CENTER); // CENTER
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
 
         return style;
     }
@@ -457,27 +729,53 @@ public class RFQService {
     private CellStyle createUnlockedStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
 
-        // Set borders
         style.setBorderTop(BorderStyle.THIN);
         style.setBorderBottom(BorderStyle.THIN);
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
 
-        // Set background color (white or light yellow to indicate editable)
         style.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        // Set font
         Font font = workbook.createFont();
         font.setBold(false);
         font.setFontHeightInPoints((short) 11);
         style.setFont(font);
 
-        // UNLOCK the cell (this is editable)
         style.setLocked(false);
+        style.setAlignment(HorizontalAlignment.CENTER); // CENTER
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
 
         return style;
     }
+
+    private CellStyle createSummaryStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+
+        style.setBorderTop(BorderStyle.MEDIUM);
+        style.setBorderBottom(BorderStyle.MEDIUM);
+        style.setBorderLeft(BorderStyle.MEDIUM);
+        style.setBorderRight(BorderStyle.MEDIUM);
+
+        style.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setLocked(true);
+
+        // Add number format for general numbers
+        style.setDataFormat(workbook.createDataFormat().getFormat("0"));
+
+        return style;
+    }
+
+
 
 
 }

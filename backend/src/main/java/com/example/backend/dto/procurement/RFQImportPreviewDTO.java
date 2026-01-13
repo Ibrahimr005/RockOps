@@ -33,6 +33,11 @@ public class RFQImportPreviewDTO {
         private BigDecimal totalPrice;
         private String measuringUnit;
 
+        private Double requestedQuantity;
+
+        private String currency;
+        private Integer estimatedDeliveryDays;
+
         // Validation
         private boolean isValid;
         private String errorMessage;

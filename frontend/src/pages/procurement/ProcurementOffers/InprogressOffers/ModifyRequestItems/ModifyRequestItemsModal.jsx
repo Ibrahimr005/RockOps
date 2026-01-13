@@ -102,23 +102,19 @@ const ModifyRequestItemsModal = ({
         const initialized = await ensureInitialized();
         if (!initialized) return;
 
-        // Reload and GET the fresh items
-        const freshItems = await loadRequestItems();
+        // After initialization, requestItems already has the fresh data with correct IDs
+        // Just find the item by itemTypeId
+        const currentItem = requestItems.find(i => i.itemTypeId === item.itemTypeId);
 
-        // Find the item in the fresh data by itemTypeId
-        const refreshedItem = freshItems.find(i =>
-            i.itemTypeId === item.itemTypeId || i.id === item.id
-        );
-
-        if (!refreshedItem) {
-            if (onShowSnackbar) onShowSnackbar('error', 'Item not found after initialization');
+        if (!currentItem) {
+            if (onShowSnackbar) onShowSnackbar('error', 'Item not found');
             return;
         }
 
-        setEditingItemId(refreshedItem.id);
+        setEditingItemId(currentItem.id);  // Use the CURRENT id, not the old one
         setEditFormData({
-            [refreshedItem.id]: {
-                quantity: refreshedItem.quantity
+            [currentItem.id]: {
+                quantity: currentItem.quantity
             }
         });
         setShowAddForm(false);
@@ -126,7 +122,7 @@ const ModifyRequestItemsModal = ({
 
     // Helper function to check if items need initialization
     const needsInitialization = () => {
-        return requestItems.some(item => !item.offerId);
+        return requestItems.some(item => item.id === item.originalRequestOrderItemId);
     };
 
     // Helper function to initialize if needed
@@ -171,6 +167,12 @@ const ModifyRequestItemsModal = ({
     };
 
     const handleSaveEdit = async (item) => {
+        console.log("=== ATTEMPTING TO SAVE ===");
+        console.log("Item ID being sent:", item.id);
+        console.log("Full item object:", item);
+        console.log("editFormData:", editFormData);
+        console.log("editFormData[item.id]:", editFormData[item.id]);
+
         const updatedData = editFormData[item.id];
 
         const quantityNum = parseFloat(updatedData?.quantity);
@@ -181,6 +183,15 @@ const ModifyRequestItemsModal = ({
 
         try {
             setIsLoading(true);
+
+            console.log("API Call - Offer ID:", offer.id);
+            console.log("API Call - Item ID:", item.id);
+            console.log("API Call - Payload:", {
+                itemTypeId: item.itemTypeId,
+                quantity: quantityNum,
+                comment: item.comment || null
+            });
+
             await offerRequestItemService.updateRequestItem(offer.id, item.id, {
                 itemTypeId: item.itemTypeId,
                 quantity: quantityNum,

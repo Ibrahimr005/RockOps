@@ -114,24 +114,34 @@ public class OfferRequestItemService {
     @Transactional
     public OfferRequestItemDTO updateRequestItem(UUID itemId, OfferRequestItemDTO dto, String username) {
         System.out.println("=== UPDATE REQUEST ITEM DEBUG START ===");
-        System.out.println("Item ID: " + itemId);
+        System.out.println("Item ID received: " + itemId);
+        System.out.println("DTO: " + dto);
+        System.out.println("Username: " + username);
 
         try {
-            System.out.println("About to fetch item...");
-            OfferRequestItem item = offerRequestItemRepository.findByIdWithDetails(itemId)
-                    .orElseThrow(() -> new RuntimeException("Offer request item not found"));
+            // Check if item exists
+            boolean exists = offerRequestItemRepository.existsById(itemId);
+            System.out.println("Item exists in DB: " + exists);
 
-            System.out.println("Found item successfully");
-            System.out.println("Item object: " + item);
-            System.out.println("Item ID: " + item.getId());
-            System.out.println("Item type: " + item.getItemType());
-            System.out.println("Item type name: " + item.getItemType().getName());
+            if (!exists) {
+                System.out.println("ERROR: Item not found with ID: " + itemId);
+                throw new RuntimeException("Offer request item not found with ID: " + itemId);
+            }
+
+            System.out.println("Attempting to fetch item with details...");
+            OfferRequestItem item = offerRequestItemRepository.findByIdWithDetails(itemId)
+                    .orElseThrow(() -> {
+                        System.out.println("ERROR: findByIdWithDetails returned empty!");
+                        return new RuntimeException("Offer request item not found");
+                    });
+
+            System.out.println("Item fetched successfully: " + item.getId());
+            System.out.println("Item type: " + item.getItemType().getName());
 
             double oldQuantity = item.getQuantity();
             String oldComment = item.getComment();
 
-            System.out.println("Old quantity: " + oldQuantity);
-            System.out.println("New quantity: " + dto.getQuantity());
+            System.out.println("Old quantity: " + oldQuantity + ", New quantity: " + dto.getQuantity());
 
             // Update fields
             item.setQuantity(dto.getQuantity());
@@ -139,20 +149,17 @@ public class OfferRequestItemService {
             item.setLastModifiedAt(LocalDateTime.now());
             item.setLastModifiedBy(username);
 
-            System.out.println("About to save...");
+            System.out.println("Saving item...");
             OfferRequestItem updatedItem = offerRequestItemRepository.save(item);
-            System.out.println("Saved successfully");
+            System.out.println("Item saved successfully");
 
-            System.out.println("About to record modification...");
+            // Record modification
             recordModification(item.getOffer(), RequestItemModification.ModificationAction.EDIT,
                     item.getItemType(), oldQuantity, dto.getQuantity(), oldComment, dto.getComment(), username,
                     "Updated item: " + item.getItemType().getName());
-            System.out.println("Modification recorded");
 
-            System.out.println("About to map to DTO...");
-            OfferRequestItemDTO result = offerRequestItemMapper.toDTO(updatedItem);
-            System.out.println("=== UPDATE REQUEST ITEM DEBUG END ===");
-            return result;
+            System.out.println("=== UPDATE REQUEST ITEM DEBUG END - SUCCESS ===");
+            return offerRequestItemMapper.toDTO(updatedItem);
 
         } catch (Exception e) {
             System.err.println("!!! EXCEPTION CAUGHT !!!");

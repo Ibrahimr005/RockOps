@@ -370,7 +370,7 @@ public class PurchaseOrderService {
     }
 
     private DeliveryItemReceiptDTO convertReceiptToDTO(DeliveryItemReceipt receipt) {
-        return DeliveryItemReceiptDTO.builder()
+        DeliveryItemReceiptDTO dto = DeliveryItemReceiptDTO.builder()
                 .id(receipt.getId())
                 .deliverySessionId(receipt.getDeliverySession().getId())
                 .purchaseOrderItemId(receipt.getPurchaseOrderItem().getId())
@@ -378,12 +378,20 @@ public class PurchaseOrderService {
                 .measuringUnit(receipt.getPurchaseOrderItem().getItemType().getMeasuringUnit())
                 .goodQuantity(receipt.getGoodQuantity())
                 .isRedelivery(receipt.getIsRedelivery())
-                .processedBy(receipt.getDeliverySession().getProcessedBy())    // ADD THIS
-                .processedAt(receipt.getDeliverySession().getProcessedAt())    // ADD THIS
+                .processedBy(receipt.getDeliverySession().getProcessedBy())
+                .processedAt(receipt.getDeliverySession().getProcessedAt())
                 .issues(receipt.getIssues().stream()
                         .map(this::convertIssueToDTO)
                         .toList())
                 .build();
+
+        // ADD CATEGORY INFO
+        if (receipt.getPurchaseOrderItem().getItemType().getItemCategory() != null) {
+            dto.setItemCategoryName(receipt.getPurchaseOrderItem().getItemType().getItemCategory().getName());
+            dto.setItemCategoryId(receipt.getPurchaseOrderItem().getItemType().getItemCategory().getId());
+        }
+
+        return dto;
     }
 
     private PurchaseOrderIssueDTO convertIssueToDTO(PurchaseOrderIssue issue) {

@@ -207,7 +207,6 @@ public class OfferService {
                     requestOrderItem.setRequestOrder(requestOrder);
                     requestOrderItem.setItemType(itemType);
                     requestOrderItem.setQuantity((int) effectiveItem.getQuantity());
-                    requestOrderItem.setComment("Added during offer modification - OfferRequestItem ID: " + effectiveItem.getId());
                     requestOrderItem = requestOrderItemRepository.save(requestOrderItem);
                 }
             }
@@ -1512,7 +1511,6 @@ public List<OfferDTO> getFinanceCompletedOffers() {
                     requestOrderItem.setRequestOrder(requestOrder);
                     requestOrderItem.setItemType(itemType);
                     requestOrderItem.setQuantity(effectiveItem.getQuantity()); // Use quantity from OfferRequestItem
-                    requestOrderItem.setComment("Added during RFQ modification - ID: " + effectiveItem.getId());
 
                     // Save the new RequestOrderItem
                     requestOrderItem = requestOrderItemRepository.save(requestOrderItem);
@@ -1523,7 +1521,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
             offerItem.setQuantity(row.getResponseQuantity());
             offerItem.setUnitPrice(row.getUnitPrice());
             offerItem.setTotalPrice(row.getTotalPrice());
-            offerItem.setCurrency("EGP"); // Default, can be added to import later
+            offerItem.setCurrency(row.getCurrency() != null ? row.getCurrency() : "EGP"); // Use currency from import
+            offerItem.setEstimatedDeliveryDays(row.getEstimatedDeliveryDays()); // ADD THIS LINE
 
             OfferItem savedItem = offerItemRepository.save(offerItem);
             createdItems.add(savedItem);

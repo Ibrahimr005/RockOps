@@ -283,7 +283,6 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                     throw new Error(`Please enter quantities for ${item.itemType?.name}`);
                 }
 
-                // Check if this item has any pending redeliveries
                 const hasPendingRedelivery = item.itemReceipts?.some(receipt =>
                     receipt.issues?.some(issue =>
                         issue.issueStatus === 'RESOLVED' && issue.resolutionType === 'REDELIVERY'
@@ -302,10 +301,14 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                 };
             });
 
+            // GET USERNAME FROM LOCALSTORAGE
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const username = userInfo?.username || 'unknown';
+
             const deliveryData = {
                 purchaseOrderId: purchaseOrder.id,
                 merchantId: merchant.merchantId,
-                processedBy: '', // or remove this line entirely - backend overrides it anyway
+                processedBy: username, // ✅ NOW IT HAS THE USERNAME
                 deliveryNotes,
                 itemReceipts
             };

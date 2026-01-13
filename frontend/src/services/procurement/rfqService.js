@@ -45,17 +45,35 @@ export const rfqService = {
      * @param {Object} preview - The preview data
      * @returns {Array} Created offer items
      */
-    confirmImport: async (offerId, merchantId, validRowIds, preview) => {
-        const params = new URLSearchParams();
-        params.append('merchantId', merchantId);
-        validRowIds.forEach(id => params.append('validRowIds', id));
+        /**
+         * Confirm and import RFQ response data after preview
+         * @param {UUID} offerId - The offer ID
+         * @param {UUID} merchantId - The merchant providing the response
+         * @param {Array} selectedItemTypeIds - Item type IDs to import
+         * @param {Object} previewData - The preview data containing rows
+         * @returns {Array} Created offer items
+         */
+        confirmImport: async (offerId, merchantId, selectedItemTypeIds, previewData) => {
+            // Filter and map the selected rows to include currency and delivery days
+            const updatedPreview = {
+                ...previewData,
+                rows: previewData.rows.map(row => ({
+                    ...row,
+                    currency: row.currency || 'EGP',
+                    estimatedDeliveryDays: row.estimatedDeliveryDays
+                }))
+            };
 
-        const response = await apiClient.post(
-            `${RFQ_ENDPOINTS.IMPORT_CONFIRM(offerId)}?${params.toString()}`,
-            preview
-        );
-        return response.data || response;
-    },
+            const params = new URLSearchParams();
+            params.append('merchantId', merchantId);
+            selectedItemTypeIds.forEach(id => params.append('validRowIds', id));
+
+            const response = await apiClient.post(
+                `${RFQ_ENDPOINTS.IMPORT_CONFIRM(offerId)}?${params.toString()}`,
+                updatedPreview
+            );
+            return response.data || response;
+        },
 
     /**
      * Helper method to download the exported Excel file

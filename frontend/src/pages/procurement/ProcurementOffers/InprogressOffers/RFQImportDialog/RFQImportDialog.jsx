@@ -301,11 +301,12 @@ const RFQImportDialog = ({ isVisible, onClose, offer, merchants, onSuccess, onSh
                                             <tr>
                                                 <th className="col-select"></th>
                                                 <th className="col-item">Item Name</th>
-                                                <th className="col-unit">Unit</th>
                                                 <th className="col-qty">Requested</th>
                                                 <th className="col-qty">Response Qty</th>
+                                                <th className="col-currency">Currency</th>
                                                 <th className="col-price">Unit Price</th>
                                                 <th className="col-price">Total Price</th>
+                                                <th className="col-delivery">Delivery Days</th>
                                                 <th className="col-status">Status</th>
                                             </tr>
                                             </thead>
@@ -327,15 +328,16 @@ const RFQImportDialog = ({ isVisible, onClose, offer, merchants, onSuccess, onSh
                                                         )}
                                                     </td>
                                                     <td className="col-item">{row.itemName}</td>
-                                                    <td className="col-unit">{row.unit}</td>
                                                     <td className="col-qty">{row.requestedQuantity}</td>
                                                     <td className="col-qty">{row.responseQuantity || '-'}</td>
+                                                    <td className="col-currency">{row.currency || 'EGP'}</td>
                                                     <td className="col-price">
-                                                        {row.unitPrice ? `${row.unitPrice.toFixed(2)} EGP` : '-'}
+                                                        {row.unitPrice ? ` ${row.unitPrice.toFixed(2)}` : '-'}
                                                     </td>
                                                     <td className="col-price">
-                                                        {row.totalPrice ? `${row.totalPrice.toFixed(2)} EGP` : '-'}
+                                                        {row.totalPrice ? ` ${row.totalPrice.toFixed(2)}` : '-'}
                                                     </td>
+                                                    <td className="col-delivery">{row.estimatedDeliveryDays ? `${row.estimatedDeliveryDays} days` : '-'}</td>
                                                     <td className="col-status">
                                                         {row.valid ? (
                                                             <span className="status-badge valid">
@@ -356,7 +358,7 @@ const RFQImportDialog = ({ isVisible, onClose, offer, merchants, onSuccess, onSh
                                     {/* Actions */}
                                     <div className="preview-actions">
                                         <button
-                                            className="modal-btn-secondary"
+                                            className="btn-primary"
                                             onClick={() => {
                                                 setPreviewData(null);
                                                 setSelectedRows([]);
