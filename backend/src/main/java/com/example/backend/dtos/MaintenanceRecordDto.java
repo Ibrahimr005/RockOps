@@ -1,5 +1,6 @@
 package com.example.backend.dtos;
 
+import com.example.backend.models.equipment.MaintenanceStatus;
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -22,14 +23,14 @@ import java.util.UUID;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MaintenanceRecordDto {
-    
+
     private UUID id;
-    
+
     @NotNull(message = "Equipment ID is required")
     private UUID equipmentId;
-    
+
     private String equipmentInfo;
-    
+
     @NotBlank(message = "Initial issue description is required")
     private String initialIssueDescription;
 
@@ -45,20 +46,20 @@ public class MaintenanceRecordDto {
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime creationDate;
-    
+
     @NotNull(message = "Expected completion date is required")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime expectedCompletionDate;
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime actualCompletionDate;
-    
+
     @DecimalMin(value = "0.0", inclusive = true, message = "Total cost must be non-negative")
     private BigDecimal totalCost;
 
+    private MaintenanceStatus status;
 
-    
-    private MaintenanceRecord.MaintenanceStatus status;
+    private String rejectionReason;
 
     private UUID responsibleUserId;
 
@@ -66,32 +67,34 @@ public class MaintenanceRecordDto {
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastUpdated;
-    
+
     private Long version;
-    
+
     // Computed fields
     private Boolean isOverdue;
     private Long durationInDays;
     private Integer totalSteps;
     private Integer completedSteps;
     private Integer activeSteps;
-    
+
     // Related data
     private List<MaintenanceStepDto> steps;
-    
+
+    private List<MaintenanceTimelineEventDto> timelineEvents;
+
     // Dashboard fields
     private String currentStepDescription;
     private String currentStepResponsiblePerson;
     private LocalDateTime currentStepExpectedEndDate;
     private Boolean currentStepIsOverdue;
-    
+
     // Equipment information
     private String equipmentName;
     private String equipmentModel;
     private String equipmentType;
     private String equipmentSerialNumber;
     private String site;
-    
+
     // Contact information (for backward compatibility)
     private String currentResponsiblePerson;
     private String currentResponsiblePhone;
@@ -106,4 +109,4 @@ public class MaintenanceRecordDto {
     public void setEstimatedCost(BigDecimal estimatedCost) {
         this.totalCost = estimatedCost;
     }
-} 
+}

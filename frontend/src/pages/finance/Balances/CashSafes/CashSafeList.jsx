@@ -127,16 +127,16 @@ const CashSafeList = ({ onDataChange }) => {
                 </span>
             )
         },
-        // {
-        //     header: 'Status',
-        //     accessor: 'isActive',
-        //     sortable: true,
-        //     render: (row) => (
-        //         <span className={`status-badge ${row.isActive ? 'status-active' : 'status-inactive'}`}>
-        //             {row.isActive ? 'Active' : 'Inactive'}
-        //         </span>
-        //     )
-        // },
+        {
+            header: 'Status',
+            accessor: 'isActive',
+            sortable: true,
+            render: (row) => (
+                <span className={`status-badge ${row.isActive ? 'status-active' : 'status-inactive'}`}>
+                    {row.isActive ? 'Active' : 'Inactive'}
+                </span>
+            )
+        },
         {
             header: 'Created By',
             accessor: 'createdBy',

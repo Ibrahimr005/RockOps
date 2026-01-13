@@ -48,8 +48,9 @@ const PaymentRequestsList = () => {
     };
 
     const handleApproveReject = (request) => {
-        setSelectedRequest(request);
-        setShowApproveReject(true);
+        setShowDetails(false); // Close the details modal
+        setSelectedRequest(null); // Clear selected request
+        fetchPaymentRequests(); // Refresh the list
     };
 
     const handleApproveRejectSubmit = () => {
@@ -158,13 +159,13 @@ const PaymentRequestsList = () => {
             onClick: handleView,
             className: 'rockops-table__action-button primary'
         },
-        {
-            label: 'Approve/Reject',
-            icon: <FiCheckCircle />,
-            onClick: handleApproveReject,
-            className: 'rockops-table__action-button success',
-            show: (row) => row.status === 'PENDING'
-        }
+        // {
+        //     label: 'Approve/Reject',
+        //     icon: <FiCheckCircle />,
+        //     onClick: handleApproveReject,
+        //     className: 'rockops-table__action-button success',
+        //     show: (row) => row.status === 'PENDING'
+        // }
     ];
 
     const filterableColumns = [

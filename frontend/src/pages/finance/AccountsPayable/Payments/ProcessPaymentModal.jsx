@@ -134,6 +134,8 @@ const ProcessPaymentModal = ({ onClose, onSubmit }) => {
                 amount: parseFloat(formData.amount)
             };
 
+            console.log('Payload being sent:', payload);
+
             await financeService.accountsPayable.payments.process(payload);
             showSuccess('Payment processed successfully');
             onSubmit();
@@ -357,22 +359,23 @@ const ProcessPaymentModal = ({ onClose, onSubmit }) => {
                         />
                     </div>
 
-                    <div className="modal-footer">
-                        <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn-primary" disabled={loading}>
-                            {loading ? (
-                                <span>Processing...</span>
-                            ) : (
-                                <>
-                                    <FaSave />
-                                    <span>Process Payment</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
+
                 </form>
+                <div className="modal-footer">
+                    <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+                        Cancel
+                    </button>
+                    <button type="submit" className="btn-primary" onClick={handleSubmit} disabled={loading}>
+                        {loading ? (
+                            <span>Processing...</span>
+                        ) : (
+                            <>
+                                <FaSave />
+                                <span>Process Payment</span>
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );

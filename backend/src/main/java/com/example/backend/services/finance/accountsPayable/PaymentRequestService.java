@@ -7,14 +7,18 @@ import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
 import com.example.backend.models.finance.accountsPayable.PaymentRequestItem;
 import com.example.backend.models.finance.accountsPayable.PaymentRequestStatusHistory;
+import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestItemStatus;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.PurchaseOrder;
 import com.example.backend.models.procurement.PurchaseOrderItem;
 import com.example.backend.repositories.finance.accountsPayable.OfferFinancialReviewRepository;
+import com.example.backend.repositories.finance.accountsPayable.PaymentRequestItemRepository;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestStatusHistoryRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
+import com.example.backend.models.warehouse.ItemType;  // ✅ ADD THIS
+import java.math.BigDecimal;  // ✅ ADD THIS if not present
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -36,51 +40,58 @@ public class PaymentRequestService {
     private final PaymentRequestStatusHistoryRepository statusHistoryRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final OfferFinancialReviewRepository offerFinancialReviewRepository;
+    private final PaymentRequestItemRepository paymentRequestItemRepository;
 
     @Autowired
     public PaymentRequestService(
             PaymentRequestRepository paymentRequestRepository,
             PaymentRequestStatusHistoryRepository statusHistoryRepository,
             PurchaseOrderRepository purchaseOrderRepository,
-            OfferFinancialReviewRepository offerFinancialReviewRepository) {
+            OfferFinancialReviewRepository offerFinancialReviewRepository,
+            PaymentRequestItemRepository paymentRequestItemRepository) {
         this.paymentRequestRepository = paymentRequestRepository;
         this.statusHistoryRepository = statusHistoryRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.offerFinancialReviewRepository = offerFinancialReviewRepository;
+        this.paymentRequestItemRepository = paymentRequestItemRepository;
+    }
+
+    public List<PaymentRequestResponseDTO> getAllPaymentRequests() {
+        List<PaymentRequest> requests = paymentRequestRepository.findAll();
+        return requests.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     /**
      * Auto-create payment request when PO is created (called from Procurement)
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public PaymentRequestResponseDTO createPaymentRequestFromPO(UUID purchaseOrderId, UUID offerId, String createdByUsername) {
-        System.err.println("💚 ENTERED createPaymentRequestFromPO - NEW TRANSACTION");
+    @Transactional
+    public PaymentRequestResponseDTO createPaymentRequestFromPO(
+            UUID purchaseOrderId,
+            UUID offerId,
+            String createdByUsername) {
+
+        System.err.println("💚 ENTERED createPaymentRequestFromPO");
         System.err.println("💚 PO ID: " + purchaseOrderId);
         System.err.println("💚 Offer ID: " + offerId);
 
-        // Fresh load of PO in this new transaction
+        // Load PO
         PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found with ID: " + purchaseOrderId));
         System.err.println("💚 Found PO: " + po.getPoNumber());
 
         // Check if payment request already exists for this PO
-        System.err.println("💚 Checking for existing payment requests...");
         Optional<PaymentRequest> existingRequest = paymentRequestRepository.findByPurchaseOrderId(purchaseOrderId);
-        System.err.println("💚 Existing request present? " + existingRequest.isPresent());
-
         if (existingRequest.isPresent()) {
             System.err.println("❌ Payment request already exists!");
             throw new RuntimeException("Payment request already exists for this Purchase Order");
         }
-        System.err.println("💚 No existing request, continuing...");
 
-        System.err.println("💚 Generating request number...");
         String requestNumber = generatePaymentRequestNumber();
         System.err.println("💚 Request number: " + requestNumber);
 
-        System.err.println("💚 Getting merchant info from PO items...");
-
-        // Eagerly load PO items to avoid lazy loading issues
+        // Get merchant info from PO items
         List<PurchaseOrderItem> poItems = po.getPurchaseOrderItems();
         if (poItems == null || poItems.isEmpty()) {
             throw new RuntimeException("Purchase Order has no items");
@@ -89,87 +100,90 @@ public class PaymentRequestService {
         Merchant merchant = poItems.get(0).getMerchant();
         System.err.println("💚 Merchant: " + (merchant != null ? merchant.getName() : "null"));
 
-        System.err.println("💚 Building payment request object...");
+        // Load offer financial review
+        OfferFinancialReview offerFinancialReview = null;
+        if (offerId != null) {
+            offerFinancialReview = offerFinancialReviewRepository
+                    .findByOfferId(offerId)
+                    .orElse(null);
+            System.err.println("💚 Found Offer Financial Review: " + (offerFinancialReview != null));
+        }
 
-        // Build payment request
+        // Create Payment Request - Using ACTUAL field names from your model
         PaymentRequest paymentRequest = PaymentRequest.builder()
                 .requestNumber(requestNumber)
                 .purchaseOrder(po)
-                .offerFinancialReview(null) // We'll skip this for now since it's optional
+                .offerFinancialReview(offerFinancialReview)
                 .requestedAmount(BigDecimal.valueOf(po.getTotalAmount()))
                 .currency(po.getCurrency())
-                .description("Payment request for PO: " + po.getPoNumber())
+                .description("Payment for Purchase Order " + po.getPoNumber())
                 .status(PaymentRequestStatus.PENDING)
-                .requestedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000")) // System
-                .requestedByUserName("System")
-                .requestedByDepartment(null)
+                .requestedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000"))  // System generated
+                .requestedByUserName(createdByUsername)  // ✅ CORRECT field name
+                .requestedByDepartment("Procurement")
                 .requestedAt(LocalDateTime.now())
-                .paymentDueDate(po.getExpectedDeliveryDate() != null ?
-                        po.getExpectedDeliveryDate().toLocalDate() : null)
+                .paymentDueDate(po.getExpectedDeliveryDate() != null ? po.getExpectedDeliveryDate().toLocalDate() : null)
                 .totalPaidAmount(BigDecimal.ZERO)
                 .remainingAmount(BigDecimal.valueOf(po.getTotalAmount()))
-                .merchant(merchant)
-                .merchantName(merchant != null ? merchant.getName() : null)
+                .merchant(merchant)  // ✅ Your model has merchant relationship
+                .merchantName(merchant != null ? merchant.getName() : "Unknown Merchant")
+                .merchantAccountNumber(null)
+                .merchantBankName(null)
                 .merchantContactPerson(merchant != null ? merchant.getContactPersonName() : null)
                 .merchantContactPhone(merchant != null ? merchant.getContactPhone() : null)
                 .merchantContactEmail(merchant != null ? merchant.getContactEmail() : null)
                 .build();
 
-        System.err.println("💚 Creating payment request items...");
+        PaymentRequest savedPaymentRequest = paymentRequestRepository.save(paymentRequest);
+        System.err.println("💚 Payment Request saved with ID: " + savedPaymentRequest.getId());
 
-        // Create payment request items from PO items
-        List<PaymentRequestItem> items = new ArrayList<>();
+        // Create Payment Request Items
+        List<PaymentRequestItem> prItems = new ArrayList<>();
         for (PurchaseOrderItem poItem : poItems) {
-            PaymentRequestItem item = PaymentRequestItem.builder()
-                    .paymentRequest(paymentRequest)
+            // Get item details from ItemType relationship
+            ItemType itemType = poItem.getItemType();
+            String itemName = itemType != null ? itemType.getName() : "Unknown Item";
+            String itemDescription = itemType != null && itemType.getComment() != null ? itemType.getComment() : "";
+            String unit = itemType != null && itemType.getMeasuringUnit() != null ? itemType.getMeasuringUnit() : "Unit";
+
+            PaymentRequestItem prItem = PaymentRequestItem.builder()
+                    .paymentRequest(savedPaymentRequest)
                     .itemId(poItem.getId())
-                    .itemName(poItem.getItemType() != null ? poItem.getItemType().getName() : "Unknown")
-                    .itemDescription(poItem.getComment())
+                    .itemName(itemName)
+                    .itemDescription(itemDescription)
                     .quantity(BigDecimal.valueOf(poItem.getQuantity()))
-                    .unit(poItem.getItemType() != null ? poItem.getItemType().getMeasuringUnit() : null)
+                    .unit(unit)
                     .unitPrice(BigDecimal.valueOf(poItem.getUnitPrice()))
                     .totalPrice(BigDecimal.valueOf(poItem.getTotalPrice()))
                     .paidAmount(BigDecimal.ZERO)
                     .remainingAmount(BigDecimal.valueOf(poItem.getTotalPrice()))
+                    .status(PaymentRequestItemStatus.PENDING)
                     .build();
-            items.add(item);
+            prItems.add(prItem);
         }
 
-        paymentRequest.setPaymentRequestItems(items);
-        System.err.println("💚 Created " + items.size() + " payment request items");
+        List<PaymentRequestItem> savedItems = paymentRequestItemRepository.saveAll(prItems);
+        System.err.println("💚 Saved " + savedItems.size() + " payment request items");
 
-        // Save payment request
-        System.err.println("💚 Saving payment request...");
-        PaymentRequest savedRequest = paymentRequestRepository.save(paymentRequest);
-        System.err.println("💚 Payment request saved with ID: " + savedRequest.getId());
-
-        // Create status history
-        System.err.println("💚 Creating status history...");
-        createStatusHistory(savedRequest, null, PaymentRequestStatus.PENDING, null, "Payment request created automatically");
-        System.err.println("💚 Status history created");
-
-        // Update PO with payment request ID
-        System.err.println("💚 Updating PO with payment request ID...");
-        po.setPaymentRequestId(savedRequest.getId());
-        purchaseOrderRepository.save(po);
-        System.err.println("💚 PO updated");
-
-        System.err.println("✅ Payment request created successfully! ID: " + savedRequest.getId());
-
-        // Return a MINIMAL DTO
-        PaymentRequestResponseDTO dto = PaymentRequestResponseDTO.builder()
-                .id(savedRequest.getId())
-                .requestNumber(savedRequest.getRequestNumber())
-                .purchaseOrderId(po.getId())
-                .purchaseOrderNumber(po.getPoNumber())
-                .requestedAmount(savedRequest.getRequestedAmount())
-                .currency(savedRequest.getCurrency())
-                .status(savedRequest.getStatus())
-                .requestedAt(savedRequest.getRequestedAt())
+        // Create status history entry - toStatus is STRING in your model
+        PaymentRequestStatusHistory historyEntry = PaymentRequestStatusHistory.builder()
+                .paymentRequest(savedPaymentRequest)
+                .fromStatus(null)
+                .toStatus(PaymentRequestStatus.PENDING.name())  // ✅ Convert to STRING with .name()
+                .changedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+                .changedByUserName(createdByUsername)  // ✅ CORRECT field name
+                .changedAt(LocalDateTime.now())
+                .notes("Payment request created automatically from PO " + po.getPoNumber())
                 .build();
 
-        System.err.println("💚💚💚 RETURNING DTO, TRANSACTION WILL COMMIT");
-        return dto;
+        statusHistoryRepository.save(historyEntry);
+        System.err.println("💚 Status history created");
+
+        // Convert to DTO - Call existing method from your service
+        PaymentRequestResponseDTO responseDTO = convertToDTO(savedPaymentRequest);
+        System.err.println("✅ Payment request creation completed successfully");
+
+        return responseDTO;
     }
 
     /**

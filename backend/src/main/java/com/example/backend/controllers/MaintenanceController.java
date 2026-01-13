@@ -136,6 +136,52 @@ public class MaintenanceController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PostMapping("/records/{id}/submit-approval")
+    public ResponseEntity<Void> submitForApproval(@PathVariable UUID id) {
+        try {
+            maintenanceService.submitForApproval(id);
+            return ResponseEntity.ok().build();
+        } catch (MaintenanceException e) {
+            log.error("Error submitting for approval: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error submitting for approval: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/records/{id}/approve-manager")
+    public ResponseEntity<Void> approveByManager(@PathVariable UUID id) {
+        try {
+            maintenanceService.approveByManager(id);
+            return ResponseEntity.ok().build();
+        } catch (MaintenanceException e) {
+            log.error("Error approving by manager: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error approving by manager: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/records/{id}/reject")
+    public ResponseEntity<Void> rejectRecord(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        try {
+            String reason = body.get("rejectionReason");
+            if (reason == null || reason.trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            maintenanceService.rejectMaintenanceRecord(id, reason);
+            return ResponseEntity.ok().build();
+        } catch (MaintenanceException e) {
+            log.error("Error rejecting record: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error rejecting record: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
     
     @DeleteMapping("/records/{id}")
     public ResponseEntity<Object> deleteMaintenanceRecord(@PathVariable UUID id) {

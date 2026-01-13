@@ -1142,21 +1142,21 @@ public class OfferService {
             PurchaseOrder finalPO = purchaseOrderRepository.save(savedPO);
             System.out.println("✓ Final purchase order saved with total: $" + totalAmount);
             // Automatically create payment request for the new purchase order
-            try {
-                System.out.println("DEBUG: Creating payment request for PO: " + finalPO.getId());
-
-                // Pass BOTH purchaseOrderId AND offerId
-                paymentRequestService.createPaymentRequestFromPO(
-                        finalPO.getId(),
-                        offer.getId(),  // ADD THIS PARAMETER
-                        username
-                );
-
-                System.out.println("✓ Payment request created successfully");
-            } catch (Exception e) {
-                System.err.println("ERROR: Failed to create payment request: " + e.getMessage());
-                e.printStackTrace();
-            }
+//            try {
+//                System.out.println("DEBUG: Creating payment request for PO: " + finalPO.getId());
+//
+//                // Pass BOTH purchaseOrderId AND offerId
+//                paymentRequestService.createPaymentRequestFromPO(
+//                        finalPO.getId(),
+//                        offer.getId(),  // ADD THIS PARAMETER
+//                        username
+//                );
+//
+//                System.out.println("✓ Payment request created successfully");
+//            } catch (Exception e) {
+//                System.err.println("ERROR: Failed to create payment request: " + e.getMessage());
+//                e.printStackTrace();
+//            }
 
             System.out.println("=== DEBUG: createPurchaseOrderForItems SUCCESS ===");
 

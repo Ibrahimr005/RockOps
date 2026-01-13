@@ -1,6 +1,7 @@
 package com.example.backend.services;
 
 import com.example.backend.dto.dashboard.*;
+import com.example.backend.models.equipment.MaintenanceStatus;
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.example.backend.models.hr.LeaveRequest;
 import com.example.backend.models.warehouse.ItemStatus;
@@ -175,8 +176,8 @@ public class DashboardService {
 
         // Maintenance Metrics - Real data
         dashboard.setTotalMaintenanceRecords(maintenanceRecordRepository.count());
-        dashboard.setOngoingMaintenance(maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ACTIVE));
-        dashboard.setPendingMaintenance(maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ON_HOLD));
+        dashboard.setOngoingMaintenance(maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE));
+        dashboard.setPendingMaintenance(maintenanceRecordRepository.countByStatus(MaintenanceStatus.PENDING_FINANCE_APPROVAL));
 
         // Financial Metrics - Real data
         // TODO: Fix database schema - invoices.status should be VARCHAR not SMALLINT
@@ -205,10 +206,10 @@ public class DashboardService {
 
         // Maintenance by Status
         Map<String, Long> maintenanceByStatus = new HashMap<>();
-        maintenanceByStatus.put("ACTIVE", maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ACTIVE));
-        maintenanceByStatus.put("COMPLETED", maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED));
-        maintenanceByStatus.put("ON_HOLD", maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ON_HOLD));
-        maintenanceByStatus.put("CANCELLED", maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.CANCELLED));
+        maintenanceByStatus.put("ACTIVE", maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE));
+        maintenanceByStatus.put("COMPLETED", maintenanceRecordRepository.countByStatus(MaintenanceStatus.COMPLETED));
+        maintenanceByStatus.put("ON_HOLD", maintenanceRecordRepository.countByStatus(MaintenanceStatus.ON_HOLD));
+        maintenanceByStatus.put("CANCELLED", maintenanceRecordRepository.countByStatus(MaintenanceStatus.CANCELLED));
         dashboard.setMaintenanceByStatus(maintenanceByStatus);
 
         dashboard.setSystemStatus("OPERATIONAL");
@@ -303,10 +304,10 @@ public class DashboardService {
 
         // Maintenance Metrics - Real data
         long totalMaintenance = maintenanceRecordRepository.count();
-        long scheduledMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ON_HOLD);
-        long ongoingMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ACTIVE);
-        long completedMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED);
-        long cancelledMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.CANCELLED);
+        long scheduledMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ON_HOLD);
+        long ongoingMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE);
+        long completedMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.COMPLETED);
+        long cancelledMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.CANCELLED);
 
         dashboard.setTotalMaintenanceRecords(totalMaintenance);
         dashboard.setScheduledMaintenance(scheduledMaintenance);
@@ -575,10 +576,11 @@ public class DashboardService {
 
         // Maintenance Overview - Real data
         long totalMaintenance = maintenanceRecordRepository.count();
-        long scheduledMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ON_HOLD);
-        long ongoingMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ACTIVE);
-        long completedMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED);
-        long pendingMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ON_HOLD);
+        long scheduledMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ON_HOLD);
+        long ongoingMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE);
+        long completedMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.COMPLETED);
+        long pendingMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.PENDING_FINANCE_APPROVAL) + maintenanceRecordRepository.countByStatus(MaintenanceStatus.PENDING_MANAGER_APPROVAL);
+
 
         dashboard.setTotalMaintenanceRecords(totalMaintenance);
         dashboard.setScheduledMaintenance(scheduledMaintenance);

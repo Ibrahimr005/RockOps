@@ -339,22 +339,24 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                         />
                     </div>
 
-                    <div className="modal-footer">
-                        <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn-primary" disabled={loading}>
-                            {loading ? (
-                                <span>Creating...</span>
-                            ) : (
-                                <>
-                                    <FaSave />
-                                    <span>Create Transaction</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
                 </form>
+
+
+                <div className="modal-footer">
+                    <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+                        Cancel
+                    </button>
+                    <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>
+                        {loading ? (
+                            <span>Creating...</span>
+                        ) : (
+                            <>
+                                <FaSave />
+                                <span>Create Transaction</span>
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );

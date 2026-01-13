@@ -1,6 +1,7 @@
 package com.example.backend.models.finance.accountsPayable;
 
 import com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus;
+import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.example.backend.models.procurement.Offer;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -27,9 +28,13 @@ public class OfferFinancialReview {
     private UUID id;
 
     @OneToOne
-    @JoinColumn(name = "offer_id", nullable = false)
+    @JoinColumn(name = "offer_id", nullable = true)
     @JsonManagedReference
     private Offer offer;
+
+    @ManyToOne
+    @JoinColumn(name = "maintenance_record_id", nullable = true)
+    private MaintenanceRecord maintenanceRecord;
 
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;

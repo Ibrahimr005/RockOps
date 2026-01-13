@@ -25,6 +25,9 @@ public class CashSafeService {
                 .safeName(requestDTO.getSafeName())
                 .location(requestDTO.getLocation())
                 .currentBalance(requestDTO.getCurrentBalance())
+                .availableBalance(requestDTO.getCurrentBalance())  // ADD THIS LINE
+                .totalBalance(requestDTO.getCurrentBalance())      // ADD THIS LINE
+                .reservedBalance(BigDecimal.ZERO)
                 .isActive(requestDTO.getIsActive() != null ? requestDTO.getIsActive() : true)
                 .notes(requestDTO.getNotes())
                 .createdBy(createdBy)

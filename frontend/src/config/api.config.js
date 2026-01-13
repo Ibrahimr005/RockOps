@@ -1,5 +1,5 @@
 // src/config/api.config.js
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||  'http://localhost:8080';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 
 // Direct Purchase Ticket module endpoints
@@ -244,7 +244,7 @@ export const FINANCE_ENDPOINTS = {
 
     // Add this to your existing FINANCE_ENDPOINTS in src/config/api.config.js
 
-// Bank Reconciliation submodule endpoints
+    // Bank Reconciliation submodule endpoints
     BANK_RECONCILIATION: {
         // Bank Account endpoints
         BANK_ACCOUNTS: {
@@ -367,7 +367,7 @@ export const FINANCE_ENDPOINTS = {
 
     // Inside FINANCE_ENDPOINTS object, add:
 
-// Accounts Payable endpoints
+    // Accounts Payable endpoints
     ACCOUNTS_PAYABLE: {
         // Offer Financial Reviews
         OFFER_REVIEWS: {
@@ -387,7 +387,10 @@ export const FINANCE_ENDPOINTS = {
             READY_TO_PAY: '/api/v1/finance/payment-requests/ready-to-pay',
             BY_MERCHANT: (merchantId) => `/api/v1/finance/payment-requests/merchant/${merchantId}`,
             APPROVE_REJECT: '/api/v1/finance/payment-requests/approve-reject',
-            CREATE_FROM_PO: (poId) => `/api/v1/finance/payment-requests/create-from-po/${poId}`
+            // ✅ ADD THIS:
+            CREATE_FROM_PO: (purchaseOrderId, offerId) =>
+                `/api/v1/finance/payment-requests/create-from-po/${purchaseOrderId}/${offerId}`,
+            // CREATE_FROM_PO: (poId) => `/api/v1/finance/payment-requests/create-from-po/${poId}`
         },
 
         // Payments
@@ -436,7 +439,7 @@ export const HR_ENDPOINTS = {
         UPDATE: (id) => `/api/v1/hr/employee/${id}`,
         DELETE: (id) => `/api/v1/hr/employee/${id}`
     },
-    
+
     // HR Dashboard
     DASHBOARD: {
         SALARY_STATISTICS: '/api/v1/hr/dashboard/salary-statistics',
@@ -457,11 +460,11 @@ export const SITE_ENDPOINTS = {
     MERCHANTS: (siteId) => `/api/v1/site/${siteId}/merchants`,
     FIXED_ASSETS: (siteId) => `/api/v1/site/${siteId}/fixedassets`,
     UNASSIGNED_FIXED_ASSETS: '/api/v1/site/unassigned-fixedassets',
-    
+
     // Site Admin endpoints
     ADMIN: {
         ADD_SITE: '/siteadmin/addsite',
-        DELETE_SITE: (id)=> `siteadmin/${id}`,
+        DELETE_SITE: (id) => `siteadmin/${id}`,
         UPDATE_SITE: (id) => `/siteadmin/updatesite/${id}`,
         ADD_WAREHOUSE: (siteId) => `/siteadmin/${siteId}/add-warehouse`,
         ASSIGN_EQUIPMENT: (siteId, equipmentId) => `/siteadmin/${siteId}/assign-equipment/${equipmentId}`,
@@ -474,7 +477,7 @@ export const SITE_ENDPOINTS = {
         UPDATE_PARTNER_PERCENTAGE: (siteId, partnerId) => `/siteadmin/${siteId}/update-partner-percentage/${partnerId}`,
         REMOVE_PARTNER: (siteId, partnerId) => `/siteadmin/${siteId}/remove-partner/${partnerId}`,
         getAvailableWarehouseManagers: 'siteadmin/warehouse-managers/available',
-        getAvailableWarehouseManagersForSite:(siteId) =>`siteadmin/sites/${siteId}/warehouse-managers/available`,
+        getAvailableWarehouseManagersForSite: (siteId) => `siteadmin/sites/${siteId}/warehouse-managers/available`,
         getAvailableWarehouseWorkers: '/siteadmin/warehouse-workers/available',
         getAvailableWarehouseWorkersForSite: (siteId) => `/siteadmin/${siteId}/warehouse-workers/available`,
         getWarehouseEmployees: (warehouseId) => `/siteadmin/warehouses/${warehouseId}/employees`,
@@ -577,7 +580,7 @@ export const DOCUMENT_ENDPOINTS = {
     CREATE: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`,
     UPDATE: (id) => `/api/v1/documents/${id}`,
     DELETE: (id) => `/api/v1/documents/${id}`,
-    
+
     // Sarky-specific document endpoints
     BY_SARKY_MONTH: (entityType, entityId, month, year) => `/api/v1/${entityType}/${entityId}/documents/sarky?month=${month}&year=${year}`,
     CREATE_SARKY: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents/sarky`,
@@ -593,7 +596,7 @@ export const PARTNER_ENDPOINTS = {
     GET_ALL: '/api/v1/partner/getallpartners',
     ADD: '/api/v1/partner/add',
     UPDATE: (id) => `/api/v1/partner/update/${id}`,
-    DELETE: (id) =>  `/api/v1/partner/delete/${id}`
+    DELETE: (id) => `/api/v1/partner/delete/${id}`
 };
 
 // Authentication module endpoints
@@ -903,7 +906,11 @@ export const MAINTENANCE_ENDPOINTS = {
         DELETE: (id) => `/api/maintenance/records/${id}`,
         ACTIVE: '/api/maintenance/records/active',
         OVERDUE: '/api/maintenance/records/overdue',
-        BY_EQUIPMENT: (equipmentId) => `/api/maintenance/records/equipment/${equipmentId}`
+        BY_EQUIPMENT: (equipmentId) => `/api/maintenance/records/equipment/${equipmentId}`,
+        // Approval Workflow
+        SUBMIT_APPROVAL: (id) => `/api/maintenance/records/${id}/submit-approval`,
+        APPROVE_MANAGER: (id) => `/api/maintenance/records/${id}/approve-manager`,
+        REJECT: (id) => `/api/maintenance/records/${id}/reject`
     },
 
     // Maintenance Steps

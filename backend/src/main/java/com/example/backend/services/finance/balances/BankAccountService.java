@@ -34,6 +34,9 @@ public class BankAccountService {
                 .swiftCode(requestDTO.getSwiftCode())
                 .accountHolderName(requestDTO.getAccountHolderName())
                 .currentBalance(requestDTO.getCurrentBalance())
+                .availableBalance(requestDTO.getCurrentBalance())  // ADD THIS LINE
+                .totalBalance(requestDTO.getCurrentBalance())      // ADD THIS LINE
+                .reservedBalance(BigDecimal.ZERO)
                 .openingDate(requestDTO.getOpeningDate())
                 .isActive(requestDTO.getIsActive() != null ? requestDTO.getIsActive() : true)
                 .notes(requestDTO.getNotes())

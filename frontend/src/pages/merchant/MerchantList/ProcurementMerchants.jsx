@@ -1,4 +1,4 @@
-import React, { useEffect, useState,useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "./ProcurementMerchants.scss"
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
