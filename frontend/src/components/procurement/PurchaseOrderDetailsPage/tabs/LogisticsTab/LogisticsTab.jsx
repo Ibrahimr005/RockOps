@@ -231,13 +231,14 @@ const LogisticsTab = ({ purchaseOrder, onError, onSuccess }) => {
             </div>
 
             {/* Deliveries Section */}
-            {purchaseOrder.deliverySessions && purchaseOrder.deliverySessions.length > 0 && (
-                <div className="logistics-section">
-                    <div className="section-title">
-                        <FiTruck />
-                        Deliveries & Logistics
-                    </div>
+            {/* Deliveries Section - ALWAYS SHOW */}
+            <div className="logistics-section">
+                <div className="section-title">
+                    <FiTruck />
+                    Deliveries & Logistics
+                </div>
 
+                {purchaseOrder.deliverySessions && purchaseOrder.deliverySessions.length > 0 ? (
                     <div className="deliveries-list">
                         {purchaseOrder.deliverySessions.map((session, index) => {
                             const sessionLogistics = logisticsByDelivery[session.id] || [];
@@ -255,12 +256,12 @@ const LogisticsTab = ({ purchaseOrder, onError, onSuccess }) => {
                                                     Delivery on {new Date(session.processedAt).toLocaleDateString('en-GB')}
                                                 </h4>
                                                 <div className="delivery-meta">
+                                        <span>
+                                            <FiUser /> {session.processedBy}
+                                        </span>
                                                     <span>
-                                                        <FiUser /> {session.processedBy}
-                                                    </span>
-                                                    <span>
-                                                        <FiPackage /> {session.merchantName}
-                                                    </span>
+                                            <FiPackage /> {session.merchantName}
+                                        </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -273,7 +274,6 @@ const LogisticsTab = ({ purchaseOrder, onError, onSuccess }) => {
                                     </div>
 
                                     {/* Delivery Items */}
-
                                     {session.itemReceipts && session.itemReceipts.length > 0 && (
                                         <div className="delivery-items">
                                             <div
@@ -307,8 +307,8 @@ const LogisticsTab = ({ purchaseOrder, onError, onSuccess }) => {
                                                             <div className="item-card-quantity">
                                                                 <span className="quantity-label">Received</span>
                                                                 <span className="quantity-value">
-                                {receipt.goodQuantity} {receipt.measuringUnit}
-                            </span>
+                                                        {receipt.goodQuantity} {receipt.measuringUnit}
+                                                    </span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -356,9 +356,15 @@ const LogisticsTab = ({ purchaseOrder, onError, onSuccess }) => {
                             );
                         })}
                     </div>
-                </div>
-            )}
-
+                ) : (
+                    // EMPTY STATE FOR NO DELIVERIES
+                    <div className="empty-deliveries-state">
+                        <FiTruck size={48} />
+                        <h3>No Deliveries Yet</h3>
+                        <p>Deliveries will appear here once the warehouse receives items from this purchase order.</p>
+                    </div>
+                )}
+            </div>
             {/* Standalone Logistics Section */}
             {standaloneLogistics.length > 0 && (
                 <div className="logistics-section">

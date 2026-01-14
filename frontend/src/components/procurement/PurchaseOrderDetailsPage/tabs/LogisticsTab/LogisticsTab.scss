@@ -743,3 +743,35 @@
     }
   }
 }
+.empty-deliveries-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: var(--color-surface-secondary);
+  border: 1px dashed var(--border-color-medium);
+  border-radius: var(--radius-sm);
+
+  svg {
+    margin-bottom: 16px;
+    color: var(--color-text-muted);
+    opacity: 0.4;
+  }
+
+  h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    max-width: 400px;
+  }
+}
