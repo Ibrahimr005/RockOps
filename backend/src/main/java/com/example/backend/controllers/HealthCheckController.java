@@ -1,14 +1,13 @@
 package com.example.backend.controllers;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/api/test")
 public class HealthCheckController {
-
-    @GetMapping("/")
-    public ResponseEntity<String> healthCheck() {
-        return ResponseEntity.ok("OK");
+    
+    @GetMapping("/ping")
+    public String ping() {
+        return "PONG - Build timestamp: " + System.currentTimeMillis();
     }
 }
