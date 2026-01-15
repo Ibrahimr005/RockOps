@@ -21,7 +21,7 @@ CREATE TABLE offer_financial_reviews (
 
 ALTER TABLE offer_financial_reviews
     ADD CONSTRAINT fk_offer_financial_review_offer
-        FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE CASCADE;
+        FOREIGN KEY (offer_id) REFERENCES offer(id) ON DELETE CASCADE;
 
 ALTER TABLE offer_financial_reviews
     ADD CONSTRAINT fk_offer_financial_review_maintenance
