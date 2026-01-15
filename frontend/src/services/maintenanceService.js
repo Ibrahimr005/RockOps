@@ -64,6 +64,36 @@ export const maintenanceService = {
         }
     },
 
+    submitForApproval: async (id) => {
+        try {
+            const response = await apiClient.post(MAINTENANCE_ENDPOINTS.RECORDS.SUBMIT_APPROVAL(id));
+            return response;
+        } catch (error) {
+            console.error('Error submitting record for approval:', error);
+            throw error;
+        }
+    },
+
+    approveByManager: async (id) => {
+        try {
+            const response = await apiClient.post(MAINTENANCE_ENDPOINTS.RECORDS.APPROVE_MANAGER(id));
+            return response;
+        } catch (error) {
+            console.error('Error approving record by manager:', error);
+            throw error;
+        }
+    },
+
+    rejectRecord: async (id, rejectionReason) => {
+        try {
+            const response = await apiClient.post(MAINTENANCE_ENDPOINTS.RECORDS.REJECT(id), { rejectionReason });
+            return response;
+        } catch (error) {
+            console.error('Error rejecting record:', error);
+            throw error;
+        }
+    },
+
     // Get records by equipment
     getRecordsByEquipment: async (equipmentId) => {
         try {

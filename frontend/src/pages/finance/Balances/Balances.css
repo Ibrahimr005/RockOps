@@ -1,0 +1,76 @@
+.balances-container {
+    padding: 20px;
+    width: 100%;
+}
+
+.balances-content-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.tabs-header {
+    display: flex;
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border-color);
+    overflow-x: auto;
+    padding: 0 10px;
+}
+
+.tab-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+}
+
+.tab-button:hover {
+    color: var(--primary-color);
+    background: rgba(var(--primary-rgb), 0.05);
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: rgba(var(--primary-rgb), 0.1);
+}
+
+.tab-button svg {
+    font-size: 16px;
+}
+
+.balances-content {
+    padding: 20px;
+    min-height: 400px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tabs-header {
+        padding: 0 5px;
+    }
+
+    .tab-button {
+        padding: 12px 15px;
+        font-size: 13px;
+    }
+
+    .tab-button span {
+        display: none;
+    }
+
+    .tab-button svg {
+        font-size: 18px;
+    }
+}

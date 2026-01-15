@@ -637,32 +637,70 @@
   }
 }
 
-.procurement-status-badge {
+.finance-status-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rejection-reason-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-danger);
+  padding: 4px;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: var(--bold-font-weight);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+  flex-shrink: 0; // Prevent button from shrinking
 
-  &.status-submitted {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
-    color: var(--color-text-inverse);
+  &:hover {
+    opacity: 0.7;
+    transform: scale(1.1);
   }
 
-  &.status-manageraccepted {
-    background: linear-gradient(135deg, var(--color-success), var(--color-success-light));
-    color: var(--color-text-inverse);
+  svg {
+    pointer-events: none;
   }
+}
 
+.rejection-modal {
+  .rejection-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 
+    .rejection-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
 
-  &.status-managerrejected {
-    background: linear-gradient(135deg, var(--color-danger), var(--color-danger-light));
-    color: var(--color-text-inverse);
+      &:last-child {
+        border-bottom: none;
+      }
+
+      label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .field-value {
+        font-size: 0.95rem;
+        color: var(--color-text-primary);
+        background-color: var(--section-background-color);
+        border-radius: 6px;
+
+        &.reason-text {
+          white-space: pre-wrap;
+          line-height: 1.6;
+          min-height: 60px;
+        }
+      }
+    }
   }
 }

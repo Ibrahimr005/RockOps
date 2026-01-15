@@ -18,8 +18,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
 
     // Update the handleRowClick function to open the view modal instead of navigating
     const handleRowClick = (row) => {
-        setSelectedRequestOrder(row);
-        setShowViewModal(true);
+        navigate(`/procurement/request-orders/${row.id}`);
     };
 
     const handleViewClick = (row, e) => {
@@ -163,12 +162,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
                 duration={3000}
             />
 
-            {/* Request Order View Modal */}
-            <RequestOrderViewModal
-                requestOrder={selectedRequestOrder}
-                isOpen={showViewModal}
-                onClose={handleCloseViewModal}
-            />
+
         </div>
     );
 };

@@ -745,7 +745,47 @@
 }
 .procurement-request-items-summary {
   padding: 2rem;
+
+  h4 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .request-items-actions {
+      display: flex;
+      gap: 0;
+
+      .btn-modify-items {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-right: 1px solid var(--border-color-medium);
+        background: transparent;
+        color: var(--color-primary);
+        font-size: 0.9rem;
+        font-weight: var(--bold-font-weight);
+        cursor: pointer;
+        transition: all var(--transition-normal) ease;
+
+        &:last-child {
+          border-right: none;
+        }
+
+        &:hover {
+          background: rgba(72, 128, 255, 0.1);
+          color: var(--color-primary-hover);
+        }
+
+        svg {
+          margin: 0;
+        }
+      }
+    }
+  }
 }
+
 // Fix for the procurement details header action buttons alignment
 .procurement-details-header {
   display: flex;
@@ -760,7 +800,12 @@
   }
 
   .procurement-details-actions {
-    flex-shrink: 0; // Prevent shrinking
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+
 
     .action-buttons-group {
       display: flex;
@@ -771,8 +816,19 @@
         white-space: nowrap;
         min-width: auto;
         padding: 0.75rem 1.25rem;
+      }
+    }
+  }
 
+  // Responsive
+  @media (max-width: 1024px) {
+    .procurement-details-actions {
+      .rfq-actions-group {
+        flex-direction: column;
 
+        .btn-rfq {
+          width: 100%;
+        }
       }
     }
   }

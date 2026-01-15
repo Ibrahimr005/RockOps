@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +33,17 @@ public class Warehouse {
     private String photoUrl;
 
 //    private int capacity;
+
+    // Add these fields to your existing Warehouse model:
+
+    @Column(name = "balance")
+    private Double balance = 0.0; // Total value of all IN_WAREHOUSE items
+
+    @Column(name = "balance_updated_at")
+    private LocalDateTime balanceUpdatedAt;
+
+    @Column(name = "balance_updated_by")
+    private String balanceUpdatedBy;
 
     @ManyToOne
     @JoinColumn(name = "site_id", referencedColumnName = "id")

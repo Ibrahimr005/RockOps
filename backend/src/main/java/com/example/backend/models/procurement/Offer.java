@@ -1,5 +1,8 @@
 package com.example.backend.models.procurement;
 
+import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
+import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Comparator;
+import java.util.stream.Collectors;
 
 @Entity
 @Data
@@ -55,6 +59,49 @@ public class Offer {
     @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference  // ORIGINAL VALUE
     private List<OfferItem> offerItems = new ArrayList<>();
+
+    // Add these fields to Offer.java
+
+    @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<OfferRequestItem> offerRequestItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<RequestItemModification> requestItemModifications = new ArrayList<>();
+
+    // Helper method to get effective request items (modified or original)
+    public List<RequestOrderItem> getEffectiveRequestItems() {
+        if (offerRequestItems != null && !offerRequestItems.isEmpty()) {
+            // Return modified items converted to RequestOrderItem format for compatibility
+            return offerRequestItems.stream()
+                    .map(ori -> RequestOrderItem.builder()
+                            .id(ori.getId())
+                            .itemType(ori.getItemType())
+                            .quantity(ori.getQuantity())
+                            .comment(ori.getComment())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+        return requestOrder != null ? requestOrder.getRequestItems() : new ArrayList<>();
+    }
+
+
+
+    // Add these fields:
+    @Enumerated(EnumType.STRING)
+    @Column(name = "finance_validation_status", length = 50)
+    private OfferFinanceValidationStatus financeValidationStatus;
+
+    @Column(name = "finance_reviewed_at")
+    private LocalDateTime financeReviewedAt;
+
+    @Column(name = "finance_reviewed_by_user_id")
+    private UUID financeReviewedByUserId;
+
+    @OneToOne(mappedBy = "offer", cascade = CascadeType.ALL)
+    @JsonBackReference
+    private OfferFinancialReview offerFinancialReview;
 
     // Helper methods
     public void addTimelineEvent(OfferTimelineEvent event) {

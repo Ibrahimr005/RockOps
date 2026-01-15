@@ -77,6 +77,8 @@ const WarehouseDetails = () => {
   const [restockItems, setRestockItems] = useState(null);
   const [shouldOpenRestockModal, setShouldOpenRestockModal] = useState(false);
 
+
+
   // Function to fetch incoming transactions count directly
   const fetchIncomingTransactionsCount = useCallback(async () => {
     if (!id) return;

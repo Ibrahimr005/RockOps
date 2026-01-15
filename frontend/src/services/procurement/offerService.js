@@ -72,21 +72,21 @@ export const offerService = {
     },
 
     // Finance operations
-    updateFinanceStatus: async (offerId, financeStatus) => {
-        const response = await apiClient.put(
-            `${OFFER_ENDPOINTS.UPDATE_FINANCE_STATUS(offerId)}?financeStatus=${financeStatus}`
-        );
-        return response.data || response;
-    },
+    // updateFinanceStatus: async (offerId, financeStatus) => {
+    //     const response = await apiClient.put(
+    //         `${OFFER_ENDPOINTS.UPDATE_FINANCE_STATUS(offerId)}?financeStatus=${financeStatus}`
+    //     );
+    //     return response.data || response;
+    // },
 
-    updateItemFinanceStatus: async (itemId, financeStatus, rejectionReason = null) => {
-        const params = new URLSearchParams({ financeStatus });
-        if (rejectionReason) {
-            params.append('rejectionReason', rejectionReason);
-        }
-        const response = await apiClient.put(`${OFFER_ENDPOINTS.UPDATE_ITEM_FINANCE_STATUS(itemId)}?${params}`);
-        return response.data || response;
-    },
+    // updateItemFinanceStatus: async (itemId, financeStatus, rejectionReason = null) => {
+    //     const params = new URLSearchParams({ financeStatus });
+    //     if (rejectionReason) {
+    //         params.append('rejectionReason', rejectionReason);
+    //     }
+    //     const response = await apiClient.put(`${OFFER_ENDPOINTS.UPDATE_ITEM_FINANCE_STATUS(itemId)}?${params}`);
+    //     return response.data || response;
+    // },
 
     getByFinanceStatus: async (status) => {
         const response = await apiClient.get(OFFER_ENDPOINTS.BY_FINANCE_STATUS(status));
@@ -174,5 +174,44 @@ export const offerService = {
             console.error('Error fetching offer with timeline:', error);
             throw error;
         }
-    }
+    },
+
+    // Finance operations
+    updateFinanceStatus: async (offerId, financeStatus) => {
+        const response = await apiClient.put(
+            `${OFFER_ENDPOINTS.UPDATE_FINANCE_STATUS(offerId)}?financeStatus=${financeStatus}`
+        );
+        return response.data || response;
+    },
+
+// **ADD THIS NEW METHOD:**
+    updateFinanceValidationStatus: async (offerId, status) => {
+        const response = await apiClient.put(
+            OFFER_ENDPOINTS.UPDATE_FINANCE_VALIDATION_STATUS(offerId),
+            null,
+            { params: { status } }
+        );
+        return response.data || response;
+    },
+
+    updateItemFinanceStatus: async (itemId, financeStatus, rejectionReason = null) => {
+        const params = new URLSearchParams({ financeStatus });
+        if (rejectionReason) {
+            params.append('rejectionReason', rejectionReason);
+        }
+        const response = await apiClient.put(`${OFFER_ENDPOINTS.UPDATE_ITEM_FINANCE_STATUS(itemId)}?${params}`);
+        return response.data || response;
+    },
+
+    confirmRFQImport: async (offerId, merchantId, validRowIds, preview) => {
+        const params = new URLSearchParams();
+        params.append('merchantId', merchantId);
+        validRowIds.forEach(id => params.append('validRowIds', id));
+
+        const response = await apiClient.post(
+            `${OFFER_ENDPOINTS.BASE}/${offerId}/rfq-import/confirm?${params.toString()}`,
+            preview
+        );
+        return response.data || response;
+    },
 };

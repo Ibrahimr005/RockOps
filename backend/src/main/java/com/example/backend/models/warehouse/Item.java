@@ -9,7 +9,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-
 @Entity
 @Getter
 @Setter
@@ -27,6 +26,14 @@ public class Item {
 
     private int quantity;
 
+    // NEW: Price per unit for this specific item
+    @Column(name = "unit_price")
+    private Double unitPrice;
+
+    // NEW: Total value (quantity * unitPrice) - calculated field
+    @Column(name = "total_value")
+    private Double totalValue;
+
     @ManyToOne
     @JoinColumn(name = "warehouse_id", nullable = false)
     @JsonIgnore
@@ -41,23 +48,25 @@ public class Item {
     private LocalDateTime createdAt;
     private String createdBy;
 
-    // ADD THESE NEW FIELDS:
+    // NEW: Track who approved the price and when
+    private String priceApprovedBy;
+    private LocalDateTime priceApprovedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "item_source")
-    private ItemSource itemSource; // How this item was added
+    private ItemSource itemSource;
 
     @Column(name = "source_reference")
-    private String sourceReference; // Reference to the source (PO number, batch number, etc.)
+    private String sourceReference;
 
     @Column(name = "merchant_name")
-    private String merchantName; // Store merchant name for PO items
+    private String merchantName;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transaction_item_id")
     @JsonIgnoreProperties({"items", "hibernateLazyInitializer", "handler"})
     private TransactionItem transactionItem;
 
-    // Keep comment field for additional notes
     private String comment;
 
     public Item(ItemType itemType, Warehouse warehouse, int quantity, ItemStatus itemStatus) {
@@ -65,6 +74,15 @@ public class Item {
         this.warehouse = warehouse;
         this.quantity = quantity;
         this.itemStatus = itemStatus;
+    }
+
+    // Helper method to calculate total value
+    public void calculateTotalValue() {
+        if (unitPrice != null && quantity > 0) {
+            this.totalValue = unitPrice * quantity;
+        } else {
+            this.totalValue = 0.0;
+        }
     }
 
     public boolean isResolved() {

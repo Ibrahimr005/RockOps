@@ -118,7 +118,7 @@ public class EquipmentService {
             Optional<MaintenanceRecord> activeRecord = maintenanceRecordRepository
                     .findFirstByEquipmentIdAndStatusOrderByCreationDateDesc(
                             id,
-                            MaintenanceRecord.MaintenanceStatus.ACTIVE);
+                            MaintenanceStatus.ACTIVE);
             activeRecord.ifPresent(record -> dto.setActiveMaintenanceRecordId(record.getId()));
         }
 

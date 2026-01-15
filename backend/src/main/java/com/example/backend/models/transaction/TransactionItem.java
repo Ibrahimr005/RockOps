@@ -10,9 +10,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -50,6 +53,10 @@ public class TransactionItem {
     private ResolutionType resolutionType;
     private String resolutionNotes;
     private String resolvedBy;
+    // Store the breakdown of deducted items as JSON
+    @Column(columnDefinition = "TEXT")
+    private String deductedItemsJson;
+
     private Integer correctedQuantity; // For counting error resolutions
     @Builder.Default
     private Boolean fullyResolved = false; // Use Boolean to handle NULL values properly
@@ -59,4 +66,28 @@ public class TransactionItem {
     @JsonIgnore
     @Builder.Default
     private List<Item> items = new ArrayList<>();
+
+    // Helper methods to work with deductedItems
+    public void setDeductedItems(List<Map<String, Object>> deductedItems) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            this.deductedItemsJson = mapper.writeValueAsString(deductedItems);
+        } catch (Exception e) {
+            System.err.println("Failed to serialize deducted items: " + e.getMessage());
+            this.deductedItemsJson = null;
+        }
+    }
+
+    public List<Map<String, Object>> getDeductedItems() {
+        if (deductedItemsJson == null || deductedItemsJson.isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(deductedItemsJson, new TypeReference<List<Map<String, Object>>>(){});
+        } catch (Exception e) {
+            System.err.println("Failed to deserialize deducted items: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
 }

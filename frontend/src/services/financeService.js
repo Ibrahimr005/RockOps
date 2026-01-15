@@ -729,5 +729,345 @@ export const financeService = {
                 return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.RECONCILIATION_REPORTS.TREND(bankAccountId));
             }
         }
+    },
+
+    // Balances module operations
+    balances: {
+        // Bank Account operations
+        bankAccounts: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BY_ID(id));
+            },
+
+            getAllActive: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.ACTIVE);
+            },
+
+            create: (accountData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BASE, accountData);
+            },
+
+            update: (id, accountData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BY_ID(id), accountData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BY_ID(id));
+            },
+
+            activate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.ACTIVATE(id));
+            },
+
+            deactivate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.DEACTIVATE(id));
+            }
+        },
+
+        // Cash Safe operations
+        cashSafes: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BY_ID(id));
+            },
+
+            getAllActive: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.ACTIVE);
+            },
+
+            create: (safeData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BASE, safeData);
+            },
+
+            update: (id, safeData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BY_ID(id), safeData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BY_ID(id));
+            },
+
+            activate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.ACTIVATE(id));
+            },
+
+            deactivate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.DEACTIVATE(id));
+            }
+        },
+
+        // Cash With Person operations
+        cashWithPersons: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BY_ID(id));
+            },
+
+            getAllActive: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.ACTIVE);
+            },
+
+            create: (personData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BASE, personData);
+            },
+
+            update: (id, personData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BY_ID(id), personData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BY_ID(id));
+            },
+
+            activate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.ACTIVATE(id));
+            },
+
+            deactivate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.DEACTIVATE(id));
+            }
+        },
+
+        // Balance Transaction operations
+        transactions: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.BY_ID(id));
+            },
+
+            create: (transactionData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.BASE, transactionData);
+            },
+
+            approve: (id) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.APPROVE(id));
+            },
+
+            reject: (id, rejectionReason) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.REJECT(id), {
+                    approved: false,
+                    rejectionReason: rejectionReason
+                });
+            },
+
+            getPending: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.PENDING);
+            },
+
+            getPendingCount: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.PENDING_COUNT);
+            },
+
+            getByAccount: (accountType, accountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.BY_ACCOUNT(accountType, accountId));
+            },
+
+            getByDateRange: (startDate, endDate) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.DATE_RANGE, {
+                    params: { startDate, endDate }
+                });
+            }
+        }
+    },
+
+    // Add this after the balances section in financeService
+
+// Accounts Payable operations
+    accountsPayable: {
+        // Offer Financial Reviews
+        offerReviews: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.BY_ID(id));
+            },
+
+            getPending: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.PENDING);
+            },
+
+            getByStatus: (status) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.BY_STATUS(status));
+            },
+
+            getByOffer: (offerId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.BY_OFFER(offerId));
+            },
+
+            review: (reviewData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.REVIEW, reviewData);
+            },
+            reviewItems: (reviewData) => {
+                console.log('📤 Calling reviewItems API with data:', reviewData);
+                return apiClient.post(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.REVIEW_ITEMS,
+                    reviewData
+                );
+            }
+        },
+
+        // Payment Requests
+        paymentRequests: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.BY_ID(id));
+            },
+
+            getPending: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.PENDING);
+            },
+
+            getReadyToPay: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.READY_TO_PAY);
+            },
+
+            getByMerchant: (merchantId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.BY_MERCHANT(merchantId));
+            },
+
+            approveReject: (requestData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.APPROVE_REJECT, requestData);
+            },
+
+            createFromPO: (purchaseOrderId) => {
+                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.CREATE_FROM_PO(purchaseOrderId));
+            },
+            createFromPurchaseOrder: (purchaseOrderId, offerId, username) => {
+                console.log('🔵 financeService: Creating payment request');
+                console.log('🔵 PO ID:', purchaseOrderId);
+                console.log('🔵 Offer ID:', offerId);
+                console.log('🔵 Username:', username);
+
+                return apiClient.post(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.CREATE_FROM_PO(purchaseOrderId, offerId),
+                    { username: username }
+                );
+            },
+        },
+
+        // Payments
+        payments: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.BY_ID(id));
+            },
+
+            process: (paymentData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.PROCESS, paymentData);
+            },
+
+            getByPaymentRequest: (paymentRequestId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.BY_PAYMENT_REQUEST(paymentRequestId));
+            },
+
+            getToday: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.TODAY);
+            },
+
+            getByMerchant: (merchantId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.BY_MERCHANT(merchantId));
+            },
+
+            getHistory: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.HISTORY);
+            }
+        },
+
+        // Dashboard
+        dashboard: {
+            getSummary: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.DASHBOARD.SUMMARY);
+            },
+
+            getBalances: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.DASHBOARD.BALANCES);
+            },
+
+            getMerchants: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.DASHBOARD.MERCHANTS);
+            }
+        }
+    },
+
+    // Inside financeService.accountsPayable, add:
+
+// Refund Tracking
+    refunds: {
+        getAllRefunds: async () => {
+            try {
+                console.log('Fetching all refund requests');
+                const response = await apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.BASE);
+                console.log('Refunds response:', response);
+                return response.data || response;
+            } catch (error) {
+                console.error('Error fetching refunds:', error);
+                throw error;
+            }
+        },
+
+        getRefundsByStatus: async (status) => {
+            try {
+                console.log(`Fetching refunds with status: ${status}`);
+                const response = await apiClient.get(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.BY_STATUS(status)
+                );
+                console.log('Refunds by status response:', response);
+                return response.data || response;
+            } catch (error) {
+                console.error(`Error fetching refunds with status ${status}:`, error);
+                throw error;
+            }
+        },
+
+        getRefundById: async (id) => {
+            try {
+                console.log(`Fetching refund: ${id}`);
+                const response = await apiClient.get(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.BY_ID(id)
+                );
+                console.log('Refund details response:', response);
+                return response.data || response;
+            } catch (error) {
+                console.error(`Error fetching refund ${id}:`, error);
+                throw error;
+            }
+        },
+
+        confirmRefund: async (id, confirmData) => {
+            try {
+                console.log(`Confirming refund: ${id}`, confirmData);
+                const response = await apiClient.post(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.CONFIRM(id),
+                    confirmData
+                );
+                console.log('Confirm refund response:', response);
+                return response.data || response;
+            } catch (error) {
+                console.error(`Error confirming refund ${id}:`, error);
+                throw error;
+            }
+        }
     }
+
 };

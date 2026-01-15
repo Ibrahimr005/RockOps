@@ -1,31 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
+import { useNavigate } from 'react-router-dom';
 import { FaPlus } from 'react-icons/fa';
 import "./PendingRequestOrders.scss";
 import { requestOrderService } from '../../../../services/procurement/requestOrderService.js';
-import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
-import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
-import { warehouseService } from '../../../../services/warehouse/warehouseService';
 import RequestOrderViewModal from '../RequestOrderViewModal/RequestOrderViewModal';
-import RequestOrderFormModal from '../RequestOrderFormModal/RequestOrderFormModal'; // NEW IMPORT
+import RequestOrderModal from '../../../../components/procurement/RequestOrderModal/RequestOrderModal';
+import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
 
 const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, onShowSnackbar, userRole }, ref) => {
+    const navigate = useNavigate();
     const [pendingOrders, setPendingOrders] = useState([]);
     const [isLoadingPending, setIsLoadingPending] = useState(false);
+
+    // Notification states
+    const [showNotification, setShowNotification] = useState(false);
+    const [notificationMessage, setNotificationMessage] = useState('');
+    const [notificationType, setNotificationType] = useState('success');
 
     // Modal states
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedRequestOrder, setSelectedRequestOrder] = useState(null);
 
-    // Form modal states
-    const [showFormModal, setShowFormModal] = useState(false);
+    // Request Order Modal states
+    const [showRequestModal, setShowRequestModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [initialFormData, setInitialFormData] = useState(null);
-
-    // Data for form modal
-    const [itemTypes, setItemTypes] = useState([]);
-    const [employees, setEmployees] = useState([]);
-    const [parentCategories, setParentCategories] = useState([]);
+    const [selectedOrder, setSelectedOrder] = useState(null);
 
     React.useImperativeHandle(ref, () => ({
         handleAddRequest: () => {
@@ -46,7 +46,9 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
             minWidth: '150px',
             sortable: true,
             filterable: true,
-            render: (row, value) => value || 'N/A'
+            render: (row, value) => {
+                return value || 'N/A';
+            }
         },
         {
             id: 'deadline',
@@ -57,7 +59,9 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
             sortable: true,
             filterable: true,
             filterType: 'text',
-            render: (row, value) => value ? new Date(value).toLocaleDateString() : 'N/A'
+            render: (row, value) => {
+                return value ? new Date(value).toLocaleDateString() : 'N/A';
+            }
         },
         {
             id: 'createdAt',
@@ -68,7 +72,9 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
             sortable: true,
             filterable: true,
             filterType: 'text',
-            render: (row, value) => value ? new Date(value).toLocaleDateString() : 'N/A'
+            render: (row, value) => {
+                return value ? new Date(value).toLocaleDateString() : 'N/A';
+            }
         },
         {
             id: 'createdBy',
@@ -79,10 +85,13 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
             sortable: true,
             filterable: true,
             filterType: 'text',
-            render: (row, value) => value || 'N/A'
+            render: (row, value) => {
+                return value || 'N/A';
+            }
         }
     ];
 
+    // Actions configuration for pending orders - edit and delete
     const pendingOrderActions = [
         {
             label: 'Edit Request',
@@ -110,6 +119,7 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         }
     ];
 
+    // Filterable columns configuration
     const pendingFilterableColumns = [
         {
             header: 'Title',
@@ -127,9 +137,6 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
     useEffect(() => {
         if (warehouseId) {
             fetchPendingOrders();
-            fetchItemTypes();
-            fetchEmployees();
-            fetchParentCategories();
         }
     }, [warehouseId, refreshTrigger]);
 
@@ -139,39 +146,12 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
             return details;
         } catch (error) {
             console.error('Error fetching request order details:', error);
-            onShowSnackbar('Failed to load request order details.', 'error');
+            showErrorNotification('Failed to load request order details.');
             return null;
         }
     };
 
-    const fetchParentCategories = async () => {
-        try {
-            const data = await itemCategoryService.getParents();
-            setParentCategories(data);
-        } catch (error) {
-            console.error('Error fetching parent categories:', error);
-        }
-    };
-
-    const fetchItemTypes = async () => {
-        try {
-            const data = await itemTypeService.getAll();
-            setItemTypes(data);
-        } catch (error) {
-            console.error('Error fetching item types:', error);
-        }
-    };
-
-    const fetchEmployees = async () => {
-        try {
-            const data = await warehouseService.getEmployees(warehouseId);
-            setEmployees(data);
-        } catch (error) {
-            console.error('Error fetching employees:', error);
-            setEmployees([]);
-        }
-    };
-
+    // Fetch pending request orders
     const fetchPendingOrders = async () => {
         setIsLoadingPending(true);
         try {
@@ -185,144 +165,117 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         }
     };
 
-    const handleEditRequest = async (request) => {
-        try {
-            const requestDetails = await requestOrderService.getById(request.id);
-
-            const deadline = requestDetails.deadline
-                ? new Date(requestDetails.deadline).toISOString().slice(0, 16)
-                : '';
-
-            const items = requestDetails.requestItems && requestDetails.requestItems.length > 0
-                ? requestDetails.requestItems.map(item => ({
-                    id: item.id,
-                    itemTypeId: item.itemType?.id || item.itemTypeId,
-                    quantity: item.quantity,
-                    comment: item.comment || '',
-                    parentCategoryId: '',
-                    itemCategoryId: ''
-                }))
-                : [{ itemTypeId: '', quantity: '', comment: '', parentCategoryId: '', itemCategoryId: '' }];
-
-            setInitialFormData({
-                title: requestDetails.title || '',
-                description: requestDetails.description || '',
-                deadline: deadline,
-                employeeRequestedBy: requestDetails.employeeRequestedBy || '',
-                items: items
-            });
-
-            setIsEditMode(true);
-            setShowFormModal(true);
-
-        } catch (error) {
-            console.error('Error fetching request details:', error);
-            onShowSnackbar('Failed to load request details. Please try again.', 'error');
+    const showErrorNotification = (message) => {
+        setNotificationMessage(String(message || 'An error occurred'));
+        setNotificationType('error');
+        setShowNotification(true);
+        if (onShowSnackbar) {
+            onShowSnackbar(message, 'error');
         }
     };
 
+    const showSuccessNotification = (message) => {
+        setNotificationMessage(String(message || 'Operation successful'));
+        setNotificationType('success');
+        setShowNotification(true);
+        if (onShowSnackbar) {
+            onShowSnackbar(message, 'success');
+        }
+    };
+
+    // Handle edit request
+    const handleEditRequest = async (request) => {
+        try {
+            const requestDetails = await requestOrderService.getById(request.id);
+            setIsEditMode(true);
+            setSelectedOrder(requestDetails);
+            setShowRequestModal(true);
+        } catch (error) {
+            console.error('Error fetching request details:', error);
+            showErrorNotification('Failed to load request details. Please try again.');
+        }
+    };
+
+    // Handle delete request
     const handleDeleteRequest = async (request) => {
         if (!window.confirm('Are you sure you want to delete this request?')) {
             return;
         }
 
         try {
+            // TODO: Implement delete API call when backend endpoint is available
             console.log('Delete request:', request);
+
+            // For now, just refresh the table
             fetchPendingOrders();
-            onShowSnackbar('Delete functionality to be implemented', 'info');
+
+            showSuccessNotification('Delete functionality to be implemented');
+
         } catch (error) {
             console.error('Error deleting request:', error);
-            onShowSnackbar('Failed to delete request. Please try again.', 'error');
+            showErrorNotification('Failed to delete request. Please try again.');
         }
     };
 
-    const handleRowClick = async (row) => {
-        const details = await fetchRequestOrderDetails(row.id);
-        if (details) {
-            setSelectedRequestOrder(details);
-            setShowViewModal(true);
-        }
+    // Handle row click to navigate to detail page
+    const handleRowClick = (row) => {
+        navigate(`/warehouses/${warehouseId}/request-orders/${row.id}`);
+        // or
+        // navigate(`/warehouse/request-orders/${row.id}`);
     };
 
+    // Handle add button click from DataTable
     const handleAddRequest = () => {
-        setInitialFormData(null);
         setIsEditMode(false);
-        setShowFormModal(true);
+        setSelectedOrder(null);
+        setShowRequestModal(true);
     };
 
     const openRestockModal = (restockItems) => {
         const now = new Date();
+        // Set deadline to 7 days from now
         const deadline = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
         const deadlineString = deadline.toISOString().slice(0, 16);
 
-        const formattedRestockItems = restockItems.map(item => ({
-            ...item,
-            parentCategoryId: '',
-            itemCategoryId: ''
-        }));
-
-        setInitialFormData({
+        // Create a pre-populated order with restock items
+        const restockOrder = {
             title: 'Restock Request - Low Stock Items',
             description: `Automatic restock request for ${restockItems.length} item(s) below minimum quantity threshold.`,
             deadline: deadlineString,
             employeeRequestedBy: '',
-            items: formattedRestockItems
-        });
-
-        setIsEditMode(false);
-        setShowFormModal(true);
-    };
-
-    const handleFormSubmit = async (formData) => {
-        let username = "system";
-        const userInfoString = localStorage.getItem('userInfo');
-
-        if (userInfoString) {
-            try {
-                const userInfo = JSON.parse(userInfoString);
-                if (userInfo.username) {
-                    username = userInfo.username;
-                }
-            } catch (error) {
-                console.error("Error parsing user info:", error);
-            }
-        }
-
-        const requestPayload = {
-            title: formData.title,
-            description: formData.description,
-            createdBy: username,
-            status: 'PENDING',
-            partyType: 'WAREHOUSE',
             requesterId: warehouseId,
-            deadline: formData.deadline,
-            employeeRequestedBy: formData.employeeRequestedBy,
-            items: formData.items.map(item => ({
-                ...(item.id && { id: item.id }),
+            siteId: null, // Will be auto-fetched from warehouse
+            items: restockItems.map(item => ({
                 itemTypeId: item.itemTypeId,
                 quantity: item.quantity,
-                comment: item.comment || ''
+                comment: item.comment || '',
+                parentCategoryId: '',
+                itemCategoryId: ''
             }))
         };
 
-        try {
-            if (isEditMode && selectedRequestOrder) {
-                await requestOrderService.update(selectedRequestOrder.id, requestPayload);
-            } else {
-                await requestOrderService.create(requestPayload);
-            }
+        setIsEditMode(false); // This is a new request, not editing
+        setSelectedOrder(restockOrder);
+        setShowRequestModal(true);
+    };
 
-            fetchPendingOrders();
-            onShowSnackbar(isEditMode ? 'Request Order updated successfully!' : 'Request Order created successfully!', 'success');
-        } catch (error) {
-            console.error('Error saving request order:', error);
-            onShowSnackbar(`Error: ${error.message}`, 'error');
-        }
+    const handleCloseRequestModal = () => {
+        setShowRequestModal(false);
+        setIsEditMode(false);
+        setSelectedOrder(null);
+    };
+
+    const handleRequestModalSuccess = (message) => {
+        showSuccessNotification(message);
+        fetchPendingOrders(); // Refresh the pending orders list
     };
 
     return (
         <div className="pending-request-orders-container">
+            {/* Pending Orders Section */}
             <div className="request-orders-section">
+                <div className="table-header-section"></div>
+
                 <div className="request-orders-table-card">
                     <DataTable
                         data={pendingOrders}
@@ -346,28 +299,27 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
                 </div>
             </div>
 
-            {/* Form Modal */}
-            <RequestOrderFormModal
-                isOpen={showFormModal}
-                onClose={() => setShowFormModal(false)}
-                onSubmit={handleFormSubmit}
+            {/* Request Order Modal */}
+            <RequestOrderModal
+                isOpen={showRequestModal}
+                onClose={handleCloseRequestModal}
+                onSuccess={handleRequestModalSuccess}
+                onError={showErrorNotification}
                 isEditMode={isEditMode}
-                initialFormData={initialFormData}
-                warehouseId={warehouseId}
-                itemTypes={itemTypes}
-                employees={employees}
-                parentCategories={parentCategories}
-                onShowSnackbar={onShowSnackbar}
+                existingOrder={selectedOrder}
+                userType="WAREHOUSE"
+                currentWarehouseId={warehouseId}
+                currentSiteId={null} // Will be auto-fetched from warehouse
             />
 
-            {/* View Modal */}
-            <RequestOrderViewModal
-                requestOrder={selectedRequestOrder}
-                isOpen={showViewModal}
-                onClose={() => {
-                    setShowViewModal(false);
-                    setSelectedRequestOrder(null);
-                }}
+
+            {/* Snackbar Notification */}
+            <Snackbar
+                type={notificationType}
+                text={notificationMessage}
+                isVisible={showNotification}
+                onClose={() => setShowNotification(false)}
+                duration={3000}
             />
         </div>
     );

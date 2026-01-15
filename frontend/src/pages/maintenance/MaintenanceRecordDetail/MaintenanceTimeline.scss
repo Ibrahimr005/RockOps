@@ -1,0 +1,169 @@
+.maintenance-timeline {
+    position: relative;
+    padding: 20px 0;
+    max-width: 800px;
+    margin: 0 auto;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 20px;
+        width: 2px;
+        background: var(--border-color);
+        z-index: 0;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 30px;
+        padding-left: 50px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--color-surface);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-secondary);
+            z-index: 1;
+            font-size: 16px;
+            transition: all var(--transition-normal);
+        }
+
+        .timeline-content {
+            background: var(--color-surface);
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 15px;
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-normal);
+
+            &:hover {
+                box-shadow: var(--shadow-md);
+                transform: translateY(-1px);
+            }
+
+            .timeline-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+                flex-wrap: wrap;
+                gap: 8px;
+
+                .timeline-title {
+                    font-weight: 600;
+                    color: var(--color-text-primary);
+                    font-size: 16px;
+                }
+
+                .timeline-date {
+                    font-size: 12px;
+                    color: var(--color-text-secondary);
+                    background: var(--color-surface-secondary);
+                    padding: 4px 8px;
+                    border-radius: var(--radius-sm);
+                }
+            }
+
+            .timeline-body {
+                .timeline-description {
+                    color: var(--color-text-primary);
+                    margin-bottom: 8px;
+                    font-size: 14px;
+                    line-height: 1.5;
+                }
+
+                .timeline-actor {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    color: var(--color-text-tertiary);
+                    font-size: 12px;
+                    font-weight: 500;
+                }
+            }
+        }
+
+        // Status Colors using theme variable patterns
+        &.created {
+            .timeline-marker {
+                border-color: var(--color-info);
+                color: var(--color-info);
+                background: rgba(33, 150, 243, 0.15);
+                /* Match status-badges.scss info variants */
+            }
+        }
+
+        &.approved {
+            .timeline-marker {
+                border-color: var(--color-success);
+                color: var(--color-success);
+                background: rgba(76, 175, 80, 0.15);
+            }
+
+            .timeline-title {
+                color: var(--color-success);
+            }
+        }
+
+        &.rejected {
+            .timeline-marker {
+                border-color: var(--color-danger);
+                color: var(--color-danger);
+                background: rgba(244, 67, 54, 0.15);
+            }
+
+            .timeline-title {
+                color: var(--color-danger);
+            }
+        }
+
+        &.completed {
+            .timeline-marker {
+                border-color: var(--color-success);
+                color: var(--color-success);
+                background: rgba(76, 175, 80, 0.15);
+            }
+
+            .timeline-title {
+                color: var(--color-success);
+            }
+        }
+
+        &.submitted {
+            .timeline-marker {
+                border-color: var(--color-warning);
+                color: var(--color-warning);
+                background: rgba(255, 152, 0, 0.15);
+            }
+        }
+
+        &.info {
+            .timeline-marker {
+                border-color: var(--color-text-secondary);
+                color: var(--color-text-secondary);
+                background: var(--color-surface-secondary);
+            }
+        }
+    }
+
+    .maintenance-timeline-empty {
+        text-align: center;
+        color: var(--color-text-secondary);
+        padding: 20px;
+        font-style: italic;
+    }
+}

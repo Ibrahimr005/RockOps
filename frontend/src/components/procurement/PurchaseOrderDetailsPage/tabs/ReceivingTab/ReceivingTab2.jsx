@@ -3,6 +3,10 @@ import { FiPackage, FiTruck, FiAlertCircle, FiChevronDown, FiChevronUp, FiCheck,
 import { useNavigate } from 'react-router-dom';
 import { purchaseOrderService } from '../../../../../services/procurement/purchaseOrderService';
 import './ReceivingTab2.scss';
+import { FiPrinter } from 'react-icons/fi'; // Add FiPrinter to existing imports
+import { generateMerchantReceivingPDF, generateAllMerchantsReceivingPDF } from '../../../../../services/procurement/receivingPrintService';
+import LanguageSelectionModal from "./LanguageSelectionModal.jsx";
+import { FiX, FiDownload } from 'react-icons/fi';
 
 const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
     const [selectedMerchant, setSelectedMerchant] = useState(null);
@@ -14,6 +18,8 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
     const navigate = useNavigate();
     const [showFiltersToProcess, setShowFiltersToProcess] = useState(false);
     const [showFiltersProcessed, setShowFiltersProcessed] = useState(false);
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
+    const [languageSelectionType, setLanguageSelectionType] = useState(null); // 'single' or 'all'
     const [filters, setFilters] = useState({
         itemName: '',
         category: '',
@@ -23,7 +29,37 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
         minRemaining: ''
     });
 
+    const handlePrintSingleMerchant = () => {
+        setLanguageSelectionType('single');
+        setShowLanguageModal(true);
+    };
+
+    const handlePrintAllMerchants = () => {
+        console.log('Print all merchants clicked'); // Debug log
+        console.log('Items by merchant:', itemsByMerchant); // Debug log
+        setLanguageSelectionType('all');
+        setShowLanguageModal(true);
+    };
+
+    const handleLanguageSelect = async (language) => {
+        try {
+            if (languageSelectionType === 'single') {
+                if (selectedMerchant && itemsByMerchant[selectedMerchant]) {
+                    const currentMerchant = itemsByMerchant[selectedMerchant];
+                    await generateMerchantReceivingPDF(purchaseOrder, currentMerchant, language);
+                }
+            } else if (languageSelectionType === 'all') {
+                await generateAllMerchantsReceivingPDF(purchaseOrder, itemsByMerchant, language);
+            }
+            setShowLanguageModal(false);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        }
+    };
+
     // Group items by merchant
+// MOVE itemsByMerchant OUTSIDE the merchant selection check
     const itemsByMerchant = useMemo(() => {
         if (!purchaseOrder?.purchaseOrderItems) return {};
 
@@ -62,7 +98,6 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
 
         return grouped;
     }, [purchaseOrder]);
-
 
 
     const calculateTotalProcessed = (item) => {
@@ -248,7 +283,6 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                     throw new Error(`Please enter quantities for ${item.itemType?.name}`);
                 }
 
-                // Check if this item has any pending redeliveries
                 const hasPendingRedelivery = item.itemReceipts?.some(receipt =>
                     receipt.issues?.some(issue =>
                         issue.issueStatus === 'RESOLVED' && issue.resolutionType === 'REDELIVERY'
@@ -267,10 +301,14 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                 };
             });
 
+            // GET USERNAME FROM LOCALSTORAGE
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const username = userInfo?.username || 'unknown';
+
             const deliveryData = {
                 purchaseOrderId: purchaseOrder.id,
                 merchantId: merchant.merchantId,
-                processedBy: '', // or remove this line entirely - backend overrides it anyway
+                processedBy: username, // ✅ NOW IT HAS THE USERNAME
                 deliveryNotes,
                 itemReceipts
             };
@@ -318,64 +356,86 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
         return labels[type] || type;
     };
 
+
+
     // Merchant Selection View
+// Merchant Selection View
     if (!selectedMerchant) {
         return (
-            <div className="receiving-tab">
-                <div className="receiving-section">
-                    <h3 className="section-title">
-                        <FiTruck />
-                        Select Merchant to Process Delivery
-                    </h3>
-                    <p className="section-description">Process all items from one merchant at a time</p>
+            <>
+                <div className="receiving-tab">
+                    <div className="receiving-section">
+                        <div className="section-header-with-action">
+                            <div>
+                                <h3 className="section-title">
+                                    <FiTruck />
+                                    Select Merchant to Process Delivery
+                                </h3>
+                                <p className="section-description">Process all items from one merchant at a time</p>
+                            </div>
+                            <button
+                                className="btn-primary"
+                                onClick={handlePrintAllMerchants}
+                            >
+                                <FiDownload /> Download All Checklists
+                            </button>
+                        </div>
 
-                    <div className="merchant-list">
-                        {Object.values(itemsByMerchant).map(merchant => {
-                            const totals = getMerchantTotals(merchant);
+                        <div className="merchant-list">
+                            {Object.values(itemsByMerchant).map(merchant => {
+                                const totals = getMerchantTotals(merchant);
 
-                            return (
-                                <div
-                                    key={merchant.merchantId}
-                                    className={`merchant-card ${totals.isFullyProcessed ? 'completed' : ''}`}
-                                    onClick={() => handleMerchantSelect(merchant.merchantId)}
-                                >
-                                    <div className="merchant-card-icon">
-                                        {merchant.photoUrl ? (
-                                            <img src={merchant.photoUrl} alt={merchant.merchantName} />
-                                        ) : (
-                                            <FiPackage />
-                                        )}
-                                    </div>
-                                    <div className="merchant-card-content">
-                                        <h4>{merchant.merchantName}</h4>
-                                        <div className="merchant-card-stats">
-                                            {totals.isFullyProcessed ? (
-                                                <span className="stat-badge completed">
-                                                    <FiCheckCircle />
-                                                    Fully Processed
-                                                </span>
+                                return (
+                                    <div
+                                        key={merchant.merchantId}
+                                        className={`merchant-card ${totals.isFullyProcessed ? 'completed' : ''}`}
+                                        onClick={() => handleMerchantSelect(merchant.merchantId)}
+                                    >
+                                        <div className="merchant-card-icon">
+                                            {merchant.photoUrl ? (
+                                                <img src={merchant.photoUrl} alt={merchant.merchantName} />
                                             ) : (
-                                                <>
-                                                    <span className="stat-badge">
-                                                        {totals.totalItems} {totals.totalItems === 1 ? 'item' : 'items'}
-                                                    </span>
-                                                    <span className="stat-badge pending">
-                                                        {totals.pendingItems} pending
-                                                    </span>
-                                                </>
+                                                <FiPackage />
                                             )}
                                         </div>
+                                        <div className="merchant-card-content">
+                                            <h4>{merchant.merchantName}</h4>
+                                            <div className="merchant-card-stats">
+                                                {totals.isFullyProcessed ? (
+                                                    <span className="stat-badge completed">
+                                                        <FiCheckCircle />
+                                                        Fully Processed
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <span className="stat-badge">
+                                                            {totals.totalItems} {totals.totalItems === 1 ? 'item' : 'items'}
+                                                        </span>
+                                                        <span className="stat-badge pending">
+                                                            {totals.pendingItems} pending
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="merchant-card-arrow">→</div>
                                     </div>
-                                    <div className="merchant-card-arrow">→</div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
-            </div>
+
+                <LanguageSelectionModal
+                    isVisible={showLanguageModal}
+                    onClose={() => setShowLanguageModal(false)}
+                    onSelectLanguage={handleLanguageSelect}
+                    title="Download Receiving Document"
+                />
+            </>
         );
     }
-
+    // Processing View
     // Processing View
     const currentMerchant = itemsByMerchant[selectedMerchant];
     const merchantTotals = getMerchantTotals(currentMerchant);
@@ -792,18 +852,26 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                         <FiPackage />
                         Items to Process ({filteredItems.length})
                     </h3>
-                    {currentMerchant.items.filter(item => itemNeedsProcessing(item)).length > 0 && (
+                    <div style={{ display: 'flex', gap: '10px' }}>
                         <button
-                            className={`filter-btn ${Object.values(filters).some(f => f) ? 'active' : ''}`}
-                            onClick={() => setShowFiltersToProcess(!showFiltersToProcess)}
+                            className="btn-primary"
+                            onClick={handlePrintSingleMerchant}
                         >
-                            <FiFilter />
-                            Filter
-                            {Object.values(filters).filter(f => f).length > 0 && (
-                                <span className="filter-count">{Object.values(filters).filter(f => f).length}</span>
-                            )}
+                            <FiDownload /> Download Checklist
                         </button>
-                    )}
+                        {currentMerchant.items.filter(item => itemNeedsProcessing(item)).length > 0 && (
+                            <button
+                                className={`filter-btn ${Object.values(filters).some(f => f) ? 'active' : ''}`}
+                                onClick={() => setShowFiltersToProcess(!showFiltersToProcess)}
+                            >
+                                <FiFilter />
+                                Filter
+                                {Object.values(filters).filter(f => f).length > 0 && (
+                                    <span className="filter-count">{Object.values(filters).filter(f => f).length}</span>
+                                )}
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div className={`filter-panel ${showFiltersToProcess ? 'open' : 'closed'}`}>
@@ -1327,6 +1395,13 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                     </div>
                 </div>
             )}
+            <LanguageSelectionModal
+                isVisible={showLanguageModal}
+                onClose={() => setShowLanguageModal(false)}
+                onSelectLanguage={handleLanguageSelect}
+                title="Download Receiving Document"
+            />
+
         </div>
     );
 };

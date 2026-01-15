@@ -1,5 +1,5 @@
 // src/config/api.config.js
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||  'http://localhost:8080';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 
 // Direct Purchase Ticket module endpoints
@@ -244,7 +244,7 @@ export const FINANCE_ENDPOINTS = {
 
     // Add this to your existing FINANCE_ENDPOINTS in src/config/api.config.js
 
-// Bank Reconciliation submodule endpoints
+    // Bank Reconciliation submodule endpoints
     BANK_RECONCILIATION: {
         // Bank Account endpoints
         BANK_ACCOUNTS: {
@@ -322,6 +322,103 @@ export const FINANCE_ENDPOINTS = {
             EXPORT_CSV: (bankAccountId) => `/api/v1/reconciliation-reports/export/csv/bank-account/${bankAccountId}`,
             TREND: (bankAccountId) => `/api/v1/reconciliation-reports/trend/bank-account/${bankAccountId}`
         }
+    },
+    // Balances submodule endpoints (inside FINANCE_ENDPOINTS)
+    BALANCES: {
+        // Bank Account endpoints
+        BANK_ACCOUNTS: {
+            BASE: '/api/v1/finance/balances/bank-accounts',
+            BY_ID: (id) => `/api/v1/finance/balances/bank-accounts/${id}`,
+            ACTIVE: '/api/v1/finance/balances/bank-accounts/active',
+            ACTIVATE: (id) => `/api/v1/finance/balances/bank-accounts/${id}/activate`,
+            DEACTIVATE: (id) => `/api/v1/finance/balances/bank-accounts/${id}/deactivate`
+        },
+
+        // Cash Safe endpoints
+        CASH_SAFES: {
+            BASE: '/api/v1/finance/balances/cash-safes',
+            BY_ID: (id) => `/api/v1/finance/balances/cash-safes/${id}`,
+            ACTIVE: '/api/v1/finance/balances/cash-safes/active',
+            ACTIVATE: (id) => `/api/v1/finance/balances/cash-safes/${id}/activate`,
+            DEACTIVATE: (id) => `/api/v1/finance/balances/cash-safes/${id}/deactivate`
+        },
+
+        // Cash With Person endpoints
+        CASH_WITH_PERSONS: {
+            BASE: '/api/v1/finance/balances/cash-with-persons',
+            BY_ID: (id) => `/api/v1/finance/balances/cash-with-persons/${id}`,
+            ACTIVE: '/api/v1/finance/balances/cash-with-persons/active',
+            ACTIVATE: (id) => `/api/v1/finance/balances/cash-with-persons/${id}/activate`,
+            DEACTIVATE: (id) => `/api/v1/finance/balances/cash-with-persons/${id}/deactivate`
+        },
+
+        // Balance Transaction endpoints
+        TRANSACTIONS: {
+            BASE: '/api/v1/finance/balances/transactions',
+            BY_ID: (id) => `/api/v1/finance/balances/transactions/${id}`,
+            APPROVE: (id) => `/api/v1/finance/balances/transactions/${id}/approve`,
+            REJECT: (id) => `/api/v1/finance/balances/transactions/${id}/reject`,
+            PENDING: '/api/v1/finance/balances/transactions/pending',
+            PENDING_COUNT: '/api/v1/finance/balances/transactions/pending/count',
+            BY_ACCOUNT: (accountType, accountId) => `/api/v1/finance/balances/transactions/account/${accountType}/${accountId}`,
+            DATE_RANGE: '/api/v1/finance/balances/transactions/date-range'
+        }
+    },
+
+    // Inside FINANCE_ENDPOINTS object, add:
+
+    // Accounts Payable endpoints
+    ACCOUNTS_PAYABLE: {
+        // Offer Financial Reviews
+        OFFER_REVIEWS: {
+            BASE: '/api/v1/finance/offer-reviews',
+            BY_ID: (id) => `/api/v1/finance/offer-reviews/${id}`,
+            PENDING: '/api/v1/finance/offer-reviews/pending',
+            BY_STATUS: (status) => `/api/v1/finance/offer-reviews/status/${status}`,
+            BY_OFFER: (offerId) => `/api/v1/finance/offer-reviews/offer/${offerId}`,
+            REVIEW: '/api/v1/finance/offer-reviews/review',
+            REVIEW_ITEMS: '/api/v1/finance/offer-reviews/review-items'
+        },
+
+        // Payment Requests
+        PAYMENT_REQUESTS: {
+            BASE: '/api/v1/finance/payment-requests',
+            BY_ID: (id) => `/api/v1/finance/payment-requests/${id}`,
+            PENDING: '/api/v1/finance/payment-requests/pending',
+            READY_TO_PAY: '/api/v1/finance/payment-requests/ready-to-pay',
+            BY_MERCHANT: (merchantId) => `/api/v1/finance/payment-requests/merchant/${merchantId}`,
+            APPROVE_REJECT: '/api/v1/finance/payment-requests/approve-reject',
+            // ✅ ADD THIS:
+            CREATE_FROM_PO: (purchaseOrderId, offerId) =>
+                `/api/v1/finance/payment-requests/create-from-po/${purchaseOrderId}/${offerId}`,
+            // CREATE_FROM_PO: (poId) => `/api/v1/finance/payment-requests/create-from-po/${poId}`
+        },
+
+        // Payments
+        PAYMENTS: {
+            BASE: '/api/v1/finance/payments',
+            BY_ID: (id) => `/api/v1/finance/payments/${id}`,
+            PROCESS: '/api/v1/finance/payments/process',
+            BY_PAYMENT_REQUEST: (prId) => `/api/v1/finance/payments/payment-request/${prId}`,
+            TODAY: '/api/v1/finance/payments/today',
+            BY_MERCHANT: (merchantId) => `/api/v1/finance/payments/merchant/${merchantId}`,
+            HISTORY: '/api/v1/finance/payments/history'
+        },
+
+        // Refund Tracking
+        REFUNDS: {
+            BASE: '/api/finance/refunds',
+            BY_ID: (id) => `/api/finance/refunds/${id}`,
+            BY_STATUS: (status) => `/api/finance/refunds/status/${status}`,
+            CONFIRM: (id) => `/api/finance/refunds/${id}/confirm`
+        },
+
+        // Dashboard
+        DASHBOARD: {
+            SUMMARY: '/api/v1/finance/dashboard/summary',
+            BALANCES: '/api/v1/finance/dashboard/balances',
+            MERCHANTS: '/api/v1/finance/dashboard/merchants'
+        }
     }
 };
 
@@ -351,7 +448,7 @@ export const HR_ENDPOINTS = {
         UPDATE: (id) => `/api/v1/hr/employee/${id}`,
         DELETE: (id) => `/api/v1/hr/employee/${id}`
     },
-    
+
     // HR Dashboard
     DASHBOARD: {
         SALARY_STATISTICS: '/api/v1/hr/dashboard/salary-statistics',
@@ -372,11 +469,11 @@ export const SITE_ENDPOINTS = {
     MERCHANTS: (siteId) => `/api/v1/site/${siteId}/merchants`,
     FIXED_ASSETS: (siteId) => `/api/v1/site/${siteId}/fixedassets`,
     UNASSIGNED_FIXED_ASSETS: '/api/v1/site/unassigned-fixedassets',
-    
+
     // Site Admin endpoints
     ADMIN: {
         ADD_SITE: '/siteadmin/addsite',
-        DELETE_SITE: (id)=> `siteadmin/${id}`,
+        DELETE_SITE: (id) => `siteadmin/${id}`,
         UPDATE_SITE: (id) => `/siteadmin/updatesite/${id}`,
         ADD_WAREHOUSE: (siteId) => `/siteadmin/${siteId}/add-warehouse`,
         ASSIGN_EQUIPMENT: (siteId, equipmentId) => `/siteadmin/${siteId}/assign-equipment/${equipmentId}`,
@@ -389,7 +486,7 @@ export const SITE_ENDPOINTS = {
         UPDATE_PARTNER_PERCENTAGE: (siteId, partnerId) => `/siteadmin/${siteId}/update-partner-percentage/${partnerId}`,
         REMOVE_PARTNER: (siteId, partnerId) => `/siteadmin/${siteId}/remove-partner/${partnerId}`,
         getAvailableWarehouseManagers: 'siteadmin/warehouse-managers/available',
-        getAvailableWarehouseManagersForSite:(siteId) =>`siteadmin/sites/${siteId}/warehouse-managers/available`,
+        getAvailableWarehouseManagersForSite: (siteId) => `siteadmin/sites/${siteId}/warehouse-managers/available`,
         getAvailableWarehouseWorkers: '/siteadmin/warehouse-workers/available',
         getAvailableWarehouseWorkersForSite: (siteId) => `/siteadmin/${siteId}/warehouse-workers/available`,
         getWarehouseEmployees: (warehouseId) => `/siteadmin/warehouses/${warehouseId}/employees`,
@@ -492,7 +589,7 @@ export const DOCUMENT_ENDPOINTS = {
     CREATE: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`,
     UPDATE: (id) => `/api/v1/documents/${id}`,
     DELETE: (id) => `/api/v1/documents/${id}`,
-    
+
     // Sarky-specific document endpoints
     BY_SARKY_MONTH: (entityType, entityId, month, year) => `/api/v1/${entityType}/${entityId}/documents/sarky?month=${month}&year=${year}`,
     CREATE_SARKY: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents/sarky`,
@@ -508,7 +605,7 @@ export const PARTNER_ENDPOINTS = {
     GET_ALL: '/api/v1/partner/getallpartners',
     ADD: '/api/v1/partner/add',
     UPDATE: (id) => `/api/v1/partner/update/${id}`,
-    DELETE: (id) =>  `/api/v1/partner/delete/${id}`
+    DELETE: (id) => `/api/v1/partner/delete/${id}`
 };
 
 // Authentication module endpoints
@@ -584,7 +681,23 @@ export const OFFER_ENDPOINTS = {
     TIMELINE_ATTEMPT: (offerId, attemptNumber) => `/api/v1/offers/${offerId}/timeline/attempt/${attemptNumber}`,
     TIMELINE_STATS: (offerId) => `/api/v1/offers/${offerId}/timeline/stats`,
     // NEW: Continue and Return endpoint
-    CONTINUE_AND_RETURN: (offerId) => `/api/v1/offers/${offerId}/continue-and-return`
+    CONTINUE_AND_RETURN: (offerId) => `/api/v1/offers/${offerId}/continue-and-return`,
+
+    UPDATE_FINANCE_VALIDATION_STATUS: (id) => `/api/v1/offers/${id}/finance-validation-status`,
+    // Request Items Modification endpoints
+    REQUEST_ITEMS: (offerId) => `/api/procurement/offers/${offerId}/request-items`,
+    REQUEST_ITEMS_INITIALIZE: (offerId) => `/api/procurement/offers/${offerId}/request-items/initialize`,
+    REQUEST_ITEM_BY_ID: (offerId, itemId) => `/api/procurement/offers/${offerId}/request-items/${itemId}`,
+    REQUEST_ITEMS_HISTORY: (offerId) => `/api/procurement/offers/${offerId}/request-items/history`,
+
+
+};
+
+export const RFQ_ENDPOINTS = {
+    BASE: '/api/procurement/rfq',
+    EXPORT: '/api/procurement/rfq/export',
+    IMPORT_PREVIEW: (offerId) => `/api/procurement/rfq/${offerId}/import/preview`,
+    IMPORT_CONFIRM: (offerId) => `/api/procurement/rfq/${offerId}/import/confirm`,
 };
 
 // Updated Candidate module endpoints
@@ -802,7 +915,11 @@ export const MAINTENANCE_ENDPOINTS = {
         DELETE: (id) => `/api/maintenance/records/${id}`,
         ACTIVE: '/api/maintenance/records/active',
         OVERDUE: '/api/maintenance/records/overdue',
-        BY_EQUIPMENT: (equipmentId) => `/api/maintenance/records/equipment/${equipmentId}`
+        BY_EQUIPMENT: (equipmentId) => `/api/maintenance/records/equipment/${equipmentId}`,
+        // Approval Workflow
+        SUBMIT_APPROVAL: (id) => `/api/maintenance/records/${id}/submit-approval`,
+        APPROVE_MANAGER: (id) => `/api/maintenance/records/${id}/approve-manager`,
+        REJECT: (id) => `/api/maintenance/records/${id}/reject`
     },
 
     // Maintenance Steps
@@ -877,3 +994,55 @@ export const LOAN_ENDPOINTS = {
     STATISTICS: '/api/v1/payroll/loans/statistics'
 };
 
+// Finance - Inventory Valuation Endpoints
+export const INVENTORY_VALUATION_ENDPOINTS = {
+    BASE: '/api/finance/inventory-valuation',
+
+    // Pending Approvals
+    PENDING_APPROVALS: '/api/finance/inventory-valuation/pending-approvals',
+    PENDING_APPROVALS_BY_WAREHOUSE: (warehouseId) => `/api/finance/inventory-valuation/pending-approvals/warehouse/${warehouseId}`,
+
+    // Approval Actions
+    APPROVE_ITEM: (itemId) => `/api/finance/inventory-valuation/approve/${itemId}`,
+    APPROVE_BULK: '/api/finance/inventory-valuation/approve/bulk',
+
+    // Warehouse Balances
+    WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/balance`,
+    RECALCULATE_WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/recalculate-balance`,
+
+    // Site Balances
+    SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/balance`,
+    ALL_SITE_BALANCES: '/api/finance/inventory-valuation/sites/balances',
+    RECALCULATE_SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/recalculate-balance`,
+    APPROVAL_HISTORY: '/api/finance/inventory-valuation/approval-history',
+    WAREHOUSE_ITEMS_BREAKDOWN: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/items-breakdown`,
+    WAREHOUSE_TRANSACTIONS: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/transactions`
+};
+
+// Finance - Equipment Finance Endpoints
+export const EQUIPMENT_FINANCE_ENDPOINTS = {
+    BASE: '/api/v1/finance/equipment',
+
+    // Equipment Financials
+    EQUIPMENT_FINANCIALS: (equipmentId) => `/api/v1/finance/equipment/${equipmentId}/financials`,
+    UPDATE_EQUIPMENT_FINANCIALS: (equipmentId) => `/api/v1/finance/equipment/${equipmentId}/update-financials`,
+};
+
+export const LOGISTICS_ENDPOINTS = {
+    BASE: '/api/procurement/logistics',
+
+    // Get all logistics for a purchase order
+    BY_PURCHASE_ORDER: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}`,
+
+    // Get total logistics cost
+    TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total`,
+
+    // Create new logistics
+    CREATE: '/api/procurement/logistics',
+
+    // Update logistics
+    UPDATE: (id) => `/api/procurement/logistics/${id}`,
+
+    // Delete logistics
+    DELETE: (id) => `/api/procurement/logistics/${id}`
+};

@@ -1,5 +1,6 @@
 package com.example.backend.models.maintenance;
 
+import com.example.backend.models.equipment.MaintenanceStatus;
 import com.example.backend.models.contact.Contact;
 import com.example.backend.models.user.User;
 import jakarta.persistence.*;
@@ -67,13 +68,16 @@ public class MaintenanceRecord {
     @Column(name = "actual_completion_date")
     private LocalDateTime actualCompletionDate;
 
+    @Column(name = "manager_approval_date")
+    private LocalDateTime managerApprovalDate;
+
     @DecimalMin(value = "0.0", inclusive = true, message = "Total cost must be non-negative")
     @Column(name = "total_cost", precision = 10, scale = 2)
     private BigDecimal totalCost = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private MaintenanceStatus status = MaintenanceStatus.ACTIVE;
+    private MaintenanceStatus status = MaintenanceStatus.DRAFT;
 
     @OneToMany(mappedBy = "maintenanceRecord", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @OrderBy("startDate ASC")
@@ -94,10 +98,6 @@ public class MaintenanceRecord {
     @Version
     @Column(name = "version")
     private Long version;
-
-    public enum MaintenanceStatus {
-        ACTIVE, COMPLETED, ON_HOLD, CANCELLED
-    }
 
     // Helper methods
     public void addStep(MaintenanceStep step) {

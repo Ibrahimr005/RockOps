@@ -18,6 +18,11 @@ public class DeliveryItemReceiptDTO {
     private UUID deliverySessionId;
     private UUID purchaseOrderItemId;
     private String itemTypeName;
+
+    // ADD THESE:
+    private String itemCategoryName;
+    private UUID itemCategoryId;
+
     private String measuringUnit;
     private Double goodQuantity;
     private Boolean isRedelivery;

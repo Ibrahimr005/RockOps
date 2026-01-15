@@ -1,0 +1,781 @@
+.asset-values-view {
+  display: flex;
+  flex-direction: column;
+}
+
+.sites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+  margin-top: 3rem;
+}
+
+.site-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// Site Separator - More Prominent
+// Site Separator - Simple line
+// Site Separator - Blue gradient line without dot
+.site-separator {
+  height: 2px;
+  background: linear-gradient(
+                  to right,
+                  transparent 0%,
+                  var(--color-primary) 20%,
+                  var(--color-primary) 80%,
+                  transparent 100%
+  );
+  margin: 20px 0;
+  opacity: 0.4;
+}
+
+// Category Expanded Section with Smooth Animations
+.category-expanded {
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 2px solid var(--color-primary);
+  animation: expandCategory 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top;
+
+  &.coming-soon {
+    border-left-color: var(--border-color);
+  }
+}
+
+@keyframes expandCategory {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scaleY(0.95);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    max-height: 5000px;
+  }
+}
+
+// Category Section Header
+.category-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+  margin-top: 1.3rem;
+
+  .category-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+
+    svg {
+      color: var(--color-primary);
+    }
+  }
+
+  .category-section-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    padding: 4px 12px;
+    background: var(--color-surface-hover);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+}
+
+.warehouses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 2rem;
+}
+
+.warehouse-item {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  // Make warehouse cards taller
+  .finance-asset-card.size-compact {
+    .finance-card-header {
+      padding: 14px 16px;
+      min-height: 100px;
+    }
+  }
+}
+
+// Warehouse Separator - Subtle
+// Warehouse Separator - More Visible
+.warehouse-separator {
+  height: 1px;
+  background: linear-gradient(
+                  to right,
+                  transparent 0%,
+                  var(--border-color) 10%,
+                  var(--border-color) 90%,
+                  transparent 100%
+  );
+  margin: 12px 0;
+  opacity: 1;
+}
+
+// Value Breakdown Section - Only When Expanded
+.value-breakdown-section {
+  margin-left: 40px;      // Increased indent to show connection
+  padding: 18px;          // Increased padding
+  background: var(--color-surface);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--color-primary);  // Accent border to show nesting
+  border-radius: 6px;
+  animation: expandSection 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top;
+  position: relative;
+
+  // Connection line from warehouse to this section
+  &::before {
+    content: '';
+    position: absolute;
+    left: -40px;
+    top: 20px;
+    width: 20px;
+    height: 2px;
+    background: var(--color-primary);
+    opacity: 0.3;
+  }
+}
+
+@keyframes expandSection {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scaleY(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+.breakdown-header {
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+
+  .breakdown-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.breakdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+  }
+}
+
+.breakdown-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+
+  .item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-primary);
+    white-space: nowrap;
+  }
+}
+
+.breakdown-item-details {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+
+  .item-quantity {
+    font-weight: 600;
+  }
+
+  .item-separator {
+    opacity: 0.5;
+  }
+
+  .item-unit-price {
+    font-weight: 500;
+  }
+}
+
+// Transaction Section - Matching Breakdown Style
+.transactions-section {
+  margin-left: 40px;      // Same indent as breakdown
+  padding: 18px;          // Increased padding
+  background: var(--color-surface);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--color-primary);  // Accent border to show nesting
+  border-radius: 6px;
+  animation: expandSection 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top;
+  position: relative;
+
+  // Connection line from warehouse to this section
+  &::before {
+    content: '';
+    position: absolute;
+    left: -40px;
+    top: 20px;
+    width: 20px;
+    height: 2px;
+    background: var(--color-primary);
+    opacity: 0.3;
+  }
+}
+
+.transactions-header {
+  margin-bottom: 14px;   // Increased from 12px
+  padding-bottom: 12px;  // Increased from 10px
+  border-bottom: 1px solid var(--border-color);
+
+  .transactions-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.transactions-table-wrapper {
+  // No extra padding needed since parent has 16px
+}
+
+.transactions-table {
+  .date-cell {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+
+  .type-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+
+    &.type-purchase-order {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--color-success);
+    }
+
+    &.type-manual-entry {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--color-info);
+    }
+
+    &.type-transfer-in {
+      background: rgba(251, 191, 36, 0.1);
+      color: #f59e0b;
+    }
+  }
+
+  .quantity-cell {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-size: 12px;
+  }
+
+  .price-cell {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+
+  .total-cell {
+    font-weight: 600;
+    color: var(--color-primary);
+    font-size: 12px;
+  }
+
+  .balance-cell {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--color-success);
+  }
+
+  .user-cell {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+}
+
+// Coming Soon Message
+.coming-soon-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  background: var(--color-surface);
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+
+  svg {
+    opacity: 0.5;
+  }
+}
+
+// Loading State
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-surface-hover);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .category-expanded {
+    margin-left: 8px;
+    padding-left: 8px;
+  }
+
+  .value-breakdown-section,
+  .transactions-section {
+    margin-left: 0;
+  }
+
+  .breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-separator {
+    margin: 16px 0;
+  }
+
+  .warehouse-item .finance-asset-card.size-compact .finance-card-header {
+    min-height: 52px;
+  }
+}
+
+@media (max-width: 480px) {
+  .breakdown-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .transactions-section {
+    padding: 12px;
+  }
+}
+.sites-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sites-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border-color);
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+
+  .sites-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+
+    svg {
+      color: var(--color-primary);
+    }
+  }
+
+  .sites-section-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    padding: 4px 12px;
+    background: var(--color-surface-hover);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+}
+// Transaction value impact indicators
+.value-impact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+
+  .value-arrow {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .value-amount {
+    font-size: 13px;
+  }
+
+  &.positive {
+    color: var(--color-success);
+
+    .value-arrow {
+      color: var(--color-success);
+    }
+  }
+
+  &.negative {
+    color: var(--color-danger);
+
+    .value-arrow {
+      color: var(--color-danger);
+    }
+  }
+}
+
+// Transaction table entity cells
+.transactions-table {
+  .entity-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .entity-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .entity-type {
+      font-size: 10px;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+  }
+
+  .batch-number {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+
+  .item-name {
+    font-size: 12px;
+    color: var(--color-text-primary);
+  }
+
+  .quantity-text,
+  .price-text,
+  .total-value-text {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+
+  .status-badge3 {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    &.accepted {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--color-success);
+    }
+
+    &.rejected {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--color-danger);
+    }
+  }
+}
+// ========================================
+// EQUIPMENT SECTION
+// ========================================
+
+.equipment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 2rem;
+}
+
+.equipment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  // Make equipment cards same height as warehouse cards
+  .finance-asset-card.size-compact {
+    .finance-card-header {
+      padding: 14px 16px;
+      min-height: 100px;
+    }
+  }
+}
+
+// Equipment Separator - Same style as warehouse
+.equipment-separator {
+  height: 1px;
+  background: linear-gradient(
+                  to right,
+                  transparent 0%,
+                  var(--border-color) 10%,
+                  var(--border-color) 90%,
+                  transparent 100%
+  );
+  margin: 12px 0;
+  opacity: 1;
+}
+
+// Equipment Financial Section - Matching breakdown and transactions style
+.equipment-financial-section {
+  margin-left: 40px;      // Same indent as breakdown/transactions
+  padding: 18px;          // Same padding
+  background: var(--color-surface);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--color-primary);  // Accent border to show nesting
+  border-radius: 6px;
+  animation: expandSection 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top;
+  position: relative;
+
+  // Connection line from equipment to this section
+  &::before {
+    content: '';
+    position: absolute;
+    left: -40px;
+    top: 20px;
+    width: 20px;
+    height: 2px;
+    background: var(--color-primary);
+    opacity: 0.3;
+  }
+}
+
+// Financial Summary
+.financial-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.financial-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+
+  .summary-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .summary-updated {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+  }
+}
+
+// Financial Cards Grid
+.financial-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+// Financial Card - Individual card style
+.financial-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+  }
+
+  // Left accent border based on card type
+  &.purchase {
+    border-left: 3px solid var(--color-primary);
+  }
+
+  &.inventory {
+    border-left: 3px solid var(--color-success);
+  }
+
+  &.expenses {
+    border-left: 3px solid var(--color-warning);
+  }
+}
+
+.financial-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .card-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .card-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.financial-card-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 4px 0;
+}
+
+.financial-card-description {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+// Empty state for financials
+.empty-financials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: var(--color-surface);
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+// ========================================
+// RESPONSIVE - Equipment
+// ========================================
+
+@media (max-width: 768px) {
+  .equipment-financial-section {
+    margin-left: 0;
+  }
+
+  .financial-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .equipment-item .finance-asset-card.size-compact .finance-card-header {
+    min-height: 52px;
+  }
+}
+
+@media (max-width: 480px) {
+  .financial-card {
+    padding: 12px 14px;
+  }
+
+  .financial-card-value {
+    font-size: 16px;
+  }
+
+  .financial-summary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}

@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,6 +112,17 @@ public class Equipment {
 
     @Column(columnDefinition = "TEXT")
     private String imageStorageKey;
+
+    // Financial tracking fields
+    @Column(name = "current_inventory_value")
+    private Double currentInventoryValue = 0.0; // Value of consumables IN_WAREHOUSE
+
+    @Column(name = "total_expenses")
+    private Double totalExpenses = 0.0; // Value of consumables CONSUMED
+
+    @Column(name = "finance_balance_updated_at")
+    private LocalDateTime financeBalanceUpdatedAt;
+
 
     public Equipment() {
         this.status = EquipmentStatus.AVAILABLE;
