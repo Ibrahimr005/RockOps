@@ -215,8 +215,12 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
         }
 
         const costValue = formData.estimatedCost ? formData.estimatedCost.toString().replace(/,/g, '') : '';
-        if (costValue && isNaN(costValue)) {
+        if (!costValue || costValue === '' || costValue === '0') {
+            newErrors.estimatedCost = 'Estimated cost is required';
+        } else if (isNaN(costValue)) {
             newErrors.estimatedCost = 'Cost must be a valid number';
+        } else if (parseFloat(costValue) <= 0) {
+            newErrors.estimatedCost = 'Cost must be greater than zero';
         }
 
         setErrors(newErrors);
@@ -251,7 +255,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-backdrop">
             <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div className="modal-title">
@@ -449,7 +453,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="estimatedCost">Estimated Cost</label>
+                                    <label htmlFor="estimatedCost">Estimated Cost / Budget Request <span className="required">*</span></label>
                                     <input
                                         type="text"
                                         id="estimatedCost"

@@ -147,9 +147,9 @@ const MaintenanceReviewForm = ({ offerId, onClose, onSuccess }) => {
                             </div>
 
                             <div className="detail-item">
-                                <label>Cost Estimate</label>
+                                <label>Budget Request</label>
                                 <span className="amount">
-                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EGP' }).format(record.totalCost || 0)}
+                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EGP' }).format(record.expectedCost || record.estimatedCost || record.totalCost || 0)}
                                 </span>
                             </div>
 

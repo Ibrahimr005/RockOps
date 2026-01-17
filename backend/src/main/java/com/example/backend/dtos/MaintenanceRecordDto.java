@@ -54,6 +54,17 @@ public class MaintenanceRecordDto {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime actualCompletionDate;
 
+    @DecimalMin(value = "0.0", inclusive = true, message = "Expected cost must be non-negative")
+    private BigDecimal expectedCost;
+
+    private BigDecimal approvedBudget;
+
+    private BigDecimal consumedBudget;
+
+    private BigDecimal remainingBudget;
+
+    private Boolean isOverBudget;
+
     @DecimalMin(value = "0.0", inclusive = true, message = "Total cost must be non-negative")
     private BigDecimal totalCost;
 
@@ -102,11 +113,11 @@ public class MaintenanceRecordDto {
 
     @JsonProperty("estimatedCost")
     public BigDecimal getEstimatedCost() {
-        return this.totalCost;
+        return this.expectedCost;
     }
 
     @JsonProperty("estimatedCost")
     public void setEstimatedCost(BigDecimal estimatedCost) {
-        this.totalCost = estimatedCost;
+        this.expectedCost = estimatedCost;
     }
 }

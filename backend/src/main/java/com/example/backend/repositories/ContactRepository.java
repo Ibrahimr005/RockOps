@@ -66,21 +66,18 @@ public interface ContactRepository extends JpaRepository<Contact, UUID> {
             @Param("isActive") Boolean isActive
     );
     
-    // Find contacts by availability
-    @Query("SELECT c FROM Contact c WHERE c.isActive = true AND " +
-           "SIZE(c.assignedSteps) < 5") // Limit to contacts with less than 5 active assignments
+    // Find contacts by availability (removed assignment limit to allow contacts to be used for multiple steps)
+    @Query("SELECT c FROM Contact c WHERE c.isActive = true")
     List<Contact> findAvailableContacts();
     
-    // Find contacts by specialization and availability
+    // Find contacts by specialization and availability (removed assignment limit to allow contacts to be used for multiple steps)
     @Query("SELECT c FROM Contact c WHERE c.isActive = true AND " +
-           "c.specialization LIKE %:specialization% AND " +
-           "SIZE(c.assignedSteps) < 3")
+           "c.specialization LIKE %:specialization%")
     List<Contact> findAvailableContactsBySpecialization(@Param("specialization") String specialization);
     
-    // Find contacts by contact type and availability
+    // Find contacts by contact type and availability (removed assignment limit to allow contacts to be used for multiple steps)
     @Query("SELECT c FROM Contact c WHERE c.isActive = true AND " +
-           "c.contactType = :contactType AND " +
-           "SIZE(c.assignedSteps) < 5")
+           "c.contactType = :contactType")
     List<Contact> findAvailableContactsByType(@Param("contactType") ContactType contactType);
     
     // Statistics queries

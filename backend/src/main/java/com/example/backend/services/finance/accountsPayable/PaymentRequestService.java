@@ -9,6 +9,8 @@ import com.example.backend.models.finance.accountsPayable.PaymentRequestItem;
 import com.example.backend.models.finance.accountsPayable.PaymentRequestStatusHistory;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestItemStatus;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
+import com.example.backend.models.maintenance.MaintenanceRecord;
+import com.example.backend.models.maintenance.MaintenanceStep;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.PurchaseOrder;
 import com.example.backend.models.procurement.PurchaseOrderItem;
@@ -17,7 +19,7 @@ import com.example.backend.repositories.finance.accountsPayable.PaymentRequestIt
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestStatusHistoryRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
-import com.example.backend.models.warehouse.ItemType;  // ✅ ADD THIS
+import com.example.backend.models.warehouse.ItemType;
 import java.math.BigDecimal;  // ✅ ADD THIS if not present
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -358,6 +360,109 @@ public class PaymentRequestService {
     }
 
     /**
+     * Create a payment request from a completed maintenance step.
+     * This is called when a maintenance record is completed to generate payment requests
+     * for Finance reconciliation.
+     * 
+     * @param step The maintenance step to create a payment request for
+     * @param record The parent maintenance record
+     * @param financialReview The approved financial review (budget approval)
+     * @param createdByUsername Username of the person completing the record
+     * @return The created payment request, or null if no payment request should be created
+     */
+    @Transactional
+    public PaymentRequest createPaymentRequestFromMaintenanceStep(
+            MaintenanceStep step,
+            MaintenanceRecord record,
+            OfferFinancialReview financialReview,
+            String createdByUsername) {
+        
+        // 1. Idempotency check - skip if payment request already exists for this step
+        if (paymentRequestRepository.existsByMaintenanceStepId(step.getId())) {
+            System.out.println("[MaintenancePayment] Payment request already exists for step: " + step.getId());
+            return paymentRequestRepository.findByMaintenanceStepId(step.getId()).orElse(null);
+        }
+        
+        // 2. Skip steps without a merchant (internal employee work - no vendor to pay)
+        Merchant merchant = step.getSelectedMerchant();
+        if (merchant == null) {
+            System.out.println("[MaintenancePayment] Skipping step without merchant: " + step.getId());
+            return null;
+        }
+        
+        // 3. Get payment amount - actualCost is preferred (final paid amount), fallback to stepCost
+        BigDecimal amount = step.getActualCost() != null ? step.getActualCost() : step.getStepCost();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            System.out.println("[MaintenancePayment] Skipping step with zero/null cost: " + step.getId());
+            return null;
+        }
+        
+        // 4. Generate unique request number
+        String requestNumber = generatePaymentRequestNumber();
+        
+        // 5. Build description with step details
+        String stepTypeName = step.getStepType() != null ? step.getStepType().getName() : "Maintenance";
+        String description = String.format("Maintenance Step: %s - %s", stepTypeName, step.getDescription());
+        if (description.length() > 500) {
+            description = description.substring(0, 497) + "...";
+        }
+        
+        // 6. Create PaymentRequest with APPROVED status (money already paid in real life)
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+                .requestNumber(requestNumber)
+                .maintenanceStep(step)
+                .maintenanceRecord(record)
+                .purchaseOrder(null)  // No PO for maintenance
+                .offerFinancialReview(financialReview)
+                .requestedAmount(amount)
+                .currency("EGP")
+                .description(description)
+                .status(PaymentRequestStatus.APPROVED)  // Already paid - ready for reconciliation
+                .requestedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+                .requestedByUserName(createdByUsername)
+                .requestedByDepartment("Maintenance")
+                .requestedAt(LocalDateTime.now())
+                .approvedAt(LocalDateTime.now())  // Auto-approved
+                .approvedByUserName("System - Maintenance Completion")
+                .approvalNotes("Auto-approved upon maintenance record completion")
+                .paymentDueDate(null)  // Already paid
+                .totalPaidAmount(BigDecimal.ZERO)  // Finance will update after reconciliation
+                .remainingAmount(amount)
+                .merchant(merchant)
+                .merchantName(merchant.getName())
+                .merchantContactPerson(merchant.getContactPersonName())
+                .merchantContactPhone(merchant.getContactPhone())
+                .merchantContactEmail(merchant.getContactEmail())
+                .build();
+        
+        PaymentRequest savedRequest = paymentRequestRepository.save(paymentRequest);
+        
+        // 7. Create status history for audit trail
+        createStatusHistory(
+                savedRequest,
+                null,
+                PaymentRequestStatus.APPROVED,
+                null,
+                "Payment request created from maintenance record completion. Step: " + stepTypeName
+        );
+        
+        System.out.println("[MaintenancePayment] Created payment request " + requestNumber + 
+                " for step " + step.getId() + " amount: " + amount + " EGP");
+        
+        return savedRequest;
+    }
+
+    /**
+     * Get payment requests for a specific maintenance record
+     */
+    public List<PaymentRequestResponseDTO> getPaymentRequestsByMaintenanceRecord(UUID maintenanceRecordId) {
+        List<PaymentRequest> requests = paymentRequestRepository.findByMaintenanceRecordId(maintenanceRecordId);
+        return requests.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Get payment request by ID
      */
     public PaymentRequestResponseDTO getPaymentRequestById(UUID id) {
@@ -497,11 +602,34 @@ public class PaymentRequestService {
     }
 
     private PaymentRequestResponseDTO convertToDTO(PaymentRequest request) {
+        // Handle nullable purchaseOrder (maintenance-sourced requests don't have PO)
+        UUID purchaseOrderId = null;
+        String purchaseOrderNumber = null;
+        if (request.getPurchaseOrder() != null) {
+            purchaseOrderId = request.getPurchaseOrder().getId();
+            purchaseOrderNumber = request.getPurchaseOrder().getPoNumber();
+        }
+        
+        // Handle maintenance-sourced fields
+        UUID maintenanceStepId = null;
+        UUID maintenanceRecordId = null;
+        String maintenanceStepDescription = null;
+        if (request.getMaintenanceStep() != null) {
+            maintenanceStepId = request.getMaintenanceStep().getId();
+            maintenanceStepDescription = request.getMaintenanceStep().getDescription();
+        }
+        if (request.getMaintenanceRecord() != null) {
+            maintenanceRecordId = request.getMaintenanceRecord().getId();
+        }
+        
         return PaymentRequestResponseDTO.builder()
                 .id(request.getId())
                 .requestNumber(request.getRequestNumber())
-                .purchaseOrderId(request.getPurchaseOrder().getId())
-                .purchaseOrderNumber(request.getPurchaseOrder().getPoNumber())
+                .purchaseOrderId(purchaseOrderId)
+                .purchaseOrderNumber(purchaseOrderNumber)
+                .maintenanceStepId(maintenanceStepId)
+                .maintenanceRecordId(maintenanceRecordId)
+                .maintenanceStepDescription(maintenanceStepDescription)
                 .offerFinancialReviewId(request.getOfferFinancialReview() != null ?
                         request.getOfferFinancialReview().getId() : null)
                 .budgetCategory(request.getOfferFinancialReview() != null ?
@@ -537,9 +665,11 @@ public class PaymentRequestService {
                 .merchantContactPerson(request.getMerchantContactPerson())
                 .merchantContactPhone(request.getMerchantContactPhone())
                 .merchantContactEmail(request.getMerchantContactEmail())
-                .items(request.getPaymentRequestItems().stream()
-                        .map(this::convertItemToDTO)
-                        .collect(Collectors.toList()))
+                .items(request.getPaymentRequestItems() != null ? 
+                        request.getPaymentRequestItems().stream()
+                                .map(this::convertItemToDTO)
+                                .collect(Collectors.toList()) 
+                        : new ArrayList<>())
                 .metadata(request.getMetadata())
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())

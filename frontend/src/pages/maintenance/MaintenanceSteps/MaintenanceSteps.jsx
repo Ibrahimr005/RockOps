@@ -666,7 +666,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             />
 
             {viewModalOpen && selectedStep && (
-                <div className="modal-backdrop" onClick={() => setViewModalOpen(false)}>
+                <div className="modal-backdrop">
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>Step Details: {selectedStep.stepType}</h2>

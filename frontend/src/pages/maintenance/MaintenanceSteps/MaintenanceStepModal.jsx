@@ -442,29 +442,8 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             return parseFloat(val.toString().replace(/,/g, ''));
         };
 
-        // VALIDATION: Check if all previous steps are completed (only for new steps, not editing)
-        if (!editingStep && existingSteps.length > 0) {
-            const incompleteSteps = existingSteps.filter(step => !step.actualEndDate);
-            if (incompleteSteps.length > 0) {
-                const incompleteDescriptions = incompleteSteps.map(s => s.description).join(', ');
-                showError(`Cannot add new step. Please complete all previous steps first. Incomplete steps: ${incompleteDescriptions}`);
-                return false; // Return early, don't set errors object
-            }
-
-            // VALIDATION: Check if start date is >= latest step's completion date
-            if (incompleteSteps.length === 0 && existingSteps.length > 0) {
-                const latestStep = existingSteps[existingSteps.length - 1];
-                if (latestStep.actualEndDate && formData.startDate) {
-                    const startDate = new Date(formData.startDate);
-                    const completionDate = new Date(latestStep.actualEndDate);
-                    if (startDate < completionDate) {
-                        const completionDateStr = completionDate.toLocaleDateString();
-                        showError(`New step start date must be on or after ${completionDateStr}. The previous step was completed on ${completionDateStr}.`);
-                        return false; // Return early
-                    }
-                }
-            }
-        }
+        // NOTE: Removed validation that required all previous steps to be completed
+        // Users can now add concurrent steps without waiting for existing ones to finish
 
         if (!formData.stepTypeId) {
             newErrors.stepTypeId = 'Step type is required';
@@ -719,7 +698,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-backdrop">
             <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div className="modal-title">
@@ -1194,10 +1173,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
             {/* Inline Add Contact Modal */}
             {showAddContactModal && (
-                <div className="modal-backdrop nested-modal" onClick={(e) => {
-                    e.stopPropagation();
-                    setShowAddContactModal(false);
-                }}>
+                <div className="modal-backdrop nested-modal">
                     <div className="modal-container modal-md" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <div className="modal-title">

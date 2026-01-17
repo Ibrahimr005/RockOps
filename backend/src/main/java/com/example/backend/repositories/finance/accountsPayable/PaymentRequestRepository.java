@@ -82,4 +82,11 @@ List<PaymentRequest> findAllByPurchaseOrderId(UUID purchaseOrderId);
     // Find deleted requests
     @Query("SELECT pr FROM PaymentRequest pr WHERE pr.deletedAt IS NOT NULL")
     List<PaymentRequest> findDeletedRequests();
+
+    // Maintenance-related queries
+    Optional<PaymentRequest> findByMaintenanceStepId(UUID maintenanceStepId);
+    
+    List<PaymentRequest> findByMaintenanceRecordId(UUID maintenanceRecordId);
+    
+    boolean existsByMaintenanceStepId(UUID maintenanceStepId);
 }
