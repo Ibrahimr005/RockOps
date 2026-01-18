@@ -1,0 +1,450 @@
+// PublicHolidaysModal.scss
+
+// 1. Overlay (Required to center the modal)
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); // dimmed background
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.public-holidays-modal {
+  background: var(--section-background-color);
+  border-radius: var(--radius-lg);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column; // Ensures header/footer stay fixed while body scrolls
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.3s ease-out;
+
+  // Header
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0;
+      color: var(--color-text-primary);
+      font-size: 1.5rem;
+      font-weight: var(--bold-font-weight);
+
+      svg {
+        color: var(--color-primary);
+      }
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+
+      &:hover {
+        background: var(--color-surface-hover);
+        color: var(--color-danger);
+      }
+    }
+  }
+
+  // Scrollable Body
+  .modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex-grow: 1;
+
+    h3 {
+      margin: 0 0 1rem 0;
+      color: var(--color-text-primary);
+      font-size: 1.125rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--color-text-secondary);
+      font-style: italic;
+    }
+
+    // --- Form Section ---
+    .add-holiday-form {
+      background: var(--color-surface-secondary);
+      padding: 1.25rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+
+        label {
+          font-weight: var(--bold-font-weight);
+          color: var(--color-text-primary);
+          font-size: 0.9rem;
+        }
+
+        .form-input {
+          padding: 0.75rem;
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
+          background: var(--section-background-color);
+          color: var(--color-text-primary);
+          font-size: 0.95rem;
+          font-family: var(--font-family);
+          transition: all var(--transition-fast);
+          width: 100%;
+
+          &:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+          }
+        }
+
+        // Checkbox Specifics
+        &.checkbox-group {
+          margin-bottom: 0;
+
+          .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            font-weight: 500;
+            user-select: none;
+
+            input[type="checkbox"] {
+              width: 18px;
+              height: 18px;
+              cursor: pointer;
+              accent-color: var(--color-primary);
+            }
+          }
+
+          .help-text {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin: 0;
+            margin-left: 2rem; // Indent to align with text
+            line-height: 1.4;
+          }
+        }
+      }
+
+      .btn-add {
+        margin-top: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        background: var(--color-primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        font-weight: var(--bold-font-weight);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all var(--transition-fast);
+        width: 100%;
+
+        &:hover:not(:disabled) {
+          background: var(--color-primary-hover);
+          transform: translateY(-1px);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    // --- List Section ---
+    .holidays-list {
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1rem;
+        background: var(--color-surface-secondary);
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-md);
+        color: var(--color-text-secondary);
+        gap: 1rem;
+
+        svg {
+          font-size: 2.5rem;
+          opacity: 0.3;
+        }
+
+        p {
+          margin: 0;
+          font-size: 0.95rem;
+        }
+      }
+
+      .holidays-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.5rem;
+
+        thead {
+          background: var(--color-surface-secondary);
+
+          tr th {
+            padding: 0.85rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            border-bottom: 2px solid var(--border-color);
+          }
+        }
+
+        tbody {
+          tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: background var(--transition-fast);
+
+            &:hover {
+              background: var(--color-surface-hover);
+            }
+
+            td {
+              padding: 0.85rem 1rem;
+              color: var(--color-text-primary);
+              font-size: 0.95rem;
+              vertical-align: middle;
+            }
+
+            // Cell Specifics
+            .date-cell {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              white-space: nowrap;
+              font-family: monospace, sans-serif; // often looks better for dates
+
+              svg {
+                color: var(--color-text-secondary);
+                font-size: 0.85rem;
+              }
+            }
+
+            .name-cell {
+              font-weight: 500;
+            }
+
+            .duration-cell {
+              color: var(--color-text-secondary);
+              font-size: 0.9rem;
+            }
+
+            // Status Badges
+            .type-badge {
+              display: inline-flex;
+              align-items: center;
+              padding: 0.25rem 0.75rem;
+              border-radius: 99px;
+              font-size: 0.75rem;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.02em;
+
+              &.paid {
+                background: rgba(76, 175, 80, 0.15);
+                color: var(--color-success);
+                border: 1px solid rgba(76, 175, 80, 0.2);
+              }
+
+              &.unpaid {
+                background: rgba(255, 152, 0, 0.15);
+                color: var(--color-warning);
+                border: 1px solid rgba(255, 152, 0, 0.2);
+              }
+            }
+
+            // Actions
+            .btn-delete {
+              background: none;
+              border: none;
+              color: var(--color-text-secondary);
+              cursor: pointer;
+              padding: 0.5rem;
+              border-radius: var(--radius-sm);
+              transition: all var(--transition-fast);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+
+              &:hover {
+                background: rgba(244, 67, 54, 0.1);
+                color: var(--color-danger);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Footer
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--section-background-color);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+
+    button {
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-md);
+      font-weight: var(--bold-font-weight);
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      border: none;
+
+      &.btn-cancel {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--color-text-primary);
+
+        &:hover:not(:disabled) {
+          background: var(--color-surface-hover);
+          border-color: var(--color-text-secondary);
+        }
+      }
+
+      &.btn-submit {
+        background: var(--color-primary);
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        &:hover:not(:disabled) {
+          background: var(--color-primary-hover);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+      }
+    }
+  }
+}
+
+// Keyframes
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// Dark mode overrides
+[data-theme="dark"] {
+  .public-holidays-modal {
+    .holidays-list .holidays-table tbody tr {
+      .type-badge {
+        &.paid {
+          background: rgba(76, 175, 80, 0.2);
+        }
+        &.unpaid {
+          background: rgba(255, 152, 0, 0.2);
+        }
+      }
+    }
+
+    .empty-state {
+      background: rgba(255,255,255, 0.03);
+      border-color: rgba(255,255,255, 0.1);
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .public-holidays-modal {
+    max-height: 100vh;
+    height: 100%;
+    border-radius: 0;
+
+    .modal-body {
+      padding: 1rem;
+
+      .add-holiday-form {
+        padding: 1rem;
+
+        .form-row {
+          grid-template-columns: 1fr; // Stack dates on mobile
+        }
+      }
+
+      .holidays-table {
+        display: block;
+        overflow-x: auto;
+
+        // Ensure table doesn't break layout on very small screens
+        min-width: 500px;
+      }
+    }
+
+    .modal-footer {
+      padding: 1rem;
+      flex-direction: column-reverse; // Stack buttons
+
+      button {
+        width: 100%;
+        padding: 1rem;
+      }
+    }
+  }
+}

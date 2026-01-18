@@ -53,7 +53,7 @@ class WebSocketService {
                     'Authorization': `Bearer ${token}`
                 },
                 debug: (str) => {
-                    console.log('🔍 STOMP Debug:', str);
+                    // console.log('🔍 STOMP Debug:', str);
                 },
                 reconnectDelay: 5000,
                 heartbeatIncoming: 10000,
@@ -62,7 +62,7 @@ class WebSocketService {
 
             // Connection established
             this.client.onConnect = (frame) => {
-                console.log('✅ WebSocket Connected:', frame);
+                // console.log('✅ WebSocket Connected:', frame);
                 this.connected = true;
 
                 if (this.connectionStatusCallback) {
@@ -90,7 +90,7 @@ class WebSocketService {
 
             // WebSocket error
             this.client.onWebSocketError = (error) => {
-                console.error('❌ WebSocket Error:', error);
+                // console.error('❌ WebSocket Error:', error);
                 this.connected = false;
 
                 if (this.connectionStatusCallback) {

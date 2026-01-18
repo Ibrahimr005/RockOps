@@ -1,0 +1,620 @@
+// PayrollDetails.scss
+// Using project's actual theme variables from theme-variables.css
+
+.payroll-details-page {
+  padding: 2rem;
+
+  // Lifecycle Timeline
+
+  @keyframes pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(72, 128, 255, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 15px rgba(72, 128, 255, 0);
+    }
+  }
+
+  // Phase-Specific Action Section
+  .phase-action-section {
+    margin-bottom: 2rem;
+
+    .action-card {
+      background: var(--section-background-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      border-left: 4px solid var(--color-primary);
+
+      .action-content {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        flex: 1;
+
+        .action-icon {
+          font-size: 2.5rem;
+          color: var(--color-primary);
+          opacity: 0.8;
+        }
+
+        h3 {
+          margin: 0 0 0.5rem 0;
+          color: var(--color-text-primary);
+          font-weight: var(--bold-font-weight);
+          font-size: 1.125rem;
+        }
+
+        p {
+          margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 0.9rem;
+        }
+      }
+
+      .btn-action-primary {
+        padding: 0.875rem 1.75rem;
+        background: var(--color-primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        font-weight: var(--bold-font-weight);
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all var(--transition-fast);
+        white-space: nowrap;
+
+        &:hover {
+          background: var(--color-primary-hover);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
+        }
+
+        svg {
+          font-size: 1.125rem;
+        }
+      }
+    }
+  }
+
+  // Summary Cards
+  .payroll-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+
+    .summary-card {
+      background: var(--section-background-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-normal) ease;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+
+        &.employees {
+          background: rgba(33, 150, 243, 0.1);
+          color: var(--color-info);
+        }
+
+        &.gross {
+          background: rgba(76, 175, 80, 0.1);
+          color: var(--color-success);
+        }
+
+        &.deductions {
+          background: rgba(244, 67, 54, 0.1);
+          color: var(--color-danger);
+        }
+
+        &.net {
+          background: rgba(156, 39, 176, 0.1);
+          color: #9C27B0;
+        }
+      }
+
+      .card-content {
+        flex: 1;
+
+        .card-value {
+          font-size: 1.8rem;
+          font-weight: var(--bold-font-weight);
+          color: var(--color-text-primary);
+          margin-bottom: 0.25rem;
+        }
+
+        .card-label {
+          font-size: 0.9rem;
+          color: var(--color-text-secondary);
+        }
+      }
+    }
+  }
+
+  // Employee Payrolls Section
+  .employee-payrolls-section {
+    background: var(--section-background-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+
+    h2 {
+      margin: 0 0 1.5rem 0;
+      color: var(--color-text-primary);
+      font-weight: var(--bold-font-weight);
+    }
+
+    // Holidays Review Section
+    .holidays-review-section {
+      .holidays-info {
+        background: rgba(33, 150, 243, 0.1);
+        border-left: 4px solid var(--color-info);
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius-sm);
+        margin-bottom: 1.5rem;
+
+        .info-text {
+          margin: 0;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          color: var(--color-text-primary);
+          font-size: 0.95rem;
+
+          svg {
+            color: var(--color-info);
+            font-size: 1.25rem;
+          }
+        }
+      }
+
+      .holidays-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+
+        .holiday-card {
+          background: var(--color-surface-secondary);
+          border-radius: var(--radius-md);
+          padding: 1.25rem;
+          border: 2px solid var(--border-color);
+          transition: all var(--transition-fast);
+
+          &:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+          }
+
+          .holiday-date {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+
+            svg {
+              color: var(--color-primary);
+              font-size: 1.125rem;
+            }
+
+            span {
+              font-weight: var(--bold-font-weight);
+            }
+          }
+
+          .holiday-name {
+            font-size: 1.125rem;
+            font-weight: var(--bold-font-weight);
+            color: var(--color-text-primary);
+            margin-bottom: 0.75rem;
+          }
+
+          .holiday-type {
+            display: inline-block;
+            padding: 0.375rem 0.875rem;
+            border-radius: 20px;
+            font-size: 0.813rem;
+            font-weight: var(--bold-font-weight);
+
+            &.paid {
+              background: rgba(76, 175, 80, 0.1);
+              color: var(--color-success);
+            }
+
+            &.unpaid {
+              background: rgba(var(--color-warning-rgb), 0.1);
+              color: var(--color-warning);
+            }
+          }
+        }
+      }
+
+      .holidays-actions {
+        display: flex;
+        justify-content: center;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+
+        .btn-secondary {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.75rem 1.5rem;
+          background: var(--color-surface-hover);
+          color: var(--color-text-primary);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
+          font-weight: var(--bold-font-weight);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+
+          &:hover {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+          }
+
+          svg {
+            font-size: 1rem;
+          }
+        }
+      }
+    }
+
+    // No Holidays Message
+    .no-holidays-message {
+      text-align: center;
+      padding: 4rem 2rem;
+
+      .empty-icon {
+        font-size: 4rem;
+        color: var(--color-text-tertiary);
+        opacity: 0.5;
+        margin-bottom: 1.5rem;
+      }
+
+      h3 {
+        margin: 0 0 0.75rem 0;
+        color: var(--color-text-primary);
+        font-weight: var(--bold-font-weight);
+        font-size: 1.25rem;
+      }
+
+      p {
+        margin: 0 0 2rem 0;
+        color: var(--color-text-secondary);
+        font-size: 1rem;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .empty-state-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+
+        .btn-primary {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.875rem 1.75rem;
+          background: var(--color-primary);
+          color: white;
+          border: none;
+          border-radius: var(--radius-md);
+          font-weight: var(--bold-font-weight);
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+
+          &:hover {
+            background: var(--color-primary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+          }
+
+          svg {
+            font-size: 1rem;
+          }
+        }
+
+        .btn-secondary-outline {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.875rem 1.75rem;
+          background: transparent;
+          color: var(--color-text-primary);
+          border: 2px solid var(--border-color);
+          border-radius: var(--radius-md);
+          font-weight: var(--bold-font-weight);
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+
+          &:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background: rgba(72, 128, 255, 0.05);
+            transform: translateY(-2px);
+          }
+
+          svg {
+            font-size: 1rem;
+          }
+        }
+      }
+    }
+
+    // Employee Table Styles
+    .employee-cell {
+      .employee-name {
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+        margin-bottom: 0.25rem;
+      }
+
+      .employee-details {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+      }
+    }
+
+    .attendance-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .attended {
+        font-weight: var(--bold-font-weight);
+        color: var(--color-success);
+      }
+
+      .late-badge {
+        padding: 0.25rem 0.5rem;
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: var(--bold-font-weight);
+      }
+    }
+
+    .deduction-amount {
+      color: var(--color-danger);
+      font-weight: var(--bold-font-weight);
+    }
+
+    .net-amount {
+      color: var(--color-success);
+      font-weight: var(--bold-font-weight);
+      font-size: 1.05rem;
+    }
+
+    .calculation-status {
+      .calculated {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--color-success);
+        font-weight: var(--bold-font-weight);
+      }
+
+      .pending {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--color-warning);
+        font-weight: var(--bold-font-weight);
+      }
+    }
+  }
+}
+
+// Dark mode adjustments
+[data-theme="dark"] {
+  .payroll-details-page {
+    .payroll-summary {
+      .summary-card {
+        .card-icon {
+          &.employees {
+            background: rgba(33, 150, 243, 0.2);
+          }
+
+          &.gross {
+            background: rgba(92, 188, 96, 0.2);
+          }
+
+          &.deductions {
+            background: rgba(255, 82, 82, 0.2);
+          }
+
+          &.net {
+            background: rgba(156, 39, 176, 0.2);
+          }
+        }
+      }
+    }
+
+    .employee-payrolls-section {
+      .holidays-review-section {
+        .holidays-info {
+          background: rgba(33, 150, 243, 0.2);
+        }
+
+        .holidays-grid .holiday-card {
+          .holiday-type {
+            &.paid {
+              background: rgba(92, 188, 96, 0.2);
+            }
+
+            &.unpaid {
+              background: rgba(var(--color-warning-rgb), 0.2);
+            }
+          }
+        }
+      }
+
+      .attendance-cell .late-badge {
+        background: rgba(var(--color-warning-rgb), 0.2);
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 1024px) {
+  .payroll-details-page {
+    .lifecycle-timeline {
+      flex-wrap: wrap;
+
+      .timeline-step {
+        min-width: 200px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .payroll-details-page {
+    padding: 1rem;
+
+    .lifecycle-timeline {
+      flex-direction: column;
+      padding: 1rem;
+
+      .timeline-step {
+        width: 100%;
+        margin-bottom: 1.5rem;
+
+        .step-connector {
+          display: none;
+        }
+
+        .step-number {
+          margin-bottom: 0.75rem;
+        }
+      }
+    }
+
+    .phase-action-section {
+      .action-card {
+        flex-direction: column;
+        text-align: center;
+
+        .action-content {
+          flex-direction: column;
+          text-align: center;
+
+          .action-icon {
+            font-size: 2rem;
+          }
+        }
+
+        .btn-action-primary {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    }
+
+    .payroll-summary {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+
+      .summary-card {
+        padding: 1rem;
+
+        .card-icon {
+          width: 50px;
+          height: 50px;
+          font-size: 1.5rem;
+        }
+
+        .card-content .card-value {
+          font-size: 1.5rem;
+        }
+      }
+    }
+
+    .employee-payrolls-section {
+      padding: 1rem;
+
+      h2 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+      }
+
+      .holidays-review-section {
+        .holidays-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .holidays-actions {
+          .btn-secondary {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+      }
+
+      .no-holidays-message {
+        padding: 2rem 1rem;
+
+        .empty-icon {
+          font-size: 3rem;
+        }
+
+        h3 {
+          font-size: 1.125rem;
+        }
+
+        p {
+          font-size: 0.938rem;
+        }
+
+        .empty-state-actions {
+          flex-direction: column;
+          gap: 0.75rem;
+
+          .btn-primary,
+          .btn-secondary-outline {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+      }
+    }
+  }
+}

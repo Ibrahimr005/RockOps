@@ -3,7 +3,8 @@
     "allow": [
       "Bash(powershell -Command \"cd D:\\RockOps\\backend; .\\mvnw.cmd clean\")",
       "Bash(powershell -Command:*)",
-      "Bash(cmd /c \"mvnw.cmd clean compile\")"
+      "Bash(cmd /c \"mvnw.cmd clean compile\")",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,369 @@
+// ========================================
+// FILE: PublicHolidaysPhase.scss
+// Using project's actual theme variables
+// ========================================
+
+.public-holidays-phase {
+  .phase-section {
+    background: var(--section-background-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
+
+    h2 {
+      margin: 0 0 1.5rem 0;
+      color: var(--color-text-primary);
+      font-weight: var(--bold-font-weight);
+      font-size: 1.25rem;
+    }
+  }
+
+  .phase-loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-text-secondary);
+    font-size: 1.1rem;
+
+    &::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 1rem;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+  }
+
+  // ========================================
+  // HOLIDAYS REVIEW SECTION
+  // ========================================
+
+  .holidays-review-section {
+    .holidays-info {
+      background: rgba(33, 150, 243, 0.1);
+      border-left: 4px solid var(--color-info);
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.5rem;
+
+      .info-text {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--color-text-primary);
+        font-size: 0.95rem;
+
+        svg {
+          color: var(--color-info);
+          font-size: 1.25rem;
+          flex-shrink: 0;
+        }
+      }
+    }
+
+    .holidays-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+
+      @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .holiday-card {
+      background: var(--color-surface-secondary);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      border: 2px solid var(--border-color);
+      transition: all var(--transition-fast);
+
+      &:hover {
+        border-color: var(--color-primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .holiday-date {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        color: var(--color-text-secondary);
+        font-size: 0.875rem;
+
+        svg {
+          color: var(--color-primary);
+          font-size: 1.125rem;
+          flex-shrink: 0;
+        }
+
+        span {
+          font-weight: var(--bold-font-weight);
+        }
+
+        .date-range {
+          display: block;
+          line-height: 1.4;
+        }
+      }
+
+      .holiday-name {
+        font-size: 1.125rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+        margin-bottom: 0.75rem;
+        line-height: 1.3;
+      }
+
+      .holiday-duration {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        padding: 0.25rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-bottom: 0.5rem;
+
+        &::before {
+          content: '📅';
+          font-size: 0.9rem;
+        }
+      }
+
+      .holiday-type {
+        display: inline-block;
+        padding: 0.375rem 0.875rem;
+        border-radius: 20px;
+        font-size: 0.813rem;
+        font-weight: var(--bold-font-weight);
+
+        &.paid {
+          background: rgba(76, 175, 80, 0.1);
+          color: var(--color-success);
+        }
+
+        &.unpaid {
+          background: rgba(var(--color-warning-rgb), 0.1);
+          color: var(--color-warning);
+        }
+      }
+    }
+
+    .holidays-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-start;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+      flex-wrap: wrap;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+      }
+    }
+  }
+
+  // ========================================
+  // EMPTY STATE
+  // ========================================
+
+  .no-holidays-message {
+    text-align: center;
+    padding: 4rem 2rem;
+
+    .empty-icon {
+      font-size: 4rem;
+      color: var(--color-text-tertiary);
+      opacity: 0.5;
+      margin-bottom: 1.5rem;
+    }
+
+    h3 {
+      margin: 0 0 0.75rem 0;
+      color: var(--color-text-primary);
+      font-weight: var(--bold-font-weight);
+      font-size: 1.25rem;
+    }
+
+    p {
+      margin: 0 0 2rem 0;
+      color: var(--color-text-secondary);
+      font-size: 1rem;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    .empty-state-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+    }
+  }
+
+  // ========================================
+  // BUTTON STYLES
+  // ========================================
+
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.75rem;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: var(--bold-font-weight);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    svg {
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-weight: var(--bold-font-weight);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    svg {
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .btn-secondary-outline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.75rem;
+    background: transparent;
+    color: var(--color-text-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-weight: var(--bold-font-weight);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+
+    &:hover:not(:disabled) {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: rgba(72, 128, 255, 0.05);
+      transform: translateY(-2px);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    svg {
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+// ========================================
+// DARK MODE ADJUSTMENTS
+// ========================================
+
+[data-theme="dark"] {
+  .public-holidays-phase {
+    .holidays-review-section {
+      .holidays-info {
+        background: rgba(33, 150, 243, 0.2);
+      }
+
+      .holidays-grid .holiday-card {
+        .holiday-type {
+          &.paid {
+            background: rgba(92, 188, 96, 0.2);
+          }
+
+          &.unpaid {
+            background: rgba(var(--color-warning-rgb), 0.2);
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========================================
+// ANIMATIONS
+// ========================================
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

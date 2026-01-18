@@ -1,136 +1,623 @@
-// ==================== PAYROLL SERVICE ====================
 // frontend/src/services/payroll/payrollService.js
 import apiClient from '../../utils/apiClient.js';
 
+// Payroll API endpoints
 const PAYROLL_ENDPOINTS = {
     BASE: '/api/v1/payroll',
-    GENERATE_MONTHLY: (year, month) => `/api/v1/payroll/generate-monthly/${year}/${month}`,
-    GENERATE_MONTHLY_PARAM: '/api/v1/payroll/generate-monthly',
-    REPORT: '/api/v1/payroll/report',
-    SUMMARY: '/api/v1/payroll/summary',
-    EMPLOYEE: (employeeId) => `/api/v1/payroll/employee/${employeeId}`,
-    PERIOD: '/api/v1/payroll/period',
-    FINALIZE_PERIOD: '/api/v1/payroll/finalize-period',
-    SEND_PERIOD: '/api/v1/payroll/send-period',
-    STATUS: (status) => `/api/v1/payroll/status/${status}`,
-    STATUS_SUMMARY: '/api/v1/payroll/status-summary',
-    EXISTS: (year, month) => `/api/v1/payroll/exists/${year}/${month}`,
-    MISSING_PAYSLIPS: (year, month) => `/api/v1/payroll/missing-payslips/${year}/${month}`,
-    GENERATE_SPECIFIC: '/api/v1/payroll/generate-specific',
-    MONTHLY_STATS: (year) => `/api/v1/payroll/monthly-stats/${year}`,
-    VALIDATE: (year, month) => `/api/v1/payroll/validate/${year}/${month}`,
-    REPROCESS_FAILED: '/api/v1/payroll/reprocess-failed',
-    EXPORT: '/api/v1/payroll/export'
+    BY_ID: (id) => `/api/v1/payroll/${id}`,
+    BY_PERIOD: (startDate, endDate) => `/api/v1/payroll/period?startDate=${startDate}&endDate=${endDate}`,
+    DELETE: (id) => `/api/v1/payroll/${id}`,
+
+    // Public holidays
+    ADD_HOLIDAYS: (id) => `/api/v1/payroll/${id}/add-public-holidays`,
+    GET_HOLIDAYS: (id) => `/api/v1/payroll/${id}/public-holidays`,
+
+    // State transitions
+    IMPORT_ATTENDANCE: (id) => `/api/v1/payroll/${id}/import-attendance`,
+    LEAVE_REVIEW: (id) => `/api/v1/payroll/${id}/leave-review`,
+    OVERTIME_REVIEW: (id) => `/api/v1/payroll/${id}/overtime-review`,
+    CONFIRM_LOCK: (id) => `/api/v1/payroll/${id}/confirm-lock`,
+
+    // ⭐ Attendance workflow endpoints
+    ATTENDANCE_STATUS: (id) => `/api/v1/payroll/${id}/attendance-status`,
+    FINALIZE_ATTENDANCE: (id) => `/api/v1/payroll/${id}/finalize-attendance`,
+    NOTIFY_HR: (id) => `/api/v1/payroll/${id}/notify-hr`,
+    RESET_ATTENDANCE: (id) => `/api/v1/payroll/${id}/reset-attendance`,
+
+    // ⭐ Leave Review workflow endpoints
+    LEAVE_STATUS: (id) => `/api/v1/payroll/${id}/leave-status`,
+    PROCESS_LEAVE_REVIEW: (id) => `/api/v1/payroll/${id}/process-leave-review`,
+    FINALIZE_LEAVE: (id) => `/api/v1/payroll/${id}/finalize-leave`,
+    NOTIFY_HR_LEAVE: (id) => `/api/v1/payroll/${id}/notify-hr-leave`,
+    LEAVE_REQUESTS_FOR_PAYROLL: (id) => `/api/v1/payroll/${id}/leave-requests`,
+
+    // Employee payrolls
+    EMPLOYEE_PAYROLLS: (id) => `/api/v1/payroll/${id}/employees`,
+    EMPLOYEE_PAYROLL: (payrollId, employeeId) => `/api/v1/payroll/${payrollId}/employee/${employeeId}`,
 };
 
 export const payrollService = {
-    // Generate monthly payslips for all employees
-    generateMonthlyPayslips: (year, month, createdBy = 'SYSTEM') => {
-        return apiClient.post(PAYROLL_ENDPOINTS.GENERATE_MONTHLY(year, month), null, {
-            params: { createdBy }
-        });
+    // ========================================
+    // CORE PAYROLL METHODS
+    // ========================================
+    getLatestPayroll: async () => {
+        try {
+            console.log('Fetching latest payroll');
+            const response = await apiClient.get(`${PAYROLL_ENDPOINTS.BASE}/latest`);
+            return response.data; // Might be empty if no content
+        } catch (error) {
+            console.error('Error fetching latest payroll:', error);
+            throw error;
+        }
+    },
+    getAllPayrolls: async () => {
+        try {
+            console.log('Fetching all payroll cycles');
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.BASE);
+            console.log('Get all payrolls response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching payroll cycles:', error);
+            throw error;
+        }
     },
 
-    // Generate monthly payslips with YearMonth parameter
-    generateMonthlyPayslipsWithParam: (payPeriod, createdBy = 'SYSTEM') => {
-        return apiClient.post(PAYROLL_ENDPOINTS.GENERATE_MONTHLY_PARAM, null, {
-            params: { payPeriod, createdBy }
-        });
+    getPayrollById: async (id) => {
+        try {
+            console.log('Fetching payroll by ID:', id);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.BY_ID(id));
+            console.log('Get payroll by ID response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching payroll by ID:', error);
+
+            if (error.response?.status === 404) {
+                throw new Error('Payroll cycle not found');
+            } else if (error.response?.status === 403) {
+                throw new Error('You do not have permission to view this payroll');
+            } else if (error.response?.status === 401) {
+                throw new Error('Please log in to view this payroll');
+            }
+
+            throw error;
+        }
     },
 
-    // Get payroll report for a period
-    getPayrollReport: (startDate, endDate) => {
-        return apiClient.get(PAYROLL_ENDPOINTS.REPORT, {
-            params: { startDate, endDate }
-        });
+    getPayrollByPeriod: async (startDate, endDate) => {
+        try {
+            console.log('Fetching payroll for period:', startDate, 'to', endDate);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.BY_PERIOD(startDate, endDate));
+            console.log('Get payroll by period response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching payroll by period:', error);
+
+            if (error.response?.status === 404) {
+                throw new Error(`No payroll found for period ${startDate} to ${endDate}`);
+            }
+
+            throw error;
+        }
     },
 
-    // Get payroll summary (more efficient than full report)
-    getPayrollSummary: (startDate, endDate) => {
-        return apiClient.get(PAYROLL_ENDPOINTS.SUMMARY, {
-            params: { startDate, endDate }
-        });
+    createPayroll: async (payrollData) => {
+        try {
+            console.log('Creating payroll:', payrollData);
+
+            const username = localStorage.getItem('username') || 'admin';
+            const requestData = {
+                ...payrollData,
+                createdBy: username,
+            };
+
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.BASE, requestData);
+            console.log('Create payroll response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error creating payroll:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Payroll already exists for this period');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Invalid payroll data');
+            }
+
+            throw error;
+        }
     },
 
-    // Get payslips by employee
-    getPayslipsByEmployee: (employeeId) => {
-        return apiClient.get(PAYROLL_ENDPOINTS.EMPLOYEE(employeeId));
+    deletePayroll: async (id) => {
+        try {
+            console.log('Deleting payroll:', id);
+            const username = localStorage.getItem('username') || 'admin';
+            const response = await apiClient.delete(
+                `${PAYROLL_ENDPOINTS.DELETE(id)}?username=${username}`
+            );
+            console.log('Delete payroll response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting payroll:', error);
+
+            if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Cannot delete locked payroll');
+            } else if (error.response?.status === 404) {
+                throw new Error('Payroll not found');
+            }
+
+            throw error;
+        }
     },
 
-    // Get payslips by period
-    getPayslipsByPeriod: (startDate, endDate) => {
-        return apiClient.get(PAYROLL_ENDPOINTS.PERIOD, {
-            params: { startDate, endDate }
-        });
+    // ========================================
+    // PUBLIC HOLIDAYS METHODS
+    // ========================================
+
+    getPublicHolidays: async (payrollId) => {
+        try {
+            console.log('Fetching public holidays for:', payrollId);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.GET_HOLIDAYS(payrollId));
+            console.log('Get holidays response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching public holidays:', error);
+
+            if (error.response?.status === 404) {
+                return [];
+            }
+
+            throw error;
+        }
     },
 
-    // Bulk finalize payslips for a period
-    finalizePayslipsForPeriod: (startDate, endDate, approvedBy = 'SYSTEM') => {
-        return apiClient.post(PAYROLL_ENDPOINTS.FINALIZE_PERIOD, null, {
-            params: { startDate, endDate, approvedBy }
-        });
+    addPublicHolidays: async (payrollId, holidays) => {
+        try {
+            console.log('Adding public holidays:', payrollId, holidays);
+            const response = await apiClient.post(
+                PAYROLL_ENDPOINTS.ADD_HOLIDAYS(payrollId),
+                holidays
+            );
+            console.log('Add holidays response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error adding public holidays:', error);
+
+            if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Invalid holiday data');
+            }
+
+            throw error;
+        }
     },
 
-    // Bulk send payslips for a period
-    sendPayslipsForPeriod: (startDate, endDate) => {
-        return apiClient.post(PAYROLL_ENDPOINTS.SEND_PERIOD, null, {
-            params: { startDate, endDate }
-        });
+    // ========================================
+    // ⭐ ATTENDANCE WORKFLOW METHODS
+    // ========================================
+
+    importAttendance: async (payrollId) => {
+        try {
+            console.log('🔵 Importing attendance for payroll:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.IMPORT_ATTENDANCE(payrollId));
+
+            console.log('✅ Import response:', response);
+            console.log('📊 Import data:', response.data);
+
+            return response.data;
+
+        } catch (error) {
+            console.error('❌ Error importing attendance:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Attendance is finalized and locked. Cannot import.');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to import attendance');
+            }
+
+            throw error;
+        }
     },
 
-    // Get payslips by status for a period
-    getPayslipsByStatusAndPeriod: (status, startDate, endDate) => {
-        return apiClient.get(PAYROLL_ENDPOINTS.STATUS(status), {
-            params: { startDate, endDate }
-        });
+    getAttendanceStatus: async (payrollId) => {
+        try {
+            console.log('Fetching attendance status for:', payrollId);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.ATTENDANCE_STATUS(payrollId));
+            console.log('Attendance status response:', response);
+            console.log('Attendance status data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching attendance status:', error);
+
+            if (error.response?.status === 404) {
+                throw new Error('Payroll not found');
+            }
+
+            throw error;
+        }
     },
 
-    // Get payroll status summary
-    getPayrollStatusSummary: (startDate, endDate) => {
-        return apiClient.get(PAYROLL_ENDPOINTS.STATUS_SUMMARY, {
-            params: { startDate, endDate }
-        });
+    finalizeAttendance: async (payrollId) => {
+        try {
+            console.log('Finalizing attendance for payroll:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.FINALIZE_ATTENDANCE(payrollId));
+            console.log('Finalize attendance response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error finalizing attendance:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Cannot finalize attendance in current state');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to finalize attendance');
+            }
+
+            throw error;
+        }
     },
 
-    // Check if payroll exists for a period
-    payrollExistsForPeriod: (year, month) => {
-        return apiClient.get(PAYROLL_ENDPOINTS.EXISTS(year, month));
+    notifyHR: async (payrollId) => {
+        try {
+            console.log('Sending HR notification for payroll:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.NOTIFY_HR(payrollId));
+            console.log('Notify HR response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error notifying HR:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Attendance is already finalized. Cannot send notification.');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to send notification');
+            }
+
+            throw error;
+        }
     },
 
-    // Get employees without payslips for a period
-    getEmployeesWithoutPayslipsForPeriod: (year, month) => {
-        return apiClient.get(PAYROLL_ENDPOINTS.MISSING_PAYSLIPS(year, month));
+    resetAttendanceImport: async (payrollId) => {
+        try {
+            console.log('⚠️ RESETTING attendance import for payroll:', payrollId);
+            const response = await apiClient.delete(PAYROLL_ENDPOINTS.RESET_ATTENDANCE(payrollId));
+            console.log('Reset attendance response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error resetting attendance:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Cannot reset finalized attendance');
+            } else if (error.response?.status === 403) {
+                throw new Error('Admin access required to reset attendance');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to reset attendance');
+            }
+
+            throw error;
+        }
     },
 
-    // Generate payslips for specific employees only
-    generatePayslipsForEmployees: (employeeIds, payPeriod, createdBy = 'SYSTEM') => {
-        return apiClient.post(PAYROLL_ENDPOINTS.GENERATE_SPECIFIC, employeeIds, {
-            params: { payPeriod, createdBy }
-        });
+    // ========================================
+    // ⭐ LEAVE REVIEW WORKFLOW METHODS
+    // ========================================
+
+    getLeaveStatus: async (payrollId) => {
+        try {
+            console.log('Fetching leave status for:', payrollId);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.LEAVE_STATUS(payrollId));
+            console.log('Leave status response:', response);
+            console.log('Leave status data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching leave status:', error);
+
+            if (error.response?.status === 404) {
+                throw new Error('Payroll not found');
+            }
+
+            throw error;
+        }
     },
 
-    // Get monthly payroll statistics
-    getMonthlyPayrollStats: (year) => {
-        return apiClient.get(PAYROLL_ENDPOINTS.MONTHLY_STATS(year));
+    processLeaveReview: async (payrollId) => {
+        try {
+            console.log('🔵 Processing leave review for payroll:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.PROCESS_LEAVE_REVIEW(payrollId));
+            console.log('✅ Process leave response:', response);
+            console.log('📊 Process leave data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error processing leave review:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Leave is finalized and locked. Cannot process.');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to process leave review');
+            }
+
+            throw error;
+        }
     },
 
-    // Validate payroll data for a period
-    validatePayrollForPeriod: (year, month) => {
-        return apiClient.post(PAYROLL_ENDPOINTS.VALIDATE(year, month));
+    finalizeLeave: async (payrollId) => {
+        try {
+            console.log('Finalizing leave review for payroll:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.FINALIZE_LEAVE(payrollId));
+            console.log('Finalize leave response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error finalizing leave review:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Cannot finalize leave review in current state');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to finalize leave review');
+            }
+
+            throw error;
+        }
     },
 
-    // Reprocess failed payslips
-    reprocessFailedPayslips: (startDate, endDate, reprocessedBy = 'SYSTEM') => {
-        return apiClient.post(PAYROLL_ENDPOINTS.REPROCESS_FAILED, null, {
-            params: { startDate, endDate, reprocessedBy }
-        });
+    notifyHRForLeave: async (payrollId) => {
+        try {
+            console.log('Sending HR notification for leave review:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.NOTIFY_HR_LEAVE(payrollId));
+            console.log('Notify HR for leave response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error notifying HR for leave:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Leave is already finalized. Cannot send notification.');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to send notification');
+            }
+
+            throw error;
+        }
     },
 
-    // Export payroll data
-    exportPayrollData: (startDate, endDate, format = 'excel') => {
-        return apiClient.get(PAYROLL_ENDPOINTS.EXPORT, {
-            params: { startDate, endDate, format },
-            responseType: 'blob'
-        });
-    }
+    getLeaveRequestsForPayroll: async (payrollId) => {
+        try {
+            console.log('Fetching leave requests for payroll:', payrollId);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.LEAVE_REQUESTS_FOR_PAYROLL(payrollId));
+            console.log('Leave requests response:', response);
+            console.log('Leave requests data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching leave requests for payroll:', error);
+            throw error;
+        }
+    },
+
+    // ========================================
+    // EMPLOYEE PAYROLL METHODS
+    // ========================================
+
+    getEmployeePayrolls: async (payrollId) => {
+        try {
+            console.log('Fetching employee payrolls for:', payrollId);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.EMPLOYEE_PAYROLLS(payrollId));
+            console.log('Get employee payrolls response:', response);
+            console.log('Get employee payrolls data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching employee payrolls:', error);
+            throw error;
+        }
+    },
+
+    getEmployeePayroll: async (payrollId, employeeId) => {
+        try {
+            console.log('Fetching employee payroll:', payrollId, employeeId);
+            const response = await apiClient.get(
+                PAYROLL_ENDPOINTS.EMPLOYEE_PAYROLL(payrollId, employeeId)
+            );
+            console.log('Get employee payroll response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching employee payroll:', error);
+
+            if (error.response?.status === 404) {
+                throw new Error('Employee payroll not found');
+            }
+
+            throw error;
+        }
+    },
+
+    // ========================================
+    // STATE TRANSITION METHODS
+    // ========================================
+
+    moveToLeaveReview: async (payrollId) => {
+        try {
+            console.log('Moving to leave review:', payrollId);
+            const username = localStorage.getItem('username') || 'admin';
+            const response = await apiClient.post(
+                `${PAYROLL_ENDPOINTS.LEAVE_REVIEW(payrollId)}?username=${username}`
+            );
+            console.log('Leave review response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error moving to leave review:', error);
+            throw error;
+        }
+    },
+
+    moveToOvertimeReview: async (payrollId) => {
+        try {
+            console.log('Moving to overtime review:', payrollId);
+            const username = localStorage.getItem('username') || 'admin';
+            const response = await apiClient.post(
+                `${PAYROLL_ENDPOINTS.OVERTIME_REVIEW(payrollId)}?username=${username}`
+            );
+            console.log('Overtime review response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error moving to overtime review:', error);
+            throw error;
+        }
+    },
+
+    confirmAndLock: async (payrollId) => {
+        try {
+            console.log('Confirming and locking payroll:', payrollId);
+            const username = localStorage.getItem('username') || 'admin';
+            const response = await apiClient.post(
+                `${PAYROLL_ENDPOINTS.CONFIRM_LOCK(payrollId)}?username=${username}`
+            );
+            console.log('Confirm and lock response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error confirming and locking payroll:', error);
+
+            if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to lock payroll');
+            }
+
+            throw error;
+        }
+    },
+
+    transitionState: async (payrollId, endpoint, actionName) => {
+        try {
+            console.log(`Transitioning payroll state: ${actionName}`, payrollId);
+            const username = localStorage.getItem('username') || 'admin';
+            const response = await apiClient.post(`${endpoint}?username=${username}`);
+            console.log(`${actionName} response:`, response);
+            return response.data;
+        } catch (error) {
+            console.error(`Error during ${actionName}:`, error);
+
+            if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || `Failed to ${actionName.toLowerCase()}`);
+            }
+
+            throw error;
+        }
+    },
+
+    // ========================================
+// ADD THESE METHODS TO payrollService.js
+// Add after the Leave Review methods section
+// ========================================
+
+    // ========================================
+    // ⭐ OVERTIME REVIEW WORKFLOW METHODS
+    // ========================================
+
+    getOvertimeStatus: async (payrollId) => {
+        try {
+            console.log('Fetching overtime status for:', payrollId);
+            const response = await apiClient.get(`/api/v1/payroll/${payrollId}/overtime-status`);
+            console.log('Overtime status response:', response);
+            console.log('Overtime status data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching overtime status:', error);
+
+            if (error.response?.status === 404) {
+                throw new Error('Payroll not found');
+            }
+
+            throw error;
+        }
+    },
+
+    processOvertimeReview: async (payrollId) => {
+        try {
+            console.log('🔵 Processing overtime review for payroll:', payrollId);
+            const response = await apiClient.post(`/api/v1/payroll/${payrollId}/process-overtime-review`);
+            console.log('✅ Process overtime response:', response);
+            console.log('📊 Process overtime data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error processing overtime review:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Overtime is finalized and locked. Cannot process.');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to process overtime review');
+            }
+
+            throw error;
+        }
+    },
+
+    finalizeOvertime: async (payrollId) => {
+        try {
+            console.log('Finalizing overtime review for payroll:', payrollId);
+            const response = await apiClient.post(`/api/v1/payroll/${payrollId}/finalize-overtime`);
+            console.log('Finalize overtime response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error finalizing overtime review:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Cannot finalize overtime review in current state');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to finalize overtime review');
+            }
+
+            throw error;
+        }
+    },
+
+    notifyHRForOvertime: async (payrollId) => {
+        try {
+            console.log('Sending HR notification for overtime review:', payrollId);
+            const response = await apiClient.post(`/api/v1/payroll/${payrollId}/notify-hr-overtime`);
+            console.log('Notify HR for overtime response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error notifying HR for overtime:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Overtime is already finalized. Cannot send notification.');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to send notification');
+            }
+
+            throw error;
+        }
+    },
+
+    getOvertimeRecordsForPayroll: async (payrollId) => {
+        try {
+            console.log('Fetching overtime records for payroll:', payrollId);
+            const response = await apiClient.get(`/api/v1/payroll/${payrollId}/overtime-records`);
+            console.log('Overtime records response:', response);
+            console.log('Overtime records data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching overtime records for payroll:', error);
+            throw error;
+        }
+    },
+
+    // ========================================
+    // SEND TO FINANCE METHOD
+    // ========================================
+
+    sendToFinance: async (payrollId, paymentSource) => {
+        try {
+            console.log('🔵 Sending payroll to finance:', payrollId, paymentSource);
+            const response = await apiClient.post(`/api/v1/payroll/${payrollId}/send-to-finance`, {
+                paymentSourceType: paymentSource.type,
+                paymentSourceId: paymentSource.id,
+                paymentSourceName: paymentSource.name
+            });
+            console.log('✅ Send to finance response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error sending payroll to finance:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Payroll must be in CONFIRMED_AND_LOCKED status');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Invalid payment source');
+            }
+
+            throw error;
+        }
+    },
 };
+
+export default payrollService;

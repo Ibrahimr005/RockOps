@@ -75,6 +75,7 @@ import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
 import MaintenanceRecords from "./pages/maintenance/MaintenanceRecords/MaintenanceRecords.jsx";
 import StepTypeManagement from "./pages/maintenance/StepTypeManagement/StepTypeManagement.jsx";
 import ContactTypeManagement from "./pages/maintenance/ContactTypeManagement/ContactTypeManagement.jsx";
+import EmployeePayrollDetails from './pages/payroll/EmployeePayrolls/EmployeePayrollDetails/EmployeePayrollDetails.jsx';
 
 import {
     ADMIN,
@@ -115,6 +116,11 @@ import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
 import PotentialCandidates from "./pages/HR/PotentialCandidates/PotentialCandidates.jsx";
 import Balances from "./pages/finance/Balances/Balances.jsx";
 import AccountsPayable from "./pages/finance/AccountsPayable/AccountsPayable.jsx";
+
+
+import PayrollCycles from "./pages/payroll/PayrollCycles/PayrollCycles.jsx";
+import PayrollDetails from "./pages/payroll/PayrollDetails/PayrollDetails.jsx";
+import EmployeePayrollList from "./pages/payroll/EmployeePayrolls/EmployeePayrollList.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -241,39 +247,32 @@ function App() {
                                     </Route>
 
 
-                                    <Route path="/payroll" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ADMIN]}><PayrollLayout/></RoleRoute>}>
-                                        {/* Dashboard */}
-                                        <Route index element={<PayrollDashboard/>}/>
+                                    <Route path="/payroll">
+                                        {/* NEW Payroll Cycles - Main Lifecycle Page */}
+                                        <Route path="cycles" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayrollCycles/></RoleRoute>}/>
 
-                                        {/* Payslip Management */}
-                                        <Route path="payslips" element={<PayslipManagement/>}/>
-                                        {/*<Route path="payslips/create" element={<PayslipCreate/>}/>*/}
-                                        {/*<Route path="payslips/bulk-actions" element={<PayslipBulkActions/>}/>*/}
-                                        <Route path="payslips/:id" element={<PayslipDetails/>}/>
-                                        <Route path="payslips/:id/edit" element={<PayslipEdit/>}/>
+                                        {/* NEW Payroll Details - View specific payroll */}
+                                        <Route path="cycles/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayrollDetails/></RoleRoute>}/>
 
-                                        {/* Deduction Management */}
-                                        <Route path="deductions" element={<DeductionManagement/>}/>
-                                        {/*<Route path="deductions/manual" element={<ManualDeductionManagement/>}/>*/}
-                                        {/*<Route path="deductions/types" element={<DeductionTypeManagement/>}/>*/}
-                                        {/*<Route path="deductions/employee-summary" element={<EmployeeDeductionSummary/>}/>*/}
-                                        {/*<Route path="deductions/types/:id" element={<DeductionTypeDetails/>}/>*/}
-                                        {/*<Route path="deductions/:id" element={<DeductionDetails/>}/>*/}
+                                        {/* NEW Employee Payrolls - View all employee payroll records */}
+                                        <Route path="employee-payrolls" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><EmployeePayrollList/></RoleRoute>}/>
+                                        <Route
+                                            path="cycles/:payrollId/employee/:employeeId"
+                                            element={
+                                                <RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}>
+                                                    <EmployeePayrollDetails/>
+                                                </RoleRoute>
+                                            }
+                                        />
+                                        {/* Keep existing loan management routes */}
+                                        <Route path="loans" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><LoanManagement/></RoleRoute>}/>
+                                        <Route path="loans/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><LoanDetails/></RoleRoute>}/>
 
-                                        {/* Loan Management */}
-                                        <Route path="loans" element={<LoanManagement/>}/>
-                                        {/*<Route path="loans/active" element={<ActiveLoans/>}/>*/}
-                                        {/*<Route path="loans/overdue" element={<OverdueLoans/>}/>*/}
-                                        {/*<Route path="loans/repayment-schedule" element={<LoanRepaymentSchedule/>}/>*/}
-                                        <Route path="loans/:id" element={<LoanDetails/>}/>
-                                        {/*<Route path="loans/:id/edit" element={<LoanEdit/>}/>*/}
-
-                                        {/* Reports & History */}
-                                        <Route path="reports" element={<PayrollReports/>}/>
-                                        {/*<Route path="reports/payroll-summary" element={<PayrollSummaryReport/>}/>*/}
-                                        {/*<Route path="reports/deduction-reports" element={<DeductionReports/>}/>*/}
-                                        {/*<Route path="reports/loan-reports" element={<LoanReports/>}/>*/}
-                                        {/*<Route path="reports/period-analysis" element={<PeriodAnalysisReport/>}/>*/}
+                                        {/* Keep existing deduction and payslip routes */}
+                                        <Route path="deductions" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><DeductionManagement/></RoleRoute>}/>
+                                        <Route path="payslips" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayslipManagement/></RoleRoute>}/>
+                                        <Route path="payslips/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayslipEdit/></RoleRoute>}/>
+                                        <Route path="reports" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayrollReports/></RoleRoute>}/>
                                     </Route>
 
                                     {/* Equipment Management Routes */}

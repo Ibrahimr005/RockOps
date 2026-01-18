@@ -198,4 +198,20 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
      */
     @Query("SELECT e FROM Employee e WHERE e.site IS NULL")
     List<Employee> findEmployeesWithoutSite();
+
+
+
+    /**
+     * Find all active employees
+     */
+    @Query("SELECT e FROM Employee e WHERE e.status = 'ACTIVE'")
+    List<Employee> findAllActive();
+
+    /**
+     * Find all active employees at a site
+     */
+    @Query("SELECT e FROM Employee e " +
+            "WHERE e.site.id = :siteId " +
+            "AND e.status = 'ACTIVE'")
+    List<Employee> findActiveBySiteId(UUID siteId);
 }

@@ -1,0 +1,145 @@
+.payroll-cycles-page {
+  padding: 2rem;
+
+  .payroll-content {
+    background: var(--section-background-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  // Period cell styling
+  .period-cell {
+    .period-main {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--color-text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .period-dates {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  // Status badges
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+
+    svg {
+      font-size: 0.9rem;
+    }
+
+    &.info {
+      background: rgba(33, 150, 243, 0.1);
+      color: #2196F3;
+    }
+
+    &.warning {
+      background: rgba(255, 152, 0, 0.1);
+      color: #FF9800;
+    }
+
+    &.success {
+      background: rgba(76, 175, 80, 0.1);
+      color: #4CAF50;
+    }
+
+    &.paid {
+      background: rgba(156, 39, 176, 0.1);
+      color: #9C27B0;
+    }
+
+    &.secondary {
+      background: rgba(158, 158, 158, 0.1);
+      color: #9E9E9E;
+    }
+  }
+
+  // Employees cell
+  .employees-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .icon {
+      color: var(--color-primary);
+      font-size: 1.1rem;
+    }
+
+    span {
+      font-weight: 600;
+    }
+  }
+
+  // Currency amounts
+  .deduction-amount {
+    color: #f44336;
+    font-weight: 600;
+  }
+
+  .net-amount {
+    color: #4CAF50;
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  // Lock status
+  .lock-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    svg {
+      font-size: 1.1rem;
+
+      &.locked {
+        color: #4CAF50;
+      }
+
+      &.unlocked {
+        color: #FF9800;
+      }
+    }
+
+    .locked-text {
+      color: #4CAF50;
+      font-weight: 600;
+    }
+
+    .unlocked-text {
+      color: #FF9800;
+      font-weight: 600;
+    }
+  }
+}
+
+// Dark mode adjustments
+[data-theme="dark"] {
+  .payroll-cycles-page {
+    .status-badge {
+      &.info {
+        background: rgba(33, 150, 243, 0.2);
+      }
+
+      &.warning {
+        background: rgba(255, 152, 0, 0.2);
+      }
+
+      &.success {
+        background: rgba(76, 175, 80, 0.2);
+      }
+
+      &.paid {
+        background: rgba(156, 39, 176, 0.2);
+      }
+    }
+  }
+}

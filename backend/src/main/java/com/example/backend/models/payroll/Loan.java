@@ -11,10 +11,12 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
+/**
+ * Loan Entity - Employee loan management
+ * Tracks loans given to employees with repayment schedules
+ */
 @Entity
 @Table(name = "loans")
 @Data
@@ -27,352 +29,296 @@ public class Loan {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    // Employee relationship
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false)
+    @JsonManagedReference("employee-loans")
     private Employee employee;
 
+    // Loan details
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal loanAmount;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(precision = 15, scale = 2)
     private BigDecimal remainingBalance;
 
+    @Column(nullable = false)
+    private Integer installmentMonths;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal monthlyInstallment;
+
     @Column(precision = 5, scale = 2)
-    private BigDecimal interestRate;
+    private BigDecimal interestRate; // Annual interest rate percentage
+
+    // Dates
+    @Column(nullable = false)
+    private LocalDate loanDate;
 
     @Column(nullable = false)
-    private LocalDate startDate;
+    private LocalDate disbursementDate; // When the loan was actually given to employee
 
     @Column(nullable = false)
-    private LocalDate endDate;
+    private LocalDate firstPaymentDate;
 
-    @Column(nullable = false, precision = 15, scale = 2)
-    private BigDecimal installmentAmount;
+    private LocalDate lastPaymentDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private InstallmentFrequency installmentFrequency;
+    private LocalDate completionDate;
 
-    @Column(nullable = false)
-    private Integer totalInstallments;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Integer paidInstallments = 0;
-
+    // Status
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LoanStatus status;
 
+    // Loan purpose and notes
+    @Column(length = 500)
+    private String purpose;
+
     @Column(length = 1000)
-    private String description;
+    private String notes;
 
-    @Column(nullable = false)
-    private String createdBy;
-
+    // Approval tracking
     private String approvedBy;
-
-    private LocalDateTime approvalDate;
+    private LocalDateTime approvedAt;
 
     private String rejectedBy;
-
+    private LocalDateTime rejectedAt;
     private String rejectionReason;
 
-    private LocalDateTime rejectionDate;
+    // Audit fields
+    @Column(nullable = false)
+    private String createdBy;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    private String updatedBy;
     private LocalDateTime updatedAt;
 
-    // Relationship with RepaymentSchedule
-    @OneToMany(mappedBy = "loan", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @JsonManagedReference("loan-repayment-schedules")
-    @Builder.Default
-    private List<RepaymentSchedule> repaymentSchedules = new ArrayList<>();
-
+    // Loan Status Enum
     public enum LoanStatus {
-        PENDING,
-        ACTIVE,
-        COMPLETED,
-        REJECTED,
-        CANCELLED
+        PENDING,      // Loan application pending approval
+        APPROVED,     // Loan approved and active
+        ACTIVE,       // Loan is being repaid
+        COMPLETED,    // Loan fully paid
+        REJECTED,     // Loan application rejected
+        CANCELLED     // Loan cancelled
     }
 
-    public enum InstallmentFrequency {
-        WEEKLY,
-        MONTHLY
-    }
-
-    // Helper methods
+    // ===================================================
+    // BUSINESS LOGIC METHODS
+    // ===================================================
 
     /**
-     * Check if loan is active
-     * @return true if loan status is ACTIVE
+     * Calculate monthly installment amount
+     * @param loanAmount Total loan amount
+     * @param installmentMonths Number of months
+     * @param interestRate Annual interest rate (e.g., 5.0 for 5%)
+     * @return Monthly installment amount
+     */
+    public static BigDecimal calculateMonthlyInstallment(
+            BigDecimal loanAmount,
+            Integer installmentMonths,
+            BigDecimal interestRate) {
+
+        if (installmentMonths == null || installmentMonths <= 0) {
+            throw new IllegalArgumentException("Installment months must be positive");
+        }
+
+        // If no interest or zero interest, simple division
+        if (interestRate == null || interestRate.compareTo(BigDecimal.ZERO) == 0) {
+            return loanAmount.divide(
+                    BigDecimal.valueOf(installmentMonths),
+                    2,
+                    BigDecimal.ROUND_HALF_UP
+            );
+        }
+
+        // Calculate monthly interest rate (annual / 12 / 100)
+        BigDecimal monthlyRate = interestRate
+                .divide(BigDecimal.valueOf(12), 6, BigDecimal.ROUND_HALF_UP)
+                .divide(BigDecimal.valueOf(100), 6, BigDecimal.ROUND_HALF_UP);
+
+        // Calculate using loan amortization formula:
+        // M = P * [r(1+r)^n] / [(1+r)^n - 1]
+        BigDecimal onePlusRate = BigDecimal.ONE.add(monthlyRate);
+        BigDecimal power = onePlusRate.pow(installmentMonths);
+
+        BigDecimal numerator = loanAmount.multiply(monthlyRate).multiply(power);
+        BigDecimal denominator = power.subtract(BigDecimal.ONE);
+
+        return numerator.divide(denominator, 2, BigDecimal.ROUND_HALF_UP);
+    }
+
+    /**
+     * Record a payment on this loan
+     * @param paymentAmount Amount paid
+     */
+    public void recordPayment(BigDecimal paymentAmount) {
+        if (this.remainingBalance == null) {
+            this.remainingBalance = this.loanAmount;
+        }
+
+        this.remainingBalance = this.remainingBalance.subtract(paymentAmount);
+        this.lastPaymentDate = LocalDate.now();
+
+        // If fully paid, mark as completed
+        if (this.remainingBalance.compareTo(BigDecimal.ZERO) <= 0) {
+            this.remainingBalance = BigDecimal.ZERO;
+            this.status = LoanStatus.COMPLETED;
+            this.completionDate = LocalDate.now();
+        }
+    }
+
+    /**
+     * Get repayment period (alias for installmentMonths)
+     * @return Number of installment months
+     */
+    public Integer getRepaymentPeriod() {
+        return this.installmentMonths;
+    }
+
+    /**
+     * Check if loan is currently active (being repaid)
+     * @return true if active
      */
     public boolean isActive() {
-        return status == LoanStatus.ACTIVE;
-    }
-
-    /**
-     * Check if loan is pending approval
-     * @return true if loan status is PENDING
-     */
-    public boolean isPending() {
-        return status == LoanStatus.PENDING;
+        return status == LoanStatus.ACTIVE || status == LoanStatus.APPROVED;
     }
 
     /**
      * Check if loan is completed
-     * @return true if loan status is COMPLETED
+     * @return true if completed
      */
     public boolean isCompleted() {
         return status == LoanStatus.COMPLETED;
     }
 
     /**
-     * Check if loan can be edited
-     * @return true if loan is in PENDING status
+     * Get number of payments remaining
+     * @return Number of installments remaining
      */
-    public boolean canBeEdited() {
-        return status == LoanStatus.PENDING;
+    public Integer getPaymentsRemaining() {
+        if (monthlyInstallment == null || monthlyInstallment.compareTo(BigDecimal.ZERO) == 0) {
+            return 0;
+        }
+
+        if (remainingBalance == null) {
+            return installmentMonths;
+        }
+
+        return remainingBalance
+                .divide(monthlyInstallment, 0, BigDecimal.ROUND_UP)
+                .intValue();
     }
 
     /**
-     * Check if loan can be approved
-     * @return true if loan is in PENDING status
+     * Get number of payments made
+     * @return Number of installments paid
      */
-    public boolean canBeApproved() {
-        return status == LoanStatus.PENDING;
-    }
-
-    /**
-     * Check if loan can be cancelled
-     * @return true if loan is not COMPLETED
-     */
-    public boolean canBeCancelled() {
-        return status != LoanStatus.COMPLETED;
-    }
-
-    /**
-     * Get the number of remaining installments
-     * @return remaining installments count
-     */
-    public Integer getRemainingInstallments() {
-        return totalInstallments - (paidInstallments != null ? paidInstallments : 0);
+    public Integer getPaymentsMade() {
+        return installmentMonths - getPaymentsRemaining();
     }
 
     /**
      * Get loan completion percentage
-     * @return percentage completed (0-100)
+     * @return Percentage of loan paid (0-100)
      */
     public BigDecimal getCompletionPercentage() {
-        if (totalInstallments == null || totalInstallments == 0) {
+        if (loanAmount == null || loanAmount.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
-        int paid = paidInstallments != null ? paidInstallments : 0;
-        return BigDecimal.valueOf(paid)
-                .divide(BigDecimal.valueOf(totalInstallments), 4, java.math.RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100));
+
+        BigDecimal amountPaid = loanAmount.subtract(
+                remainingBalance != null ? remainingBalance : loanAmount
+        );
+
+        return amountPaid
+                .multiply(BigDecimal.valueOf(100))
+                .divide(loanAmount, 2, BigDecimal.ROUND_HALF_UP);
     }
 
     /**
-     * Calculate total interest amount
-     * @return total interest for the loan
+     * Get total interest amount to be paid
+     * @return Total interest amount
      */
-    public BigDecimal getTotalInterestAmount() {
-        if (interestRate == null || loanAmount == null) {
+    public BigDecimal getTotalInterest() {
+        if (monthlyInstallment == null || installmentMonths == null) {
             return BigDecimal.ZERO;
         }
-        return loanAmount.multiply(interestRate.divide(BigDecimal.valueOf(100), 4, java.math.RoundingMode.HALF_UP));
+
+        BigDecimal totalPayment = monthlyInstallment.multiply(
+                BigDecimal.valueOf(installmentMonths)
+        );
+
+        return totalPayment.subtract(loanAmount);
     }
 
     /**
-     * Calculate total repayment amount (principal + interest)
-     * @return total amount to be repaid
+     * Get total amount to be paid (principal + interest)
+     * @return Total payment amount
      */
-    public BigDecimal getTotalRepaymentAmount() {
-        return loanAmount.add(getTotalInterestAmount());
+    public BigDecimal getTotalPaymentAmount() {
+        return loanAmount.add(getTotalInterest());
     }
 
     /**
-     * Get the expected end date based on start date and installments
-     * @return calculated end date
+     * Approve this loan
+     * @param approver Username of approver
      */
-    public LocalDate getCalculatedEndDate() {
-        if (startDate == null || totalInstallments == null || installmentFrequency == null) {
-            return endDate;
-        }
-
-        switch (installmentFrequency) {
-            case WEEKLY:
-                return startDate.plusWeeks(totalInstallments);
-            case MONTHLY:
-                return startDate.plusMonths(totalInstallments);
-            default:
-                return endDate;
-        }
+    public void approve(String approver) {
+        this.status = LoanStatus.APPROVED;
+        this.approvedBy = approver;
+        this.approvedAt = LocalDateTime.now();
+        this.remainingBalance = this.loanAmount;
     }
 
     /**
-     * Check if loan is overdue (has overdue repayments)
-     * @return true if any repayment is overdue
+     * Reject this loan
+     * @param rejector Username of rejector
+     * @param reason Rejection reason
      */
-    public boolean isOverdue() {
-        if (repaymentSchedules == null || repaymentSchedules.isEmpty()) {
-            return false;
-        }
-
-        return repaymentSchedules.stream()
-                .anyMatch(RepaymentSchedule::isOverdue);
+    public void reject(String rejector, String reason) {
+        this.status = LoanStatus.REJECTED;
+        this.rejectedBy = rejector;
+        this.rejectedAt = LocalDateTime.now();
+        this.rejectionReason = reason;
     }
 
     /**
-     * Get the next due repayment
-     * @return next pending repayment or null
+     * Activate this loan (start repayment)
      */
-    public RepaymentSchedule getNextDueRepayment() {
-        if (repaymentSchedules == null || repaymentSchedules.isEmpty()) {
-            return null;
-        }
-
-        return repaymentSchedules.stream()
-                .filter(rs -> rs.getStatus() == RepaymentSchedule.RepaymentStatus.PENDING)
-                .min((rs1, rs2) -> rs1.getDueDate().compareTo(rs2.getDueDate()))
-                .orElse(null);
-    }
-
-    /**
-     * Get all overdue repayments
-     * @return list of overdue repayments
-     */
-    public List<RepaymentSchedule> getOverdueRepayments() {
-        if (repaymentSchedules == null) {
-            return new ArrayList<>();
-        }
-
-        return repaymentSchedules.stream()
-                .filter(RepaymentSchedule::isOverdue)
-                .toList();
-    }
-
-    /**
-     * Approve the loan
-     * @param approvedBy who approved the loan
-     */
-    public void approve(String approvedBy) {
-        if (!canBeApproved()) {
-            throw new IllegalStateException("Loan cannot be approved in current status: " + status);
+    public void activate() {
+        if (this.status != LoanStatus.APPROVED) {
+            throw new IllegalStateException("Can only activate approved loans");
         }
         this.status = LoanStatus.ACTIVE;
-        this.approvedBy = approvedBy;
-        this.approvalDate = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
     }
 
     /**
-     * Reject the loan
-     * @param rejectedBy who rejected the loan
-     * @param reason reason for rejection
-     */
-    public void reject(String rejectedBy, String reason) {
-        if (!canBeApproved()) {
-            throw new IllegalStateException("Loan cannot be rejected in current status: " + status);
-        }
-        this.status = LoanStatus.REJECTED;
-        this.rejectedBy = rejectedBy;
-        this.rejectionReason = reason;
-        this.rejectionDate = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Cancel the loan
+     * Cancel this loan
      */
     public void cancel() {
-        if (!canBeCancelled()) {
-            throw new IllegalStateException("Loan cannot be cancelled in current status: " + status);
+        if (this.status == LoanStatus.COMPLETED) {
+            throw new IllegalStateException("Cannot cancel completed loan");
         }
         this.status = LoanStatus.CANCELLED;
-        this.updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * Complete the loan
-     */
-    public void complete() {
-        this.status = LoanStatus.COMPLETED;
-        this.remainingBalance = BigDecimal.ZERO;
-        this.paidInstallments = totalInstallments;
-        this.updatedAt = LocalDateTime.now();
-    }
+    // ===================================================
+    // LIFECYCLE CALLBACKS
+    // ===================================================
 
-    /**
-     * Process a repayment
-     * @param amount amount paid
-     */
-    public void processRepayment(BigDecimal amount) {
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Repayment amount must be positive");
-        }
-
-        // Update remaining balance
-        this.remainingBalance = this.remainingBalance.subtract(amount);
-
-        // Increment paid installments if this completes an installment
-        if (this.paidInstallments == null) {
-            this.paidInstallments = 0;
-        }
-        this.paidInstallments++;
-
-        // Check if loan is completed
-        if (this.remainingBalance.compareTo(BigDecimal.ZERO) <= 0 ||
-                this.paidInstallments >= this.totalInstallments) {
-            complete();
-        }
-
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Get loan summary information
-     * @return map of loan summary data
-     */
-    public java.util.Map<String, Object> getSummary() {
-        java.util.Map<String, Object> summary = new java.util.HashMap<>();
-        summary.put("id", id);
-        summary.put("employeeName", employee != null ? employee.getFullName() : "Unknown");
-        summary.put("loanAmount", loanAmount);
-        summary.put("remainingBalance", remainingBalance);
-        summary.put("installmentAmount", installmentAmount);
-        summary.put("totalInstallments", totalInstallments);
-        summary.put("paidInstallments", paidInstallments != null ? paidInstallments : 0);
-        summary.put("remainingInstallments", getRemainingInstallments());
-        summary.put("completionPercentage", getCompletionPercentage());
-        summary.put("status", status.name());
-        summary.put("isOverdue", isOverdue());
-        summary.put("nextDueDate", getNextDueRepayment() != null ? getNextDueRepayment().getDueDate() : null);
-        return summary;
-    }
-
-    // JPA lifecycle callbacks
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
         if (status == null) {
             status = LoanStatus.PENDING;
         }
-        if (paidInstallments == null) {
-            paidInstallments = 0;
-        }
-        if (repaymentSchedules == null) {
-            repaymentSchedules = new ArrayList<>();
+        if (remainingBalance == null) {
+            remainingBalance = loanAmount;
         }
     }
 

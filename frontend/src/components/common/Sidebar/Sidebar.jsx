@@ -38,6 +38,7 @@ import {
     FaBook,
     FaBalanceScale,
     FaReceipt,
+    FaCalendarAlt,
     FaPiggyBank,
     FaFileAlt,
     FaMoneyBillWave,
@@ -415,6 +416,10 @@ const Sidebar = () => {
             ]
         },
 
+        // UPDATE THIS SECTION IN YOUR EXISTING Sidebar.jsx
+
+// Find the Payroll menu item (around line 200-250) and REPLACE it with this:
+
         {
             title: 'Payroll',
             icon: <FaMoneyBillWave/>,
@@ -423,15 +428,21 @@ const Sidebar = () => {
             hasSubmenu: true,
             submenuItems: [
                 {
-                    title: 'Dashboard',
-                    icon: <FaChartBar/>,
-                    path: '/payroll',
+                    title: 'Payroll Cycles',  // NEW - Main payroll lifecycle page
+                    icon: <FaCalendarAlt/>,
+                    path: '/payroll/cycles',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
-                    title: 'Payslip Management',
-                    icon: <FaReceipt/>,
-                    path: '/payroll/payslips',
+                    title: 'Employee Payrolls',  // NEW - View all employee payrolls
+                    icon: <FaUsers/>,
+                    path: '/payroll/employee-payrolls',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
+                    title: 'Loan Management',
+                    icon: <FaPiggyBank/>,
+                    path: '/payroll/loans',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
@@ -441,9 +452,9 @@ const Sidebar = () => {
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
-                    title: 'Loan Management',
-                    icon: <FaPiggyBank/>,
-                    path: '/payroll/loans',
+                    title: 'Payslip Management',
+                    icon: <FaReceipt/>,
+                    path: '/payroll/payslips',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {

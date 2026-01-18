@@ -1,0 +1,112 @@
+.lifecycle-timeline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: var(--section-background-color);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+
+  .timeline-step {
+    flex: 1;
+    min-width: 150px;
+    position: relative;
+    opacity: 0.4;
+    transition: all var(--transition-normal) ease;
+
+    &.completed {
+      opacity: 1;
+
+      .step-number {
+        background: var(--color-success);
+        color: white;
+      }
+
+      .step-content {
+        .step-icon {
+          color: var(--color-success);
+        }
+
+        h3 {
+          color: var(--color-text-primary);
+        }
+      }
+    }
+
+    &.active {
+      opacity: 1;
+
+      .step-number {
+        background: var(--color-primary);
+        color: white;
+        animation: pulse 2s infinite;
+      }
+
+      .step-content {
+        .step-icon {
+          color: var(--color-primary);
+        }
+
+        h3 {
+          color: var(--color-primary);
+          font-weight: var(--bold-font-weight);
+        }
+      }
+    }
+
+    .step-number {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--color-surface-hover);
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: var(--bold-font-weight);
+      font-size: 1.2rem;
+      margin: 0 auto 1rem;
+      transition: all var(--transition-normal) ease;
+    }
+
+    .step-content {
+      text-align: center;
+
+      .step-icon {
+        font-size: 2rem;
+        color: var(--color-text-secondary);
+        margin-bottom: 0.5rem;
+        transition: all var(--transition-normal) ease;
+      }
+
+      h3 {
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+        color: var(--color-text-secondary);
+        transition: all var(--transition-normal) ease;
+      }
+
+      p {
+        font-size: 0.8rem;
+        color: var(--color-text-tertiary);
+        margin: 0;
+      }
+    }
+
+    .step-connector {
+      position: absolute;
+      top: 20px;
+      left: calc(50% + 20px);
+      width: calc(100% - 40px);
+      height: 2px;
+      background: var(--border-color);
+      z-index: -1;
+    }
+
+    &:last-child .step-connector {
+      display: none;
+    }
+  }
+}

@@ -1,5 +1,3 @@
-
-// LoanRepository.java
 package com.example.backend.repositories.payroll;
 
 import com.example.backend.models.payroll.Loan;
@@ -8,47 +6,84 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Repository for Loan entity
+ */
 @Repository
 public interface LoanRepository extends JpaRepository<Loan, UUID> {
 
-    // Find loans by employee
-    List<Loan> findByEmployeeIdOrderByStartDateDesc(UUID employeeId);
+    /**
+     * Find all loans for a specific employee
+     */
+    List<Loan> findByEmployeeId(UUID employeeId);
 
-    // Find active loans
-    List<Loan> findByStatusOrderByStartDateDesc(Loan.LoanStatus status);
+    /**
+     * Find loans for a specific employee by status
+     */
+    List<Loan> findByEmployeeIdAndStatus(UUID employeeId, Loan.LoanStatus status);
 
-    // Find active loans for an employee
-    List<Loan> findByEmployeeIdAndStatusOrderByStartDateDesc(UUID employeeId, Loan.LoanStatus status);
+    /**
+     * Find active loans for a specific employee
+     */
+    @Query("SELECT l FROM Loan l WHERE l.employee.id = :employeeId " +
+            "AND l.status IN ('APPROVED', 'ACTIVE')")
+    List<Loan> findActiveLoansForEmployee(@Param("employeeId") UUID employeeId);
 
-    // Find loans with upcoming payments
-    @Query("SELECT l FROM Loan l JOIN l.repaymentSchedules rs " +
-            "WHERE l.status = 'ACTIVE' AND rs.dueDate <= :dueDate AND rs.status = 'PENDING'")
-    List<Loan> findLoansWithUpcomingPayments(@Param("dueDate") LocalDate dueDate);
+    /**
+     * Find pending loans for a specific employee
+     */
+    @Query("SELECT l FROM Loan l WHERE l.employee.id = :employeeId " +
+            "AND l.status = 'PENDING'")
+    List<Loan> findPendingLoansForEmployee(@Param("employeeId") UUID employeeId);
 
-    // Get total outstanding loan balance for employee
-    @Query("SELECT SUM(l.remainingBalance) FROM Loan l WHERE l.employee.id = :employeeId AND l.status = 'ACTIVE'")
-    BigDecimal getTotalOutstandingBalanceByEmployee(@Param("employeeId") UUID employeeId);
+    /**
+     * Find all loans by status
+     */
+    List<Loan> findByStatus(Loan.LoanStatus status);
 
-    // Get total outstanding loan balance for all employees
-    @Query("SELECT SUM(l.remainingBalance) FROM Loan l WHERE l.status = 'ACTIVE'")
-    BigDecimal getTotalOutstandingBalance();
+    /**
+     * Find loans within date range
+     */
+    @Query("SELECT l FROM Loan l WHERE l.loanDate BETWEEN :startDate AND :endDate")
+    List<Loan> findByLoanDateBetween(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 
+    /**
+     * Find all active loans (for payroll deduction calculation)
+     */
+    @Query("SELECT l FROM Loan l WHERE l.status IN ('APPROVED', 'ACTIVE')")
+    List<Loan> findAllActiveLoans();
 
-    // Add these new methods
-    @Query("SELECT SUM(l.remainingBalance) FROM Loan l WHERE l.status = 'ACTIVE'")
-    BigDecimal getTotalOutstandingAmount();
+    /**
+     * Check if employee has pending loans
+     */
+    @Query("SELECT COUNT(l) > 0 FROM Loan l WHERE l.employee.id = :employeeId " +
+            "AND l.status = 'PENDING'")
+    boolean hasPendingLoans(@Param("employeeId") UUID employeeId);
 
-    long countByStatus(Loan.LoanStatus status);
+    /**
+     * Check if employee has active loans
+     */
+    @Query("SELECT COUNT(l) > 0 FROM Loan l WHERE l.employee.id = :employeeId " +
+            "AND l.status IN ('APPROVED', 'ACTIVE')")
+    boolean hasActiveLoans(@Param("employeeId") UUID employeeId);
 
-    @Query("SELECT COALESCE(AVG(l.loanAmount), 0) FROM Loan l")
-    BigDecimal getAverageLoanAmount();
+    /**
+     * Count total loans for employee
+     */
+    long countByEmployeeId(UUID employeeId);
 
-    List<Loan> findByEmployeeIdAndStatus(UUID id, Loan.LoanStatus loanStatus);
-
-    List<Loan> findByStatus(Loan.LoanStatus loanStatus);
+    /**
+     * Find loans requiring payment (for payroll integration)
+     */
+    @Query("SELECT l FROM Loan l WHERE l.status = 'ACTIVE' " +
+            "AND l.remainingBalance > 0 " +
+            "AND l.firstPaymentDate <= :currentDate")
+    List<Loan> findLoansRequiringPayment(@Param("currentDate") LocalDate currentDate);
 }
