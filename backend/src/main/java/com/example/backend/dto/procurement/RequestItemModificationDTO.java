@@ -1,7 +1,7 @@
 // RequestItemModificationDTO.java
 package com.example.backend.dto.procurement;
 
-import com.example.backend.models.procurement.RequestItemModification;
+import com.example.backend.models.procurement.Offer.RequestItemModification;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

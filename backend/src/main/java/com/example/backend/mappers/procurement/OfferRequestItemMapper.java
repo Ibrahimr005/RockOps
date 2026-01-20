@@ -2,7 +2,7 @@
 package com.example.backend.mappers.procurement;
 
 import com.example.backend.dto.procurement.OfferRequestItemDTO;
-import com.example.backend.models.procurement.OfferRequestItem;
+import com.example.backend.models.procurement.Offer.OfferRequestItem;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

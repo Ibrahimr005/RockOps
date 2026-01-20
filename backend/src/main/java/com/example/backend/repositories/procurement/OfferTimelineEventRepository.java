@@ -1,7 +1,7 @@
 package com.example.backend.repositories.procurement;
 
-import com.example.backend.models.procurement.OfferTimelineEvent;
-import com.example.backend.models.procurement.TimelineEventType;
+import com.example.backend.models.procurement.Offer.OfferTimelineEvent;
+import com.example.backend.models.procurement.Offer.TimelineEventType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

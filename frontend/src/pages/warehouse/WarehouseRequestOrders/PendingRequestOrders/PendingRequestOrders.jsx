@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { FaPlus } from 'react-icons/fa';
 import "./PendingRequestOrders.scss";
 import { requestOrderService } from '../../../../services/procurement/requestOrderService.js';
-import RequestOrderViewModal from '../RequestOrderViewModal/RequestOrderViewModal';
 import RequestOrderModal from '../../../../components/procurement/RequestOrderModal/RequestOrderModal';
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
 

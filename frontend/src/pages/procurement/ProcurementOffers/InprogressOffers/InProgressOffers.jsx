@@ -174,6 +174,8 @@ const InProgressOffers = ({
     };
 
     // Handle confirmed submission
+// Handle confirmed submission
+// Handle confirmed submission
     const handleConfirmSubmit = async (offer) => {
         try {
             setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
@@ -183,13 +185,19 @@ const InProgressOffers = ({
                 status: 'SUBMITTED'
             };
 
+            console.log("🚀 Submitting offer:", offer.id);
+            console.log("🚀 Submitted offer data:", submittedOffer);
+
             if (handleOfferStatusChange) {
                 await handleOfferStatusChange(offer.id, 'SUBMITTED', submittedOffer);
+                console.log("✅ handleOfferStatusChange completed");
             }
 
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
             showSnackbar("success", "Offer submitted successfully");
-            setActiveOffer(null);
+
+            // ❌ REMOVE THIS LINE - Don't set activeOffer to null here
+            // setActiveOffer(null);
 
         } catch (error) {
             console.error('Error submitting offer:', error);
@@ -383,7 +391,7 @@ const InProgressOffers = ({
                 } else {
                     const itemToAdd = {
                         ...formData,
-                        itemTypeId: selectedRequestItem.itemTypeId || selectedRequestItem.itemType?.id // Send itemTypeId
+                        itemTypeId: selectedRequestItem.itemTypeId || selectedRequestItem.itemType?.id
                     };
 
                     if (!itemToAdd.merchantId) {
@@ -414,6 +422,7 @@ const InProgressOffers = ({
                     showSnackbar('success', 'Procurement solution added successfully!');
                 }
             } else {
+                // Edit mode
                 const updatedItem = await offerService.updateItem(selectedOfferItem.id, formData);
 
                 const updatedOfferItems = activeOffer.offerItems.map(item =>
@@ -431,10 +440,20 @@ const InProgressOffers = ({
             }
         } catch (error) {
             console.error('Error saving offer item:', error);
-            showSnackbar('error', error.message || `Failed to ${modalMode === 'add' ? 'add' : 'update'} procurement solution. Please try again.`);
+
+            // Determine error message
+            let errorMessage = 'Failed to save procurement solution. Please try again.';
+
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            showSnackbar('error', errorMessage);
+            // Don't close modal on error so user can fix and retry
         }
     };
-
 
     // Handle opening modal for adding new item
     const handleSelectRequestItem = (requestItem) => {
@@ -514,11 +533,13 @@ const InProgressOffers = ({
 
     // Helper function to show snackbar
     const showSnackbar = (type, message) => {
+        console.log("🔔 showSnackbar called with:", type, message);
         setSnackbar({
             show: true,
             type,
             message
         });
+        console.log("🔔 Snackbar state updated");
     };
 
     // Helper function to hide snackbar
@@ -1007,8 +1028,8 @@ const InProgressOffers = ({
 
             <Snackbar
                 type={snackbar.type}
-                text={snackbar.message}
-                isVisible={snackbar.show}
+                message={snackbar.message}  // ← Changed from "text" to "message"
+                show={snackbar.show}  // ← Changed from "isVisible" to "show"
                 onClose={hideSnackbar}
                 duration={3000}
             />

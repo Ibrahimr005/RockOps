@@ -8,6 +8,7 @@ import "./WarehouseViewItemTypesTable.scss";
 import { itemTypeService } from '../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
 import { FaPlus } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
     const [tableData, setTableData] = useState([]);
@@ -15,6 +16,8 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [categories, setCategories] = useState([]);
+
+    const navigate = useNavigate();
 
     // Snackbar notification states
     const [showNotification, setShowNotification] = useState(false);
@@ -245,6 +248,10 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         }
     ];
 
+    const handleRowClick = (row) => {
+        navigate(`/warehouses/item-types/${row.id}`);
+    };
+
     return (
         <>
             <PageHeader
@@ -258,6 +265,7 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                 loading={loading}
                 emptyMessage="No item types found. Try adjusting your search or add a new item type"
                 actions={actions}
+                onRowClick={handleRowClick}
                 showAddButton={userRole === "WAREHOUSE_MANAGER" || userRole === "ADMIN" || userRole === "PROCUREMENT"}
                 addButtonText="Add Item Type"
                 addButtonIcon={<FaPlus />}

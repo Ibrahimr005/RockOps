@@ -1227,7 +1227,6 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                     </div>
                                                     <div className="history-body">
                                                         {item.itemReceipts.map((receipt, index) => {
-                                                            console.log('Receipt:', JSON.stringify(receipt, null, 2));
                                                             const deliveryId = `${item.id}-${receipt.id}`;
                                                             const isDeliveryExpanded = expandedHistory[deliveryId] === true;
 

@@ -3,7 +3,7 @@ package com.example.backend.mappers.procurement;
 import com.example.backend.dto.procurement.RequestOrderDTO;
 import com.example.backend.dto.procurement.RequestOrderItemDTO;
 import com.example.backend.models.procurement.PurchaseOrder;
-import com.example.backend.models.procurement.RequestOrder;
+import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;

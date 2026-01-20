@@ -1,5 +1,5 @@
 // RequestItemModification.java
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.Offer;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;

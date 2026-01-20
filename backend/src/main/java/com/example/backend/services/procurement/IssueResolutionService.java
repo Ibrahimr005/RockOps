@@ -4,12 +4,14 @@ import com.example.backend.dto.procurement.ResolveIssueRequest;
 import com.example.backend.models.procurement.*;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.services.finance.refunds.RefundRequestService;
+import com.example.backend.services.warehouse.ItemTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -20,7 +22,8 @@ public class IssueResolutionService {
     private final PurchaseOrderIssueRepository issueRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
-    private final RefundRequestService refundRequestService;  // ADD THIS LINE
+    private final RefundRequestService refundRequestService;
+    private final ItemTypeService itemTypeService;
 
     @Transactional
     public void resolveIssues(List<ResolveIssueRequest> requests, String resolvedBy) {
@@ -128,26 +131,46 @@ public class IssueResolutionService {
         boolean hasDisputedItems = false;
 
         for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
-            // Check if item has disputed/unresolved issues
             if ("DISPUTED".equals(item.getStatus())) {
                 hasDisputedItems = true;
             }
-
-            // Check if item still needs delivery
             if (!"COMPLETED".equals(item.getStatus())) {
                 hasItemsToArrive = true;
             }
         }
 
-        // Set status based on conditions
+        String oldStatus = po.getStatus();
+
         if (hasDisputedItems && hasItemsToArrive) {
-            po.setStatus("PARTIAL_DISPUTED"); // Both conditions
+            po.setStatus("PARTIAL_DISPUTED");
         } else if (hasDisputedItems) {
-            po.setStatus("DISPUTED"); // Only issues
+            po.setStatus("DISPUTED");
         } else if (hasItemsToArrive) {
-            po.setStatus("PARTIAL"); // Only pending items
+            po.setStatus("PARTIAL");
         } else {
-            po.setStatus("COMPLETED"); // Everything done
+            po.setStatus("COMPLETED");
+        }
+
+        // Update ItemType base prices when PO becomes COMPLETED
+        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
+            System.out.println("🎯 PO status changed to COMPLETED, updating base prices...");
+
+            try {
+                Set<UUID> itemTypeIds = po.getPurchaseOrderItems().stream()
+                        .filter(item -> item.getItemType() != null)
+                        .map(item -> item.getItemType().getId())
+                        .collect(java.util.stream.Collectors.toSet());
+
+                for (UUID itemTypeId : itemTypeIds) {
+                    try {
+                        itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, "SYSTEM");
+                    } catch (Exception e) {
+                        System.err.println("⚠️ Failed to update base price for item type: " + e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to collect item types: " + e.getMessage());
+            }
         }
     }
 }

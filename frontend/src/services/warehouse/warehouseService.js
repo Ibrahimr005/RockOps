@@ -1,6 +1,7 @@
 import apiClient from '../../utils/apiClient.js';
 import { WAREHOUSE_ENDPOINTS } from '../../config/api.config.js';
 
+
 export const warehouseService = {
     // Get all warehouses
     getAll: async () => {

@@ -6,11 +6,15 @@ import com.example.backend.dto.warehouse.ItemTypeDTO;
 import com.example.backend.mappers.procurement.PurchaseOrderMapper;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.*;
-import com.example.backend.models.warehouse.*;
+import com.example.backend.models.procurement.Offer.Offer;
+import com.example.backend.models.procurement.Offer.OfferItem;
+import com.example.backend.models.procurement.Offer.TimelineEventType;
+import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
 import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
+import com.example.backend.services.warehouse.ItemTypeService;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,9 +38,14 @@ public class PurchaseOrderService {
     private final DeliveryItemReceiptRepository deliveryItemReceiptRepository;
     private final PaymentRequestService paymentRequestService;
     private final PurchaseOrderMapper purchaseOrderMapper;
+    private final ItemTypeService itemTypeService;
+
+
 
     @Autowired
     private EntityManager entityManager;
+
+
 
     @Autowired
     public PurchaseOrderService(
@@ -50,7 +59,8 @@ public class PurchaseOrderService {
             DeliverySessionRepository deliverySessionRepository,
             DeliveryItemReceiptRepository deliveryItemReceiptRepository,
             PaymentRequestService paymentRequestService,
-            PurchaseOrderMapper purchaseOrderMapper) {
+            PurchaseOrderMapper purchaseOrderMapper,
+            ItemTypeService itemTypeService) {
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
@@ -62,6 +72,7 @@ public class PurchaseOrderService {
         this.deliveryItemReceiptRepository = deliveryItemReceiptRepository;
         this.paymentRequestService = paymentRequestService;
         this.purchaseOrderMapper = purchaseOrderMapper;
+        this.itemTypeService = itemTypeService;
     }
 
     @Transactional
@@ -95,10 +106,18 @@ public class PurchaseOrderService {
         }
 
         String previousStatus = offer.getStatus();
+        int attemptNumber = offer.getCurrentAttemptNumber();
 
-        offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_FINALIZED, username,
+        // ✅ FIXED - pass offerId and attemptNumber
+        offerTimelineService.createTimelineEvent(
+                offer.getId(),
+                TimelineEventType.OFFER_FINALIZED,
+                username,
                 "Starting finalization process with " + finalizedItems.size() + " items",
-                previousStatus, "COMPLETED");
+                previousStatus,
+                "COMPLETED",
+                attemptNumber
+        );
 
         offer.setStatus("COMPLETED");
         offerRepository.save(offer);
@@ -147,10 +166,17 @@ public class PurchaseOrderService {
 
         PurchaseOrder savedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
 
-        offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_COMPLETED, username,
+        // ✅ FIXED - pass offerId and attemptNumber
+        offerTimelineService.createTimelineEvent(
+                offer.getId(),
+                TimelineEventType.OFFER_COMPLETED,
+                username,
                 "Purchase order " + savedPurchaseOrder.getPoNumber() + " created with total value: " +
                         savedPurchaseOrder.getCurrency() + " " + String.format("%.2f", totalAmount),
-                "COMPLETED", "COMPLETED");
+                "COMPLETED",
+                "COMPLETED",
+                attemptNumber
+        );
 
         return savedPurchaseOrder;
     }
@@ -304,6 +330,7 @@ public class PurchaseOrderService {
         PurchaseOrder po = purchaseOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
 
+        String oldStatus = po.getStatus();
         po.setStatus(status);
         po.setUpdatedAt(LocalDateTime.now());
 
@@ -312,7 +339,29 @@ public class PurchaseOrderService {
             po.setFinanceApprovalDate(LocalDateTime.now());
         }
 
-        return purchaseOrderRepository.save(po);
+        PurchaseOrder savedPO = purchaseOrderRepository.save(po);
+
+        // 🔥 NEW: Update ItemType base prices when PO is marked as COMPLETED
+        if ("COMPLETED".equals(status) && !"COMPLETED".equals(oldStatus)) {
+            System.out.println("🎯 PO status changed to COMPLETED, updating base prices...");
+
+            // Get all unique item types in this PO
+            Set<UUID> itemTypeIds = savedPO.getPurchaseOrderItems().stream()
+                    .map(item -> item.getItemType().getId())
+                    .collect(Collectors.toSet());
+
+            // Update base price for each item type
+            for (UUID itemTypeId : itemTypeIds) {
+                try {
+                    itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, username);
+                } catch (Exception e) {
+                    System.err.println("⚠️ Failed to update base price for item type: " + e.getMessage());
+                    // Don't throw - continue with other items
+                }
+            }
+        }
+
+        return savedPO;
     }
 
     @Transactional(readOnly = true)
@@ -623,118 +672,7 @@ public class PurchaseOrderService {
      * FIXED: Create multiple purchase orders grouped by merchant
      * Simplified version - returns minimal data to avoid transaction issues
      */
-    @Transactional
-    public Map<String, Object> createPurchaseOrdersFromAcceptedItems(
-            UUID offerId,
-            List<UUID> finalizedItemIds,
-            String username) {
 
-        Offer offer = offerRepository.findById(offerId)
-                .orElseThrow(() -> new RuntimeException("Offer not found"));
-
-        if (!"FINALIZING".equals(offer.getStatus())) {
-            throw new IllegalStateException("Offer must be in FINALIZING status");
-        }
-
-        // 1. Get ONLY the accepted items from the finalized list
-        List<OfferItem> acceptedItems = offer.getOfferItems().stream()
-                .filter(item -> finalizedItemIds.contains(item.getId()))
-                .filter(item -> "ACCEPTED".equals(item.getFinanceStatus()))
-                .collect(Collectors.toList());
-
-        if (acceptedItems.isEmpty()) {
-            throw new IllegalStateException("No accepted items found to finalize");
-        }
-
-        // 2. Group accepted items by merchant
-        Map<Merchant, List<OfferItem>> itemsByMerchant = acceptedItems.stream()
-                .collect(Collectors.groupingBy(OfferItem::getMerchant));
-
-        System.out.println("=== DEBUG INFO ===");
-        System.out.println("Total accepted items: " + acceptedItems.size());
-        System.out.println("Merchants found: " + itemsByMerchant.size());
-        for (Map.Entry<Merchant, List<OfferItem>> entry : itemsByMerchant.entrySet()) {
-            System.out.println("  - Merchant: " + entry.getKey().getName() +
-                    " has " + entry.getValue().size() + " items");
-        }
-
-        // 3. Create one PO per merchant
-        List<Map<String, Object>> purchaseOrderSummaries = new ArrayList<>();
-        List<UUID> paymentRequestIds = new ArrayList<>();
-
-        for (Map.Entry<Merchant, List<OfferItem>> entry : itemsByMerchant.entrySet()) {
-            Merchant merchant = entry.getKey();
-            List<OfferItem> merchantItems = entry.getValue();
-
-            try {
-                // Create PO for this merchant
-                PurchaseOrder po = createPurchaseOrderForMerchant(offer, merchant, merchantItems, username);
-
-                // ✅ FIXED: Extract primitive data immediately, don't store the entity
-                Map<String, Object> poSummary = new HashMap<>();
-                poSummary.put("id", po.getId());
-                poSummary.put("poNumber", po.getPoNumber());
-                poSummary.put("totalAmount", po.getTotalAmount());
-                poSummary.put("currency", po.getCurrency());
-                poSummary.put("merchantName", merchant.getName());
-                poSummary.put("status", po.getStatus());
-                purchaseOrderSummaries.add(poSummary);
-
-                // Mark items as finalized
-                for (OfferItem item : merchantItems) {
-                    item.setFinalized(true);
-                    offerItemRepository.save(item);
-                }
-
-                // Create Payment Request for this PO
-                try {
-                    var prResponse = paymentRequestService.createPaymentRequestFromPO(
-                            po.getId(),
-                            offerId,
-                            username
-                    );
-                    paymentRequestIds.add(prResponse.getId());
-                    System.out.println("✅ Payment request created: " + prResponse.getId());
-                } catch (Exception e) {
-                    System.err.println("❌ Failed to create payment request for PO: " + po.getId());
-                    e.printStackTrace();
-                    // Continue with other merchants even if one fails
-                }
-            } catch (Exception e) {
-                System.err.println("❌ Failed to create PO for merchant: " + merchant.getName());
-                e.printStackTrace();
-                throw new RuntimeException("Failed to create PO for merchant " + merchant.getName() + ": " + e.getMessage(), e);
-            }
-        }
-
-        System.out.println("POs created: " + purchaseOrderSummaries.size());
-        System.out.println("Payment Requests created: " + paymentRequestIds.size());
-        System.out.println("==================");
-
-        // 4. Update offer status
-        offer.setStatus("COMPLETED");
-        offerRepository.save(offer);
-
-        // 5. Create timeline event
-        offerTimelineService.createTimelineEvent(
-                offer,
-                TimelineEventType.OFFER_COMPLETED,
-                username,
-                String.format("Created %d purchase orders and %d payment requests for %d merchants",
-                        purchaseOrderSummaries.size(), paymentRequestIds.size(), itemsByMerchant.size()),
-                "FINALIZING",
-                "COMPLETED"
-        );
-
-        // 6. ✅ FIXED: Return simple data structures instead of DTOs
-        Map<String, Object> result = new HashMap<>();
-        result.put("purchaseOrders", purchaseOrderSummaries); // Simple maps instead of DTOs
-        result.put("paymentRequests", paymentRequestIds);
-        result.put("message", String.format("Successfully created %d POs and %d payment requests",
-                purchaseOrderSummaries.size(), paymentRequestIds.size()));
-
-        return result;
-    }
 
     /**
      * NEW: Create purchase order for specific merchant

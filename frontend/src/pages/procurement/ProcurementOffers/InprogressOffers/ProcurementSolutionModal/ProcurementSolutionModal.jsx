@@ -92,9 +92,15 @@ const ProcurementSolutionModal = ({
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Send itemTypeId instead of requestOrderItemId
+        // ADD THESE DEBUG LOGS
+        console.log("=== FRONTEND SUBMIT DEBUG ===");
+        console.log("Full requestItem:", requestItem);
+        console.log("requestItem.itemTypeId:", requestItem.itemTypeId);
+        console.log("requestItem.itemType:", requestItem.itemType);
+        console.log("formData:", formData);
+
         const submissionData = {
-            itemTypeId: requestItem.itemTypeId, // Use itemTypeId from requestItem
+            itemTypeId: requestItem.itemTypeId,
             merchantId: formData.merchantId,
             currency: formData.currency,
             quantity: formData.quantity,
@@ -105,9 +111,11 @@ const ProcurementSolutionModal = ({
             comment: mode === 'edit' ? formData.comment : undefined
         };
 
+        console.log("Submission data being sent:", submissionData);
+        console.log("=========================");
+
         onSave(submissionData);
     };
-
     // Handle backdrop click
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget) {
