@@ -1,9 +1,10 @@
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.Offer;
 
 import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.procurement.PurchaseOrderItem;
+import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
 import com.example.backend.models.warehouse.ItemType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -39,7 +40,7 @@ public class OfferItem {
 
     @ManyToOne
     @JoinColumn(name = "item_type_id", nullable = true)
-    @JsonManagedReference
+    // REMOVED @JsonManagedReference - ManyToOne doesn't need it!
     private ItemType itemType;
 
     private Integer estimatedDeliveryDays;
@@ -52,6 +53,6 @@ public class OfferItem {
     private boolean isFinalized = false;
 
     @OneToOne(mappedBy = "offerItem")
-    @JsonBackReference  // ORIGINAL VALUE
+    @JsonBackReference
     private PurchaseOrderItem purchaseOrderItem;
 }

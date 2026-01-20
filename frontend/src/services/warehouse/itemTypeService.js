@@ -36,5 +36,16 @@ export const itemTypeService = {
     getAllTypes: async () => {
         const response = await apiClient.get(ITEM_TYPE_ENDPOINTS.ALL_TYPES);
         return response.data || response;
-    }
+    },
+
+    /**
+     * Get item type details with warehouse distribution
+     */
+    /**
+     * Get item type details with warehouse distribution and price history
+     */
+    getItemTypeDetails: async (itemTypeId) => {
+        const response = await apiClient.get(ITEM_TYPE_ENDPOINTS.DETAILS(itemTypeId));
+        return response.data || response;
+    },
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './PriceApprovalModal.scss';
-import { FiX, FiPackage, FiBox, FiHash, FiDollarSign } from 'react-icons/fi';
+import { FiX, FiDollarSign } from 'react-icons/fi';
 
 const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
     const [approvedPrice, setApprovedPrice] = useState('');
@@ -19,7 +19,7 @@ const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
             return;
         }
 
-        onApprove(item.itemId, parseFloat(approvedPrice)); // Change item.id to item.itemId
+        onApprove(item.itemId, parseFloat(approvedPrice));
         onClose();
         setApprovedPrice('');
         setError('');
@@ -55,7 +55,6 @@ const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
 
                 {/* Body */}
                 <div className="modal-body">
-                    {/* Item Details */}
                     {/* Item Details */}
                     <div className="price-modal-item-details">
                         <div className="detail-row">

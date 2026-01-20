@@ -1,8 +1,8 @@
 package com.example.backend.repositories.procurement;
 
 
-import com.example.backend.models.procurement.OfferItem;
-import com.example.backend.models.procurement.RequestOrderItem;
+import com.example.backend.models.procurement.Offer.OfferItem;
+import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

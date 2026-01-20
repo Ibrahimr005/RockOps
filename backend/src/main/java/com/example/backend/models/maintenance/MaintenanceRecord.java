@@ -71,6 +71,14 @@ public class MaintenanceRecord {
     @Column(name = "manager_approval_date")
     private LocalDateTime managerApprovalDate;
 
+    @DecimalMin(value = "0.0", inclusive = true, message = "Expected cost must be non-negative")
+    @Column(name = "expected_cost", precision = 10, scale = 2)
+    private BigDecimal expectedCost = BigDecimal.ZERO;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Approved budget must be non-negative")
+    @Column(name = "approved_budget", precision = 10, scale = 2)
+    private BigDecimal approvedBudget;
+
     @DecimalMin(value = "0.0", inclusive = true, message = "Total cost must be non-negative")
     @Column(name = "total_cost", precision = 10, scale = 2)
     private BigDecimal totalCost = BigDecimal.ZERO;

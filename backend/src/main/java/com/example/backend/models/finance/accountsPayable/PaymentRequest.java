@@ -1,6 +1,8 @@
 package com.example.backend.models.finance.accountsPayable;
 
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
+import com.example.backend.models.maintenance.MaintenanceRecord;
+import com.example.backend.models.maintenance.MaintenanceStep;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.PurchaseOrder;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -33,8 +35,16 @@ public class PaymentRequest {
     private String requestNumber;
 
     @ManyToOne
-    @JoinColumn(name = "purchase_order_id", nullable = false)
+    @JoinColumn(name = "purchase_order_id", nullable = true)
     private PurchaseOrder purchaseOrder;
+
+    @ManyToOne
+    @JoinColumn(name = "maintenance_step_id", nullable = true)
+    private MaintenanceStep maintenanceStep;
+
+    @ManyToOne
+    @JoinColumn(name = "maintenance_record_id", nullable = true)
+    private MaintenanceRecord maintenanceRecord;
 
     @ManyToOne
     @JoinColumn(name = "offer_financial_review_id")

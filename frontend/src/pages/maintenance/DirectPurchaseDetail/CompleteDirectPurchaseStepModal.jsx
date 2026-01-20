@@ -138,7 +138,7 @@ const CompleteDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) =>
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-backdrop">
             <div className="modal-container complete-step-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div className="modal-title">

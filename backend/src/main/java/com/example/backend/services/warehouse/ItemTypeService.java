@@ -1,21 +1,29 @@
 package com.example.backend.services.warehouse;
 
 
+import com.example.backend.dto.warehouse.ItemTypeDetailsDTO;
+import com.example.backend.dto.warehouse.ItemTypePriceHistoryDTO;
+import com.example.backend.dto.warehouse.ItemTypeWarehouseDistributionDTO;
+import com.example.backend.models.finance.inventoryValuation.ApprovalStatus;
+import com.example.backend.models.finance.inventoryValuation.ItemPriceApproval;
 import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.procurement.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrderItem;
 import com.example.backend.models.user.Role;
-import com.example.backend.models.warehouse.ItemCategory;
-import com.example.backend.models.warehouse.ItemType;
+import com.example.backend.models.warehouse.*;
+import com.example.backend.repositories.finance.inventoryValuation.ItemPriceApprovalRepository;
+import com.example.backend.repositories.procurement.PurchaseOrderRepository;
 import com.example.backend.repositories.warehouse.ItemCategoryRepository;
+import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ItemTypeService {
@@ -28,6 +36,15 @@ public class ItemTypeService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private ItemRepository itemRepository;
+
+    @Autowired
+    private ItemPriceApprovalRepository itemPriceApprovalRepository;
+
+    @Autowired
+    private PurchaseOrderRepository purchaseOrderRepository;
 
     public ItemType addItemType(Map<String, Object> requestBody) {
         ItemType itemType = new ItemType();
@@ -260,5 +277,176 @@ public class ItemTypeService {
 // If no dependencies, proceed with deletion
         itemType.setItemCategory(null);
         itemTypeRepository.delete(itemType);
+    }
+
+    /**
+     * Get item type details with warehouse distribution
+     */
+    public ItemTypeDetailsDTO getItemTypeDetails(UUID itemTypeId) {
+        ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
+
+        // Get all items of this type across all warehouses (IN_WAREHOUSE status)
+        List<Item> items = itemRepository.findByItemTypeAndItemStatus(itemType, ItemStatus.IN_WAREHOUSE);
+
+        // Calculate totals
+        int totalQuantity = items.stream().mapToInt(Item::getQuantity).sum();
+        double totalValue = items.stream()
+                .filter(item -> item.getTotalValue() != null)
+                .mapToDouble(Item::getTotalValue)
+                .sum();
+
+        // Get unique warehouses count
+        long warehouseCount = items.stream()
+                .map(item -> item.getWarehouse().getId())
+                .distinct()
+                .count();
+
+        // Group by warehouse for distribution
+        List<ItemTypeWarehouseDistributionDTO> distribution = items.stream()
+                .collect(Collectors.groupingBy(item -> item.getWarehouse().getId()))
+                .entrySet().stream()
+                .map(entry -> {
+                    List<Item> warehouseItems = entry.getValue();
+                    Item firstItem = warehouseItems.get(0);
+                    Warehouse warehouse = firstItem.getWarehouse();
+
+                    int qty = warehouseItems.stream().mapToInt(Item::getQuantity).sum();
+                    Double unitPrice = warehouseItems.stream()
+                            .filter(i -> i.getUnitPrice() != null)
+                            .findFirst()
+                            .map(Item::getUnitPrice)
+                            .orElse(null);
+                    double value = warehouseItems.stream()
+                            .filter(i -> i.getTotalValue() != null)
+                            .mapToDouble(Item::getTotalValue)
+                            .sum();
+
+                    return ItemTypeWarehouseDistributionDTO.builder()
+                            .warehouseId(warehouse.getId())
+                            .warehouseName(warehouse.getName())
+                            .siteName(warehouse.getSite() != null ? warehouse.getSite().getName() : "Unknown")
+                            .quantity(qty)
+                            .unitPrice(unitPrice)
+                            .totalValue(value)
+                            .lastUpdated(warehouseItems.stream()
+                                    .map(Item::getCreatedAt)
+                                    .filter(Objects::nonNull)
+                                    .max(LocalDateTime::compareTo)
+                                    .map(LocalDateTime::toString)
+                                    .orElse(null))
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // Get price approval history for this item type
+        List<ItemPriceApproval> approvals = itemPriceApprovalRepository
+                .findByItemItemTypeOrderByApprovedAtDesc(itemType);
+
+        List<ItemTypePriceHistoryDTO> priceHistory = approvals.stream()
+                .filter(a -> a.getApprovalStatus() == ApprovalStatus.APPROVED)
+                .map(a -> ItemTypePriceHistoryDTO.builder()
+                        .approvalId(a.getId())
+                        .warehouseName(a.getWarehouse().getName())
+                        .approvedPrice(a.getApprovedPrice())
+                        .quantity(a.getItem().getQuantity())
+                        .approvedBy(a.getApprovedBy())
+                        .approvedAt(a.getApprovedAt() != null ? a.getApprovedAt().toString() : null)
+                        .build())
+                .collect(Collectors.toList());
+
+        // Calculate average price
+        Double avgPrice = items.stream()
+                .filter(i -> i.getUnitPrice() != null && i.getUnitPrice() > 0)
+                .mapToDouble(Item::getUnitPrice)
+                .average()
+                .orElse(0.0);
+
+        // Get pending approvals count
+        long pendingCount = itemPriceApprovalRepository
+                .countByItemItemTypeAndApprovalStatus(itemType, ApprovalStatus.PENDING);
+
+        return ItemTypeDetailsDTO.builder()
+                .itemTypeId(itemType.getId())
+                .itemTypeName(itemType.getName())
+                .categoryName(itemType.getItemCategory() != null ? itemType.getItemCategory().getName() : null)
+                .parentCategoryName(itemType.getItemCategory() != null && itemType.getItemCategory().getParentCategory() != null
+                        ? itemType.getItemCategory().getParentCategory().getName() : null)
+                .measuringUnit(itemType.getMeasuringUnit())
+                .basePrice(itemType.getBasePrice())
+                .minQuantity(itemType.getMinQuantity())
+                .serialNumber(itemType.getSerialNumber())
+                .totalQuantity(totalQuantity)
+                .totalValue(totalValue)
+                .averageUnitPrice(avgPrice)
+                .warehouseCount((int) warehouseCount)
+                .pendingApprovalsCount((int) pendingCount)
+                .warehouseDistribution(distribution)
+                .priceHistory(priceHistory)
+                .build();
+    }
+
+    /**
+     * Update base price for a specific item type using weighted average of last 3 completed POs
+     * Called automatically when a PO is marked as COMPLETED
+     */
+    @Transactional
+    public void updateItemTypeBasePriceFromCompletedPOs(UUID itemTypeId, String updatedBy) {
+        ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                .orElseThrow(() -> new RuntimeException("ItemType not found"));
+
+        System.out.println("📊 Calculating base price for: " + itemType.getName());
+
+        // Find last 3 COMPLETED POs that contain this ItemType
+        List<PurchaseOrder> last3CompletedPOs = findLast3CompletedPOsWithItemType(itemTypeId);
+
+        if (last3CompletedPOs.isEmpty()) {
+            System.out.println("  ⚠️ No completed POs found for " + itemType.getName());
+            return;
+        }
+
+        // Calculate weighted average across ALL items from these POs
+        double totalCost = 0.0;
+        double totalQuantity = 0.0;
+
+        for (PurchaseOrder po : last3CompletedPOs) {
+            for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
+                if (item.getItemType() != null && item.getItemType().getId().equals(itemTypeId)) {
+                    double itemCost = item.getUnitPrice() * item.getQuantity();
+                    totalCost += itemCost;
+                    totalQuantity += item.getQuantity();
+
+                    System.out.println("    • PO: " + po.getPoNumber() +
+                            " | Merchant: " + (item.getMerchant() != null ? item.getMerchant().getName() : "N/A") +
+                            " | Qty: " + item.getQuantity() +
+                            " | Unit Price: " + String.format("%.2f", item.getUnitPrice()));
+                }
+            }
+        }
+
+        if (totalQuantity > 0) {
+            double oldPrice = itemType.getBasePrice() != null ? itemType.getBasePrice() : 0.0;
+            double newPrice = totalCost / totalQuantity;
+
+            itemType.setBasePrice(newPrice);
+            itemType.setBasePriceUpdatedAt(LocalDateTime.now());
+            itemType.setBasePriceUpdatedBy(updatedBy);
+            itemTypeRepository.save(itemType);
+
+            System.out.println("  ✅ Base price updated: " +
+                    String.format("%.2f", oldPrice) + " → " + String.format("%.2f", newPrice));
+        }
+    }
+
+    private List<PurchaseOrder> findLast3CompletedPOsWithItemType(UUID itemTypeId) {
+        List<PurchaseOrder> allCompletedPOs = purchaseOrderRepository
+                .findByStatusOrderByUpdatedAtDesc("COMPLETED");
+
+        return allCompletedPOs.stream()
+                .filter(po -> po.getPurchaseOrderItems().stream()
+                        .anyMatch(item -> item.getItemType() != null &&
+                                item.getItemType().getId().equals(itemTypeId)))
+                .limit(3)
+                .collect(Collectors.toList());
     }
 }

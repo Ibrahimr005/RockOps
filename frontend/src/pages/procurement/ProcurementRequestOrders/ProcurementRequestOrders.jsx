@@ -22,7 +22,7 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
 
 
     // Tab state
-    const [activeTab, setActiveTab] = useState('drafts'); // 'drafts', 'incoming', or 'approved'
+    const [activeTab, setActiveTab] = useState('incoming'); // 'drafts', 'incoming', or 'approved'
 
     useEffect(() => {
         fetchRequestOrders();

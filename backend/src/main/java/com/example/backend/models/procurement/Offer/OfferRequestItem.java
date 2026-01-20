@@ -1,5 +1,5 @@
 // OfferRequestItem.java
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.Offer;
 
 import com.example.backend.models.warehouse.ItemType;
 import com.fasterxml.jackson.annotation.JsonBackReference;

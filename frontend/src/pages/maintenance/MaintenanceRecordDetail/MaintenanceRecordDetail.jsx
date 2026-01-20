@@ -403,9 +403,38 @@ const MaintenanceRecordDetail = () => {
                                     <h3>Financial Information</h3>
                                     <div className="info-grid">
                                         <div className="info-item">
-                                            <label>Total Cost</label>
+                                            <label>Expected Cost / Budget Request</label>
+                                            <span className="cost">{formatCurrency(maintenanceRecord.expectedCost || maintenanceRecord.estimatedCost || 0)}</span>
+                                        </div>
+                                        {maintenanceRecord.approvedBudget && (
+                                            <div className="info-item">
+                                                <label>Approved Budget</label>
+                                                <span className="cost approved">{formatCurrency(maintenanceRecord.approvedBudget)}</span>
+                                            </div>
+                                        )}
+                                        {maintenanceRecord.consumedBudget !== undefined && maintenanceRecord.consumedBudget !== null && (
+                                            <div className="info-item">
+                                                <label>Consumed Budget</label>
+                                                <span className="cost">{formatCurrency(maintenanceRecord.consumedBudget)}</span>
+                                            </div>
+                                        )}
+                                        {maintenanceRecord.remainingBudget !== undefined && maintenanceRecord.remainingBudget !== null && (
+                                            <div className="info-item">
+                                                <label>Remaining Budget</label>
+                                                <span className={`cost ${maintenanceRecord.isOverBudget ? 'over-budget' : maintenanceRecord.remainingBudget < (maintenanceRecord.approvedBudget * 0.2) ? 'warning' : 'remaining'}`}>
+                                                    {formatCurrency(maintenanceRecord.remainingBudget)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="info-item">
+                                            <label>Total Actual Cost</label>
                                             <span className="cost">{formatCurrency(maintenanceRecord.totalCost)}</span>
                                         </div>
+                                        {maintenanceRecord.isOverBudget && (
+                                            <div className="info-item full-width">
+                                                <span className="budget-warning">⚠️ This maintenance record has exceeded its approved budget. Contact finance to request an increase.</span>
+                                            </div>
+                                        )}
                                         {maintenanceRecord.isOverdue && (
                                             <div className="info-item">
                                                 <label>Status</label>

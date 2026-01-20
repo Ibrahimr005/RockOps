@@ -1,0 +1,411 @@
+.it-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 0;
+
+  // ============================================================================
+  // LOADING & ERROR STATES
+  // ============================================================================
+  .it-page-loading-container,
+  .it-page-error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    background: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    text-align: center;
+
+    .it-page-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: it-page-spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    svg {
+      color: var(--color-text-secondary);
+      opacity: 0.3;
+      margin-bottom: 20px;
+    }
+
+    h4 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    p {
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      color: var(--color-text-secondary);
+    }
+
+    .it-page-retry-button {
+      padding: 10px 20px;
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+
+      &:hover {
+        background: var(--color-primary-dark);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
+    }
+
+    @keyframes it-page-spin {
+      to { transform: rotate(360deg); }
+    }
+  }
+
+  // ============================================================================
+  // OVERVIEW SECTION
+  // ============================================================================
+  .it-page-overview-section {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    margin-top: 2rem;
+
+    .it-page-section-header {
+      margin-bottom: 20px;
+      padding-bottom: 18px;
+      border-bottom: 2px solid var(--border-color-light);
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        svg {
+          color: var(--color-primary);
+          flex-shrink: 0;
+        }
+      }
+    }
+
+    .it-page-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+
+      .it-page-info-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 12px;
+        background: var(--color-surface-secondary);
+        border: 1px solid var(--border-color-light);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+        text-align: center;
+
+        &:hover {
+          border-color: var(--color-primary);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
+        }
+
+        &.it-page-warning {
+          border-color: var(--color-warning);
+          background: rgba(234, 179, 8, 0.05);
+
+          .it-page-info-icon {
+            background: rgba(234, 179, 8, 0.1);
+
+            svg {
+              color: var(--color-warning);
+            }
+          }
+
+          .it-page-info-value {
+            color: var(--color-warning);
+          }
+        }
+
+        .it-page-info-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          background: var(--color-edit-bg);
+          border-radius: var(--radius-sm);
+          flex-shrink: 0;
+
+          svg {
+            width: 16px;
+            height: 16px;
+            color: var(--color-primary);
+          }
+        }
+
+        .it-page-info-content {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          width: 100%;
+
+          .it-page-info-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .it-page-info-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            line-height: 1.2;
+            word-break: break-word;
+          }
+        }
+      }
+    }
+
+    // Base Price Update Info
+    .it-page-base-price-info {
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(59, 130, 246, 0.05);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: var(--radius-md);
+
+      .it-page-price-info-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+
+        svg {
+          color: var(--color-primary);
+          flex-shrink: 0;
+        }
+
+        span {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--color-text-secondary);
+        }
+      }
+
+      .it-page-price-info-details {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+
+        .it-page-price-info-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          .it-page-price-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+          }
+
+          .it-page-price-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+          }
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // DATA SECTIONS (Distribution & Price History)
+  // ============================================================================
+  .it-page-data-section {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    padding: 28px;
+
+    .it-page-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border-color-light);
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        svg {
+          color: var(--color-primary);
+          flex-shrink: 0;
+        }
+      }
+
+      .it-page-section-count {
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+        background: var(--color-edit-bg);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-primary);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+      }
+    }
+  }
+
+  // ============================================================================
+  // TABLE SPECIFIC STYLES
+  // ============================================================================
+  .it-page-warehouse-link {
+    color: var(--color-primary);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .it-page-quantity-value {
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  .it-page-price-value {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  .it-page-total-value {
+    font-weight: 600;
+    color: var(--color-success);
+  }
+
+  .it-page-date-value {
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .it-page-user-value {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+  }
+
+  .it-page-site-name {
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+  }
+
+  // ============================================================================
+  // RESPONSIVE DESIGN
+  // ============================================================================
+  @media (max-width: 968px) {
+    .it-page-overview-section {
+      .it-page-info-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    gap: 20px;
+
+    .it-page-overview-section {
+      padding: 20px;
+
+      .it-page-info-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+
+        .it-page-info-card {
+          padding: 12px 10px;
+
+          .it-page-info-icon {
+            width: 28px;
+            height: 28px;
+
+            svg {
+              width: 14px;
+              height: 14px;
+            }
+          }
+
+          .it-page-info-content {
+            gap: 3px;
+
+            .it-page-info-label {
+              font-size: 9px;
+            }
+
+            .it-page-info-value {
+              font-size: 14px;
+            }
+          }
+        }
+      }
+    }
+
+    .it-page-data-section {
+      padding: 20px;
+
+      .it-page-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+
+        .it-page-section-count {
+          align-self: stretch;
+          justify-content: center;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .it-page-overview-section {
+      .it-page-info-grid {
+        grid-template-columns: 1fr;
+
+        .it-page-info-card {
+          .it-page-info-content {
+            .it-page-info-value {
+              font-size: 13px;
+            }
+          }
+        }
+      }
+    }
+  }
+}

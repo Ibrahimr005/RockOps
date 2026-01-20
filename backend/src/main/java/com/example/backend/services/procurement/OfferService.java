@@ -4,10 +4,14 @@ import com.example.backend.dto.procurement.*;
 import com.example.backend.mappers.procurement.*;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.*;
+import com.example.backend.models.procurement.Offer.Offer;
+import com.example.backend.models.procurement.Offer.OfferItem;
+import com.example.backend.models.procurement.Offer.OfferTimelineEvent;
+import com.example.backend.models.procurement.RequestOrder.RequestOrder;
+import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
 import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.merchant.MerchantRepository;
-import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
-import com.example.backend.models.procurement.TimelineEventType;
+import com.example.backend.models.procurement.Offer.TimelineEventType;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -151,118 +155,199 @@ public class OfferService {
 
     @Transactional
     public List<OfferItemDTO> addOfferItems(UUID offerId, List<OfferItemDTO> offerItemDTOs) {
+        System.out.println("=== SERVICE: addOfferItems START ===");
+
         if (offerItemDTOs == null || offerItemDTOs.isEmpty()) {
             throw new IllegalArgumentException("At least one offer item is required");
         }
 
-        // Find the offer
+        // Find the offer - but DON'T access any collections
+        System.out.println("SERVICE: Finding offer with ID: " + offerId);
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
+        System.out.println("SERVICE: Offer found: " + offer.getTitle());
 
         // Get effective request items for this offer
+        System.out.println("SERVICE: Getting effective request items...");
         List<OfferRequestItemDTO> effectiveItems = offerRequestItemService.getEffectiveRequestItems(offerId);
+        System.out.println("SERVICE: Found " + effectiveItems.size() + " effective items");
 
         List<OfferItem> savedItems = new ArrayList<>();
 
-        for (OfferItemDTO dto : offerItemDTOs) {
-            // Find the merchant
-            Merchant merchant = merchantRepository.findById(dto.getMerchantId())
-                    .orElseThrow(() -> new RuntimeException("Merchant not found"));
+        for (int i = 0; i < offerItemDTOs.size(); i++) {
+            OfferItemDTO dto = offerItemDTOs.get(i);
+            System.out.println("SERVICE: Processing DTO #" + i);
 
-            // Find the item type
-            UUID itemTypeId = dto.getItemTypeId();
-            if (itemTypeId == null) {
-                throw new RuntimeException("Item type ID is required");
-            }
+            try {
+                // Find the merchant
+                System.out.println("SERVICE: Finding merchant with ID: " + dto.getMerchantId());
+                Merchant merchant = merchantRepository.findById(dto.getMerchantId())
+                        .orElseThrow(() -> new RuntimeException("Merchant not found"));
+                System.out.println("SERVICE: Merchant found: " + merchant.getName());
 
-            ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                    .orElseThrow(() -> new RuntimeException("Item type not found: " + itemTypeId));
+                // Find the item type
+                UUID itemTypeId = dto.getItemTypeId();
+                System.out.println("SERVICE: ItemTypeId from DTO: " + itemTypeId);
 
-            // Find the effective request item for this item type
-            OfferRequestItemDTO effectiveItem = effectiveItems.stream()
-                    .filter(item -> item.getItemTypeId().equals(itemTypeId))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Item type not found in request items: " + itemTypeId));
-
-            // Get or create RequestOrderItem
-            RequestOrderItem requestOrderItem;
-            RequestOrder requestOrder = offer.getRequestOrder();
-
-            if (effectiveItem.getOriginalRequestOrderItemId() != null) {
-                // This is a modified quantity of an existing item - link to original
-                requestOrderItem = requestOrderItemRepository.findById(effectiveItem.getOriginalRequestOrderItemId())
-                        .orElseThrow(() -> new RuntimeException("Original request order item not found"));
-            } else {
-                // This is a NEW item added via "Modify Items"
-                // Check if a RequestOrderItem already exists for this item type
-                Optional<RequestOrderItem> existingItem = requestOrder.getRequestItems().stream()
-                        .filter(item -> item.getItemType().getId().equals(itemTypeId))
-                        .findFirst();
-
-                if (existingItem.isPresent()) {
-                    requestOrderItem = existingItem.get();
-                } else {
-                    // Create a new RequestOrderItem for this newly added item
-                    requestOrderItem = new RequestOrderItem();
-                    requestOrderItem.setRequestOrder(requestOrder);
-                    requestOrderItem.setItemType(itemType);
-                    requestOrderItem.setQuantity((int) effectiveItem.getQuantity());
-                    requestOrderItem = requestOrderItemRepository.save(requestOrderItem);
+                if (itemTypeId == null) {
+                    throw new RuntimeException("Item type ID is required");
                 }
+
+                System.out.println("SERVICE: Finding item type with ID: " + itemTypeId);
+                ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                        .orElseThrow(() -> new RuntimeException("Item type not found: " + itemTypeId));
+                System.out.println("SERVICE: Item type found: " + itemType.getName());
+
+                // Find the effective request item for this item type
+                System.out.println("SERVICE: Finding effective request item for itemTypeId: " + itemTypeId);
+                OfferRequestItemDTO effectiveItem = effectiveItems.stream()
+                        .filter(item -> item.getItemTypeId().equals(itemTypeId))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("Item type not found in request items: " + itemTypeId));
+                System.out.println("SERVICE: Effective item found with quantity: " + effectiveItem.getQuantity());
+
+                // Get or create RequestOrderItem
+                RequestOrderItem requestOrderItem;
+                RequestOrder requestOrder = offer.getRequestOrder();
+
+                System.out.println("SERVICE: Checking for original request order item ID: " + effectiveItem.getOriginalRequestOrderItemId());
+
+                if (effectiveItem.getOriginalRequestOrderItemId() != null) {
+                    System.out.println("SERVICE: Linking to original request order item");
+                    requestOrderItem = requestOrderItemRepository.findById(effectiveItem.getOriginalRequestOrderItemId())
+                            .orElseThrow(() -> new RuntimeException("Original request order item not found"));
+                    System.out.println("SERVICE: Original request order item found");
+                } else {
+                    System.out.println("SERVICE: This is a NEW item, checking if RequestOrderItem exists...");
+                    Optional<RequestOrderItem> existingItem = requestOrder.getRequestItems().stream()
+                            .filter(item -> item.getItemType().getId().equals(itemTypeId))
+                            .findFirst();
+
+                    if (existingItem.isPresent()) {
+                        System.out.println("SERVICE: Found existing RequestOrderItem");
+                        requestOrderItem = existingItem.get();
+                    } else {
+                        System.out.println("SERVICE: Creating new RequestOrderItem");
+                        requestOrderItem = new RequestOrderItem();
+                        requestOrderItem.setRequestOrder(requestOrder);
+                        requestOrderItem.setItemType(itemType);
+                        requestOrderItem.setQuantity((int) effectiveItem.getQuantity());
+                        requestOrderItem = requestOrderItemRepository.save(requestOrderItem);
+                        System.out.println("SERVICE: New RequestOrderItem created with ID: " + requestOrderItem.getId());
+                    }
+                }
+
+                // Create OfferItem - set all fields EXCEPT offer first
+                System.out.println("SERVICE: Creating OfferItem...");
+                OfferItem offerItem = new OfferItem();
+
+                System.out.println("SERVICE: Setting basic fields...");
+                offerItem.setQuantity(dto.getQuantity());
+                offerItem.setUnitPrice(dto.getUnitPrice());
+                offerItem.setTotalPrice(dto.getTotalPrice());
+                offerItem.setCurrency(dto.getCurrency());
+                offerItem.setEstimatedDeliveryDays(dto.getEstimatedDeliveryDays());
+                offerItem.setDeliveryNotes(dto.getDeliveryNotes());
+                offerItem.setComment(dto.getComment());
+                System.out.println("SERVICE: Basic fields set");
+
+                System.out.println("SERVICE: Setting merchant...");
+                offerItem.setMerchant(merchant);
+                System.out.println("SERVICE: Merchant set");
+
+                System.out.println("SERVICE: Setting requestOrderItem...");
+                offerItem.setRequestOrderItem(requestOrderItem);
+                System.out.println("SERVICE: RequestOrderItem set");
+
+                System.out.println("SERVICE: Setting itemType...");
+                offerItem.setItemType(itemType);
+                System.out.println("SERVICE: ItemType set");
+
+                // Now set the offer - this is where it's crashing
+                System.out.println("SERVICE: About to set offer...");
+                System.out.println("SERVICE: Offer object is: " + (offer != null ? "NOT NULL" : "NULL"));
+                System.out.println("SERVICE: Offer ID is: " + offer.getId());
+
+                try {
+                    offerItem.setOffer(offer);
+                    System.out.println("SERVICE: Offer set successfully!");
+                } catch (Exception offerSetException) {
+                    System.err.println("SERVICE ERROR: Exception when calling setOffer()!");
+                    System.err.println("Exception type: " + offerSetException.getClass().getName());
+                    System.err.println("Exception message: " + offerSetException.getMessage());
+                    if (offerSetException.getCause() != null) {
+                        System.err.println("Cause: " + offerSetException.getCause().getMessage());
+                    }
+                    offerSetException.printStackTrace();
+                    throw offerSetException;
+                }
+
+                System.out.println("SERVICE: Attempting to save OfferItem...");
+                OfferItem savedItem = offerItemRepository.save(offerItem);
+                System.out.println("SERVICE: OfferItem saved successfully with ID: " + savedItem.getId());
+
+                savedItems.add(savedItem);
+
+            } catch (Exception e) {
+                System.err.println("SERVICE ERROR: Exception while processing DTO #" + i);
+                System.err.println("SERVICE ERROR: Exception type: " + e.getClass().getName());
+                System.err.println("SERVICE ERROR: Message: " + e.getMessage());
+                if (e.getCause() != null) {
+                    System.err.println("SERVICE ERROR: Cause: " + e.getCause().getMessage());
+                }
+                e.printStackTrace();
+                throw e;
             }
-
-            // Create OfferItem
-            OfferItem offerItem = new OfferItem();
-            offerItem.setQuantity(dto.getQuantity());
-            offerItem.setUnitPrice(dto.getUnitPrice());
-            offerItem.setTotalPrice(dto.getTotalPrice());
-            offerItem.setCurrency(dto.getCurrency());
-            offerItem.setMerchant(merchant);
-            offerItem.setOffer(offer);
-            offerItem.setRequestOrderItem(requestOrderItem);
-            offerItem.setItemType(itemType);
-            offerItem.setEstimatedDeliveryDays(dto.getEstimatedDeliveryDays());
-            offerItem.setDeliveryNotes(dto.getDeliveryNotes());
-            offerItem.setComment(dto.getComment());
-
-            OfferItem savedItem = offerItemRepository.save(offerItem);
-            savedItems.add(savedItem);
         }
 
+        System.out.println("=== SERVICE: addOfferItems SUCCESS ===");
         return offerItemMapper.toDTOList(savedItems);
     }
     /**
      * Updated method to use timeline service
      */
-    @Transactional
-    public OfferDTO updateOfferStatus(UUID offerId, String status, String username, String rejectionReason) {
-        // Use timeline service for key status changes
-        Offer updatedOffer;
-        switch (status) {
-            case "SUBMITTED":
-                updatedOffer = timelineService.submitOffer(offerId, username);
-                break;
-            case "MANAGERACCEPTED":
-                updatedOffer = timelineService.acceptOfferByManager(offerId, username);
-                break;
-            case "MANAGERREJECTED":
-                updatedOffer = timelineService.rejectOfferByManager(offerId, username, rejectionReason);
-                break;
-            case "FINANCE_ACCEPTED":
-            case "FINANCE_REJECTED":
-            case "FINANCE_PARTIALLY_ACCEPTED":
-                updatedOffer = timelineService.processFinanceDecision(offerId, status, username, rejectionReason);
-                break;
-            default:
-                // Fallback for other statuses
-                Offer offer = offerRepository.findById(offerId)
-                        .orElseThrow(() -> new RuntimeException("Offer not found"));
-                offer.setStatus(status);
-                updatedOffer = offerRepository.save(offer);
-                break;
-        }
 
-        return offerMapper.toDTO(updatedOffer);
+    @Transactional  // ← Add this
+    public OfferDTO updateOfferStatus(UUID offerId, String status, String username, String rejectionReason) {
+        System.out.println("=== UPDATE OFFER STATUS START ===");
+
+        try {
+            Offer offer = offerRepository.findById(offerId)
+                    .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+            String previousStatus = offer.getStatus();
+            int attemptNumber = offer.getCurrentAttemptNumber();
+
+            offer.setStatus(status);
+            Offer updatedOffer = offerRepository.save(offer);
+            System.out.println("Offer saved successfully");
+
+            OfferDTO dto = offerMapper.toDTO(updatedOffer);
+            System.out.println("DTO conversion successful");
+
+            // Create timeline event in the SAME transaction
+            if ("SUBMITTED".equals(status)) {
+                timelineService.createTimelineEvent(
+                        offerId, TimelineEventType.OFFER_SUBMITTED,
+                        username, null, previousStatus, status, attemptNumber);
+            } else if ("MANAGERACCEPTED".equals(status)) {
+                timelineService.createTimelineEvent(
+                        offerId, TimelineEventType.MANAGER_ACCEPTED,
+                        username, null, previousStatus, status, attemptNumber);
+            } else if ("MANAGERREJECTED".equals(status)) {
+                timelineService.createTimelineEvent(
+                        offerId, TimelineEventType.MANAGER_REJECTED,
+                        username, rejectionReason, previousStatus, status, attemptNumber);
+            }
+
+            System.out.println("=== UPDATE OFFER STATUS SUCCESS ===");
+            return dto;
+
+        } catch (Exception e) {
+            System.err.println("=== UPDATE OFFER STATUS ERROR ===");
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update offer status: " + e.getMessage(), e);
+        }
     }
 
     @Transactional
@@ -832,12 +917,13 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
         for (OfferTimelineEvent originalEvent : originalTimeline) {
             timelineService.createTimelineEvent(
-                    savedNewOffer,
+                    savedNewOffer.getId(),  // ← Pass ID, not object
                     originalEvent.getEventType(),
                     originalEvent.getActionBy(),
                     originalEvent.getNotes(),
                     originalEvent.getPreviousStatus(),
-                    originalEvent.getNewStatus()
+                    originalEvent.getNewStatus(),
+                    originalEvent.getAttemptNumber()  // ← Add attempt number
             );
         }
 
@@ -1333,15 +1419,15 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
             for (OfferTimelineEventDTO event : originalEvents) {
                 timelineService.createTimelineEvent(
-                        newOffer,
+                        newOffer.getId(),  // ← Pass ID, not object
                         event.getEventType(),
                         event.getActionBy(),
                         "Copied from original offer: " + event.getNotes(),
                         event.getPreviousStatus(),
-                        event.getNewStatus()
+                        event.getNewStatus(),
+                        event.getAttemptNumber()  // ← Add attempt number
                 );
             }
-
             System.out.println("✓ Successfully added " + originalEvents.size() + " timeline events");
 
         } catch (Exception e) {
@@ -1555,12 +1641,13 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
             // Create timeline event for finance approval
             timelineService.createTimelineEvent(
-                    offer,
+                    offer.getId(),  // ← Pass ID, not object
                     TimelineEventType.FINANCE_ACCEPTED,
                     "Finance Module",
                     "Offer approved by Finance Module",
                     "MANAGERACCEPTED",
-                    "FINALIZING"
+                    "FINALIZING",
+                    offer.getCurrentAttemptNumber()  // ← Add attempt number
             );
 
         } else if ("REJECT".equalsIgnoreCase(decision)) {
@@ -1573,12 +1660,13 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
             // Create timeline event for finance rejection
             timelineService.createTimelineEvent(
-                    offer,
+                    offer.getId(),  // ← Pass ID, not object
                     TimelineEventType.FINANCE_REJECTED,
                     "Finance Module",
                     "Offer rejected by Finance Module",
                     offer.getStatus(),
-                    offer.getStatus()
+                    offer.getStatus(),
+                    offer.getCurrentAttemptNumber()  // ← Add attempt number
             );
         } else {
             throw new RuntimeException("Invalid decision: " + decision + ". Must be APPROVE or REJECT");
@@ -1623,13 +1711,15 @@ public List<OfferDTO> getFinanceCompletedOffers() {
         // Create timeline event
         String notes = String.format("Finance review completed: %d accepted, %d rejected",
                 acceptedCount, rejectedCount);
+
         timelineService.createTimelineEvent(
-                offer,
+                offer.getId(),  // ← Pass ID, not object
                 timelineEventType,
                 reviewerUsername,
                 notes,
                 "MANAGERACCEPTED",
-                "MANAGERACCEPTED"
+                "MANAGERACCEPTED",
+                offer.getCurrentAttemptNumber()  // ← Add attempt number
         );
 
         Offer savedOffer = offerRepository.save(offer);

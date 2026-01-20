@@ -639,4 +639,21 @@ public class ItemService {
             System.out.println("📋 Transaction status already correct: " + newStatus);
         }
     }
+
+    /**
+     * Get all item history for a warehouse (all sources: transactions, manual entries, purchase orders, etc.)
+     */
+    public List<Item> getWarehouseItemHistory(UUID warehouseId) {
+        System.out.println("📜 Fetching all item history for warehouse: " + warehouseId);
+
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+
+        // Get all items for this warehouse with IN_WAREHOUSE status (includes all sources)
+        List<Item> items = itemRepository.findByWarehouseAndItemStatus(warehouse, ItemStatus.IN_WAREHOUSE);
+
+        System.out.println("✅ Found " + items.size() + " item entries for warehouse: " + warehouse.getName());
+
+        return items;
+    }
 }

@@ -9,14 +9,12 @@ import { siteService } from '../../../../services/siteService.js';
 import { FiMapPin, FiPackage, FiTool, FiArchive, FiFilter } from 'react-icons/fi';
 import siteimgg from "../../../../assets/imgs/siteimgg.jpg";
 
-const AssetValuesView = ({ showSnackbar }) => {
+const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
     const [sitesData, setSitesData] = useState([]);
     const [loading, setLoading] = useState(false);
 
 
-    // Filter states
-    const [showFilterModal, setShowFilterModal] = useState(false);
-    const [filterBySite, setFilterBySite] = useState('');
+
     const [filteredSitesData, setFilteredSitesData] = useState([]);
 
     const [expandedSite, setExpandedSite] = useState(null);
@@ -72,24 +70,22 @@ const AssetValuesView = ({ showSnackbar }) => {
     };
 
     // Filter logic
+// Filter logic - replace the existing useEffect
     useEffect(() => {
-        if (!filterBySite) {
+        if (selectedSiteIds.length === 0) {
+            // No filter selected = show all
             setFilteredSitesData(sitesData);
         } else {
             const filtered = sitesData.filter(site =>
-                site.siteName.toLowerCase().includes(filterBySite.toLowerCase())
+                selectedSiteIds.includes(site.siteId)
             );
             setFilteredSitesData(filtered);
         }
-    }, [filterBySite, sitesData]);
+    }, [selectedSiteIds, sitesData]);
 
-    const handleClearFilters = () => {
-        setFilterBySite('');
-    };
 
-    const getActiveFilterCount = () => {
-        return filterBySite ? 1 : 0;
-    };
+
+
 
     const handleViewCategory = async (siteId, category) => {
         if (expandedSite === siteId && expandedCategory === category) {
@@ -186,18 +182,14 @@ const AssetValuesView = ({ showSnackbar }) => {
                 [warehouseId]: breakdown
             }));
 
-            // Fetch real transaction history
-            const transactions = await inventoryValuationService.getWarehouseTransactionHistory(warehouseId);
-
-            // Filter only completed transactions (ACCEPTED or REJECTED)
-            const completedTransactions = transactions.filter(tx =>
-                tx.status === 'ACCEPTED' || tx.status === 'REJECTED'
-            );
+            // Fetch ALL item history (transactions + manual entries + purchase orders)
+            const history = await inventoryValuationService.getWarehouseItemHistory(warehouseId);
 
             setWarehouseTransactions(prev => ({
                 ...prev,
-                [warehouseId]: completedTransactions
+                [warehouseId]: history
             }));
+
         } catch (error) {
             console.error('Failed to fetch warehouse data:', error);
             showSnackbar('Failed to load warehouse data', 'error');
@@ -250,145 +242,104 @@ const AssetValuesView = ({ showSnackbar }) => {
 
     const transactionColumns = [
         {
-            accessor: 'senderName',
-            header: 'SENDER',
-            width: '180px',
-            render: (row) => (
-                <div className="entity-cell">
-                    <span className="entity-name">{row.senderName}</span>
-                </div>
-            )
+            accessor: 'itemSource',
+            header: 'SOURCE',
+            width: '140px',
+            render: (row) => {
+                const source = row.itemSource || 'UNKNOWN';
+                const sourceConfig = {
+                    'TRANSACTION': { className: 'transaction', label: 'Transaction' },
+                    'PURCHASE_ORDER': { className: 'purchase-order', label: 'Purchase Order' },
+                    'MANUAL_ENTRY': { className: 'manual-entry', label: 'Manual Entry' },
+                    'INITIAL_STOCK': { className: 'initial-stock', label: 'Initial Stock' },
+                    'UNKNOWN': { className: 'unknown', label: 'Unknown' }
+                };
+                const config = sourceConfig[source] || sourceConfig['UNKNOWN'];
+                return <span className={`source-badge ${config.className}`}>{config.label}</span>;
+            }
         },
         {
-            accessor: 'receiverName',
-            header: 'RECEIVER',
-            width: '180px',
+            accessor: 'batchNumber',
+            header: 'REF #',
+            width: '100px',
             render: (row) => (
-                <div className="entity-cell">
-                    <span className="entity-name">{row.receiverName}</span>
-                </div>
+                <span className="batch-number">
+                {row.batchNumber || row.sourceReference || '—'}
+            </span>
             )
         },
         {
             accessor: 'itemName',
             header: 'ITEM',
-            width: '220px',
-            render: (row) => <span className="item-name">{row.itemName}</span>
+            width: '180px',
+            render: (row) => <span className="item-name">{row.itemName || '—'}</span>
         },
         {
             accessor: 'quantity',
-            header: 'QUANTITY',
-            width: '120px',
+            header: 'QTY',
+            width: '100px',
             render: (row) => (
                 <span className="quantity-text">
-                    {row.quantity} {row.measuringUnit}
-                </span>
+                {row.quantity} {row.measuringUnit || ''}
+            </span>
             )
         },
         {
             accessor: 'unitPrice',
             header: 'UNIT PRICE',
-            width: '120px',
+            width: '110px',
             render: (row) => (
                 <span className="price-text">
-                    {row.unitPrice ? `${row.unitPrice.toFixed(2)} EGP` : '—'}
-                </span>
+                {row.unitPrice ? `${row.unitPrice.toFixed(2)} EGP` : '—'}
+            </span>
             )
         },
         {
             accessor: 'totalValue',
-            header: 'TOTAL VALUE',
-            width: '150px',
-            render: (row) => {
-                // Find current warehouse from expanded warehouses
-                const currentWarehouse = warehousesData.find(w =>
-                    expandedWarehouses.includes(w.warehouseId)
-                );
-
-                // Check if current warehouse is the receiver (gaining value)
-                const isGaining = currentWarehouse && row.receiverName === currentWarehouse.warehouseName;
-
-                if (!row.totalValue) {
-                    return <span className="value-amount">—</span>;
-                }
-
-                return (
-                    <div className={`value-impact ${isGaining ? 'positive' : 'negative'}`}>
-                        <span className="value-arrow">
-                            {isGaining ? '↑' : '↓'}
-                        </span>
-                        <span className="value-amount">
-                            {row.totalValue.toFixed(2)} EGP
-                        </span>
-                    </div>
-                );
-            }
-        },
-        {
-            accessor: 'status',
-            header: 'STATUS',
+            header: 'TOTAL',
             width: '120px',
             render: (row) => (
-                <span className={`status-badge3 ${row.status.toLowerCase()}`}>
-                    {row.status}
-                </span>
+                <span className="value-amount">
+                {row.totalValue ? `${row.totalValue.toFixed(2)} EGP` : '—'}
+            </span>
             )
+        },
+        {
+            accessor: 'senderName',
+            header: 'FROM',
+            width: '150px',
+            render: (row) => (
+                <span className="entity-name">
+                {row.senderName || row.merchantName || '—'}
+            </span>
+            )
+        },
+        {
+            accessor: 'receiverName',
+            header: 'TO',
+            width: '150px',
+            render: (row) => <span className="entity-name">{row.receiverName || '—'}</span>
+        },
+        {
+            accessor: 'createdAt',
+            header: 'DATE',
+            width: '140px',
+            render: (row) => (
+                <span className="date-value">{formatDate(row.createdAt)}</span>
+            )
+        },
+        {
+            accessor: 'createdBy',
+            header: 'BY',
+            width: '120px',
+            render: (row) => <span className="user-value">{row.createdBy || '—'}</span>
         }
     ];
-
     return (
         <div className="asset-values-view">
-            <SubPageHeader
-                title="Asset Values"
-                subtitle="Monitor inventory values across sites and warehouses"
-                filterButton={{
-                    onClick: () => setShowFilterModal(!showFilterModal),
-                    isActive: showFilterModal,
-                    activeCount: getActiveFilterCount(),
-                    disabled: false
-                }}
-            />
 
-            {/* Filter Panel */}
-            {showFilterModal && (
-                <div className="page-header__filter-panel">
-                    <div className="page-header__filter-header">
-                        <h4>
-                            <FiFilter size={16} />
-                            Filter Options
-                        </h4>
-                        <div className="filter-actions">
-                            <button
-                                className="filter-reset-btn"
-                                onClick={handleClearFilters}
-                                disabled={getActiveFilterCount() === 0}
-                            >
-                                Clear Filters
-                            </button>
-                        </div>
-                    </div>
-                    <div className="page-header__filter-list">
-                        <div className="page-header__filter-item">
-                            <label>Site Name</label>
-                            <input
-                                type="text"
-                                placeholder="Search by site name..."
-                                value={filterBySite}
-                                onChange={(e) => setFilterBySite(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.625rem 0.875rem',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    background: 'var(--color-surface)',
-                                    color: 'var(--color-text-primary)',
-                                    fontSize: '0.875rem'
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
+
+
 
             {loading && !expandedSite ? (
                 <div className="loading-state">
@@ -529,10 +480,10 @@ const AssetValuesView = ({ showSnackbar }) => {
                                                                                 showSearch={true}
                                                                                 showFilters={true}
                                                                                 filterableColumns={[
-                                                                                    { accessor: 'senderName', header: 'Sender' },
-                                                                                    { accessor: 'receiverName', header: 'Receiver' },
+                                                                                    { accessor: 'itemSource', header: 'Source' },
                                                                                     { accessor: 'itemName', header: 'Item' },
-                                                                                    { accessor: 'status', header: 'Status' }
+                                                                                    { accessor: 'senderName', header: 'From' },
+                                                                                    { accessor: 'createdBy', header: 'Added By' }
                                                                                 ]}
                                                                                 className="transactions-table"
                                                                                 emptyMessage="No transactions found"

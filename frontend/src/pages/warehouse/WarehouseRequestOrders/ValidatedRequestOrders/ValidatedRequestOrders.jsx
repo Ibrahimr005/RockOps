@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import { useNavigate } from 'react-router-dom';
 import { requestOrderService } from '../../../../services/procurement/requestOrderService.js';
-import RequestOrderViewModal from '../RequestOrderViewModal/RequestOrderViewModal';
 
 const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, userRole }) => {
     const navigate = useNavigate();
@@ -150,12 +149,11 @@ const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, u
     };
 
     // Handle row click to navigate to detail page
-    const handleRowClick = async (row) => {
-        const details = await fetchRequestOrderDetails(row.id);
-        if (details) {
-            setSelectedRequestOrder(details);
-            setShowViewModal(true);
-        }
+    // Handle row click to navigate to detail page
+    const handleRowClick = (row) => {
+        navigate(`/warehouses/${warehouseId}/request-orders/${row.id}`);
+        // or
+        // navigate(`/warehouse/request-orders/${row.id}`);
     };
 
     return (
@@ -183,15 +181,7 @@ const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, u
                     />
                 </div>
             </div>
-            {/* View Modal */}
-            <RequestOrderViewModal
-                requestOrder={selectedRequestOrder}
-                isOpen={showViewModal}
-                onClose={() => {
-                    setShowViewModal(false);
-                    setSelectedRequestOrder(null);
-                }}
-            />
+
         </div>
     );
 };

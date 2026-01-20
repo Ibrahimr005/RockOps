@@ -48,6 +48,7 @@ import WarehouseViewItemCategoriesTable from "./pages/warehouse/WarehouseCategor
 import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable.jsx";
 import ItemDetailsPage from "./pages/warehouse/WarehouseItems/ItemDetailsPage/ItemDetailsPage.jsx";
 import TransactionDetailsPage from "./components/common/TransactionDetailsPage/TransactionDetailsPage.jsx";
+import ItemTypeDetailsPage from "./pages/warehouse/WarehouseItemTypes/ItemTypeDetailsPage/ItemTypeDetailsPage.jsx";
 
 // ===================== Merchant & Procurement Components =====================
 import ProcurementOffers from "./pages/procurement/ProcurementOffers/ProcurementOffers.jsx";
@@ -62,6 +63,7 @@ import PurchaseOrderDetails
 import ResolveIssuesPage from "./pages/procurement/ProcurementPurchaseOrders/ResolveIssuesPage/ResolveIssuesPage.jsx";
 import PurchaseOrderDetailsPage from "./components/procurement/PurchaseOrderDetailsPage/PurchaseOrderDetailsPage.jsx";
 import RequestOrderDetailsPage from "./components/procurement/RequestOrderDetailsPage/RequestOrderDetailsPage.jsx";
+import PriceApprovals from "./pages/procurement/ProcurementPriceApprovals/PriceApprovals.jsx";
 
 // ===================== Finance Imports =====================
 import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
@@ -205,6 +207,7 @@ function App() {
                                             <Route path=":id/items/:itemTypeId" element={<ItemDetailsPage/>}/>
                                             <Route path=":id/request-orders/:requestOrderId" element={<RequestOrderDetailsPage />} />
                                             <Route path=":id/transactions/:transaction" element={<TransactionDetailsPage />} />
+                                            <Route path="item-types/:itemTypeId" element={<RoleRoute allowedRoles={allRoles}><ItemTypeDetailsPage/></RoleRoute>}/>
                                         </Route>
 
                                         {/* ===================== Merchant Routes ===================== */}
@@ -220,6 +223,7 @@ function App() {
                                             <Route path="purchase-orders/:id/resolve-issues" element={<ResolveIssuesPage/>}/>
                                             <Route path="purchase-orders/details/:id/" element={<PurchaseOrderDetailsPage/>}/>
                                             <Route path="request-orders/:requestOrderId" element={<RequestOrderDetailsPage/>}/>
+                                            <Route path="price-approvals" element={<PriceApprovals/>}/>
 
                                         </Route>
 

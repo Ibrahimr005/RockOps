@@ -2,8 +2,8 @@ package com.example.backend.services.procurement;
 
 import com.example.backend.dto.procurement.RFQExportRequest;
 import com.example.backend.dto.procurement.RFQImportPreviewDTO;
-import com.example.backend.models.procurement.Offer;
-import com.example.backend.models.procurement.OfferRequestItem;
+import com.example.backend.models.procurement.Offer.Offer;
+import com.example.backend.models.procurement.Offer.OfferRequestItem;
 import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.repositories.procurement.OfferRepository;
 import com.example.backend.repositories.procurement.OfferRequestItemRepository;

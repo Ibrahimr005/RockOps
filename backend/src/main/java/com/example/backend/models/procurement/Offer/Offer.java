@@ -1,7 +1,9 @@
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.Offer;
 
 import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
 import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
+import com.example.backend.models.procurement.RequestOrder.RequestOrder;
+import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -14,7 +16,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @Entity
@@ -43,9 +44,8 @@ public class Offer {
     private int currentAttemptNumber = 1;
     private int totalRetries = 0;
 
-    // Timeline events - ALL historical data lives here!
-    @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("eventTime ASC, createdAt ASC")
+    @OneToMany(mappedBy = "offer", orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<OfferTimelineEvent> timelineEvents = new ArrayList<>();
 

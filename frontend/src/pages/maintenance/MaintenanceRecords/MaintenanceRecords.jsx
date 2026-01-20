@@ -138,20 +138,25 @@ const MaintenanceRecords = () => {
             const transformedMaintenanceRecords = maintenanceRecords.map(record => {
                 const isCompleted = record.status === 'COMPLETED' && record.actualCompletionDate;
 
-                // Calculate expected total cost and actual cost so far based on steps
-                const expectedTotalCost = record.steps && record.steps.length > 0
-                    ? record.steps.reduce((sum, step) => sum + (step.expectedCost || 0), 0)
-                    : (record.totalCost || 0);
+                // Use expectedCost from backend (budget request), fallback to step calculation
+                const expectedCost = record.expectedCost || record.estimatedCost || 0;
 
-                const actualTotalCost = record.steps && record.steps.length > 0
+                // Use consumedBudget from backend, fallback to step calculation
+                const consumedBudget = record.consumedBudget || (record.steps && record.steps.length > 0
                     ? record.steps.reduce((sum, step) => {
-                        // Only sum actualCost for completed steps
                         if (step.isCompleted && step.actualCost != null) {
                             return sum + step.actualCost;
+                        } else if (step.expectedCost != null) {
+                            return sum + step.expectedCost;
                         }
                         return sum;
                     }, 0)
-                    : (isCompleted ? (record.totalCost || 0) : 0);
+                    : 0);
+
+                // Use backend values for budget tracking if available
+                const approvedBudget = record.approvedBudget;
+                const remainingBudget = record.remainingBudget;
+                const isOverBudget = record.isOverBudget;
 
                 // Get current step info
                 const currentStep = record.steps && record.steps.length > 0
@@ -171,10 +176,17 @@ const MaintenanceRecords = () => {
                     currentResponsiblePhone: record.currentResponsiblePhone,
                     currentResponsibleEmail: record.currentResponsibleEmail,
                     site: record.site || 'N/A',
-                    totalCost: isCompleted ? actualTotalCost : expectedTotalCost,
-                    expectedTotalCost: expectedTotalCost,
-                    actualTotalCost: actualTotalCost,
-                    costDifference: actualTotalCost - expectedTotalCost,
+                    // Budget tracking fields
+                    expectedCost: expectedCost,
+                    approvedBudget: approvedBudget,
+                    consumedBudget: consumedBudget,
+                    remainingBudget: remainingBudget,
+                    isOverBudget: isOverBudget,
+                    totalCost: record.totalCost || 0,
+                    // Legacy fields for compatibility
+                    expectedTotalCost: expectedCost,
+                    actualTotalCost: consumedBudget,
+                    costDifference: consumedBudget - expectedCost,
                     isActualCost: isCompleted,
                     creationDate: record.creationDate,
                     issueDate: record.issueDate,
@@ -185,8 +197,6 @@ const MaintenanceRecords = () => {
                     durationInDays: record.durationInDays,
                     totalSteps: record.totalSteps || 0,
                     completedSteps: record.completedSteps || 0,
-                    activeSteps: record.activeSteps || 0,
-                    currentStep: currentStep,
                     activeSteps: record.activeSteps || 0,
                     currentStep: currentStep,
                     steps: record.steps || [],
