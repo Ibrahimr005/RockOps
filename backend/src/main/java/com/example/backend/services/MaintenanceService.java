@@ -26,6 +26,7 @@ import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.models.maintenance.StepType;
 import com.example.backend.repositories.StepTypeRepository;
 import com.example.backend.services.notification.NotificationService;
+import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
 import com.example.backend.repositories.finance.accountsPayable.OfferFinancialReviewRepository;
 import com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus;
@@ -64,7 +65,8 @@ public class MaintenanceService {
     private final MerchantRepository merchantRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
-    private final com.example.backend.repositories.finance.accountsPayable.OfferFinancialReviewRepository offerFinancialReviewRepository;
+    private final OfferFinancialReviewRepository offerFinancialReviewRepository;
+    private final PaymentRequestService paymentRequestService;
 
     // Maintenance Record Operations
 
@@ -103,11 +105,12 @@ public class MaintenanceService {
                 .issueDate(dto.getIssueDate())
                 .sparePartName(dto.getSparePartName().trim())
                 .expectedCompletionDate(dto.getExpectedCompletionDate())
-                .expectedCompletionDate(dto.getExpectedCompletionDate())
                 .status(MaintenanceStatus.DRAFT)
-                // ADD THIS LINE - Set initial cost from DTO
-                .totalCost(dto.getTotalCost() != null ? dto.getTotalCost()
-                        : (dto.getEstimatedCost() != null ? dto.getEstimatedCost() : BigDecimal.ZERO))
+                // Set expectedCost from DTO (this is the budget request)
+                .expectedCost(dto.getExpectedCost() != null ? dto.getExpectedCost()
+                        : (dto.getTotalCost() != null ? dto.getTotalCost() : BigDecimal.ZERO))
+                // totalCost starts at 0 and is calculated from steps
+                .totalCost(BigDecimal.ZERO)
                 .build();
 
         // Determine initial status based on user role (will be set properly after user
@@ -239,7 +242,8 @@ public class MaintenanceService {
             com.example.backend.models.finance.accountsPayable.OfferFinancialReview review = com.example.backend.models.finance.accountsPayable.OfferFinancialReview
                     .builder()
                     .maintenanceRecord(record)
-                    .totalAmount(record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO)
+                    // Use expectedCost as the budget being approved
+                    .totalAmount(record.getExpectedCost() != null ? record.getExpectedCost() : BigDecimal.ZERO)
                     .currency("EGP")
                     .department("Maintenance")
                     .status(com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus.PENDING)
@@ -381,7 +385,9 @@ public class MaintenanceService {
         }
 
         record.setStatus(MaintenanceStatus.APPROVED_BY_FINANCE);
-        log.info("Record {} approved by Finance. now APPROVED_BY_FINANCE", id);
+        // Set approved budget from expected cost
+        record.setApprovedBudget(record.getExpectedCost());
+        log.info("Record {} approved by Finance with budget {}. now APPROVED_BY_FINANCE", id, record.getApprovedBudget());
 
         // Logic to update Equipment status to IN_MAINTENANCE if not already
         Equipment equipment = equipmentRepository.findById(record.getEquipmentId()).orElse(null);
@@ -607,33 +613,8 @@ public class MaintenanceService {
         List<MaintenanceStep> existingSteps = maintenanceStepRepository
                 .findByMaintenanceRecordIdOrderByStartDateAsc(maintenanceRecordId);
 
-        // VALIDATION 1: All previous steps must be completed before adding a new step
-        List<MaintenanceStep> incompleteSteps = existingSteps.stream()
-                .filter(step -> step.getActualEndDate() == null)
-                .collect(Collectors.toList());
-
-        if (!incompleteSteps.isEmpty()) {
-            String incompleteStepDescriptions = incompleteSteps.stream()
-                    .map(step -> step.getDescription())
-                    .collect(Collectors.joining(", "));
-            throw new MaintenanceException(
-                    "Cannot add new step. Please complete all previous steps first. Incomplete steps: "
-                            + incompleteStepDescriptions);
-        }
-
-        // VALIDATION 2: New step's start date must be >= latest step's actual
-        // completion date
-        if (!existingSteps.isEmpty()) {
-            MaintenanceStep latestStep = existingSteps.get(existingSteps.size() - 1);
-            if (latestStep.getActualEndDate() != null && dto.getStartDate() != null) {
-                if (dto.getStartDate().isBefore(latestStep.getActualEndDate())) {
-                    throw new MaintenanceException("New step start date must be on or after " +
-                            latestStep.getActualEndDate().toLocalDate() +
-                            ". The previous step was completed on " +
-                            latestStep.getActualEndDate().toLocalDate() + ".");
-                }
-            }
-        }
+        // NOTE: Removed validation that required all previous steps to be completed
+        // Users can now add concurrent steps without waiting for existing ones to finish
 
         // Get the step type
         StepType stepType = stepTypeRepository.findById(dto.getStepTypeId())
@@ -719,10 +700,21 @@ public class MaintenanceService {
         String toLocation = dto.getToLocation() != null ? dto.getToLocation() : "";
 
         // Calculate remaining amount
-        BigDecimal expectedCost = dto.getExpectedCost() != null ? dto.getExpectedCost() : BigDecimal.ZERO;
+        BigDecimal stepExpectedCost = dto.getExpectedCost() != null ? dto.getExpectedCost() : BigDecimal.ZERO;
         BigDecimal downPayment = dto.getDownPayment() != null ? dto.getDownPayment() : BigDecimal.ZERO;
         BigDecimal remaining;
         boolean remainingManuallySet = false;
+
+        // BUDGET VALIDATION: Check if step expected cost exceeds remaining budget
+        if (record.getApprovedBudget() != null) {
+            BigDecimal remainingBudget = calculateRemainingBudget(record);
+            if (stepExpectedCost.compareTo(remainingBudget) > 0) {
+                throw new MaintenanceException(
+                        String.format("Step expected cost (%.2f EGP) exceeds remaining budget (%.2f EGP). " +
+                                "Please request a budget increase from finance.",
+                                stepExpectedCost, remainingBudget));
+            }
+        }
 
         if (dto.getRemainingManuallySet() != null && dto.getRemainingManuallySet() && dto.getRemaining() != null) {
             // User manually set the remaining value
@@ -730,7 +722,7 @@ public class MaintenanceService {
             remainingManuallySet = true;
         } else {
             // Auto-calculate remaining = expectedCost - downPayment
-            remaining = expectedCost.subtract(downPayment);
+            remaining = stepExpectedCost.subtract(downPayment);
         }
 
         MaintenanceStep step = MaintenanceStep.builder()
@@ -746,7 +738,7 @@ public class MaintenanceService {
                 .toLocation(toLocation)
                 .stepCost(dto.getStepCost() != null ? dto.getStepCost() : BigDecimal.ZERO)
                 .downPayment(downPayment)
-                .expectedCost(expectedCost)
+                .expectedCost(stepExpectedCost)
                 .remaining(remaining)
                 .remainingManuallySet(remainingManuallySet)
                 .actualCost(dto.getActualCost())
@@ -1086,6 +1078,23 @@ public class MaintenanceService {
 
         // Update actual cost if provided
         if (completionData.getActualCost() != null) {
+            // BUDGET VALIDATION: Check if actual cost exceeds available budget
+            MaintenanceRecord record = step.getMaintenanceRecord();
+            if (record.getApprovedBudget() != null) {
+                BigDecimal stepExpectedCost = step.getExpectedCost() != null ? step.getExpectedCost() : BigDecimal.ZERO;
+                BigDecimal remainingBudget = calculateRemainingBudget(record);
+                // The step's expected cost is already "reserved" in the consumed budget,
+                // so actual remaining = remainingBudget + stepExpectedCost
+                BigDecimal actualRemaining = remainingBudget.add(stepExpectedCost);
+                
+                if (completionData.getActualCost().compareTo(actualRemaining) > 0) {
+                    throw new MaintenanceException(
+                            String.format("Actual cost (%.2f EGP) exceeds available budget (%.2f EGP). " +
+                                    "Please request a budget increase from finance.",
+                                    completionData.getActualCost(), actualRemaining));
+                }
+            }
+            
             step.setActualCost(completionData.getActualCost());
             step.setStepCost(completionData.getActualCost()); // Also update stepCost for backward compatibility
         } else if (completionData.getStepCost() != null) {
@@ -1207,6 +1216,96 @@ public class MaintenanceService {
         } catch (Exception e) {
             log.error("Failed to send maintenance record completion notifications: {}", e.getMessage());
         }
+
+        // Generate Payment Requests for Finance reconciliation
+        try {
+            generatePaymentRequestsForCompletedRecord(record);
+        } catch (Exception e) {
+            log.error("Failed to generate payment requests for maintenance record {}: {}", 
+                    record.getId(), e.getMessage());
+            // Don't fail the completion if payment request generation fails
+            // Finance can manually create payment requests if needed
+        }
+    }
+
+    /**
+     * Generate Payment Requests for each step with a merchant when a maintenance record is completed.
+     * This allows Finance to reconcile actual payments made during maintenance.
+     * 
+     * Key behaviors:
+     * - Only creates payment requests for steps with a selectedMerchant (vendor steps)
+     * - Skips steps with responsibleEmployee (internal work, no vendor payment)
+     * - Uses actualCost if available, otherwise falls back to stepCost
+     * - Payment requests are created with APPROVED status (money already paid in real life)
+     * - Idempotent: won't create duplicates if called multiple times
+     */
+    private void generatePaymentRequestsForCompletedRecord(MaintenanceRecord record) {
+        log.info("Generating payment requests for completed maintenance record: {}", record.getId());
+
+        // Get all steps for this record
+        List<MaintenanceStep> steps = maintenanceStepRepository
+                .findByMaintenanceRecordIdOrderByStartDateAsc(record.getId());
+
+        if (steps.isEmpty()) {
+            log.info("No steps found for maintenance record: {}", record.getId());
+            return;
+        }
+
+        // Get the approved financial review (for linking to approved budget)
+        OfferFinancialReview approvedReview = offerFinancialReviewRepository
+                .findByMaintenanceRecordId(record.getId())
+                .stream()
+                .filter(r -> r.getStatus() == FinanceReviewStatus.APPROVED)
+                .findFirst()
+                .orElse(null);
+
+        if (approvedReview == null) {
+            log.warn("No approved financial review found for maintenance record: {}. " +
+                    "Payment requests will be created without budget linkage.", record.getId());
+        }
+
+        // Get username for audit trail
+        String createdByUsername = "System - Maintenance Completion";
+        try {
+            User currentUser = getCurrentAuthenticatedUser();
+            if (currentUser != null) {
+                createdByUsername = currentUser.getUsername();
+            }
+        } catch (Exception e) {
+            log.debug("Could not get current user for payment request creation: {}", e.getMessage());
+        }
+
+        int createdCount = 0;
+        int skippedCount = 0;
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        // Create payment request for each step with a merchant
+        for (MaintenanceStep step : steps) {
+            try {
+                var paymentRequest = paymentRequestService.createPaymentRequestFromMaintenanceStep(
+                        step, record, approvedReview, createdByUsername
+                );
+
+                if (paymentRequest != null) {
+                    createdCount++;
+                    totalAmount = totalAmount.add(paymentRequest.getRequestedAmount());
+                    log.debug("Created payment request {} for step {}", 
+                            paymentRequest.getRequestNumber(), step.getId());
+                } else {
+                    skippedCount++;
+                    log.debug("Skipped payment request creation for step {} (no merchant or zero cost)", 
+                            step.getId());
+                }
+            } catch (Exception e) {
+                log.error("Failed to create payment request for step {}: {}", 
+                        step.getId(), e.getMessage());
+                // Continue with other steps - don't fail entire process
+            }
+        }
+
+        log.info("Payment request generation complete for record {}. " +
+                "Created: {}, Skipped: {}, Total Amount: {} EGP",
+                record.getId(), createdCount, skippedCount, totalAmount);
     }
 
     public MaintenanceStepDto assignContactToStep(UUID stepId, UUID contactId) {
@@ -1519,11 +1618,30 @@ public class MaintenanceService {
             totalCost = record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO;
         }
 
+        // Calculate budget tracking fields
+        BigDecimal consumedBudget = calculateConsumedBudget(record.getId());
+        BigDecimal remainingBudget = null;
+        Boolean isOverBudget = null;
+        if (record.getApprovedBudget() != null) {
+            remainingBudget = record.getApprovedBudget().subtract(consumedBudget);
+            isOverBudget = consumedBudget.compareTo(record.getApprovedBudget()) > 0;
+        }
+
         return MaintenanceRecordDto.builder().id(record.getId()).equipmentId(record.getEquipmentId())
-                .equipmentInfo(record.getEquipmentInfo()).finalDescription(record.getFinalDescription())
+                .equipmentInfo(record.getEquipmentInfo())
+                .initialIssueDescription(record.getInitialIssueDescription())
+                .finalDescription(record.getFinalDescription())
                 .issueDate(record.getIssueDate()).sparePartName(record.getSparePartName())
                 .creationDate(record.getCreationDate()).expectedCompletionDate(record.getExpectedCompletionDate())
-                .actualCompletionDate(record.getActualCompletionDate()).totalCost(totalCost).status(record.getStatus())
+                .actualCompletionDate(record.getActualCompletionDate())
+                // Budget tracking fields
+                .expectedCost(record.getExpectedCost())
+                .approvedBudget(record.getApprovedBudget())
+                .consumedBudget(consumedBudget)
+                .totalCost(totalCost)
+                .remainingBudget(remainingBudget)
+                .isOverBudget(isOverBudget)
+                .status(record.getStatus())
                 .rejectionReason(rejectionReason)
                 .responsibleUserId(record.getResponsibleUser() != null ? record.getResponsibleUser().getId() : null)
                 .currentResponsibleContactId(
@@ -1641,6 +1759,40 @@ public class MaintenanceService {
 
         record.setTotalCost(totalCost);
         maintenanceRecordRepository.save(record);
+    }
+
+    /**
+     * Calculate consumed budget for a maintenance record.
+     * Consumed = sum of actualCost for completed steps + expectedCost for incomplete steps
+     */
+    private BigDecimal calculateConsumedBudget(UUID recordId) {
+        List<MaintenanceStep> steps = maintenanceStepRepository
+                .findByMaintenanceRecordIdOrderByStartDateAsc(recordId);
+
+        return steps.stream()
+                .map(step -> {
+                    if (step.isCompleted()) {
+                        // For completed steps, use actual cost (or stepCost as fallback)
+                        return step.getActualCost() != null ? step.getActualCost()
+                                : (step.getStepCost() != null ? step.getStepCost() : BigDecimal.ZERO);
+                    } else {
+                        // For incomplete steps, use expected cost
+                        return step.getExpectedCost() != null ? step.getExpectedCost() : BigDecimal.ZERO;
+                    }
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Calculate remaining budget for a maintenance record.
+     * Remaining = approvedBudget - consumedBudget
+     */
+    private BigDecimal calculateRemainingBudget(MaintenanceRecord record) {
+        if (record.getApprovedBudget() == null) {
+            return null;
+        }
+        BigDecimal consumed = calculateConsumedBudget(record.getId());
+        return record.getApprovedBudget().subtract(consumed);
     }
 
     /**

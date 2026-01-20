@@ -370,7 +370,7 @@ const ContactTypeManagement = () => {
 
             {/* Modal for Create/Edit Contact Type */}
             {showModal && (
-                <div className="modal-backdrop" onClick={handleCloseModal}>
+                <div className="modal-backdrop">
                     <div className="modal-container" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div className="modal-title">

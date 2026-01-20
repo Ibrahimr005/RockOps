@@ -201,15 +201,18 @@ public class MaintenanceController {
     // Maintenance Steps
     
     @PostMapping("/records/{recordId}/steps")
-    public ResponseEntity<MaintenanceStepDto> createMaintenanceStep(
+    public ResponseEntity<?> createMaintenanceStep(
             @PathVariable UUID recordId,
             @Valid @RequestBody MaintenanceStepDto dto) {
         try {
             MaintenanceStepDto created = maintenanceService.createMaintenanceStep(recordId, dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (MaintenanceException e) {
+            log.error("Maintenance exception creating step: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             log.error("Error creating maintenance step: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
     
@@ -236,15 +239,18 @@ public class MaintenanceController {
     }
     
     @PutMapping("/steps/{id}")
-    public ResponseEntity<MaintenanceStepDto> updateMaintenanceStep(
+    public ResponseEntity<?> updateMaintenanceStep(
             @PathVariable UUID id,
             @Valid @RequestBody MaintenanceStepDto dto) {
         try {
             MaintenanceStepDto updated = maintenanceService.updateMaintenanceStep(id, dto);
             return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Maintenance exception updating step: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             log.error("Error updating maintenance step: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
     

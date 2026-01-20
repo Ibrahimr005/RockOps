@@ -60,7 +60,7 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-backdrop">
             <div className="modal-container modal-md" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="modal-header">
