@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import './PendingApprovals.scss';
-import { inventoryValuationService } from '../../../../services/finance/inventoryValuationService.js';
+import { priceApprovalsService } from '../../../../services/procurement/priceApprovalsService.js';
 import PriceApprovalModal from '../PriceApprovalModal/PriceApprovalModal.jsx';
 
 const PendingApprovals = ({ showSnackbar, onPendingCountUpdate }) => {
@@ -24,7 +24,7 @@ const PendingApprovals = ({ showSnackbar, onPendingCountUpdate }) => {
     const fetchPendingApprovals = async () => {
         setLoading(true);
         try {
-            const data = await inventoryValuationService.getAllPendingApprovals();
+            const data = await priceApprovalsService.getAllPendingApprovals();
             setPendingItems(data);
         } catch (error) {
             console.error('Failed to fetch pending approvals:', error);
@@ -79,7 +79,6 @@ const PendingApprovals = ({ showSnackbar, onPendingCountUpdate }) => {
             render: (row) => (
                 <div className="warehouse-info">
                     <span className="warehouse-name">{row.warehouseName}</span>
-
                 </div>
             )
         },
@@ -149,9 +148,6 @@ const PendingApprovals = ({ showSnackbar, onPendingCountUpdate }) => {
 
     return (
         <>
-
-
-            {/* DataTable */}
             <DataTable
                 data={pendingItems}
                 columns={columns}
@@ -195,15 +191,13 @@ const PendingApprovals = ({ showSnackbar, onPendingCountUpdate }) => {
                 }}
             />
 
-            {/* Price Approval Modal */}
-            {/* Price Approval Modal */}
             <PriceApprovalModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                item={selectedItems[0]} // Pass the first item (single approval mode)
-                onApprove={async (itemId, approvedPrice) => {
+                item={selectedItems[0]}
+                onApprove={async (itemId, unitPrice) => {
                     try {
-                        await inventoryValuationService.approveItemPrice(itemId, approvedPrice);
+                        await priceApprovalsService.approveItemPrice(itemId, unitPrice);
                         handleApprovalComplete();
                     } catch (error) {
                         console.error('Failed to approve price:', error);

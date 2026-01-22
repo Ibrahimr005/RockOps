@@ -135,27 +135,31 @@ const ProcurementOffers = () => {
                     offersData = await offerService.getByStatus('SUBMITTED');
                 } else if (activeTab === 'validated') {
                     offersData = await offerService.getMultipleStatuses(['MANAGERACCEPTED', 'MANAGERREJECTED']);
-// ✅ CORRECT - Use the dedicated method
                 } else if (activeTab === 'finance') {
-                    offersData = await offerService.getCompletedFinanceOffers();;                } else if (activeTab === 'finalize') {
-                     offersData = await offerService.getByStatus('FINALIZING');
+                    offersData = await offerService.getCompletedFinanceOffers();
+                } else if (activeTab === 'finalize') {
+                    offersData = await offerService.getByStatus('FINALIZING');
                 } else if (activeTab === 'completed') {
                     offersData = await offerService.getByStatus('COMPLETED');
                 } else {
                     offersData = [];
                 }
 
+                console.log(`📊 Fetched ${offersData.length} offers for ${activeTab} tab`);
                 setOffers(offersData);
 
                 // Set active offer based on context
                 if (offersData.length > 0) {
                     // If we have a pending submitted offer and we're on the submitted tab, select it
                     if (pendingSubmittedOffer && activeTab === 'submitted') {
+                        console.log('🎯 Looking for pending submitted offer:', pendingSubmittedOffer.id);
                         const submittedOffer = offersData.find(offer => offer.id === pendingSubmittedOffer.id);
                         if (submittedOffer) {
+                            console.log('✅ Found submitted offer, setting as active');
                             setActiveOffer(submittedOffer);
                             setPendingSubmittedOffer(null);
                         } else {
+                            console.log('⚠️ Submitted offer not found in data, selecting first offer');
                             setActiveOffer(offersData[0]);
                         }
                     }
@@ -169,7 +173,7 @@ const ProcurementOffers = () => {
                             setActiveOffer(offersData[0]);
                         }
                     }
-                    // NEW: If we have a pending finance offer and we're on the finance tab, select it
+                    // If we have a pending finance offer and we're on the finance tab, select it
                     else if (pendingFinanceOffer && activeTab === 'finance') {
                         const financeOffer = offersData.find(offer => offer.id === pendingFinanceOffer.id);
                         if (financeOffer) {
@@ -194,7 +198,7 @@ const ProcurementOffers = () => {
                         setActiveOffer(pendingCompletedOffer);
                         setPendingCompletedOffer(null);
                     }
-                    // Add this BEFORE the existing "else if (activeOffer && offersData.find..." condition:
+                    // If we have a pending new offer and we're on the unstarted tab, select it
                     else if (pendingNewOffer && activeTab === 'unstarted') {
                         const newOffer = offersData.find(offer => offer.id === pendingNewOffer.id);
                         if (newOffer) {
@@ -209,7 +213,8 @@ const ProcurementOffers = () => {
                         // Find the updated version of the active offer from the fetched data
                         const updatedActiveOffer = offersData.find(offer => offer.id === activeOffer.id);
                         setActiveOffer(updatedActiveOffer);
-                    } else {
+                    }
+                    else {
                         // Otherwise, select the first offer
                         setActiveOffer(offersData[0]);
                     }
@@ -226,7 +231,8 @@ const ProcurementOffers = () => {
         };
 
         fetchData();
-    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer, pendingValidatedOffer, pendingFinanceOffer]); // Add pendingFinanceOffer
+    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer, pendingValidatedOffer, pendingFinanceOffer]);
+// ⬆️ IMPORTANT: Removed 'activeOffer' from dependencies to prevent infinite loop; // Add pendingFinanceOffer
 
     // When active offer changes, fetch its request order
     useEffect(() => {
@@ -254,19 +260,22 @@ const ProcurementOffers = () => {
     }, [activeOffer]);
 
     // Handle starting work on an offer (change from UNSTARTED to INPROGRESS)
+// Handle starting work on an offer (change from UNSTARTED to INPROGRESS)
     const handleOfferStatusChange = async (offerId, newStatus, offerData = null) => {
         try {
             await offerService.updateStatus(offerId, newStatus);
 
             // If this is a submission (INPROGRESS -> SUBMITTED), redirect to submitted tab
             if (newStatus === 'SUBMITTED' && offerData) {
+                console.log('📤 Offer submitted, switching to submitted tab with offer:', offerData);
+
                 // Store the submitted offer for selection after tab switch
                 setPendingSubmittedOffer({
                     ...offerData,
                     status: 'SUBMITTED'
                 });
 
-                // Switch to submitted tab
+                // Switch to submitted tab - this will trigger the useEffect that loads offers
                 setActiveTab('submitted');
 
                 // Don't update the current offers list since we're switching tabs
@@ -290,7 +299,6 @@ const ProcurementOffers = () => {
             setTimeout(() => setError(null), 3000);
         }
     };
-
     // Get total price for an offer
     const getTotalPrice = (offer) => {
         if (!offer || !offer.offerItems) return 0;

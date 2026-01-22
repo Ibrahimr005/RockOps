@@ -2,8 +2,8 @@ package com.example.backend.repositories.procurement;
 
 
 import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
-import com.example.backend.models.procurement.Offer;
-import com.example.backend.models.procurement.RequestOrder;
+import com.example.backend.models.procurement.Offer.Offer;
+import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

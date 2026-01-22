@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import './ApprovalHistory.scss';
-import { inventoryValuationService } from '../../../../services/finance/inventoryValuationService.js';
+import { priceApprovalsService } from '../../../../services/procurement/priceApprovalsService.js';
 
 const ApprovalHistory = ({ showSnackbar }) => {
     const [historyData, setHistoryData] = useState([]);
@@ -14,7 +14,7 @@ const ApprovalHistory = ({ showSnackbar }) => {
     const fetchApprovalHistory = async () => {
         setLoading(true);
         try {
-            const data = await inventoryValuationService.getApprovalHistory();
+            const data = await priceApprovalsService.getApprovalHistory();
             setHistoryData(data);
         } catch (error) {
             console.error('Failed to fetch approval history:', error);
@@ -74,8 +74,8 @@ const ApprovalHistory = ({ showSnackbar }) => {
             width: '150px',
             render: (row) => (
                 <span className="approved-price">
-            {row.approvedPrice ? `${row.approvedPrice.toFixed(2)} EGP` : '—'}
-        </span>
+                    {row.approvedPrice ? `${row.approvedPrice.toFixed(2)} EGP` : '—'}
+                </span>
             )
         },
         {
@@ -84,8 +84,8 @@ const ApprovalHistory = ({ showSnackbar }) => {
             width: '150px',
             render: (row) => (
                 <span className="total-value">
-            {row.totalValue ? `${row.totalValue.toFixed(2)} EGP` : '—'}
-        </span>
+                    {row.totalValue ? `${row.totalValue.toFixed(2)} EGP` : '—'}
+                </span>
             )
         },
         {
@@ -108,9 +108,6 @@ const ApprovalHistory = ({ showSnackbar }) => {
 
     return (
         <>
-
-
-            {/* DataTable */}
             <DataTable
                 data={historyData}
                 columns={columns}

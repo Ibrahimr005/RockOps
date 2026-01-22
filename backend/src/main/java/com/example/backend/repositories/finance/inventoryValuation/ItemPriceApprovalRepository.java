@@ -2,6 +2,7 @@ package com.example.backend.repositories.finance.inventoryValuation;
 
 import com.example.backend.models.finance.inventoryValuation.ApprovalStatus;
 import com.example.backend.models.finance.inventoryValuation.ItemPriceApproval;
+import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.models.warehouse.Warehouse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -37,4 +38,8 @@ public interface ItemPriceApprovalRepository extends JpaRepository<ItemPriceAppr
     List<ItemPriceApproval> findByWarehouseAndApprovalStatus(Warehouse warehouse, ApprovalStatus status);
 
     List<ItemPriceApproval> findByApprovalStatusOrderByApprovedAtDesc(ApprovalStatus status);
+
+    List<ItemPriceApproval> findByItemItemTypeOrderByApprovedAtDesc(ItemType itemType);
+
+    long countByItemItemTypeAndApprovalStatus(ItemType itemType, ApprovalStatus approvalStatus);
 }

@@ -418,4 +418,9 @@ public class ItemController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    /**
+     * GET all item history for a warehouse (all sources)
+     * Endpoint: GET /api/finance/inventory-valuation/warehouse/{warehouseId}/item-history
+     */
 }

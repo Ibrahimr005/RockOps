@@ -1,6 +1,8 @@
 package com.example.backend.models.procurement;
 
 import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
+import com.example.backend.models.procurement.Offer.Offer;
+import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

@@ -11,4 +11,6 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, UU
     // Dashboard metrics methods
     long countByStatus(String status);
     List<PurchaseOrder> findByStatus(String status);
+
+    List<PurchaseOrder> findByStatusOrderByUpdatedAtDesc(String status);
 }

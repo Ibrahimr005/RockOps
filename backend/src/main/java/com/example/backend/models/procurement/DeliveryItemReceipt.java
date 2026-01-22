@@ -38,6 +38,7 @@ public class DeliveryItemReceipt {
     private Double goodQuantity;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isRedelivery = false;
 
     @OneToMany(mappedBy = "deliveryItemReceipt", cascade = CascadeType.ALL, orphanRemoval = true)

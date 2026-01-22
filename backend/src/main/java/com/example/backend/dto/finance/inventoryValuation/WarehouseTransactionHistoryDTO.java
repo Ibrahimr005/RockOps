@@ -27,14 +27,21 @@ public class WarehouseTransactionHistoryDTO {
     private String receiverType;
 
     // Item info (one item per row)
+    private UUID itemId;
     private String itemName;
     private Integer quantity;
     private String measuringUnit;
     private Double unitPrice;
-    private Double totalValue; // quantity * unitPrice
+    private Double totalValue;
 
     // Meta
     private String createdBy;
     private String approvedBy;
     private String completedAt;
+
+    // NEW: Source info for non-transaction items
+    private String itemSource; // TRANSACTION, MANUAL_ENTRY, PURCHASE_ORDER, INITIAL_STOCK
+    private String sourceReference; // PO number, etc.
+    private String merchantName;
+    private String createdAt;
 }

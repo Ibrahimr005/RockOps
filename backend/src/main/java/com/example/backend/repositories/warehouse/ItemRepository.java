@@ -128,4 +128,7 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
     Integer getTotalQuantityInWarehouse(@Param("warehouse") Warehouse warehouse);
 
 
+    List<Item> findByItemTypeAndItemStatus(ItemType itemType, ItemStatus itemStatus);
+
+
 }

@@ -19,18 +19,18 @@
 // Site Separator - More Prominent
 // Site Separator - Simple line
 // Site Separator - Blue gradient line without dot
-.site-separator {
-  height: 2px;
-  background: linear-gradient(
-                  to right,
-                  transparent 0%,
-                  var(--color-primary) 20%,
-                  var(--color-primary) 80%,
-                  transparent 100%
-  );
-  margin: 20px 0;
-  opacity: 0.4;
-}
+//.site-separator {
+//  height: 2px;
+//  background: linear-gradient(
+//                  to right,
+//                  transparent 0%,
+//                  var(--color-primary) 20%,
+//                  var(--color-primary) 80%,
+//                  transparent 100%
+//  );
+//  margin: 20px 0;
+//  opacity: 0.4;
+//}
 
 // Category Expanded Section with Smooth Animations
 .category-expanded {
@@ -778,4 +778,44 @@
     align-items: flex-start;
     gap: 6px;
   }
+}
+
+.source-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+
+  &.transaction {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+  }
+
+  &.purchase-order {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+
+  &.manual-entry {
+    background: rgba(249, 115, 22, 0.15);
+    color: #f97316;
+  }
+
+  &.initial-stock {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+  }
+
+  &.unknown {
+    background: rgba(107, 114, 128, 0.15);
+    color: #6b7280;
+  }
+}
+
+.batch-number {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
 }

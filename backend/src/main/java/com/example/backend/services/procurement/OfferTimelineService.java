@@ -1,18 +1,18 @@
 package com.example.backend.services.procurement;
 
-import com.example.backend.models.procurement.*;
+import com.example.backend.models.procurement.Offer.Offer;
+import com.example.backend.models.procurement.Offer.OfferTimelineEvent;
+import com.example.backend.models.procurement.Offer.TimelineEventType;
 import com.example.backend.repositories.procurement.OfferRepository;
 import com.example.backend.repositories.procurement.OfferTimelineEventRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 @Service
-@Transactional
 public class OfferTimelineService {
 
     private final OfferRepository offerRepository;
@@ -33,11 +33,12 @@ public class OfferTimelineService {
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         String previousStatus = offer.getStatus();
+        int attemptNumber = offer.getCurrentAttemptNumber();
         offer.setStatus("SUBMITTED");
 
         // Create timeline event - ALL submission info goes here
-        createTimelineEvent(offer, TimelineEventType.OFFER_SUBMITTED, submittedBy,
-                null, previousStatus, "SUBMITTED");
+        createTimelineEvent(offer.getId(), TimelineEventType.OFFER_SUBMITTED, submittedBy,
+                null, previousStatus, "SUBMITTED", attemptNumber);
 
         return offerRepository.save(offer);
     }
@@ -50,11 +51,12 @@ public class OfferTimelineService {
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         String previousStatus = offer.getStatus();
+        int attemptNumber = offer.getCurrentAttemptNumber();
         offer.setStatus("MANAGERACCEPTED");
 
         // Create timeline event - ALL approval info goes here
-        createTimelineEvent(offer, TimelineEventType.MANAGER_ACCEPTED, managerName,
-                null, previousStatus, "MANAGERACCEPTED");
+        createTimelineEvent(offer.getId(), TimelineEventType.MANAGER_ACCEPTED, managerName,
+                null, previousStatus, "MANAGERACCEPTED", attemptNumber);
 
         return offerRepository.save(offer);
     }
@@ -67,11 +69,12 @@ public class OfferTimelineService {
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         String previousStatus = offer.getStatus();
+        int attemptNumber = offer.getCurrentAttemptNumber();
         offer.setStatus("MANAGERREJECTED");
 
         // Create timeline event with rejection reason - ALL rejection info goes here
-        createTimelineEvent(offer, TimelineEventType.MANAGER_REJECTED, managerName,
-                rejectionReason, previousStatus, "MANAGERREJECTED");
+        createTimelineEvent(offer.getId(), TimelineEventType.MANAGER_REJECTED, managerName,
+                rejectionReason, previousStatus, "MANAGERREJECTED", attemptNumber);
 
         return offerRepository.save(offer);
     }
@@ -88,11 +91,12 @@ public class OfferTimelineService {
         }
 
         String previousStatus = offer.getStatus();
+        int attemptNumber = offer.getCurrentAttemptNumber();
 
         // Create retry timeline event FIRST
-        createTimelineEvent(offer, TimelineEventType.OFFER_RETRIED, retriedBy,
+        createTimelineEvent(offer.getId(), TimelineEventType.OFFER_RETRIED, retriedBy,
                 "Offer retried due to previous rejection",
-                previousStatus, "INPROGRESS");
+                previousStatus, "INPROGRESS", attemptNumber);
 
         // Increment attempt and reset to in-progress
         offer.incrementAttemptNumber();
@@ -110,6 +114,7 @@ public class OfferTimelineService {
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         String previousStatus = offer.getFinanceStatus();
+        int attemptNumber = offer.getCurrentAttemptNumber();
         offer.setStatus(status);
 
         TimelineEventType eventType;
@@ -121,41 +126,56 @@ public class OfferTimelineService {
         }
 
         // Create timeline event - ALL finance info goes here
-        createTimelineEvent(offer, eventType, financeUser, notes,
-                previousStatus, status);
+        createTimelineEvent(offer.getId(), eventType, financeUser, notes,
+                previousStatus, status, attemptNumber);
 
         return offerRepository.save(offer);
     }
 
     /**
-     * Create a timeline event - PUBLIC METHOD for external services like PurchaseOrderService
+     * Create a timeline event in a NEW transaction (separate from the main transaction)
      */
-    public OfferTimelineEvent createTimelineEvent(Offer offer, TimelineEventType eventType,
+
+    public OfferTimelineEvent createTimelineEvent(UUID offerId, TimelineEventType eventType,
                                                   String actionBy, String notes,
-                                                  String previousStatus, String newStatus) {
+                                                  String previousStatus, String newStatus,
+                                                  int attemptNumber) {
 
-        String displayTitle = generateDisplayTitle(eventType, offer.getCurrentAttemptNumber());
-        String displayDescription = generateDisplayDescription(eventType, offer.getCurrentAttemptNumber());
+        System.out.println("=== CREATE TIMELINE EVENT START ===");
+        System.out.println("Offer ID: " + offerId);
+        System.out.println("Event Type: " + eventType);
 
-        OfferTimelineEvent event = OfferTimelineEvent.builder()
-                .offer(offer)
-                .eventType(eventType)
-                .attemptNumber(offer.getCurrentAttemptNumber())
-                .eventTime(LocalDateTime.now())
-                .actionBy(actionBy)
-                .notes(notes)
-                .previousStatus(previousStatus)
-                .newStatus(newStatus)
-                .displayTitle(displayTitle)
-                .displayDescription(displayDescription)
-                .build();
+        try {
+            String displayTitle = generateDisplayTitle(eventType, attemptNumber);
+            String displayDescription = generateDisplayDescription(eventType, attemptNumber);
 
-        // The @PrePersist will set canRetryFromHere automatically
+            // Create a detached offer with just the ID
+            Offer offerReference = new Offer();
+            offerReference.setId(offerId);
 
-        OfferTimelineEvent savedEvent = timelineEventRepository.save(event);
-        offer.addTimelineEvent(savedEvent);
+            OfferTimelineEvent event = OfferTimelineEvent.builder()
+                    .offer(offerReference)
+                    .eventType(eventType)
+                    .attemptNumber(attemptNumber)
+                    .eventTime(LocalDateTime.now())
+                    .actionBy(actionBy)
+                    .notes(notes)
+                    .previousStatus(previousStatus)
+                    .newStatus(newStatus)
+                    .displayTitle(displayTitle)
+                    .displayDescription(displayDescription)
+                    .build();
 
-        return savedEvent;
+            OfferTimelineEvent savedEvent = timelineEventRepository.save(event);
+            System.out.println("✅ Timeline event saved with ID: " + savedEvent.getId());
+
+            return savedEvent;
+
+        } catch (Exception e) {
+            System.err.println("❌ Timeline creation failed: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create timeline event", e);
+        }
     }
 
     /**
@@ -199,22 +219,24 @@ public class OfferTimelineService {
     /**
      * Record offer split event for continue and return functionality
      */
-
     public OfferTimelineEvent recordOfferSplit(UUID offerId, String actionBy, int acceptedItemsCount, int remainingItemsCount) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         String previousStatus = offer.getStatus();
+        int attemptNumber = offer.getCurrentAttemptNumber();
         String notes = String.format("Offer split: %d accepted items continued to finalization, %d remaining items created in new offer",
                 acceptedItemsCount, remainingItemsCount);
 
         // Create timeline event for the split action
-        return createTimelineEvent(offer, TimelineEventType.OFFER_SPLIT, actionBy, notes,
-                previousStatus, "PROCESSED_SPLIT");
+        return createTimelineEvent(offer.getId(), TimelineEventType.OFFER_SPLIT, actionBy, notes,
+                previousStatus, "PROCESSED_SPLIT", attemptNumber);
     }
-    // Add this to your OfferTimelineService class
+
+    /**
+     * Save timeline event
+     */
     public void saveTimelineEvent(OfferTimelineEvent event) {
-        // Assuming you have a repository for timeline events
         timelineEventRepository.save(event);
     }
 }

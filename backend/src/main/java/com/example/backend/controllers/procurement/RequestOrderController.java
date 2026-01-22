@@ -5,7 +5,7 @@ package com.example.backend.controllers.procurement;
 import com.example.backend.dto.procurement.RequestOrderDTO;
 import com.example.backend.dto.procurement.RequestOrderItemDTO;
 import com.example.backend.dto.warehouse.ItemTypeDTO;
-import com.example.backend.models.procurement.RequestOrder;
+import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.services.procurement.RequestOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

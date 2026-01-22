@@ -3,7 +3,7 @@ package com.example.backend.mappers.procurement;
 import com.example.backend.dto.procurement.OfferItemDTO;
 import com.example.backend.mappers.merchant.MerchantMapper;
 import com.example.backend.mappers.warehouse.ItemTypeMapper;
-import com.example.backend.models.procurement.OfferItem;
+import com.example.backend.models.procurement.Offer.OfferItem;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;

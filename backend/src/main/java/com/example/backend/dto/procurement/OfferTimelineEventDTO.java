@@ -1,6 +1,6 @@
 package com.example.backend.dto.procurement;
 
-import com.example.backend.models.procurement.TimelineEventType;
+import com.example.backend.models.procurement.Offer.TimelineEventType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

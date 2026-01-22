@@ -777,6 +777,7 @@ export const ITEM_TYPE_ENDPOINTS = {
     CREATE: '/api/v1/itemTypes',
     UPDATE: (id) => `/api/v1/itemTypes/${id}`,
     DELETE: (id) => `/api/v1/itemTypes/${id}`,
+    DETAILS: (id) => `/api/v1/itemTypes/${id}/details`,  // ADD THIS
     ALL_TYPES: '/api/v1/item-types'
 };
 
@@ -994,17 +995,9 @@ export const LOAN_ENDPOINTS = {
     STATISTICS: '/api/v1/payroll/loans/statistics'
 };
 
-// Finance - Inventory Valuation Endpoints
+// Finance - Inventory Valuation Endpoints (Asset Values only)
 export const INVENTORY_VALUATION_ENDPOINTS = {
     BASE: '/api/finance/inventory-valuation',
-
-    // Pending Approvals
-    PENDING_APPROVALS: '/api/finance/inventory-valuation/pending-approvals',
-    PENDING_APPROVALS_BY_WAREHOUSE: (warehouseId) => `/api/finance/inventory-valuation/pending-approvals/warehouse/${warehouseId}`,
-
-    // Approval Actions
-    APPROVE_ITEM: (itemId) => `/api/finance/inventory-valuation/approve/${itemId}`,
-    APPROVE_BULK: '/api/finance/inventory-valuation/approve/bulk',
 
     // Warehouse Balances
     WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/balance`,
@@ -1014,9 +1007,27 @@ export const INVENTORY_VALUATION_ENDPOINTS = {
     SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/balance`,
     ALL_SITE_BALANCES: '/api/finance/inventory-valuation/sites/balances',
     RECALCULATE_SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/recalculate-balance`,
-    APPROVAL_HISTORY: '/api/finance/inventory-valuation/approval-history',
+
+    // Warehouse Details
     WAREHOUSE_ITEMS_BREAKDOWN: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/items-breakdown`,
-    WAREHOUSE_TRANSACTIONS: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/transactions`
+    WAREHOUSE_TRANSACTIONS: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/transactions`,
+    WAREHOUSE_ITEM_HISTORY: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/item-history`,
+};
+
+// Procurement - Price Approvals Endpoints
+export const PRICE_APPROVALS_ENDPOINTS = {
+    BASE: '/api/procurement/price-approvals',
+
+    // Pending Approvals
+    PENDING_APPROVALS: '/api/procurement/price-approvals/pending',
+    PENDING_APPROVALS_BY_WAREHOUSE: (warehouseId) => `/api/procurement/price-approvals/pending/warehouse/${warehouseId}`,
+
+    // Approval Actions
+    APPROVE_ITEM: (itemId) => `/api/procurement/price-approvals/approve/${itemId}`,
+    APPROVE_BULK: '/api/procurement/price-approvals/approve/bulk',
+
+    // History
+    APPROVAL_HISTORY: '/api/procurement/price-approvals/history'
 };
 
 // Finance - Equipment Finance Endpoints
