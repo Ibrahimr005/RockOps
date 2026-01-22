@@ -87,4 +87,7 @@ public class PaymentRequestResponseDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
+
+    private String requestOrderTitle;  // Title from RequestOrder via PurchaseOrder
+
 }
