@@ -61,5 +61,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     // Dashboard metrics methods
     long countByStatus(TransactionStatus status);
+
+    List<Transaction> findBySenderIdOrReceiverId(UUID senderId, UUID receiverId);
 }
 

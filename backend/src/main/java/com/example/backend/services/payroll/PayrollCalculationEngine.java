@@ -34,6 +34,7 @@ public class PayrollCalculationEngine {
     private final EmployeePayrollRepository employeePayrollRepository;
     private final PayrollRepository payrollRepository;
     private final PayrollLoanService loanService;
+    private final EmployeeDeductionService employeeDeductionService;
 
     /**
      * Main calculation method - delegates to contract-specific calculators
@@ -445,19 +446,93 @@ public class PayrollCalculationEngine {
 
     /**
      * Calculate other deductions (tax, insurance, pension, etc.)
+     * Now integrates with the EmployeeDeduction system for configured recurring deductions
      */
     private BigDecimal calculateOtherDeductions(EmployeePayroll ep) {
-        // Sum up all OTHER type deductions
-        BigDecimal total = ep.getDeductions().stream()
-                .filter(d -> d.getDeductionType() == PayrollDeduction.DeductionType.TAX ||
-                        d.getDeductionType() == PayrollDeduction.DeductionType.INSURANCE ||
-                        d.getDeductionType() == PayrollDeduction.DeductionType.PENSION ||
-                        d.getDeductionType() == PayrollDeduction.DeductionType.ADVANCE_SALARY ||
-                        d.getDeductionType() == PayrollDeduction.DeductionType.OTHER)
-                .map(PayrollDeduction::getDeductionAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal total = BigDecimal.ZERO;
+
+        // First, get configured employee deductions from the new system
+        List<EmployeeDeductionService.CalculatedDeduction> configuredDeductions =
+            employeeDeductionService.calculateDeductionsForPayroll(
+                ep.getEmployeeId(),
+                ep.getPayroll().getStartDate(),
+                ep.getPayroll().getEndDate(),
+                ep.getGrossPay(),
+                ep.getMonthlyBaseSalary()
+            );
+
+        // Track deduction IDs for recording
+        List<UUID> appliedDeductionIds = new java.util.ArrayList<>();
+
+        // Apply configured deductions (excluding loan deductions which are handled separately)
+        for (EmployeeDeductionService.CalculatedDeduction configured : configuredDeductions) {
+            // Skip loan deductions - they are handled in calculateLoanDeduction
+            if (configured.getCategory() == com.example.backend.models.payroll.DeductionType.DeductionCategory.LOANS) {
+                continue;
+            }
+
+            if (configured.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+                PayrollDeduction.DeductionType deductionType = mapCategoryToDeductionType(configured.getCategory());
+
+                PayrollDeduction deduction = PayrollDeduction.builder()
+                    .employeePayroll(ep)
+                    .deductionType(deductionType)
+                    .deductionAmount(configured.getAmount())
+                    .referenceId(configured.getDeductionId())
+                    .description(configured.getName())
+                    .calculationDetails("Configured deduction: " + configured.getCalculationMethod())
+                    .build();
+                ep.addDeduction(deduction);
+
+                total = total.add(configured.getAmount());
+                appliedDeductionIds.add(configured.getDeductionId());
+
+                log.debug("Applied configured deduction: {} - {} = {}",
+                    configured.getName(), configured.getCategory(), configured.getAmount());
+            }
+        }
+
+        // Record that deductions were applied (updates tracking in EmployeeDeduction)
+        if (!appliedDeductionIds.isEmpty()) {
+            employeeDeductionService.recordDeductionsApplied(
+                appliedDeductionIds,
+                ep.getPayroll().getEndDate()
+            );
+        }
+
+        // Also sum up any manually added deductions that were already on the employee payroll
+        BigDecimal manualDeductions = ep.getDeductions().stream()
+            .filter(d -> d.getReferenceId() == null) // Only manual deductions (not from configured system)
+            .filter(d -> d.getDeductionType() == PayrollDeduction.DeductionType.TAX ||
+                    d.getDeductionType() == PayrollDeduction.DeductionType.INSURANCE ||
+                    d.getDeductionType() == PayrollDeduction.DeductionType.PENSION ||
+                    d.getDeductionType() == PayrollDeduction.DeductionType.ADVANCE_SALARY ||
+                    d.getDeductionType() == PayrollDeduction.DeductionType.OTHER)
+            .map(PayrollDeduction::getDeductionAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        total = total.add(manualDeductions);
+
+        log.info("Total other deductions for {}: {} (configured: {}, manual: {})",
+            ep.getEmployeeName(), total,
+            total.subtract(manualDeductions), manualDeductions);
 
         return total.setScale(SCALE, ROUNDING_MODE);
+    }
+
+    /**
+     * Map DeductionType.DeductionCategory to PayrollDeduction.DeductionType
+     */
+    private PayrollDeduction.DeductionType mapCategoryToDeductionType(
+            com.example.backend.models.payroll.DeductionType.DeductionCategory category) {
+        return switch (category) {
+            case STATUTORY -> PayrollDeduction.DeductionType.TAX;
+            case BENEFITS -> PayrollDeduction.DeductionType.INSURANCE;
+            case LOANS -> PayrollDeduction.DeductionType.LOAN_REPAYMENT;
+            case VOLUNTARY -> PayrollDeduction.DeductionType.OTHER;
+            case GARNISHMENT -> PayrollDeduction.DeductionType.OTHER;
+            case OTHER -> PayrollDeduction.DeductionType.OTHER;
+        };
     }
 
     /**

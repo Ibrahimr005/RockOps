@@ -1,6 +1,6 @@
 # RockOps Frontend Knowledgebase
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-01-23
 **Version:** 1.0
 **Purpose:** Comprehensive documentation of the RockOps React frontend application architecture, components, patterns, and development guidelines.
 
@@ -1182,8 +1182,8 @@ const menuItems = [
 **Location**: `src/pages/HR/`
 
 **Employee Management**:
-- `EmployeesList.jsx` - All employees with DataTable
-- `EmployeeDetails.jsx` - Employee details with 10 tabs:
+- `EmployeesList.jsx` - All employees with DataTable (displays Employee # column with format `EMP-YYYY-#####`)
+- `EmployeeDetails.jsx` - Employee details with 10 tabs (shows Employee # in subtitle):
   1. Personal Info
   2. Employment Details
   3. Attendance History
@@ -1314,6 +1314,9 @@ const menuItems = [
 **Form Styles**:
 - `textarea-styles.scss` - Textarea styling
 - `form-validation.scss` - Validation indicators
+
+**HR Styles**:
+- `EmployeesList.scss` - Employee list styles including `.employee-number` (monospace, primary color styling)
 
 **Layout Styles**:
 - `dashboard-styles.scss` - Dashboard common styles
@@ -2595,6 +2598,44 @@ The `NotificationContext` automatically handles WebSocket connections and displa
 - [ ] No console.logs in production code
 - [ ] Comments for complex logic
 - [ ] Clean imports (no unused imports)
+
+---
+
+## Change Log
+
+### 2026-01-23 - Employee Number Display Enhancement
+
+**EmployeesList.jsx Changes:**
+- Added "Employee #" column with format `EMP-YYYY-#####`
+- Uses monospace font styling via `.employee-number` class
+- Column positioned after photo, before name
+- Displays dash (-) for employees without assigned numbers
+
+**EmployeeDetails.jsx Changes:**
+- Updated IntroCard subtitle to show employee number instead of UUID
+- Format: `Employee #: EMP-2025-00001 • Hired Jan 15, 2025 (1 year)`
+- Falls back to "N/A" if employee number is not set
+
+**EmployeesList.scss Changes:**
+- Added `.employee-number` class with:
+  - Monospace font family (`'SF Mono', 'Monaco', 'Consolas'`)
+  - Primary color with light background
+  - Badge-style padding and border-radius
+  - 0.85rem font size, 600 font weight
+
+**DataTable Column Configuration:**
+```jsx
+{
+    header: 'Employee #',
+    accessor: 'employeeNumber',
+    width: '140px',
+    render: (employee) => (
+        <span className="employee-number">
+            {employee.employeeNumber || '-'}
+        </span>
+    )
+}
+```
 
 ---
 

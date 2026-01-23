@@ -1,542 +1,906 @@
-// ==================== DEDUCTION MANAGEMENT STYLES ====================
-// frontend/src/pages/payroll/DeductionManagement/DeductionManagement.scss
+// ========================================
+// FILE: DeductionManagement.scss
+// Deduction Management Styles - Using Theme Variables
+// ========================================
 
 .deduction-management {
   padding: 1.5rem;
-  background-color: var(--page-background-color);
-  min-height: 100vh;
+  background-color: var(--main-background-color);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 
-  // ==================== TABS CONTAINER ====================
-
-
-  // ==================== TABS HEADER ====================
-
-
-  // ==================== EMPLOYEE INFO IN TABLES ====================
-  .employee-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-
-    .employee-name {
-      font-weight: 600;
-      color: var(--color-text-primary);
-      font-size: 0.9rem;
-    }
-
-    .employee-id {
-      font-size: 0.8rem;
-      color: var(--color-text-secondary);
-      opacity: 0.8;
-    }
-  }
-
-  // ==================== DEDUCTION TYPE INFO ====================
-  .deduction-type-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-
-    .type-name {
-      font-weight: 600;
-      color: var(--color-text-primary);
-      font-size: 0.9rem;
-    }
-
-    .type-category {
-      font-size: 0.8rem;
-      color: var(--color-text-secondary);
-      opacity: 0.8;
-      text-transform: capitalize;
-    }
-  }
-
-  // ==================== DEDUCTION AMOUNT ====================
-  .deduction-amount {
-    font-weight: 600;
-    color: var(--color-danger);
-    font-size: 0.9rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-  }
-
-  // ==================== EFFECTIVE PERIOD ====================
-  .effective-period {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    font-size: 0.85rem;
-
-    div:first-child {
-      color: var(--color-text-primary);
-      font-weight: 500;
-    }
-
-    div:last-child {
-      color: var(--color-text-secondary);
-      font-size: 0.8rem;
-    }
-  }
-
-  // ==================== STATUS BADGES ====================
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.375rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
-
-    &--success {
-      background: rgba(34, 197, 94, 0.1);
-      color: #16A34A;
-      border-color: rgba(34, 197, 94, 0.2);
-
-      [data-theme="dark"] & {
-        background: rgba(34, 197, 94, 0.2);
-        color: #4ADE80;
-        border-color: rgba(34, 197, 94, 0.3);
-      }
-    }
-
-    &--warning {
-      background: rgba(245, 158, 11, 0.1);
-      color: #D97706;
-      border-color: rgba(245, 158, 11, 0.2);
-
-      [data-theme="dark"] & {
-        background: rgba(245, 158, 11, 0.2);
-        color: #FBBF24;
-        border-color: rgba(245, 158, 11, 0.3);
-      }
-    }
-
-    &--secondary {
-      background: rgba(107, 114, 128, 0.1);
-      color: #374151;
-      border-color: rgba(107, 114, 128, 0.2);
-
-      [data-theme="dark"] & {
-        background: rgba(107, 114, 128, 0.2);
-        color: #9CA3AF;
-        border-color: rgba(107, 114, 128, 0.3);
-      }
-    }
-
-    &--danger {
-      background: rgba(239, 68, 68, 0.1);
-      color: #DC2626;
-      border-color: rgba(239, 68, 68, 0.2);
-
-      [data-theme="dark"] & {
-        background: rgba(239, 68, 68, 0.2);
-        color: #F87171;
-        border-color: rgba(239, 68, 68, 0.3);
-      }
-    }
-  }
-
-  // ==================== DESCRIPTION TEXT ====================
-  .description-text {
-    max-width: 250px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-    line-height: 1.4;
-
-    @media (max-width: 768px) {
-      max-width: 150px;
-    }
-  }
-
-  // ==================== SUMMARY CONTENT ====================
-  .summary-content-2 {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    padding: 1rem 0;
-  }
-
-  .summary-cards-2 {
+  // ========================================
+  // STATISTICS CARDS
+  // ========================================
+  .deduction-management-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
 
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-      gap: 1rem;
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: var(--section-background-color);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color-light);
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-fast) ease;
+
+      &:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+      }
+
+      .stat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        font-size: 20px;
+        color: var(--color-text-inverse);
+
+        &.total { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); }
+        &.active { background: linear-gradient(135deg, var(--color-success-light) 0%, var(--color-success-hover) 100%); }
+        &.loan { background: linear-gradient(135deg, var(--color-info-light) 0%, var(--color-info) 100%); }
+        &.other { background: linear-gradient(135deg, var(--color-view) 0%, var(--color-view-hover) 100%); }
+      }
+
+      .stat-content {
+        display: flex;
+        flex-direction: column;
+
+        .stat-value {
+          font-size: 24px;
+          font-weight: var(--bold-font-weight);
+          color: var(--color-text-primary);
+          line-height: 1.2;
+        }
+
+        .stat-label {
+          font-size: 13px;
+          color: var(--color-text-secondary);
+          margin-top: 4px;
+        }
+      }
     }
   }
 
-  .summary-card-2 {
-    background: var(--color-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
+  // ========================================
+  // TABS
+  // ========================================
+  .deduction-management-tabs {
+    display: flex;
+    gap: 8px;
+    background: var(--section-background-color);
+    padding: 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color-light);
 
-    &:hover {
-      border-color: var(--border-color-medium);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      transform: translateY(-2px);
-    }
-
-    .summary-card-header-2 {
+    .tab-btn {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border-color);
+      gap: 8px;
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast) ease;
 
-      h3 {
-        margin: 0;
-        font-size: 1.125rem;
-        font-weight: 700;
+      svg {
+        font-size: 16px;
+      }
+
+      &:hover {
+        background: var(--color-surface-hover);
         color: var(--color-text-primary);
       }
 
+      &.active {
+        background: var(--color-primary);
+        color: var(--color-text-inverse);
+      }
+    }
+  }
+
+  // ========================================
+  // CONTENT CONTAINER
+  // ========================================
+  .deduction-management-content {
+    background: var(--section-background-color);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color-light);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+
+    .table-container {
+      padding: 0;
+    }
+  }
+
+  // ========================================
+  // TABLE CELL STYLES
+  // ========================================
+  .type-code {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 13px;
+    font-weight: var(--bold-font-weight);
+    color: var(--color-primary);
+    background: var(--color-edit-bg);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+  }
+
+  .type-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .type-name {
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+    }
+
+    .system-badge {
+      font-size: 10px;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-info);
+      background: rgba(59, 130, 246, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+  }
+
+  .description-cell {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ========================================
+  // CATEGORY BADGE
+  // ========================================
+  .category-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: var(--bold-font-weight);
+  }
+
+  // ========================================
+  // BOOLEAN BADGE
+  // ========================================
+  .bool-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: var(--bold-font-weight);
+
+    &.yes {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--color-success-light);
+    }
+
+    &.no {
+      background: rgba(107, 114, 128, 0.1);
+      color: var(--color-text-secondary);
+    }
+  }
+
+  // ========================================
+  // STATUS BADGE
+  // ========================================
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: var(--bold-font-weight);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+
+    &.active {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--color-success-light);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    &.inactive {
+      background: rgba(107, 114, 128, 0.1);
+      color: var(--color-text-secondary);
+      border: 1px solid rgba(107, 114, 128, 0.2);
+    }
+  }
+
+  // ========================================
+  // ACTION BUTTON STYLES
+  // ========================================
+  .action-edit {
+    color: var(--color-warning-light);
+    &:hover { background: var(--color-edit-bg); }
+  }
+
+  .action-deactivate {
+    color: var(--color-danger-light);
+    &:hover { background: var(--color-delete-bg); }
+  }
+
+  .action-reactivate {
+    color: var(--color-success-light);
+    &:hover { background: rgba(16, 185, 129, 0.1); }
+  }
+
+  // ========================================
+  // CATEGORIES OVERVIEW
+  // ========================================
+  .categories-overview {
+    padding: 24px;
+
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .category-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: var(--color-surface-secondary);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color-light);
+      transition: all var(--transition-fast) ease;
+
+      &:hover {
+        border-color: var(--border-color-medium);
+        box-shadow: var(--shadow-sm);
+        transform: translateY(-2px);
+      }
+
+      .category-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        color: var(--color-text-inverse);
+        font-size: 20px;
+      }
+
+      .category-info {
+        display: flex;
+        flex-direction: column;
+
+        .category-name {
+          font-weight: var(--bold-font-weight);
+          color: var(--color-text-primary);
+          font-size: 15px;
+        }
+
+        .category-count {
+          color: var(--color-text-secondary);
+          font-size: 13px;
+          margin-top: 2px;
+        }
+      }
+    }
+  }
+
+  // ========================================
+  // EMPLOYEE DEDUCTIONS CONTAINER
+  // ========================================
+  .employee-deductions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+
+    .employee-selector-section {
+      background: var(--color-surface-secondary);
+      padding: 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color-light);
+
+      .selector-header {
+        margin-bottom: 16px;
+
+        h3 {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 0 0 4px 0;
+          font-size: 16px;
+          font-weight: var(--bold-font-weight);
+          color: var(--color-text-primary);
+
+          svg {
+            color: var(--color-primary);
+          }
+        }
+
+        p {
+          margin: 0;
+          font-size: 13px;
+          color: var(--color-text-secondary);
+        }
+      }
+
+      .selector-controls {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+
+        .search-input-wrapper {
+          position: relative;
+          flex: 1;
+          min-width: 200px;
+
+          .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-muted);
+            font-size: 14px;
+          }
+
+          .employee-search-input {
+            width: 100%;
+            padding: 10px 12px 10px 36px;
+            border: 2px solid var(--border-color-light);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: var(--color-surface);
+            color: var(--color-text-primary);
+            transition: border-color var(--transition-fast);
+
+            &:focus {
+              outline: none;
+              border-color: var(--color-primary);
+            }
+
+            &::placeholder {
+              color: var(--color-text-muted);
+            }
+          }
+        }
+
+        .employee-select {
+          flex: 2;
+          min-width: 300px;
+          padding: 10px 14px;
+          border: 2px solid var(--border-color-light);
+          border-radius: var(--radius-sm);
+          font-size: 14px;
+          background: var(--color-surface);
+          color: var(--color-text-primary);
+          cursor: pointer;
+          transition: border-color var(--transition-fast);
+
+          &:focus {
+            outline: none;
+            border-color: var(--color-primary);
+          }
+        }
+      }
+    }
+
+    .no-employee-selected {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      background: var(--color-surface-secondary);
+      border-radius: var(--radius-md);
+      border: 2px dashed var(--border-color-light);
+      text-align: center;
+
+      .placeholder-icon {
+        font-size: 48px;
+        color: var(--color-text-muted);
+        margin-bottom: 16px;
+      }
+
+      h4 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        color: var(--color-text-primary);
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--color-text-secondary);
+        max-width: 400px;
+      }
+    }
+  }
+
+  // ========================================
+  // EMPLOYEE DEDUCTIONS TABLE STYLES
+  // ========================================
+  .deduction-number {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 12px;
+    font-weight: var(--bold-font-weight);
+    color: var(--color-primary);
+  }
+
+  .method-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: capitalize;
+    background: var(--color-edit-bg);
+    color: var(--color-primary);
+  }
+
+  .frequency-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: capitalize;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-success-light);
+  }
+
+  .ongoing-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--color-info-light);
+  }
+
+  .amount-cell {
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-primary);
+  }
+
+  // ========================================
+  // EMPLOYEE DEDUCTION MODAL
+  // ========================================
+  .employee-deduction-modal {
+    max-width: 700px;
+
+    .modal-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
       svg {
-        font-size: 1.25rem;
         color: var(--color-primary);
       }
     }
 
-    .summary-card-content-2 {
+    .form-section {
+      background: var(--color-surface-secondary);
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+
+      h4 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--color-primary);
+
+        svg {
+          color: var(--color-primary);
+        }
+      }
+    }
+
+    .employee-preview {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, rgba(72, 128, 255, 0.08) 0%, rgba(72, 128, 255, 0.03) 100%);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(72, 128, 255, 0.2);
+
+      .employee-info {
+        h5 {
+          margin: 0 0 4px 0;
+          color: var(--color-text-primary);
+          font-weight: var(--bold-font-weight);
+          font-size: 15px;
+        }
+
+        p {
+          margin: 2px 0;
+          color: var(--color-text-secondary);
+          font-size: 13px;
+        }
+
+        .employee-number {
+          font-family: 'SF Mono', Monaco, Consolas, monospace;
+          font-size: 12px;
+          color: var(--color-primary);
+          font-weight: var(--bold-font-weight);
+        }
+      }
+    }
+
+    .field-hint {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+  }
+
+  // ========================================
+  // MODAL STYLES
+  // ========================================
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+
+  .type-modal {
+    background: var(--section-background-color);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 560px;
+    box-shadow: var(--shadow-md);
+    animation: modalSlideIn 0.2s ease;
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color-light);
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+      }
+
+      .close-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: transparent;
+        color: var(--color-text-secondary);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+
+        &:hover {
+          background: var(--color-danger-light);
+          color: var(--color-text-inverse);
+        }
+      }
+    }
+
+    .modal-body {
+      padding: 24px;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 20px;
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+
+        &.checkboxes {
+          display: flex;
+          gap: 24px;
+        }
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        label {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--color-text-primary);
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+          padding: 10px 14px;
+          border: 2px solid var(--border-color-light);
+          border-radius: var(--radius-sm);
+          font-size: 14px;
+          background: var(--color-surface);
+          color: var(--color-text-primary);
+          transition: border-color var(--transition-fast);
+
+          &:focus {
+            outline: none;
+            border-color: var(--color-primary);
+          }
+
+          &::placeholder {
+            color: var(--color-text-muted);
+          }
+        }
+
+        textarea {
+          resize: vertical;
+          min-height: 80px;
+          font-family: inherit;
+        }
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+
+        input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+          accent-color: var(--color-primary);
+          cursor: pointer;
+        }
+
+        span {
+          font-size: 14px;
+          color: var(--color-text-primary);
+        }
+      }
     }
-  }
 
-  .stat-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border-color-light);
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    .stat-label {
-      font-size: 0.875rem;
-      color: var(--color-text-secondary);
-      font-weight: 500;
-    }
-
-    .stat-value {
-      font-size: 0.9rem;
-      color: var(--color-text-primary);
-      font-weight: 700;
-    }
-  }
-
-  .action-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.875rem 1rem;
-    background: var(--color-surface-hover);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--color-text-primary);
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-
-    &:hover {
-      background: var(--color-primary);
-      color: var(--color-text-inverse);
-      border-color: var(--color-primary);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
-    }
-
-    svg {
-      font-size: 1rem;
-      flex-shrink: 0;
-    }
-  }
-
-  // ==================== BULK ACTIONS FLOATING BUTTON ====================
-  .bulk-actions-floating {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    z-index: 1000;
-
-    .bulk-action-btn {
+    .modal-footer {
       display: flex;
+      justify-content: flex-end;
       align-items: center;
-      gap: 0.5rem;
-      padding: 1rem 1.5rem;
-      background: var(--color-primary);
-      color: white;
-      border: none;
-      border-radius: 50px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      box-shadow:
-              0 10px 25px rgba(0, 0, 0, 0.15),
-              0 4px 10px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
-      cursor: pointer;
-
-      &:hover {
-        background: var(--color-primary-dark);
-        transform: translateY(-2px);
-        box-shadow:
-                0 15px 35px rgba(0, 0, 0, 0.2),
-                0 6px 15px rgba(0, 0, 0, 0.15);
-      }
-
-      &:active {
-        transform: translateY(0);
-      }
-
-      svg {
-        font-size: 1.1rem;
-      }
-    }
-
-    @media (max-width: 768px) {
-      bottom: 1rem;
-      right: 1rem;
-
-      .bulk-action-btn {
-        padding: 0.875rem 1.25rem;
-        font-size: 0.85rem;
-      }
+      gap: 12px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-color-light);
+      background: var(--color-surface-secondary);
     }
   }
 
-  // ==================== TABLE CUSTOMIZATIONS ====================
-  .deduction-table,
-  .deduction-types-table {
-    .rockops-table__container {
-      background: var(--color-surface);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow:
-              0 4px 6px rgba(0, 0, 0, 0.05),
-              0 1px 3px rgba(0, 0, 0, 0.1);
-      border: 1px solid var(--border-color);
+  .modal-content {
+    background: var(--section-background-color);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 700px;
+    box-shadow: var(--shadow-md);
+    animation: modalSlideIn 0.2s ease;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color-light);
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+      }
+
+      .btn-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: transparent;
+        color: var(--color-text-secondary);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+
+        &:hover {
+          background: var(--color-danger-light);
+          color: var(--color-text-inverse);
+        }
+      }
     }
 
-    // Custom styling for checkboxes
-    input[type="checkbox"] {
-      width: 1.1rem;
-      height: 1.1rem;
-      accent-color: var(--color-primary);
-      cursor: pointer;
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+
+        &.checkboxes {
+          display: flex;
+          gap: 24px;
+        }
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        label {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--color-text-primary);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+          padding: 10px 14px;
+          border: 2px solid var(--border-color-light);
+          border-radius: var(--radius-sm);
+          font-size: 14px;
+          background: var(--color-surface);
+          color: var(--color-text-primary);
+          transition: border-color var(--transition-fast);
+
+          &:focus {
+            outline: none;
+            border-color: var(--color-primary);
+          }
+
+          &:disabled {
+            background: var(--color-surface-disabled);
+            color: var(--color-text-disabled);
+            cursor: not-allowed;
+          }
+
+          &::placeholder {
+            color: var(--color-text-muted);
+          }
+        }
+
+        textarea {
+          resize: vertical;
+          min-height: 80px;
+          font-family: inherit;
+        }
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+
+        input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+          accent-color: var(--color-primary);
+          cursor: pointer;
+        }
+
+        span {
+          font-size: 14px;
+          color: var(--color-text-primary);
+        }
+      }
     }
 
-    // Enhanced action buttons
-    .rockops-table__actions {
-      .action-btn {
-        &.view {
-          color: var(--color-info);
-          &:hover {
-            background: rgba(59, 130, 246, 0.1);
-          }
-        }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-color-light);
+      background: var(--color-surface-secondary);
 
-        &.edit {
-          color: var(--color-warning);
-          &:hover {
-            background: rgba(245, 158, 11, 0.1);
-          }
-        }
+      .btn-cancel {
+        padding: 10px 20px;
+        border: 2px solid var(--border-color-light);
+        background: transparent;
+        color: var(--color-text-secondary);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all var(--transition-fast);
 
-        &.warning {
-          color: var(--color-warning);
-          &:hover {
-            background: rgba(245, 158, 11, 0.1);
-          }
+        &:hover {
+          background: var(--color-surface-hover);
+          border-color: var(--color-text-secondary);
         }
+      }
 
-        &.danger {
-          color: var(--color-danger);
-          &:hover {
-            background: rgba(239, 68, 68, 0.1);
-          }
+      .btn-save {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border: none;
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        color: var(--color-text-inverse);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all var(--transition-fast);
+
+        &:hover:not(:disabled) {
+          background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+          transform: translateY(-1px);
         }
 
         &:disabled {
-          opacity: 0.4;
+          opacity: 0.6;
           cursor: not-allowed;
-          pointer-events: none;
         }
       }
     }
   }
 
-  // ==================== RESPONSIVE DESIGN ====================
-  @media (max-width: 1024px) {
-    padding: 1rem;
-    gap: 1.25rem;
-
-    .tabs-container {
-      border-radius: 8px;
-    }
-
-    .tab-content {
-      padding: 1.25rem;
-    }
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.75rem;
-    gap: 1rem;
-
-    .tabs-header {
-      .tab-button {
-        padding: 1rem 1.25rem;
-        font-size: 0.85rem;
-        gap: 0.5rem;
-
-        svg {
-          font-size: 1rem;
-        }
-
-        .tab-count {
-          font-size: 0.7rem;
-          padding: 0.2rem 0.4rem;
-        }
-      }
-    }
-
-    .tab-content {
-      padding: 1rem;
-    }
-
-    .employee-info {
-      .employee-name {
-        font-size: 0.85rem;
-      }
-
-      .employee-id {
-        font-size: 0.75rem;
-      }
-    }
-
-    .deduction-type-info {
-      .type-name {
-        font-size: 0.85rem;
-      }
-
-      .type-category {
-        font-size: 0.75rem;
-      }
-    }
-
-    .effective-period {
-      font-size: 0.8rem;
-
-      div:last-child {
-        font-size: 0.75rem;
-      }
-    }
-
-    .status-badge {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.7rem;
-    }
-
-    .summary-cards {
-      grid-template-columns: 1fr;
-    }
-
-    .summary-card {
-      padding: 1rem;
-
-      .summary-card-header {
-        margin-bottom: 1rem;
-        padding-bottom: 0.75rem;
-
-        h3 {
-          font-size: 1rem;
-        }
-
-        svg {
-          font-size: 1.125rem;
-        }
-      }
-    }
-
-    .action-btn {
-      padding: 0.75rem;
-      font-size: 0.8rem;
-    }
-  }
-
-  @media (max-width: 480px) {
-    padding: 0.5rem;
-
-    .tabs-header {
-      .tab-button {
-        padding: 0.875rem 1rem;
-        font-size: 0.8rem;
-        gap: 0.375rem;
-
-        svg {
-          font-size: 0.9rem;
-        }
-
-        .tab-count {
-          font-size: 0.65rem;
-          padding: 0.15rem 0.35rem;
-        }
-      }
-    }
-
-    .tab-content {
-      padding: 0.75rem;
-    }
-
-    .description-text {
-      max-width: 120px;
-      font-size: 0.8rem;
-    }
-  }
-
-  // ==================== ANIMATIONS ====================
-  .fade-in {
-    animation: fadeIn 0.3s ease-in-out;
-  }
-
-  .slide-up {
-    animation: slideUp 0.4s ease-out;
-  }
-
-  @keyframes fadeIn {
+  // ========================================
+  // ANIMATIONS
+  // ========================================
+  @keyframes modalSlideIn {
     from {
       opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(-20px);
     }
     to {
       opacity: 1;
@@ -544,205 +908,121 @@
     }
   }
 
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.7;
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  // ========================================
+  // RESPONSIVE DESIGN
+  // ========================================
+  @media (max-width: 1200px) {
+    .deduction-management-stats {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 
-  // ==================== DARK THEME ENHANCEMENTS ====================
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .deduction-management-stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+
+      .stat-card {
+        padding: 16px;
+
+        .stat-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 16px;
+        }
+
+        .stat-content .stat-value {
+          font-size: 20px;
+        }
+      }
+    }
+
+    .deduction-management-tabs {
+      .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+      }
+    }
+
+    .categories-overview {
+      padding: 16px;
+
+      .categories-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .type-modal {
+      margin: 16px;
+      max-width: calc(100% - 32px);
+
+      .modal-body {
+        padding: 16px;
+
+        .form-row {
+          grid-template-columns: 1fr;
+
+          &.checkboxes {
+            flex-direction: column;
+            gap: 12px;
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .deduction-management-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .deduction-management-tabs {
+      flex-direction: column;
+
+      .tab-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+
+  // ========================================
+  // DARK THEME SUPPORT
+  // ========================================
   [data-theme="dark"] & {
-    .tabs-container {
+    .deduction-management-stats .stat-card {
       background: var(--color-surface);
-      border-color: var(--border-color);
-      box-shadow:
-              0 4px 6px rgba(0, 0, 0, 0.2),
-              0 1px 3px rgba(0, 0, 0, 0.15);
     }
 
-    .tabs-header {
+    .deduction-management-tabs {
       background: var(--color-surface);
-      border-bottom-color: var(--border-color);
-
-      .tab-button {
-        &:hover:not(.active) {
-          background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08) 0%, rgba(var(--primary-rgb), 0.04) 100%);
-        }
-
-        &.active {
-          background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.15) 0%, rgba(var(--primary-rgb), 0.08) 100%);
-        }
-      }
     }
 
-    .summary-card {
+    .deduction-management-content {
       background: var(--color-surface);
-      border-color: var(--border-color);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-      &:hover {
-        border-color: var(--border-color-medium);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      }
+    .type-modal {
+      background: var(--color-surface);
 
-      .summary-card-header {
-        border-bottom-color: var(--border-color);
+      .modal-footer {
+        background: var(--color-surface-secondary);
       }
     }
 
-    .action-btn {
-      background: var(--color-surface-hover);
-      border-color: var(--border-color);
-
-      &:hover {
-        box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.4);
-      }
-    }
-
-    .deduction-table,
-    .deduction-types-table {
-      .rockops-table__container {
-        background: var(--color-surface);
-        border-color: var(--border-color);
-        box-shadow:
-                0 4px 6px rgba(0, 0, 0, 0.2),
-                0 1px 3px rgba(0, 0, 0, 0.15);
-      }
-    }
-
-    .bulk-actions-floating {
-      .bulk-action-btn {
-        box-shadow:
-                0 10px 25px rgba(0, 0, 0, 0.3),
-                0 4px 10px rgba(0, 0, 0, 0.2);
-
-        &:hover {
-          box-shadow:
-                  0 15px 35px rgba(0, 0, 0, 0.4),
-                  0 6px 15px rgba(0, 0, 0, 0.25);
-        }
-      }
-    }
-  }
-
-  // ==================== LOADING STATES ====================
-  .loading-shimmer {
-    background: linear-gradient(
-                    90deg,
-                    var(--color-surface) 25%,
-                    var(--color-surface-hover) 50%,
-                    var(--color-surface) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
-  }
-
-  // ==================== ACCESSIBILITY IMPROVEMENTS ====================
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  // Focus visible improvements
-  *:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-
-  // Improved button focus
-  button:focus-visible {
-    outline-offset: 3px;
-  }
-
-  // High contrast mode support
-  @media (prefers-contrast: high) {
-    .status-badge {
-      border-width: 2px;
-    }
-
-    .tabs-header .tab-button.active {
-      border-bottom-width: 4px;
-    }
-
-    .bulk-action-btn {
-      border: 2px solid var(--color-primary-dark);
-    }
-
-    .action-btn {
-      border-width: 2px;
-    }
-  }
-
-  // Reduced motion support
-  @media (prefers-reduced-motion: reduce) {
-    .fade-in,
-    .slide-up {
-      animation: none;
-    }
-
-    .loading-shimmer {
-      animation: none;
-    }
-
-    .bulk-action-btn,
-    .action-btn,
-    .tab-button {
-      transition: none;
-    }
-
-    .summary-card {
-      transition: none;
-
-      &:hover {
-        transform: none;
-      }
-    }
-  }
-
-  // ==================== PRINT STYLES ====================
-  @media print {
-    .tabs-container {
-      box-shadow: none;
-      border: 1px solid #000;
-    }
-
-    .tabs-header .tab-button {
-      color: #000 !important;
-      background: none !important;
-      border-bottom: 1px solid #000;
-    }
-
-    .bulk-actions-floating {
-      display: none;
-    }
-
-    .action-btn {
-      display: none;
-    }
-
-    .summary-card {
-      border: 1px solid #000;
-      box-shadow: none;
+    .categories-overview .category-card {
+      background: var(--color-surface);
     }
   }
 }

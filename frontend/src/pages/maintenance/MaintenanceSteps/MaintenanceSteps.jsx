@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar, FaTools, FaTimes, FaEllipsisV, FaPlus, FaSearch, FaFilter, FaClipboardList } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar, FaTools, FaTimes, FaEllipsisV, FaPlus, FaSearch, FaFilter, FaClipboardList, FaHourglassHalf } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -9,6 +9,8 @@ import CompleteStepModal from './CompleteStepModal';
 import '../../../styles/status-badges.scss';
 import './MaintenanceSteps.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
+
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     const location = useLocation();
@@ -30,6 +32,10 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     const [stepToComplete, setStepToComplete] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeMenuId, setActiveMenuId] = useState(null);
+
+    // Delete Confirmation State
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [stepToDelete, setStepToDelete] = useState(null);
 
     const { showSuccess, showError, showInfo, showWarning } = useSnackbar();
     const { currentUser } = useAuth();
@@ -135,10 +141,18 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
         setActiveMenuId(null);
     };
 
-    const handleDeleteStep = async (id) => {
+    const confirmDeleteStep = (step) => {
+        setStepToDelete(step);
+        setShowDeleteConfirm(true);
+        setActiveMenuId(null);
+    };
+
+    const handleDeleteStep = async () => {
+        if (!stepToDelete) return;
+
         try {
             setLoading(true);
-            await maintenanceService.deleteStep(id);
+            await maintenanceService.deleteStep(stepToDelete.id);
             showSuccess('Maintenance step deleted successfully');
             loadMaintenanceSteps();
             if (onStepUpdate) onStepUpdate();
@@ -148,18 +162,19 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
 
             if (error.response?.data?.error) {
                 errorMessage = error.response.data.error;
-            } else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.message) {
-                errorMessage = error.message;
             }
-
             showError(errorMessage);
         } finally {
             setLoading(false);
-            setActiveMenuId(null);
+            setShowDeleteConfirm(false);
+            setStepToDelete(null);
         }
     };
+
+    // ... (rest of the file remains same, need to find the place where handleDeleteStep was originally called)
+    // Wait, I need to replace the original handleDeleteStep and add the dialog render logic at the end.
+    // I will use replace_file_content carefully.
+
 
     const handleCompleteStep = (step) => {
         setStepToComplete(step);
@@ -391,14 +406,10 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     return (
         <div className="maintenance-steps-view">
             <div className="intro-card-wrapper">
-                {/* Using standard page header if IntroCard is not suitable or available context is limited, 
-                     but user asked for DirectPurchaseDetailView look. DirectPurchase uses IntroCard. 
-                     We need to import IntroCard. I'll stick to the requested look. 
-                  */}
+                {/* Using standard page header if IntroCard is not suitable or available context is limited */}
             </div>
 
             <div className="detail-content">
-                {/* Header Card similar to DirectPurchaseDetailView's IntroCard equivalent or header section */}
                 <div className="info-card header-card">
                     <div className="header-content">
                         <div className="header-left">
@@ -410,14 +421,23 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                             )}
                         </div>
                         <div className="header-right">
-                            {!maintenanceRecord?.status || maintenanceRecord.status !== 'COMPLETED' ? (
+                            {(!maintenanceRecord?.status || maintenanceRecord.status !== 'COMPLETED') && (
                                 <button
-                                    className="add-step-btn"
+                                    className={`add-step-btn ${maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL' || maintenanceRecord?.status === 'REJECTED' ? 'pending-state' : ''}`}
                                     onClick={() => handleOpenModal()}
+                                    disabled={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL' || maintenanceRecord?.status === 'REJECTED'}
+                                    title={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
+                                        ? "Cannot add steps while pending approval"
+                                        : (maintenanceRecord?.status === 'REJECTED' ? "Cannot add steps to rejected record. Please Resubmit." : "Add a new maintenance step")}
                                 >
-                                    <FaPlus /> New Step
+                                    {maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
+                                        ? <FaHourglassHalf />
+                                        : <FaPlus />}
+                                    {maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
+                                        ? " Pending Approval"
+                                        : " New Step"}
                                 </button>
-                            ) : null}
+                            )}
                         </div>
                     </div>
 
@@ -515,11 +535,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                                                                 {!step.isCompleted && (
                                                                     <button
                                                                         className="menu-item danger"
-                                                                        onClick={() => {
-                                                                            if (window.confirm(`Are you sure you want to delete this maintenance step?`)) {
-                                                                                handleDeleteStep(step.id);
-                                                                            }
-                                                                        }}
+                                                                        onClick={() => confirmDeleteStep(step)}
                                                                     >
                                                                         <FaTrash /> Delete
                                                                     </button>
@@ -557,7 +573,6 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                                                     </div>
                                                 )}
 
-                                                {/* Logic Fix: Show From AND To for Transport */}
                                                 {(isTransport || step.fromLocation) && (
                                                     <div className="step-info-item">
                                                         <label>{isTransport ? 'From Location' : 'Current Location'}</label>
@@ -611,7 +626,6 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 </div>
             </div>
 
-            {/* Modals */}
             {isModalOpen && (
                 <MaintenanceStepModal
                     isOpen={isModalOpen}
@@ -639,8 +653,20 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 />
             )}
 
+            <ConfirmationDialog
+                isVisible={showDeleteConfirm}
+                type="delete"
+                title="Delete Maintenance Step"
+                message={`Are you sure you want to delete this ${stepToDelete?.stepType?.replace('_', ' ') || 'maintenance'} step? This action cannot be undone.`}
+                confirmText="Delete Step"
+                cancelText="Cancel"
+                onConfirm={handleDeleteStep}
+                onCancel={() => setShowDeleteConfirm(false)}
+                isLoading={loading}
+            />
+
             {viewModalOpen && selectedStep && (
-                <div className="modal-backdrop" onClick={() => setViewModalOpen(false)}>
+                <div className="modal-backdrop">
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>Step Details: {selectedStep.stepType}</h2>

@@ -170,26 +170,6 @@ const PayrollCycles = () => {
                 </span>
             ),
         },
-        {
-            id: 'locked',
-            header: 'Locked',
-            accessor: 'lockedAt',
-            render: (row) => (
-                <div className="lock-status">
-                    {row.lockedAt ? (
-                        <>
-                            <FaLock className="locked" />
-                            <span className="locked-text">Locked</span>
-                        </>
-                    ) : (
-                        <>
-                            <FaUnlock className="unlocked" />
-                            <span className="unlocked-text">Unlocked</span>
-                        </>
-                    )}
-                </div>
-            ),
-        },
     ];
 
     const actions = [
@@ -203,6 +183,8 @@ const PayrollCycles = () => {
                     return;
                 }
                 setDeleteDialog({ open: true, payrollId: row.id });
+
+
             },
             variant: 'danger',
             condition: (row) => !row.lockedAt,

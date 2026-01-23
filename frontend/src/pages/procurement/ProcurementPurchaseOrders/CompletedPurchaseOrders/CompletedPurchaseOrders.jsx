@@ -20,8 +20,9 @@ const CompletedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCh
 
 
     const handleRowClick = (row) => {
-        setSelectedPurchaseOrder(row);
-        setShowViewModal(true);
+        navigate(`/procurement/purchase-orders/details/${row.id}`, {
+            state: { from: 'procurement' }
+        });
     };
 
     const handleCloseModal = () => {

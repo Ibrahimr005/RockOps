@@ -3,6 +3,7 @@ package com.example.backend.services.procurement;
 import com.example.backend.dto.procurement.ResolveIssueRequest;
 import com.example.backend.models.procurement.*;
 import com.example.backend.repositories.procurement.*;
+import com.example.backend.services.finance.refunds.RefundRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,9 +20,13 @@ public class IssueResolutionService {
     private final PurchaseOrderIssueRepository issueRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
+    private final RefundRequestService refundRequestService;  // ADD THIS LINE
 
     @Transactional
     public void resolveIssues(List<ResolveIssueRequest> requests, String resolvedBy) {
+
+        List<PurchaseOrderIssue> resolvedIssues = new java.util.ArrayList<>();
+
         for (ResolveIssueRequest request : requests) {
             PurchaseOrderIssue issue = issueRepository.findById(request.getIssueId())
                     .orElseThrow(() -> new RuntimeException("Issue not found"));
@@ -31,7 +37,8 @@ public class IssueResolutionService {
             issue.setResolutionNotes(request.getResolutionNotes());
             issue.setIssueStatus(IssueStatus.RESOLVED);
 
-            issueRepository.save(issue);
+            PurchaseOrderIssue savedIssue = issueRepository.save(issue);
+            resolvedIssues.add(savedIssue);
         }
 
         // Update statuses
@@ -41,7 +48,19 @@ public class IssueResolutionService {
             updateItemStatuses(po);
             updatePOStatus(po);
             purchaseOrderRepository.save(po);
+
+            // Create refund requests asynchronously for REFUND resolutions
+            List<PurchaseOrderIssue> refundIssues = resolvedIssues.stream()
+                    .filter(issue -> issue.getResolutionType() == PurchaseOrderResolutionType.REFUND)
+                    .collect(Collectors.toList());
+
+            if (!refundIssues.isEmpty()) {
+//                log.info("Found {} refund issues, creating refund requests...", refundIssues.size());
+                refundRequestService.createRefundRequestsFromIssues(po.getId(), refundIssues);
+            }
         }
+
+
     }
 
     private void updateItemStatuses(PurchaseOrder po) {
@@ -105,21 +124,30 @@ public class IssueResolutionService {
     }
 
     private void updatePOStatus(PurchaseOrder po) {
-        boolean anyDisputed = po.getPurchaseOrderItems().stream()
-                .anyMatch(item -> "DISPUTED".equals(item.getStatus()));
+        boolean hasItemsToArrive = false;
+        boolean hasDisputedItems = false;
 
-        if (anyDisputed) {
-            po.setStatus("DISPUTED");
-            return;
+        for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
+            // Check if item has disputed/unresolved issues
+            if ("DISPUTED".equals(item.getStatus())) {
+                hasDisputedItems = true;
+            }
+
+            // Check if item still needs delivery
+            if (!"COMPLETED".equals(item.getStatus())) {
+                hasItemsToArrive = true;
+            }
         }
 
-        boolean allCompleted = po.getPurchaseOrderItems().stream()
-                .allMatch(item -> "COMPLETED".equals(item.getStatus()));
-
-        if (allCompleted) {
-            po.setStatus("COMPLETED");
+        // Set status based on conditions
+        if (hasDisputedItems && hasItemsToArrive) {
+            po.setStatus("PARTIAL_DISPUTED"); // Both conditions
+        } else if (hasDisputedItems) {
+            po.setStatus("DISPUTED"); // Only issues
+        } else if (hasItemsToArrive) {
+            po.setStatus("PARTIAL"); // Only pending items
         } else {
-            po.setStatus("PARTIAL");
+            po.setStatus("COMPLETED"); // Everything done
         }
     }
 }

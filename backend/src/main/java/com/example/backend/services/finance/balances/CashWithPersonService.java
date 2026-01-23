@@ -29,6 +29,9 @@ public class CashWithPersonService {
                 .personalBankAccountNumber(requestDTO.getPersonalBankAccountNumber())
                 .personalBankName(requestDTO.getPersonalBankName())
                 .currentBalance(requestDTO.getCurrentBalance())
+                .availableBalance(requestDTO.getCurrentBalance())  // ADD THIS LINE
+                .totalBalance(requestDTO.getCurrentBalance())      // ADD THIS LINE
+                .reservedBalance(BigDecimal.ZERO)
                 .isActive(requestDTO.getIsActive() != null ? requestDTO.getIsActive() : true)
                 .notes(requestDTO.getNotes())
                 .createdBy(createdBy)

@@ -35,7 +35,6 @@ public class RequestOrderService {
     @Autowired
     private NotificationService notificationService;
 
-
     public RequestOrder createRequest(Map<String, Object> requestData) {
         try {
             System.out.println("Creating request with data: " + requestData);
@@ -44,26 +43,43 @@ public class RequestOrderService {
             String title = (String) requestData.get("title");
             String description = (String) requestData.get("description");
             String createdBy = (String) requestData.get("createdBy");
-            String statusStr = (String) requestData.get("status");
+            String status = (String) requestData.get("status");
             String partyTypeStr = (String) requestData.get("partyType");
             String requesterIdStr = (String) requestData.get("requesterId");
 
-            // Validate required fields
-            if (title == null || description == null || createdBy == null ||
-                    statusStr == null || partyTypeStr == null || requesterIdStr == null) {
-                throw new RuntimeException("Missing required fields");
+            // Validate status
+            if (status == null || status.trim().isEmpty()) {
+                throw new RuntimeException("Status is required");
             }
 
-            UUID requesterId;
-            try {
-                requesterId = UUID.fromString(requesterIdStr);
-            } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Invalid requesterId format: " + requesterIdStr);
+            // For DRAFT status, only title and createdBy are required
+            // For other statuses, all fields are required
+            if ("DRAFT".equalsIgnoreCase(status)) {
+                if (title == null || title.trim().isEmpty() || createdBy == null) {
+                    throw new RuntimeException("Title and createdBy are required for drafts");
+                }
+            } else {
+                if (title == null || description == null || createdBy == null ||
+                        status == null || partyTypeStr == null || requesterIdStr == null) {
+                    throw new RuntimeException("Missing required fields");
+                }
             }
 
-// Check for duplicate title and requesterId in PENDING status
-            if (requestOrderRepository.existsByTitleAndRequesterIdAndStatusPending(title.trim(), requesterId)) {
-                throw new RuntimeException("A request order with the title '" + title + "' already exists for this requester. Please use a different title or change the requester.");
+            // Parse requesterId (can be null for drafts)
+            UUID requesterId = null;
+            if (requesterIdStr != null && !requesterIdStr.trim().isEmpty()) {
+                try {
+                    requesterId = UUID.fromString(requesterIdStr);
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Invalid requesterId format: " + requesterIdStr);
+                }
+            }
+
+            // Check for duplicate title only if not draft and requesterId exists
+            if (!"DRAFT".equalsIgnoreCase(status) && requesterId != null) {
+                if (requestOrderRepository.existsByTitleAndRequesterIdAndStatusPending(title.trim(), requesterId)) {
+                    throw new RuntimeException("A request order with the title '" + title + "' already exists for this requester. Please use a different title or change the requester.");
+                }
             }
 
             // Handle employeeRequestedBy (can be null)
@@ -73,20 +89,16 @@ public class RequestOrderService {
                 employeeRequestedBy = employeeRequestedByStr;
             }
 
-            // Handle deadline parsing
+            // Handle deadline parsing (can be null for drafts)
             String deadlineStr = (String) requestData.get("deadline");
             LocalDateTime deadline = null;
             if (deadlineStr != null && !deadlineStr.trim().isEmpty()) {
                 try {
-                    // Handle different date formats
                     if (deadlineStr.contains("T")) {
-                        // Format from datetime-local input: "2024-01-15T14:30"
                         deadline = LocalDateTime.parse(deadlineStr);
                     } else if (deadlineStr.contains("Z")) {
-                        // ISO format with timezone: "2024-01-15T14:30:00.000Z"
                         deadline = LocalDateTime.parse(deadlineStr.replace("Z", ""));
                     } else {
-                        // Try parsing as ISO format without Z
                         deadline = LocalDateTime.parse(deadlineStr);
                     }
                 } catch (Exception e) {
@@ -95,107 +107,106 @@ public class RequestOrderService {
                 }
             }
 
-            // Parse enums with error handling
-            RequestStatus status;
-            PartyType partyType;
-            try {
-                status = RequestStatus.valueOf(statusStr.toUpperCase());
-                partyType = PartyType.valueOf(partyTypeStr.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Invalid status or partyType: " + statusStr + ", " + partyTypeStr);
+            // Parse partyType (can be null for drafts)
+            PartyType partyType = null;
+            if (partyTypeStr != null && !partyTypeStr.trim().isEmpty()) {
+                try {
+                    partyType = PartyType.valueOf(partyTypeStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Invalid partyType: " + partyTypeStr);
+                }
             }
 
-            // Determine requester name from partyType and requesterId
-            String requesterName;
-            try {
-                if (partyType == PartyType.WAREHOUSE) {
-                    Warehouse warehouse = warehouseRepository.findById(requesterId)
-                            .orElseThrow(() -> new RuntimeException("Warehouse not found: " + requesterId));
+            // Determine requester name (can be null for drafts)
+            // Determine requester name (can be null for drafts)
+            String requesterName = null;
+            if (requesterId != null && partyType == PartyType.WAREHOUSE) {
+                try {
+                    final UUID finalRequesterId = requesterId; // Make it final for lambda
+                    Warehouse warehouse = warehouseRepository.findById(finalRequesterId)
+                            .orElseThrow(() -> new RuntimeException("Warehouse not found: " + finalRequesterId));
                     requesterName = warehouse.getName();
-                } else {
-                    throw new RuntimeException("Unsupported party type: " + partyType);
+                } catch (Exception e) {
+                    System.err.println("Error finding requester: " + e.getMessage());
+                    throw new RuntimeException("Failed to find requester with ID: " + requesterId);
                 }
-            } catch (Exception e) {
-                System.err.println("Error finding requester: " + e.getMessage());
-                throw new RuntimeException("Failed to find requester with ID: " + requesterId);
             }
 
             // Create the RequestOrder
             RequestOrder requestOrder = RequestOrder.builder()
                     .title(title)
-                    .description(description)
+                    .description(description != null ? description : "")
                     .createdAt(LocalDateTime.now())
                     .createdBy(createdBy)
-                    .status(String.valueOf(status))
-                    .partyType(String.valueOf(partyType))
+                    .status(status.toUpperCase())
+                    .partyType(partyType != null ? String.valueOf(partyType) : null)
                     .requesterId(requesterId)
                     .requesterName(requesterName)
                     .employeeRequestedBy(employeeRequestedBy)
                     .deadline(deadline)
                     .build();
 
-            // Handle items
+            // Handle items (optional for drafts)
             Object itemsObj = requestData.get("items");
-            if (itemsObj == null) {
-                throw new RuntimeException("Items list is required");
-            }
-
-            List<Map<String, Object>> itemsData;
-            try {
-                itemsData = (List<Map<String, Object>>) itemsObj;
-            } catch (ClassCastException e) {
-                throw new RuntimeException("Invalid items data format");
-            }
-
-            if (itemsData.isEmpty()) {
-                throw new RuntimeException("At least one item is required");
-            }
-
             List<RequestOrderItem> items = new ArrayList<>();
 
-            for (int i = 0; i < itemsData.size(); i++) {
-                final int itemIndex = i; // Create final variable for lambda
-                Map<String, Object> itemData = itemsData.get(i);
+            if (itemsObj != null) {
+                List<Map<String, Object>> itemsData;
                 try {
-                    String itemTypeIdStr = (String) itemData.get("itemTypeId");
-                    Object quantityObj = itemData.get("quantity");
-                    String comment = (String) itemData.get("comment");
+                    itemsData = (List<Map<String, Object>>) itemsObj;
+                } catch (ClassCastException e) {
+                    throw new RuntimeException("Invalid items data format");
+                }
 
-                    if (itemTypeIdStr == null || quantityObj == null) {
-                        throw new RuntimeException("Item " + (itemIndex + 1) + ": itemTypeId and quantity are required");
-                    }
+                // For non-draft status, at least one item is required
+                if (!"DRAFT".equalsIgnoreCase(status) && itemsData.isEmpty()) {
+                    throw new RuntimeException("At least one item is required");
+                }
 
-                    UUID itemTypeId;
+                for (int i = 0; i < itemsData.size(); i++) {
+                    final int itemIndex = i;
+                    Map<String, Object> itemData = itemsData.get(i);
                     try {
-                        itemTypeId = UUID.fromString(itemTypeIdStr);
-                    } catch (IllegalArgumentException e) {
-                        throw new RuntimeException("Item " + (itemIndex + 1) + ": Invalid itemTypeId format: " + itemTypeIdStr);
-                    }
+                        String itemTypeIdStr = (String) itemData.get("itemTypeId");
+                        Object quantityObj = itemData.get("quantity");
+                        String comment = (String) itemData.get("comment");
 
-                    double quantity;
-                    try {
-                        quantity = Double.parseDouble(quantityObj.toString());
-                        if (quantity <= 0) {
-                            throw new RuntimeException("Item " + (itemIndex + 1) + ": Quantity must be greater than 0");
+                        if (itemTypeIdStr == null || quantityObj == null) {
+                            throw new RuntimeException("Item " + (itemIndex + 1) + ": itemTypeId and quantity are required");
                         }
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("Item " + (itemIndex + 1) + ": Invalid quantity format: " + quantityObj);
+
+                        UUID itemTypeId;
+                        try {
+                            itemTypeId = UUID.fromString(itemTypeIdStr);
+                        } catch (IllegalArgumentException e) {
+                            throw new RuntimeException("Item " + (itemIndex + 1) + ": Invalid itemTypeId format: " + itemTypeIdStr);
+                        }
+
+                        double quantity;
+                        try {
+                            quantity = Double.parseDouble(quantityObj.toString());
+                            if (quantity <= 0) {
+                                throw new RuntimeException("Item " + (itemIndex + 1) + ": Quantity must be greater than 0");
+                            }
+                        } catch (NumberFormatException e) {
+                            throw new RuntimeException("Item " + (itemIndex + 1) + ": Invalid quantity format: " + quantityObj);
+                        }
+
+                        ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                                .orElseThrow(() -> new RuntimeException("Item " + (itemIndex + 1) + ": ItemType not found: " + itemTypeId));
+
+                        RequestOrderItem item = RequestOrderItem.builder()
+                                .itemType(itemType)
+                                .quantity(quantity)
+                                .comment(comment != null ? comment.trim() : "")
+                                .requestOrder(requestOrder)
+                                .build();
+
+                        items.add(item);
+                    } catch (Exception e) {
+                        System.err.println("Error processing item " + (itemIndex + 1) + ": " + e.getMessage());
+                        throw new RuntimeException("Error processing item " + (itemIndex + 1) + ": " + e.getMessage());
                     }
-
-                    ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                            .orElseThrow(() -> new RuntimeException("Item " + (itemIndex + 1) + ": ItemType not found: " + itemTypeId));
-
-                    RequestOrderItem item = RequestOrderItem.builder()
-                            .itemType(itemType)
-                            .quantity(quantity)
-                            .comment(comment != null ? comment.trim() : "")
-                            .requestOrder(requestOrder)
-                            .build();
-
-                    items.add(item);
-                } catch (Exception e) {
-                    System.err.println("Error processing item " + (itemIndex + 1) + ": " + e.getMessage());
-                    throw new RuntimeException("Error processing item " + (itemIndex + 1) + ": " + e.getMessage());
                 }
             }
 
@@ -203,17 +214,13 @@ public class RequestOrderService {
 
             // Save and return
             try {
-//                RequestOrder savedOrder = requestOrderRepository.save(requestOrder);
-//                System.out.println("Request order created successfully with ID: " + savedOrder.getId());
-//                return savedOrder;
-
                 RequestOrder savedOrder = requestOrderRepository.save(requestOrder);
                 System.out.println("Request order created successfully with ID: " + savedOrder.getId());
 
-// Send notifications only if party type is WAREHOUSE
-                if (partyType == PartyType.WAREHOUSE) {
+                // Send notifications only for non-draft orders with warehouse party type
+                if (!"DRAFT".equalsIgnoreCase(status) && partyType == PartyType.WAREHOUSE) {
                     try {
-                        if (notificationService != null) {
+                        if (notificationService != null && !savedOrder.getRequestItems().isEmpty()) {
                             String itemsSummary = savedOrder.getRequestItems().stream()
                                     .map(item -> item.getQuantity() + "x " + item.getItemType().getName())
                                     .collect(java.util.stream.Collectors.joining(", "));
@@ -267,7 +274,6 @@ public class RequestOrderService {
             }
 
         } catch (RuntimeException e) {
-            // Re-throw runtime exceptions with original message
             throw e;
         } catch (Exception e) {
             System.err.println("Unexpected error creating request: " + e.getMessage());
@@ -294,8 +300,8 @@ public class RequestOrderService {
     }
 
     public Optional<RequestOrder> findById(UUID id) {
-        // This uses a custom repository method that performs the necessary JOIN FETCHes
-        return requestOrderRepository.findByIdWithItems(id);
+        // Use the new method that doesn't fetch purchaseOrders
+        return requestOrderRepository.findByIdForDetails(id);
     }
 
     public RequestOrder updateRequest(UUID requestOrderId, Map<String, Object> requestData) {
@@ -306,88 +312,150 @@ public class RequestOrderService {
             RequestOrder existingOrder = requestOrderRepository.findById(requestOrderId)
                     .orElseThrow(() -> new RuntimeException("Request order not found with ID: " + requestOrderId));
 
-// Basic info updates
+            // Basic info updates
             String title = (String) requestData.get("title");
             String description = (String) requestData.get("description");
             String updatedBy = (String) requestData.get("updatedBy");
             String statusStr = (String) requestData.get("status");
             String partyTypeStr = (String) requestData.get("partyType");
-            UUID requesterId = UUID.fromString((String) requestData.get("requesterId"));
+            String requesterIdStr = (String) requestData.get("requesterId");
 
-// Validate that title is not null
-            if (title == null || title.trim().isEmpty()) {
-                throw new RuntimeException("Title is required");
+            // Validate status
+            if (statusStr == null || statusStr.trim().isEmpty()) {
+                throw new RuntimeException("Status is required");
             }
 
-// Check for duplicate title and requesterId in PENDING status (excluding current order)
-// Only check if title OR requesterId has changed
-            if ((!title.trim().equalsIgnoreCase(existingOrder.getTitle().trim()) || !requesterId.equals(existingOrder.getRequesterId())) &&
-                    requestOrderRepository.existsByTitleAndRequesterIdAndStatusPendingExcludingId(title.trim(), requesterId, requestOrderId)) {
-                throw new RuntimeException("A request order with the title '" + title + "' already exists for this requester with PENDING status. Please use a different title.");
-            }
-
-
-            // Other fields
-            String deadlineStr = (String) requestData.get("deadline");
-            LocalDateTime deadline = LocalDateTime.parse(deadlineStr);
-
-            RequestStatus status = RequestStatus.valueOf(statusStr.toUpperCase());
-            PartyType partyType = PartyType.valueOf(partyTypeStr.toUpperCase());
-
-            // Update requester name if requesterId changed
-            String requesterName = existingOrder.getRequesterName();
-            if (!requesterId.equals(existingOrder.getRequesterId()) ||
-                    !partyType.toString().equals(existingOrder.getPartyType())) {
-
-                if (partyType == PartyType.WAREHOUSE) {
-                    Warehouse warehouse = warehouseRepository.findById(requesterId)
-                            .orElseThrow(() -> new RuntimeException("Warehouse not found: " + requesterId));
-                    requesterName = warehouse.getName();
-                } else {
-                    throw new RuntimeException("Unsupported party type: " + partyType);
+            // For DRAFT status, only title is required
+            // For other statuses, all fields are required
+            if ("DRAFT".equalsIgnoreCase(statusStr)) {
+                if (title == null || title.trim().isEmpty()) {
+                    throw new RuntimeException("Title is required");
                 }
+            } else {
+                if (title == null || description == null || statusStr == null ||
+                        partyTypeStr == null || requesterIdStr == null) {
+                    throw new RuntimeException("Missing required fields");
+                }
+            }
+
+            // Parse requesterId (can be null for drafts)
+            UUID requesterId = null;
+            if (requesterIdStr != null && !requesterIdStr.trim().isEmpty()) {
+                try {
+                    requesterId = UUID.fromString(requesterIdStr);
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Invalid requesterId format: " + requesterIdStr);
+                }
+            }
+
+            // Check for duplicate title only if not draft and requesterId exists
+            if (!"DRAFT".equalsIgnoreCase(statusStr) && requesterId != null) {
+                if ((!title.trim().equalsIgnoreCase(existingOrder.getTitle().trim()) ||
+                        !requesterId.equals(existingOrder.getRequesterId())) &&
+                        requestOrderRepository.existsByTitleAndRequesterIdAndStatusPendingExcludingId(
+                                title.trim(), requesterId, requestOrderId)) {
+                    throw new RuntimeException("A request order with the title '" + title +
+                            "' already exists for this requester with PENDING status. Please use a different title.");
+                }
+            }
+
+            // Handle deadline parsing (can be null for drafts)
+            String deadlineStr = (String) requestData.get("deadline");
+            LocalDateTime deadline = null;
+            if (deadlineStr != null && !deadlineStr.trim().isEmpty()) {
+                try {
+                    deadline = LocalDateTime.parse(deadlineStr);
+                } catch (Exception e) {
+                    System.err.println("Error parsing deadline: " + deadlineStr);
+                    throw new RuntimeException("Invalid deadline format: " + deadlineStr);
+                }
+            }
+
+            // Parse partyType (can be null for drafts)
+            PartyType partyType = null;
+            if (partyTypeStr != null && !partyTypeStr.trim().isEmpty()) {
+                try {
+                    partyType = PartyType.valueOf(partyTypeStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Invalid partyType: " + partyTypeStr);
+                }
+            }
+
+            // Update requester name if requesterId changed (can be null for drafts)
+            String requesterName = existingOrder.getRequesterName();
+            if (requesterId != null && partyType == PartyType.WAREHOUSE) {
+                if (!requesterId.equals(existingOrder.getRequesterId()) ||
+                        (partyType != null && !partyType.toString().equals(existingOrder.getPartyType()))) {
+                    try {
+                        final UUID finalRequesterId = requesterId;
+                        Warehouse warehouse = warehouseRepository.findById(finalRequesterId)
+                                .orElseThrow(() -> new RuntimeException("Warehouse not found: " + finalRequesterId));
+                        requesterName = warehouse.getName();
+                    } catch (Exception e) {
+                        System.err.println("Error finding warehouse: " + e.getMessage());
+                        throw new RuntimeException("Failed to find warehouse with ID: " + requesterId);
+                    }
+                }
+            } else if (requesterId == null) {
+                // If requesterId is null (draft), clear the requester name
+                requesterName = null;
             }
 
             // Update the order properties
             existingOrder.setTitle(title);
-            existingOrder.setDescription(description);
-            existingOrder.setStatus(String.valueOf(status));
-            existingOrder.setPartyType(String.valueOf(partyType));
+            existingOrder.setDescription(description != null ? description : "");
+            existingOrder.setStatus(statusStr.toUpperCase());
+            existingOrder.setPartyType(partyType != null ? String.valueOf(partyType) : null);
             existingOrder.setRequesterId(requesterId);
             existingOrder.setRequesterName(requesterName);
             existingOrder.setDeadline(deadline);
             existingOrder.setUpdatedAt(LocalDateTime.now());
             existingOrder.setUpdatedBy(updatedBy);
 
-            // *** FIXED ITEMS UPDATE LOGIC ***
-            List<Map<String, Object>> itemsData = (List<Map<String, Object>>) requestData.get("items");
+            // Handle items (optional for drafts)
+            Object itemsObj = requestData.get("items");
 
-            // Clear existing items completely
+            // Clear existing items
             existingOrder.getRequestItems().clear();
 
-            // Add new items from the request data
-            for (Map<String, Object> itemData : itemsData) {
-                UUID itemTypeId = UUID.fromString((String) itemData.get("itemTypeId"));
-                double quantity = Double.parseDouble(itemData.get("quantity").toString());
-                String comment = (String) itemData.get("comment");
+            if (itemsObj != null) {
+                List<Map<String, Object>> itemsData;
+                try {
+                    itemsData = (List<Map<String, Object>>) itemsObj;
+                } catch (ClassCastException e) {
+                    throw new RuntimeException("Invalid items data format");
+                }
 
-                ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                        .orElseThrow(() -> new RuntimeException("ItemType not found: " + itemTypeId));
+                // For non-draft status, at least one item is required
+                if (!"DRAFT".equalsIgnoreCase(statusStr) && itemsData.isEmpty()) {
+                    throw new RuntimeException("At least one item is required");
+                }
 
-                RequestOrderItem item = RequestOrderItem.builder()
-                        .itemType(itemType)
-                        .quantity(quantity)
-                        .comment(comment)
-                        .requestOrder(existingOrder)
-                        .build();
+                // Add new items from the request data
+                for (Map<String, Object> itemData : itemsData) {
+                    UUID itemTypeId = UUID.fromString((String) itemData.get("itemTypeId"));
+                    double quantity = Double.parseDouble(itemData.get("quantity").toString());
+                    String comment = (String) itemData.get("comment");
 
-                existingOrder.getRequestItems().add(item);
+                    ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                            .orElseThrow(() -> new RuntimeException("ItemType not found: " + itemTypeId));
+
+                    RequestOrderItem item = RequestOrderItem.builder()
+                            .itemType(itemType)
+                            .quantity(quantity)
+                            .comment(comment != null ? comment.trim() : "")
+                            .requestOrder(existingOrder)
+                            .build();
+
+                    existingOrder.getRequestItems().add(item);
+                }
             }
 
             RequestOrder updatedOrder = requestOrderRepository.save(existingOrder);
 
-// Send notifications only if party type is WAREHOUSE
-            if (partyType == PartyType.WAREHOUSE) {
+            // Send notifications only for non-draft orders with warehouse party type
+            if (!"DRAFT".equalsIgnoreCase(statusStr) && partyType == PartyType.WAREHOUSE &&
+                    !updatedOrder.getRequestItems().isEmpty()) {
                 try {
                     if (notificationService != null) {
                         String itemsSummary = updatedOrder.getRequestItems().stream()
@@ -438,16 +506,12 @@ public class RequestOrderService {
 
             return updatedOrder;
 
-            // Save and return the updated order
-           // return requestOrderRepository.save(existingOrder);
-
         } catch (Exception e) {
             System.err.println("Error updating request order: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to update request order", e);
         }
     }
-
 
 //    public RequestOrder updateStatus(UUID requestOrderId, String newStatus) {
 //        try {
@@ -637,6 +701,26 @@ public class RequestOrderService {
         result.put("validationPeriodDays", 3);
 
         return result;
+    }
+
+    public void deleteRequest(UUID requestOrderId) {
+        try {
+            System.out.println("Deleting request order with ID: " + requestOrderId);
+
+            RequestOrder requestOrder = requestOrderRepository.findById(requestOrderId)
+                    .orElseThrow(() -> new RuntimeException("Request order not found with ID: " + requestOrderId));
+
+            // Only allow deletion of DRAFT orders
+            if (!"DRAFT".equalsIgnoreCase(requestOrder.getStatus())) {
+                throw new RuntimeException("Only draft request orders can be deleted");
+            }
+
+            requestOrderRepository.delete(requestOrder);
+            System.out.println("Request order deleted successfully");
+        } catch (Exception e) {
+            System.err.println("Error deleting request order: " + e.getMessage());
+            throw new RuntimeException("Failed to delete request order: " + e.getMessage());
+        }
     }
 
     }

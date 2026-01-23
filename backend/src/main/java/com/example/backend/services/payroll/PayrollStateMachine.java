@@ -95,22 +95,37 @@ public class PayrollStateMachine {
      */
     private void updateAuditFields(Payroll payroll, PayrollStatus newStatus, String username) {
         LocalDateTime now = LocalDateTime.now();
-        
+
         switch (newStatus) {
+            case DEDUCTION_REVIEW:
+                // Deduction review started - mark overtime as finalized if not already
+                if (!Boolean.TRUE.equals(payroll.getOvertimeFinalized())) {
+                    payroll.setOvertimeFinalized(true);
+                    payroll.setOvertimeFinalizedBy(username);
+                    payroll.setOvertimeFinalizedAt(now);
+                }
+                log.info("Payroll {} entered deduction review by {} at {}", payroll.getId(), username, now);
+                break;
+
             case CONFIRMED_AND_LOCKED:
-                // Lock the payroll
+                // Lock the payroll - mark deduction as finalized if not already
+                if (!Boolean.TRUE.equals(payroll.getDeductionFinalized())) {
+                    payroll.setDeductionFinalized(true);
+                    payroll.setDeductionFinalizedBy(username);
+                    payroll.setDeductionFinalizedAt(now);
+                }
                 payroll.setLockedAt(now);
                 payroll.setLockedBy(username);
                 log.info("Payroll {} locked by {} at {}", payroll.getId(), username, now);
                 break;
-                
+
             case PAID:
                 // Mark as paid
                 payroll.setPaidAt(now);
                 payroll.setPaidBy(username);
                 log.info("Payroll {} marked as paid by {} at {}", payroll.getId(), username, now);
                 break;
-                
+
             default:
                 // No special audit fields for other statuses
                 break;

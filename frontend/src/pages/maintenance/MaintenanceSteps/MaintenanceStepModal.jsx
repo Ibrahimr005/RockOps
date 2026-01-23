@@ -45,7 +45,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const [availableEmployees, setAvailableEmployees] = useState([]);
     const [stepTypes, setStepTypes] = useState([]);
     const [selectedStepType, setSelectedStepType] = useState(null);
-    const [responsiblePersonType, setResponsiblePersonType] = useState('external'); // 'site', 'external', or 'merchant'
+    const [responsiblePersonType, setResponsiblePersonType] = useState(''); // 'site', 'external', or 'merchant'
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [existingSteps, setExistingSteps] = useState([]);
@@ -126,6 +126,8 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 setResponsiblePersonType('site');
             } else if (editingStep.selectedMerchantId) {
                 setResponsiblePersonType('merchant');
+                // CRITICAL: Load contacts for this merchant so the dropdown works
+                loadMerchantContacts(editingStep.selectedMerchantId);
             } else {
                 setResponsiblePersonType('external');
             }
@@ -149,7 +151,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 stepCost: '',
                 notes: ''
             });
-            setResponsiblePersonType('external');
+            setResponsiblePersonType('');
             setRemainingManuallyChanged(false);
         }
         setErrors({});
@@ -177,10 +179,11 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
         try {
             const response = await stepTypeService.getAllStepTypes();
             console.log('Step types loaded:', response);
-            // Format step type names to title case for display
+            // Format step type names to title case and remove underscores for display
             const formattedStepTypes = (response || []).map(st => ({
                 ...st,
-                name: st.name.charAt(0).toUpperCase() + st.name.slice(1).toLowerCase()
+                originalName: st.name,
+                name: st.name.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
             }));
             setStepTypes(formattedStepTypes);
         } catch (error) {
@@ -287,11 +290,23 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
     const loadMerchants = async () => {
         try {
-            const response = await merchantService.getAllMerchants();
+            // Use maintenanceService to get relevant merchants
+            const response = await maintenanceService.getAvailableMerchants();
             console.log('Merchants loaded:', response.data);
-            setMerchants(response.data || []);
+
+            if (Array.isArray(response.data)) {
+                setMerchants(response.data);
+            } else if (Array.isArray(response)) {
+                setMerchants(response);
+            } else if (response.data && Array.isArray(response.data.content)) {
+                setMerchants(response.data.content);
+            } else {
+                console.warn('Unexpected format for merchants:', response);
+                setMerchants([]);
+            }
         } catch (error) {
             console.error('Error loading merchants:', error);
+            setMerchants([]);
         }
     };
 
@@ -304,7 +319,17 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             console.log('Loading contacts for merchant:', merchantId);
             const response = await maintenanceService.getContactsByMerchant(merchantId);
             console.log('Merchant contacts loaded:', response.data);
-            setMerchantContacts(response.data || []);
+            console.log('Merchant contacts loaded:', response.data);
+            if (Array.isArray(response.data)) {
+                setMerchantContacts(response.data);
+            } else if (Array.isArray(response)) {
+                setMerchantContacts(response);
+            } else if (response.data && Array.isArray(response.data.content)) {
+                setMerchantContacts(response.data.content);
+            } else {
+                console.warn('Unexpected format for merchant contacts:', response);
+                setMerchantContacts([]);
+            }
         } catch (error) {
             console.error('Error loading merchant contacts:', error);
             setMerchantContacts([]);
@@ -314,42 +339,69 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
+        // Numeric fields that need thousands separator
+        const numericFields = ['downPayment', 'expectedCost', 'actualCost', 'remaining'];
+
         // Special handling for remaining field - user manual override
         if (name === 'remaining') {
             if (!remainingManuallyChanged) {
                 setRemainingManuallyChanged(true);
                 showError('You are manually overriding the calculated remaining amount. This will be saved as-is.');
             }
-            setFormData(prev => ({
-                ...prev,
-                [name]: value,
-                remainingManuallySet: true
-            }));
+        }
+
+        if (numericFields.includes(name)) {
+            // Remove non-numeric chars except dot
+            const cleanValue = value.replace(/[^0-9.]/g, '');
+
+            // Prevent multiple dots
+            if ((cleanValue.match(/\./g) || []).length > 1) {
+                return;
+            }
+
+            // Format with commas
+            const parts = cleanValue.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+            const formattedValue = parts.join('.');
+
+            setFormData(prev => {
+                const newData = { ...prev, [name]: formattedValue };
+
+                // Track manual override for remaining
+                if (name === 'remaining') {
+                    newData.remainingManuallySet = true;
+                }
+
+                // Auto-calculate remaining logic
+                if ((name === 'expectedCost' || name === 'downPayment') && !remainingManuallyChanged) {
+                    const parseValue = (val) => {
+                        if (!val) return 0;
+                        if (typeof val === 'number') return val;
+                        return parseFloat(val.toString().replace(/,/g, '')) || 0;
+                    };
+
+                    const expectedCost = name === 'expectedCost' ? parseValue(formattedValue) : parseValue(prev.expectedCost);
+                    const downPayment = name === 'downPayment' ? parseValue(formattedValue) : parseValue(prev.downPayment);
+
+                    // Format remaining with commas
+                    const remainingVal = (expectedCost - downPayment).toFixed(2);
+                    const remainingParts = remainingVal.split('.');
+                    remainingParts[0] = remainingParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    newData.remaining = remainingParts.join('.');
+                    newData.remainingManuallySet = false;
+                }
+                return newData;
+            });
         } else {
             setFormData(prev => {
                 const newData = {
                     ...prev,
                     [name]: value
                 };
-
-                // Auto-calculate remaining when expectedCost or downPayment changes
-                // Only if remaining wasn't manually changed
-                if ((name === 'expectedCost' || name === 'downPayment') && !remainingManuallyChanged) {
-                    const expectedCost = name === 'expectedCost' ? parseFloat(value) || 0 : parseFloat(prev.expectedCost) || 0;
-                    const downPayment = name === 'downPayment' ? parseFloat(value) || 0 : parseFloat(prev.downPayment) || 0;
-                    newData.remaining = (expectedCost - downPayment).toFixed(2);
-                    newData.remainingManuallySet = false;
-                }
-
                 return newData;
             });
         }
-
-        // Update selected step type when step type changes - handled by useEffect now
-        // if (name === 'stepTypeId') {
-        //     const stepType = stepTypes.find(st => st.id === value);
-        //     setSelectedStepType(stepType);
-        // }
 
         // Load merchant contacts when merchant is selected
         if (name === 'selectedMerchantId') {
@@ -383,29 +435,15 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const validateForm = () => {
         const newErrors = {};
 
-        // VALIDATION: Check if all previous steps are completed (only for new steps, not editing)
-        if (!editingStep && existingSteps.length > 0) {
-            const incompleteSteps = existingSteps.filter(step => !step.actualEndDate);
-            if (incompleteSteps.length > 0) {
-                const incompleteDescriptions = incompleteSteps.map(s => s.description).join(', ');
-                showError(`Cannot add new step. Please complete all previous steps first. Incomplete steps: ${incompleteDescriptions}`);
-                return false; // Return early, don't set errors object
-            }
+        // Helper to parse amount for validation
+        const parseVal = (val) => {
+            if (!val) return 0;
+            if (typeof val === 'number') return val;
+            return parseFloat(val.toString().replace(/,/g, ''));
+        };
 
-            // VALIDATION: Check if start date is >= latest step's completion date
-            if (incompleteSteps.length === 0 && existingSteps.length > 0) {
-                const latestStep = existingSteps[existingSteps.length - 1];
-                if (latestStep.actualEndDate && formData.startDate) {
-                    const startDate = new Date(formData.startDate);
-                    const completionDate = new Date(latestStep.actualEndDate);
-                    if (startDate < completionDate) {
-                        const completionDateStr = completionDate.toLocaleDateString();
-                        showError(`New step start date must be on or after ${completionDateStr}. The previous step was completed on ${completionDateStr}.`);
-                        return false; // Return early
-                    }
-                }
-            }
-        }
+        // NOTE: Removed validation that required all previous steps to be completed
+        // Users can now add concurrent steps without waiting for existing ones to finish
 
         if (!formData.stepTypeId) {
             newErrors.stepTypeId = 'Step type is required';
@@ -429,16 +467,18 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 newErrors.selectedMerchantId = 'Please select a merchant';
             }
 
-            // Validate merchant items
-            if (merchantItems.length === 0) {
-                showError('Please add at least one item');
-                return false;
-            }
-
-            for (const item of merchantItems) {
-                if (!item.description || !item.cost) {
-                    showError('All merchant items must have description and cost');
+            // Validate merchant items - ONLY if step type is Purchasing Spare Parts
+            if (selectedStepType?.name === 'Purchasing Spare Parts') {
+                if (merchantItems.length === 0) {
+                    showError('Please add at least one item');
                     return false;
+                }
+
+                for (const item of merchantItems) {
+                    if (!item.description || !item.cost) {
+                        showError('All merchant items must have description and cost');
+                        return false;
+                    }
                 }
             }
         }
@@ -471,34 +511,34 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             }
         }
 
-        // Validate cost fields
-        if (formData.downPayment && isNaN(formData.downPayment)) {
+        // Validate cost fields with parsing
+        if (formData.downPayment && isNaN(parseVal(formData.downPayment))) {
             newErrors.downPayment = 'Down payment must be a valid number';
         }
 
-        if (formData.downPayment && parseFloat(formData.downPayment) < 0) {
+        if (formData.downPayment && parseVal(formData.downPayment) < 0) {
             newErrors.downPayment = 'Down payment must be non-negative';
         }
 
-        if (formData.expectedCost && isNaN(formData.expectedCost)) {
+        if (formData.expectedCost && isNaN(parseVal(formData.expectedCost))) {
             newErrors.expectedCost = 'Expected cost must be a valid number';
         }
 
-        if (formData.expectedCost && parseFloat(formData.expectedCost) < 0) {
+        if (formData.expectedCost && parseVal(formData.expectedCost) < 0) {
             newErrors.expectedCost = 'Expected cost must be non-negative';
         }
 
-        if (formData.actualCost && isNaN(formData.actualCost)) {
+        if (formData.actualCost && isNaN(parseVal(formData.actualCost))) {
             newErrors.actualCost = 'Actual cost must be a valid number';
         }
 
-        if (formData.actualCost && parseFloat(formData.actualCost) < 0) {
+        if (formData.actualCost && parseVal(formData.actualCost) < 0) {
             newErrors.actualCost = 'Actual cost must be non-negative';
         }
 
         // Validate that down payment doesn't exceed expected cost
         if (formData.downPayment && formData.expectedCost) {
-            if (parseFloat(formData.downPayment) > parseFloat(formData.expectedCost)) {
+            if (parseVal(formData.downPayment) > parseVal(formData.expectedCost)) {
                 newErrors.downPayment = 'Down payment cannot exceed expected cost';
             }
         }
@@ -511,35 +551,69 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
         e.preventDefault();
 
         if (validateForm()) {
+            // Helper to parse numeric values from formatted strings
+            const parseAmount = (val) => {
+                if (val === null || val === undefined || val === '') return 0;
+                if (typeof val === 'number') return val;
+                const strVal = val.toString().replace(/,/g, '');
+                return parseFloat(strVal) || 0;
+            };
+
             const submitData = {
                 stepTypeId: formData.stepTypeId,
                 description: formData.description,
                 startDate: formData.startDate + 'T09:00:00',
                 expectedEndDate: formData.expectedEndDate ? formData.expectedEndDate + 'T17:00:00' : null,
-                downPayment: formData.downPayment ? parseFloat(formData.downPayment) : 0,
-                expectedCost: formData.expectedCost ? parseFloat(formData.expectedCost) : 0,
-                remaining: formData.remaining ? parseFloat(formData.remaining) : 0,
+                downPayment: parseAmount(formData.downPayment),
+                expectedCost: parseAmount(formData.expectedCost),
+                remaining: parseAmount(formData.remaining),
                 remainingManuallySet: formData.remainingManuallySet || false,
-                actualCost: formData.actualCost ? parseFloat(formData.actualCost) : null,
-                stepCost: formData.expectedCost ? parseFloat(formData.expectedCost) : 0, // For backward compatibility
+                actualCost: formData.actualCost ? parseAmount(formData.actualCost) : null,
+                stepCost: parseAmount(formData.expectedCost), // For backward compatibility
                 notes: formData.notes || ''
             };
 
             // Add responsible person based on type
             if (responsiblePersonType === 'site') {
-                submitData.responsibleEmployeeId = formData.responsibleEmployeeId;
+                submitData.responsibleEmployeeId = formData.responsibleEmployeeId || null;
+                submitData.responsibleContactId = null;
+                submitData.selectedMerchantId = null;
             } else if (responsiblePersonType === 'external') {
-                submitData.responsibleContactId = formData.responsibleContactId;
+                submitData.responsibleContactId = formData.responsibleContactId || null;
+                submitData.responsibleEmployeeId = null;
+                submitData.selectedMerchantId = null;
             } else if (responsiblePersonType === 'merchant') {
-                submitData.selectedMerchantId = formData.selectedMerchantId;
-                submitData.merchantItems = merchantItems.map(item => ({
-                    description: item.description,
-                    cost: parseFloat(item.cost)
-                }));
+                submitData.selectedMerchantId = formData.selectedMerchantId || null;
+                submitData.responsibleEmployeeId = null;
+                submitData.responsibleContactId = formData.responsibleContactId || null;
+
+                // Only include merchant items if we have them and the step type requires it
+                if (selectedStepType?.originalName === 'PURCHASING_SPARE_PARTS' && Array.isArray(merchantItems) && merchantItems.length > 0) {
+                    // Filter out empty items just in case
+                    const validItems = merchantItems.filter(item => item.description && item.description.trim() !== '');
+
+                    submitData.merchantItems = validItems.map(item => ({
+                        description: item.description,
+                        cost: parseAmount(item.cost) // Ensure cost is parsed correctly
+                    }));
+                } else {
+                    submitData.merchantItems = [];
+                }
+            } else {
+                // Should not happen, but safe defaults
+                submitData.responsibleEmployeeId = null;
+                submitData.responsibleContactId = null;
+                submitData.selectedMerchantId = null;
+                submitData.merchantItems = [];
             }
 
             // Only include location fields if step type is TRANSPORT
-            if (selectedStepType?.name?.toUpperCase() === 'TRANSPORT') {
+            // Use the original name/id logic if possible, or robust check
+            const isTransport = selectedStepType?.name?.toUpperCase() === 'TRANSPORT' ||
+                selectedStepType?.originalName?.toUpperCase() === 'TRANSPORT_EQUIPMENT' ||
+                selectedStepType?.originalName?.toUpperCase() === 'TRANSPORT';
+
+            if (isTransport) {
                 submitData.fromLocation = formData.fromLocation;
                 submitData.toLocation = formData.toLocation;
             } else {
@@ -552,6 +626,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             try {
                 await onSubmit(submitData);
             } catch (error) {
+                console.error("Submission error caught in modal:", error);
                 // Handle backend validation errors - show in snackbar
                 if (error.response && error.response.data) {
                     const errorMessage = error.response.data.message || error.response.data.error || 'Failed to save maintenance step';
@@ -623,7 +698,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-backdrop">
             <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div className="modal-title">
@@ -802,45 +877,11 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                             className={errors.selectedMerchantId ? 'error' : ''}
                                         >
                                             <option value="">Select a merchant...</option>
-
-                                            {Array.isArray(merchants) && merchants.filter(m => m.merchantType === 'SERVICE_PROVIDER').length > 0 && (
-                                                <optgroup label="Service Providers">
-                                                    {merchants
-                                                        .filter(m => m.merchantType === 'SERVICE_PROVIDER')
-                                                        .map(merchant => (
-                                                            <option key={merchant.id} value={merchant.id}>
-                                                                {merchant.name}
-                                                            </option>
-                                                        ))
-                                                    }
-                                                </optgroup>
-                                            )}
-
-                                            {Array.isArray(merchants) && merchants.filter(m => m.merchantType === 'SUPPLIER').length > 0 && (
-                                                <optgroup label="Suppliers">
-                                                    {merchants
-                                                        .filter(m => m.merchantType === 'SUPPLIER')
-                                                        .map(merchant => (
-                                                            <option key={merchant.id} value={merchant.id}>
-                                                                {merchant.name}
-                                                            </option>
-                                                        ))
-                                                    }
-                                                </optgroup>
-                                            )}
-
-                                            {Array.isArray(merchants) && merchants.filter(m => !m.merchantType || (m.merchantType !== 'SERVICE_PROVIDER' && m.merchantType !== 'SUPPLIER')).length > 0 && (
-                                                <optgroup label="Other">
-                                                    {merchants
-                                                        .filter(m => !m.merchantType || (m.merchantType !== 'SERVICE_PROVIDER' && m.merchantType !== 'SUPPLIER'))
-                                                        .map(merchant => (
-                                                            <option key={merchant.id} value={merchant.id}>
-                                                                {merchant.name}
-                                                            </option>
-                                                        ))
-                                                    }
-                                                </optgroup>
-                                            )}
+                                            {Array.isArray(merchants) && merchants.map(merchant => (
+                                                <option key={merchant.id} value={merchant.id}>
+                                                    {merchant.name}
+                                                </option>
+                                            ))}
                                         </select>
                                         {errors.selectedMerchantId && <span className="error-message">{errors.selectedMerchantId}</span>}
                                     </div>
@@ -858,7 +899,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                                 onChange={handleInputChange}
                                             >
                                                 <option value="">Select a contact (optional)...</option>
-                                                {merchantContacts.map(contact => (
+                                                {Array.isArray(merchantContacts) && merchantContacts.map(contact => (
                                                     <option key={contact.id} value={contact.id}>
                                                         {contact.firstName} {contact.lastName} - {contact.position || contact.email}
                                                     </option>
@@ -870,8 +911,8 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                         </div>
                                     )}
 
-                                    {/* Merchant Items */}
-                                    {formData.selectedMerchantId && (
+                                    {/* Merchant Items - Only show for Purchasing Spare Parts when merchant is selected */}
+                                    {formData.selectedMerchantId && selectedStepType?.name === 'Purchasing Spare Parts' && (
                                         <div className="merchant-items-section">
                                             <h4>Items / Services</h4>
                                             <p className="section-description">
@@ -1031,13 +1072,11 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                         Expected Cost
                                     </label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         id="expectedCost"
                                         name="expectedCost"
                                         value={formData.expectedCost}
                                         onChange={handleInputChange}
-                                        min="0"
-                                        step="0.01"
                                         placeholder="0.00"
                                         className={errors.expectedCost ? 'error' : ''}
                                     />
@@ -1047,13 +1086,11 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                 <div className="form-group">
                                     <label htmlFor="downPayment">Down Payment</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         id="downPayment"
                                         name="downPayment"
                                         value={formData.downPayment}
                                         onChange={handleInputChange}
-                                        min="0"
-                                        step="0.01"
                                         placeholder="0.00"
                                         className={errors.downPayment ? 'error' : ''}
                                     />
@@ -1066,13 +1103,11 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                     Remaining {remainingManuallyChanged && <span className="manual-override-indicator">(Manual Override)</span>}
                                 </label>
                                 <input
-                                    type="number"
+                                    type="text"
                                     id="remaining"
                                     name="remaining"
                                     value={formData.remaining}
                                     onChange={handleInputChange}
-                                    min="0"
-                                    step="0.01"
                                     placeholder="Auto-calculated"
                                     className={errors.remaining ? 'error' : ''}
                                 />
@@ -1089,13 +1124,11 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                 <div className="form-group">
                                     <label htmlFor="actualCost">Actual Cost</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         id="actualCost"
                                         name="actualCost"
                                         value={formData.actualCost}
                                         onChange={handleInputChange}
-                                        min="0"
-                                        step="0.01"
                                         placeholder="0.00"
                                         disabled={!editingStep?.actualEndDate}
                                         className={errors.actualCost ? 'error' : ''}
@@ -1140,10 +1173,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
             {/* Inline Add Contact Modal */}
             {showAddContactModal && (
-                <div className="modal-backdrop nested-modal" onClick={(e) => {
-                    e.stopPropagation();
-                    setShowAddContactModal(false);
-                }}>
+                <div className="modal-backdrop nested-modal">
                     <div className="modal-container modal-md" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <div className="modal-title">

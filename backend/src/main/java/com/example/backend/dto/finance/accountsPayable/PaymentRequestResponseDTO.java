@@ -28,6 +28,11 @@ public class PaymentRequestResponseDTO {
     private UUID offerFinancialReviewId;
     private String budgetCategory;
 
+    // Maintenance info (for maintenance-sourced payment requests)
+    private UUID maintenanceStepId;
+    private UUID maintenanceRecordId;
+    private String maintenanceStepDescription;
+
     // Amount info
     private BigDecimal requestedAmount;
     private BigDecimal totalPaidAmount;

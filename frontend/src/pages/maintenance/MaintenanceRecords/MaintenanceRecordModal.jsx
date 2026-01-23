@@ -105,7 +105,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 initialIssueDescription: editingRecord.initialIssueDescription || '',
                 expectedCompletionDate: editingRecord.expectedCompletionDate ?
                     editingRecord.expectedCompletionDate.split('T')[0] : '',
-                estimatedCost: editingRecord.totalCost || editingRecord.estimatedCost || '',
+                estimatedCost: editingRecord.totalCost ? formatNumberWithCommas(editingRecord.totalCost) : (editingRecord.estimatedCost ? formatNumberWithCommas(editingRecord.estimatedCost) : ''),
                 responsibleUserId: editingRecord.responsibleUserId || editingRecord.responsibleUser?.id || editingRecord.assignedUser?.id || editingRecord.userId || ''
             });
         } else if (currentUser) {
@@ -133,6 +133,22 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 siteId: value,
                 equipmentId: ''
             }));
+        } else if (name === 'estimatedCost') {
+            // Remove existing commas to validate number
+            const rawValue = value.replace(/,/g, '');
+
+            // Allow numbers and one decimal point
+            if (rawValue === '' || /^\d*\.?\d*$/.test(rawValue)) {
+                // If it's a valid number part, format it with commas
+                // We only format the integer part to avoid messing up typing decimals
+                const parts = rawValue.split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: parts.join('.')
+                }));
+            }
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -198,8 +214,13 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
             }
         }
 
-        if (formData.estimatedCost && isNaN(formData.estimatedCost)) {
+        const costValue = formData.estimatedCost ? formData.estimatedCost.toString().replace(/,/g, '') : '';
+        if (!costValue || costValue === '' || costValue === '0') {
+            newErrors.estimatedCost = 'Estimated cost is required';
+        } else if (isNaN(costValue)) {
             newErrors.estimatedCost = 'Cost must be a valid number';
+        } else if (parseFloat(costValue) <= 0) {
+            newErrors.estimatedCost = 'Cost must be greater than zero';
         }
 
         setErrors(newErrors);
@@ -214,8 +235,8 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 ...formData,
                 issueDate: formData.issueDate + 'T00:00:00',
                 expectedCompletionDate: formData.expectedCompletionDate + 'T17:00:00',
-                totalCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : 0,
-                estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : 0
+                totalCost: formData.estimatedCost ? parseFloat(formData.estimatedCost.toString().replace(/,/g, '')) : 0,
+                estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost.toString().replace(/,/g, '')) : 0
             };
             console.log('Submitting maintenance record:', submitData);
             onSubmit(submitData);
@@ -234,7 +255,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-backdrop">
             <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div className="modal-title">
@@ -246,6 +267,12 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                     </button>
                 </div>
                 <div className="modal-body">
+                    {editingRecord && editingRecord.status === 'REJECTED' && editingRecord.rejectionReason && (
+                        <div className="alert alert-danger" style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#fff5f5', border: '1px solid #fc8181', borderRadius: '4px', color: '#c53030' }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Rejection Reason:</div>
+                            {editingRecord.rejectionReason}
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="maintenance-record-form" id="maintenance-record-form">
                         <div className="form-section">
@@ -292,17 +319,56 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                                         ))}
                                     </select>
                                     {errors.equipmentId && <span className="error-message">{errors.equipmentId}</span>}
-                                    {!formData.siteId && <span className="field-hint">Please select a site first</span>}
                                 </div>
                             </div>
 
                             {formData.equipmentId && (
                                 <div className="equipment-details">
-                                    <div className="equipment-info">
-                                        <strong>Selected Equipment:</strong>
-                                        <div>{getSelectedEquipment()?.name}</div>
-                                        <div className="equipment-subtitle">
-                                            {getSelectedEquipment()?.model} • {getSelectedEquipment()?.type?.name}
+                                    <div className="equipment-details-content">
+                                        <div className="equipment-info">
+                                            <div className="equipment-main-header">
+                                                <strong>{getSelectedEquipment()?.name}</strong>
+                                                <span className="model-badge">Model: {getSelectedEquipment()?.model}</span>
+                                            </div>
+
+                                            <div className="equipment-meta-grid">
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Type</span>
+                                                    <span className="meta-value">{getSelectedEquipment()?.typeName || getSelectedEquipment()?.type?.name || 'N/A'}</span>
+                                                </div>
+
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Brand</span>
+                                                    <span className="meta-value">{getSelectedEquipment()?.brandName || getSelectedEquipment()?.brand?.name || 'N/A'}</span>
+                                                </div>
+
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Site</span>
+                                                    <span className="meta-value">{getSelectedEquipment()?.siteName || getSelectedEquipment()?.site?.name || 'Unassigned'}</span>
+                                                </div>
+
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Main Driver</span>
+                                                    <span className={`meta-value ${!getSelectedEquipment()?.mainDriverName ? 'empty' : ''}`}>
+                                                        {getSelectedEquipment()?.mainDriverName || 'Unassigned'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="equipment-image-container">
+                                            {getSelectedEquipment()?.imageUrl ? (
+                                                <img
+                                                    src={getSelectedEquipment().imageUrl}
+                                                    alt={getSelectedEquipment().name}
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextSibling.style.display = 'block';
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <div className="no-image-placeholder" style={{ display: getSelectedEquipment()?.imageUrl ? 'none' : 'block' }}>
+                                                No Image
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -387,18 +453,15 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="estimatedCost">Estimated Cost</label>
+                                    <label htmlFor="estimatedCost">Estimated Cost / Budget Request <span className="required">*</span></label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         id="estimatedCost"
                                         name="estimatedCost"
                                         value={formData.estimatedCost}
                                         onChange={handleInputChange}
                                         placeholder="0.00"
-                                        step="0.01"
-                                        min="0"
                                         className={errors.estimatedCost ? 'error' : ''}
-                                        onWheel={(e) => e.target.blur()}
                                         onFocus={(e) => {
                                             if (e.target.value === '0' || e.target.value === 0) {
                                                 handleInputChange({ target: { name: 'estimatedCost', value: '' } });

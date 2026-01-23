@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaArrowLeft, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaInfoCircle, FaWrench, FaClipboardList, FaCheckCircle, FaHourglassHalf } from 'react-icons/fa';
+import { FaArrowLeft, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaInfoCircle, FaWrench, FaClipboardList, FaCheckCircle, FaHourglassHalf, FaExclamationTriangle, FaClock } from 'react-icons/fa';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import MaintenanceSteps from '../MaintenanceSteps/MaintenanceSteps';
+import MaintenanceRecordModal from '../MaintenanceRecords/MaintenanceRecordModal';
+import MaintenanceTimeline from './MaintenanceTimeline';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import '../../../styles/status-badges.scss';
@@ -18,8 +21,10 @@ const MaintenanceRecordDetail = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-    const { showError } = useSnackbar();
+    const { showError, showSuccess } = useSnackbar();
+    const { currentUser } = useAuth();
 
     useEffect(() => {
         if (recordId) {
@@ -40,7 +45,7 @@ const MaintenanceRecordDetail = () => {
         try {
             setLoading(true);
             setError(null);
-            
+
             const response = await maintenanceService.getRecordById(recordId);
             setMaintenanceRecord(response.data);
         } catch (error) {
@@ -56,6 +61,52 @@ const MaintenanceRecordDetail = () => {
         loadMaintenanceRecord();
     };
 
+    const handleAction = async (actionType) => {
+        try {
+            setLoading(true);
+            if (actionType === 'SUBMIT') {
+                await maintenanceService.submitForApproval(recordId);
+                showSuccess('Submitted for approval successfully');
+            } else if (actionType === 'APPROVE_MANAGER') {
+                await maintenanceService.approveByManager(recordId);
+                showSuccess('Approved by Manager successfully');
+            }
+            // Refresh data
+            loadMaintenanceRecord();
+        } catch (err) {
+            console.error('Action failed:', err);
+            showError(err.response?.data?.message || 'Action failed');
+            setLoading(false); // Ensure loading is off if error
+        }
+    };
+
+    const handleResubmit = () => {
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSubmit = async (recordData) => {
+        try {
+            setLoading(true);
+            // 1. Update the record
+            await maintenanceService.updateRecord(recordId, recordData);
+
+            // 2. If it was rejected, we need to explicitly submit it again to trigger a new financial review
+            if (maintenanceRecord.status === 'REJECTED') {
+                await maintenanceService.submitForApproval(recordId);
+                showSuccess('Record updated and resubmitted for approval successfully');
+            } else {
+                showSuccess('Record updated successfully');
+            }
+
+            setIsEditModalOpen(false);
+            loadMaintenanceRecord();
+        } catch (err) {
+            console.error('Update/Resubmit failed:', err);
+            showError(err.response?.data?.message || 'Failed to update/resubmit record');
+            setLoading(false);
+        }
+    };
+
     const getStatusColor = (status) => {
         switch (status) {
             case 'COMPLETED': return 'var(--color-success)';
@@ -69,9 +120,22 @@ const MaintenanceRecordDetail = () => {
 
     const getStatusBadge = (status) => {
         const statusClass = status.toLowerCase().replace(/_/g, '-');
+        let icon = null;
+
+        switch (status) {
+            case 'COMPLETED': icon = <FaCheckCircle />; break;
+            case 'ACTIVE': icon = <FaTools />; break;
+            case 'PENDING_MANAGER_APPROVAL':
+            case 'PENDING_FINANCE_APPROVAL':
+                icon = <FaHourglassHalf />;
+                break;
+            case 'REJECTED': icon = <FaInfoCircle />; break;
+            default: icon = <FaInfoCircle />;
+        }
+
         return (
             <span className={`status-badge ${statusClass}`}>
-                {status.replace(/_/g, ' ')}
+                {icon} {status.replace(/_/g, ' ')}
             </span>
         );
     };
@@ -161,30 +225,84 @@ const MaintenanceRecordDetail = () => {
                         text: getStatusBadge(maintenanceRecord.status),
                         className: 'secondary',
                         disabled: true
+                    },
+                    // Dynamic Buttons based on Status
+                    (maintenanceRecord.status === 'REJECTED') ? {
+                        text: 'Resubmit',
+                        className: 'warning',
+                        onClick: handleResubmit,
+                        icon: <FaExclamationTriangle />
+                    } : (maintenanceRecord.status === 'DRAFT') && {
+                        text: 'Submit for Approval',
+                        className: 'primary',
+                        onClick: () => handleAction('SUBMIT'),
+                        icon: <FaCheckCircle />
+                    },
+                    (maintenanceRecord.status === 'PENDING_MANAGER_APPROVAL' &&
+                        (currentUser?.role === 'ADMIN' || currentUser?.role === 'MAINTENANCE_MANAGER')) && {
+                        text: 'Approve (Manager)',
+                        className: 'primary',
+                        onClick: () => handleAction('APPROVE_MANAGER'),
+                        icon: <FaCheckCircle />
+                    },
+                    // Finance approval is handled in Finance Module, maybe show specific message or disabled button
+                    (maintenanceRecord.status === 'PENDING_FINANCE_APPROVAL') && {
+                        text: 'Pending Finance Review',
+                        className: 'secondary',
+                        disabled: true,
+                        icon: <FaDollarSign />
                     }
-                ]}
+                ].filter(Boolean)}
             />
 
             <div className="detail-content">
-                <div className="new-tabs-header">
-                    <button 
-                        className={`new-tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+                <div className="tabs-header">
+                    <button
+                        className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
                         onClick={() => setActiveTab('overview')}
                     >
                         <FaInfoCircle /> Overview
                     </button>
-                    <button 
-                        className={`new-tab-button ${activeTab === 'steps' ? 'active' : ''}`}
+                    <button
+                        className={`tab-button ${activeTab === 'steps' ? 'active' : ''}`}
                         onClick={() => setActiveTab('steps')}
                     >
                         <FaTools /> Maintenance Steps ({maintenanceRecord.totalSteps || 0})
+                    </button>
+                    <button
+                        className={`tab-button ${activeTab === 'history' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('history')}
+                    >
+                        <FaClock /> History
                     </button>
                 </div>
 
                 <div className="tab-content">
                     {activeTab === 'overview' && (
                         <div className="overview-tab">
+                            {/* ... existing overview content ... */}
                             <div className="overview-grid">
+                                {maintenanceRecord.status === 'REJECTED' && maintenanceRecord.rejectionReason && (
+                                    <div className="overview-section full-width-alert">
+                                        <div className="alert alert-danger" style={{
+                                            padding: '15px',
+                                            backgroundColor: '#fff5f5',
+                                            border: '1px solid #fc8181',
+                                            borderRadius: '8px',
+                                            color: '#c53030',
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            gap: '10px'
+                                        }}>
+                                            <FaExclamationTriangle size={20} style={{ marginTop: '2px' }} />
+                                            <div>
+                                                <h4 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '600' }}>Rejection Reason</h4>
+                                                <p style={{ margin: 0 }}>{maintenanceRecord.rejectionReason}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="overview-section">
                                     <h3>Equipment Information</h3>
                                     <div className="info-grid">
@@ -228,7 +346,7 @@ const MaintenanceRecordDetail = () => {
                                 </div>
 
                                 <div className="overview-section">
-                                    <h3>Timeline</h3>
+                                    <h3>Timeline Summary</h3>
                                     <div className="info-grid">
                                         <div className="info-item">
                                             <label>Creation Date</label>
@@ -285,9 +403,38 @@ const MaintenanceRecordDetail = () => {
                                     <h3>Financial Information</h3>
                                     <div className="info-grid">
                                         <div className="info-item">
-                                            <label>Total Cost</label>
+                                            <label>Expected Cost / Budget Request</label>
+                                            <span className="cost">{formatCurrency(maintenanceRecord.expectedCost || maintenanceRecord.estimatedCost || 0)}</span>
+                                        </div>
+                                        {maintenanceRecord.approvedBudget && (
+                                            <div className="info-item">
+                                                <label>Approved Budget</label>
+                                                <span className="cost approved">{formatCurrency(maintenanceRecord.approvedBudget)}</span>
+                                            </div>
+                                        )}
+                                        {maintenanceRecord.consumedBudget !== undefined && maintenanceRecord.consumedBudget !== null && (
+                                            <div className="info-item">
+                                                <label>Consumed Budget</label>
+                                                <span className="cost">{formatCurrency(maintenanceRecord.consumedBudget)}</span>
+                                            </div>
+                                        )}
+                                        {maintenanceRecord.remainingBudget !== undefined && maintenanceRecord.remainingBudget !== null && (
+                                            <div className="info-item">
+                                                <label>Remaining Budget</label>
+                                                <span className={`cost ${maintenanceRecord.isOverBudget ? 'over-budget' : maintenanceRecord.remainingBudget < (maintenanceRecord.approvedBudget * 0.2) ? 'warning' : 'remaining'}`}>
+                                                    {formatCurrency(maintenanceRecord.remainingBudget)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="info-item">
+                                            <label>Total Actual Cost</label>
                                             <span className="cost">{formatCurrency(maintenanceRecord.totalCost)}</span>
                                         </div>
+                                        {maintenanceRecord.isOverBudget && (
+                                            <div className="info-item full-width">
+                                                <span className="budget-warning">⚠️ This maintenance record has exceeded its approved budget. Contact finance to request an increase.</span>
+                                            </div>
+                                        )}
                                         {maintenanceRecord.isOverdue && (
                                             <div className="info-item">
                                                 <label>Status</label>
@@ -302,16 +449,31 @@ const MaintenanceRecordDetail = () => {
 
                     {activeTab === 'steps' && (
                         <div className="steps-tab">
-                            <MaintenanceSteps 
-                                recordId={recordId} 
+                            <MaintenanceSteps
+                                recordId={recordId}
                                 onStepUpdate={handleStepUpdate}
                             />
                         </div>
                     )}
+
+                    {activeTab === 'history' && (
+                        <div className="history-tab">
+                            <MaintenanceTimeline events={maintenanceRecord.timelineEvents} />
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {isEditModalOpen && (
+                <MaintenanceRecordModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    onSubmit={handleEditSubmit}
+                    editingRecord={maintenanceRecord}
+                />
+            )}
         </div>
     );
 };
 
-export default MaintenanceRecordDetail; 
+export default MaintenanceRecordDetail;

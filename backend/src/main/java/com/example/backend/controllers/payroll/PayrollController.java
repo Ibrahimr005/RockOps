@@ -28,6 +28,7 @@ public class PayrollController {
     private final PayrollNotificationService notificationService;
     private final LeaveReviewService leaveReviewService;
     private final OvertimeReviewService overtimeReviewService;
+    private final DeductionReviewService deductionReviewService;
 
     // ========================================
     // EXISTING ENDPOINTS (UNCHANGED)
@@ -740,7 +741,7 @@ public class PayrollController {
                 .paidAt(payroll.getPaidAt())
                 .paidBy(payroll.getPaidBy())
                 .publicHolidayCount(payroll.getPublicHolidays() != null ? payroll.getPublicHolidays().size() : 0)
-                // ⭐ NEW: Attendance workflow fields
+                // Attendance workflow fields
                 .attendanceImported(payroll.getAttendanceImported())
                 .attendanceFinalized(payroll.getAttendanceFinalized())
                 .attendanceImportCount(payroll.getAttendanceImportCount())
@@ -748,6 +749,35 @@ public class PayrollController {
                 .attendanceFinalizedBy(payroll.getAttendanceFinalizedBy())
                 .attendanceFinalizedAt(payroll.getAttendanceFinalizedAt())
                 .hrNotificationSent(payroll.getHrNotificationSent())
+                // Leave workflow fields
+                .leaveProcessed(payroll.getLeaveProcessed())
+                .leaveFinalized(payroll.getLeaveFinalized())
+                .lastLeaveProcessedAt(payroll.getLastLeaveProcessedAt())
+                .leaveFinalizedBy(payroll.getLeaveFinalizedBy())
+                .leaveFinalizedAt(payroll.getLeaveFinalizedAt())
+                .leaveHrNotificationSent(payroll.getLeaveHrNotificationSent())
+                // Overtime workflow fields
+                .overtimeProcessed(payroll.getOvertimeProcessed())
+                .overtimeFinalized(payroll.getOvertimeFinalized())
+                .lastOvertimeProcessedAt(payroll.getLastOvertimeProcessedAt())
+                .overtimeFinalizedBy(payroll.getOvertimeFinalizedBy())
+                .overtimeFinalizedAt(payroll.getOvertimeFinalizedAt())
+                .overtimeHrNotificationSent(payroll.getOvertimeHrNotificationSent())
+                // Deduction workflow fields
+                .deductionProcessed(payroll.getDeductionProcessed())
+                .deductionFinalized(payroll.getDeductionFinalized())
+                .lastDeductionProcessedAt(payroll.getLastDeductionProcessedAt())
+                .deductionFinalizedBy(payroll.getDeductionFinalizedBy())
+                .deductionFinalizedAt(payroll.getDeductionFinalizedAt())
+                .deductionHrNotificationSent(payroll.getDeductionHrNotificationSent())
+                // Finance workflow fields
+                .sentToFinanceAt(payroll.getSentToFinanceAt())
+                .sentToFinanceBy(payroll.getSentToFinanceBy())
+                .paymentSourceType(payroll.getPaymentSourceType())
+                .paymentSourceId(payroll.getPaymentSourceId())
+                .paymentSourceName(payroll.getPaymentSourceName())
+                .financeReviewedAt(payroll.getFinanceReviewedAt())
+                .financeReviewedBy(payroll.getFinanceReviewedBy())
                 .build();
     }
 
@@ -1342,6 +1372,249 @@ public class PayrollController {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             log.error("Error fetching overtime records for payroll: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ========================================
+    // DEDUCTION REVIEW WORKFLOW ENDPOINTS
+    // ========================================
+
+    /**
+     * Get Deduction Review Status
+     * Returns current state of deduction review workflow
+     *
+     * GET /api/v1/payroll/{id}/deduction-status
+     */
+    @GetMapping("/{id}/deduction-status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER')")
+    public ResponseEntity<?> getDeductionStatus(@PathVariable UUID id) {
+        try {
+            Payroll payroll = payrollService.getPayrollById(id);
+
+            Map<String, Object> status = new HashMap<>();
+            status.put("deductionProcessed", payroll.getDeductionProcessed() != null ? payroll.getDeductionProcessed() : false);
+            status.put("deductionFinalized", payroll.getDeductionFinalized() != null ? payroll.getDeductionFinalized() : false);
+            status.put("canEdit", payroll.canEditDeduction());
+            status.put("canFinalize", payroll.canFinalizeDeduction());
+            status.put("lastProcessedAt", payroll.getLastDeductionProcessedAt());
+            status.put("finalizedBy", payroll.getDeductionFinalizedBy());
+            status.put("finalizedAt", payroll.getDeductionFinalizedAt());
+            status.put("hrNotificationSent", payroll.getDeductionHrNotificationSent() != null ? payroll.getDeductionHrNotificationSent() : false);
+            status.put("hrNotificationSentAt", payroll.getDeductionHrNotificationSentAt());
+            status.put("summary", payroll.getDeductionSummary());
+
+            return ResponseEntity.ok(status);
+
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error getting deduction status: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Process Deduction Review
+     * Calculates all deductions (including loans) for employees in the payroll
+     *
+     * POST /api/v1/payroll/{id}/process-deduction-review
+     */
+    @PostMapping("/{id}/process-deduction-review")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> processDeductionReview(
+            @PathVariable UUID id,
+            Principal principal) {
+
+        log.info("========================================");
+        log.info("PROCESS DEDUCTION REVIEW - START");
+        log.info("========================================");
+
+        try {
+            log.info("Payroll ID: {}", id);
+            String username = principal != null ? principal.getName() : "SYSTEM";
+
+            // Get payroll
+            Payroll payroll = payrollService.getPayrollById(id);
+            log.info("Payroll found: {} to {}, Status: {}", payroll.getStartDate(), payroll.getEndDate(), payroll.getStatus());
+
+            // Validate state
+            Boolean deductionFinalized = payroll.getDeductionFinalized();
+            if (Boolean.TRUE.equals(deductionFinalized)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("Deductions are finalized and locked. Cannot process.", System.currentTimeMillis()));
+            }
+
+            if (payroll.getStatus() != PayrollStatus.DEDUCTION_REVIEW) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("Cannot process deduction review. Payroll must be in DEDUCTION_REVIEW status. Current: " + payroll.getStatus(), System.currentTimeMillis()));
+            }
+
+            // Process deduction review (includes all deduction types: absence, late, leave, loan, other)
+            DeductionReviewSummaryDTO summary = deductionReviewService.processDeductionReview(payroll);
+
+            // Save payroll after deduction processing
+            payrollService.recalculateTotals(payroll.getId());
+
+            // Check for issues and notify HR
+            if (summary.getIssues() != null && !summary.getIssues().isEmpty()) {
+                try {
+                    notificationService.notifyHRDeductionIssues(payroll, summary.getIssues().size());
+                } catch (Exception e) {
+                    log.error("Failed to send notification:", e);
+                }
+            }
+
+            log.info("PROCESS DEDUCTION REVIEW - SUCCESS: {}", summary.getMessage());
+
+            return ResponseEntity.ok(summary);
+
+        } catch (IllegalStateException e) {
+            log.error("STATE ERROR: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(e.getMessage(), System.currentTimeMillis()));
+
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception e) {
+            log.error("Error processing deduction review: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to process deduction review: " + e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
+     * Finalize Deduction Review (LOCK IT)
+     * Prevents further processing, moves to Confirmed & Locked phase
+     *
+     * POST /api/v1/payroll/{id}/finalize-deduction
+     */
+    @PostMapping("/{id}/finalize-deduction")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> finalizeDeduction(@PathVariable UUID id, Principal principal) {
+        log.info("Finalizing deduction review for payroll: {} by user: {}", id, principal.getName());
+
+        try {
+            Payroll payroll = payrollService.getPayrollById(id);
+
+            // Initialize deduction fields if null
+            if (payroll.getDeductionProcessed() == null) {
+                payroll.setDeductionProcessed(false);
+            }
+            if (payroll.getDeductionFinalized() == null) {
+                payroll.setDeductionFinalized(false);
+            }
+
+            // Validate can finalize
+            if (!payroll.canFinalizeDeduction()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("Cannot finalize deduction review in current state. Ensure deductions have been processed first.", System.currentTimeMillis()));
+            }
+
+            // Finalize (LOCK)
+            payroll.finalizeDeduction(principal.getName());
+
+            // Move to next phase
+            payroll.setStatus(PayrollStatus.CONFIRMED_AND_LOCKED);
+            payroll.setLockedAt(java.time.LocalDateTime.now());
+            payroll.setLockedBy(principal.getName());
+
+            payrollService.save(payroll);
+
+            // Notify HR
+            notificationService.notifyHRDeductionFinalized(payroll, principal.getName());
+
+            log.info("Deduction review finalized for payroll {} by {}", id, principal.getName());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Deduction review finalized and payroll locked successfully");
+            response.put("newStatus", payroll.getStatus().toString());
+            response.put("finalizedBy", payroll.getDeductionFinalizedBy());
+            response.put("finalizedAt", payroll.getDeductionFinalizedAt());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalStateException e) {
+            log.error("Cannot finalize deduction review: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(e.getMessage(), System.currentTimeMillis()));
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error finalizing deduction review: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to finalize deduction review: " + e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
+     * Send Notification to HR for Deduction Review
+     *
+     * POST /api/v1/payroll/{id}/notify-hr-deduction
+     */
+    @PostMapping("/{id}/notify-hr-deduction")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> notifyHRForDeduction(@PathVariable UUID id, Principal principal) {
+        log.info("Sending HR notification for deduction review: {} by user: {}", id, principal.getName());
+
+        try {
+            Payroll payroll = payrollService.getPayrollById(id);
+
+            if (Boolean.TRUE.equals(payroll.getDeductionFinalized())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("Deductions are already finalized. Cannot send notification.", System.currentTimeMillis()));
+            }
+
+            // Send notification
+            notificationService.notifyHRForDeductionReview(payroll, principal.getName());
+
+            // Mark as sent
+            payroll.markDeductionHrNotificationSent();
+            payrollService.save(payroll);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "HR notification sent successfully");
+            response.put("sentAt", payroll.getDeductionHrNotificationSentAt());
+
+            return ResponseEntity.ok(response);
+
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error sending HR notification for deduction: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to send notification: " + e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
+     * Get Deduction Summaries for Payroll
+     * Returns all deductions breakdown by employee (includes loans as a deduction type)
+     *
+     * GET /api/v1/payroll/{id}/deduction-summaries
+     */
+    @GetMapping("/{id}/deduction-summaries")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER')")
+    public ResponseEntity<?> getDeductionSummariesForPayroll(@PathVariable UUID id) {
+        try {
+            log.info("Fetching deduction summaries for payroll: {}", id);
+
+            // Verify payroll exists
+            payrollService.getPayrollById(id);
+
+            // Get all deduction summaries (loan deductions included as a category)
+            List<DeductionReviewSummaryDTO.EmployeeDeductionSummaryDTO> summaries =
+                    deductionReviewService.getPayrollDeductionSummaries(id);
+
+            return ResponseEntity.ok(summaries);
+
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error fetching deduction summaries for payroll: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

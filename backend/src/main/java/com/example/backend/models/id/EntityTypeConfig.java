@@ -28,6 +28,9 @@ public enum EntityTypeConfig {
     VACANCY("VAC", 6),
     WORK_TYPE("WT", 6),
 
+    // Payroll
+    LOAN("LOAN", 6),
+
     // General
     SITE("SITE", 6),
     TRANSACTION("TXN", 6);

@@ -221,7 +221,7 @@ const EmployeeDetails = () => {
                 <IntroCard
                     title={getFullName()}
                     label="EMPLOYEE DETAILS"
-                    subtitle={`Employee ID: #${employee.id} • Hired ${formatDate(employee.hireDate)} (${calculateDaysSinceHire(employee.hireDate)})`}
+                    subtitle={`Employee #: ${employee.employeeNumber || 'N/A'} • Hired ${formatDate(employee.hireDate)} (${calculateDaysSinceHire(employee.hireDate)})`}
                     breadcrumbs={getBreadcrumbs()}
                     lightModeImage={employee.photoUrl || null}
                     darkModeImage={employee.photoUrl || null}

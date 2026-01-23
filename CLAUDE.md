@@ -108,6 +108,11 @@ Entity (JPA) → Repository (Data Access) → Service (Business Logic) → Contr
 
 5. **Custom ID Generation:** Entity IDs use custom sequences via `EntityIdSequence` for human-readable identifiers.
 
+6. **Entity Number Formats:**
+   - **Employee Number:** `EMP-YYYY-#####` (e.g., `EMP-2025-00001`) - Year from hire date, year-based sequential counter
+   - **Deduction Number:** `<CODE>-######` (e.g., `TAX-000001`, `LOAN-000012`) - Uses deduction type code prefix
+   - Repository methods: `getMaxEmployeeNumberSequenceByYear()`, `getMaxDeductionNumberSequenceByTypeCode()`
+
 ### Frontend Architecture
 
 **Service-Component Pattern:**
@@ -207,6 +212,16 @@ These rules prevent breaking changes in a multi-developer environment:
 - **Naming Convention:** `V{version}__{description}.sql` (e.g., `V1__initial_schema.sql`)
 - **Schema Changes:** ALWAYS create a new Flyway migration, never modify entities expecting JPA to update schema
 - **Baseline Version:** 99 (configured in `application.properties`)
+
+### Recent Migrations (2026-01-23):
+- `V2026012306__Populate_employee_numbers.sql` - Employee number generation with format `EMP-YYYY-#####`
+- `V2026012307__Fix_deduction_numbers_format.sql` - Deduction numbers converted from `DED-XXXX` to `<CODE>-######`
+- `V2026012308__Fix_existing_employee_numbers_format.sql` - Additional employee number fixes
+
+**Migration Best Practices:**
+- Always create backup tables before data modifications
+- Include verification queries to confirm successful migration
+- Use COALESCE and CASE statements to handle NULL values gracefully
 
 ## File Storage
 

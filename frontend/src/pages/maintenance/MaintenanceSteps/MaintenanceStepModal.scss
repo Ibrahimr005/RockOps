@@ -311,11 +311,13 @@
     margin-top: 1rem;
 }
 
+
 .merchant-items-section {
     margin-top: 1.5rem;
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border-radius: 4px;
+    padding: 1.25rem;
+    background-color: var(--color-surface-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
 
     h4 {
         margin-top: 0;
@@ -327,8 +329,8 @@
 
     .section-description {
         font-size: 0.875rem;
-        color: #666;
-        margin-bottom: 1rem;
+        color: var(--color-text-secondary);
+        margin-bottom: 1.25rem;
     }
 }
 
@@ -347,46 +349,54 @@
     }
 
     .remove-item-button {
-        width: 32px;
+        width: 38px;
         height: 38px;
         padding: 0;
-        background-color: #dc3545;
+        background-color: var(--color-delete);
         color: white;
         border: none;
-        border-radius: 4px;
-        font-size: 1.5rem;
-        line-height: 1;
+        border-radius: var(--radius-sm);
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: background-color var(--transition-fast);
 
         &:hover {
-            background-color: #c82333;
+            background-color: var(--color-delete-hover);
         }
     }
 }
 
 .add-item-button {
     margin-top: 0.5rem;
-    padding: 0.5rem 1rem;
-    background-color: #28a745;
+    padding: 0.625rem 1.25rem;
+    background-color: var(--color-success);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 0.875rem;
-    transition: background-color 0.2s;
+    font-weight: 500;
+    transition: background-color var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 
     &:hover {
-        background-color: #218838;
+        background-color: var(--color-success-hover);
     }
 }
 
 .merchant-total {
-    margin-top: 1rem;
+    margin-top: 1.25rem;
     padding-top: 1rem;
-    border-top: 1px solid #dee2e6;
+    border-top: 1px solid var(--border-color);
     text-align: right;
     font-size: 1.125rem;
+    color: var(--color-text-primary);
+    font-weight: 600;
 }
 
 .radio-group {

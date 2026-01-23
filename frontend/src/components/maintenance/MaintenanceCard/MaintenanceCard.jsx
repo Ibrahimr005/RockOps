@@ -23,51 +23,83 @@ const MaintenanceCard = ({
     const getCostDisplay = () => {
         // Handle field naming differences between MaintenanceRecord and DirectPurchaseTicket
         const status = record.status;
-        const expectedTotalCost = record.expectedCost || record.expectedTotalCost || record.totalExpectedCost || 0;
-        const actualTotalCost = record.actualTotalCost || record.totalActualCost || 0;
-        const costDifference = record.costDifference || (actualTotalCost - expectedTotalCost);
+        const expectedCost = record.expectedCost || record.estimatedCost || 0;
+        const approvedBudget = record.approvedBudget;
+        const consumedBudget = record.consumedBudget || 0;
+        const remainingBudget = record.remainingBudget;
+        const isOverBudget = record.isOverBudget;
+        const totalCost = record.totalCost || record.actualTotalCost || 0;
 
         if (status === 'COMPLETED') {
-            // FINISHED: Show only Total Cost
+            // FINISHED: Show Total Cost and Budget comparison
             return (
                 <div className="cost-details">
+                    {approvedBudget && (
+                        <div className="cost-row secondary">
+                            <span className="cost-type">Approved Budget</span>
+                            <span className="cost-amount">{formatCurrency(approvedBudget)}</span>
+                        </div>
+                    )}
                     <div className="cost-row primary">
                         <span className="cost-type">Total Cost</span>
-                        <span className="cost-amount">{formatCurrency(actualTotalCost)}</span>
+                        <span className="cost-amount">{formatCurrency(totalCost)}</span>
                     </div>
-                    {Math.abs(costDifference) > 0.01 && (
-                        <div className={`cost-row difference ${costDifference > 0 ? 'over-budget' : 'under-budget'}`}>
+                    {approvedBudget && (
+                        <div className={`cost-row difference ${isOverBudget ? 'over-budget' : 'under-budget'}`}>
                             <span className="cost-type">
-                                {costDifference > 0 ? 'Over Budget' : 'Under Budget'}
+                                {isOverBudget ? 'Over Budget' : 'Under Budget'}
                             </span>
                             <span className="cost-amount">
-                                {costDifference > 0 ? '+' : ''}{formatCurrency(costDifference)}
+                                {formatCurrency(Math.abs(approvedBudget - totalCost))}
                             </span>
                         </div>
                     )}
                 </div>
             );
-        } else if (status === 'ACTIVE' || status === 'IN_PROGRESS') {
-            // ACTIVE: Show Expected Cost + Actual Cost So Far
+        } else if (status === 'ACTIVE' || status === 'IN_PROGRESS' || status === 'APPROVED_BY_FINANCE') {
+            // ACTIVE: Show Budget, Consumed, and Remaining
+            return (
+                <div className="cost-details">
+                    {approvedBudget ? (
+                        <>
+                            <div className="cost-row primary">
+                                <span className="cost-type">Budget</span>
+                                <span className="cost-amount">{formatCurrency(approvedBudget)}</span>
+                            </div>
+                            <div className="cost-row secondary">
+                                <span className="cost-type">Consumed</span>
+                                <span className="cost-amount">{formatCurrency(consumedBudget)}</span>
+                            </div>
+                            <div className={`cost-row ${isOverBudget ? 'over-budget' : remainingBudget < approvedBudget * 0.2 ? 'warning' : ''}`}>
+                                <span className="cost-type">Remaining</span>
+                                <span className="cost-amount">{formatCurrency(remainingBudget)}</span>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="cost-row primary">
+                            <span className="cost-type">Expected Cost</span>
+                            <span className="cost-amount">{formatCurrency(expectedCost)}</span>
+                        </div>
+                    )}
+                </div>
+            );
+        } else if (status === 'PENDING_FINANCE_APPROVAL' || status === 'PENDING_MANAGER_APPROVAL') {
+            // Pending approval: Show Expected Cost as budget request
             return (
                 <div className="cost-details">
                     <div className="cost-row primary">
-                        <span className="cost-type">Expected Cost</span>
-                        <span className="cost-amount">{formatCurrency(expectedTotalCost)}</span>
-                    </div>
-                    <div className="cost-row secondary">
-                        <span className="cost-type">Actual Cost So Far</span>
-                        <span className="cost-amount">{formatCurrency(actualTotalCost)}</span>
+                        <span className="cost-type">Budget Request</span>
+                        <span className="cost-amount">{formatCurrency(expectedCost)}</span>
                     </div>
                 </div>
             );
         } else {
-            // SCHEDULED, ON_HOLD, etc.: Show only Expected Cost
+            // DRAFT, SCHEDULED, ON_HOLD, etc.: Show only Expected Cost
             return (
                 <div className="cost-details">
                     <div className="cost-row primary">
                         <span className="cost-type">Expected Cost</span>
-                        <span className="cost-amount">{formatCurrency(expectedTotalCost)}</span>
+                        <span className="cost-amount">{formatCurrency(expectedCost)}</span>
                     </div>
                 </div>
             );

@@ -1,6 +1,6 @@
 # RockOps Project Knowledgebase
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-01-23
 **Version:** 1.0
 **Purpose:** Comprehensive documentation of the RockOps mining site management system architecture, features, and development history.
 
@@ -178,7 +178,7 @@ AVAILABLE → IN_USE → UNDER_MAINTENANCE → OUT_OF_SERVICE → DISPOSED
 **Purpose**: Manage employees, attendance, leave, promotions, and recruitment.
 
 **Key Entities**:
-- `Employee` - Core employee with salary, contract, position
+- `Employee` - Core employee with salary, contract, position, employee number (`EMP-YYYY-#####`)
 - `JobPosition` - Position definitions with hierarchy
 - `Department` - Organizational structure
 - `Attendance` - Daily attendance records
@@ -186,8 +186,13 @@ AVAILABLE → IN_USE → UNDER_MAINTENANCE → OUT_OF_SERVICE → DISPOSED
 - `PromotionRequest` - Employee promotion workflow
 - `VacationBalance` - Leave balance tracking
 - `EmployeeDocument` - Employee file storage
+- `EmployeeDeduction` - Employee deductions with deduction number (`<CODE>-######`)
 - `Vacancy` - Job openings
 - `Candidate` - Recruitment applicants
+
+**Key DTOs**:
+- `EmployeeResponseDTO` - Full employee response including `employeeNumber`
+- `EmployeeSummaryDTO` - Minimal employee data with `employeeNumber` for lists and dropdowns
 
 **Employee Contract Types**:
 - `HOURLY` - Paid by hour
@@ -205,6 +210,18 @@ AVAILABLE → IN_USE → UNDER_MAINTENANCE → OUT_OF_SERVICE → DISPOSED
 ```
 PENDING → UNDER_REVIEW → APPROVED → IMPLEMENTED
 ```
+
+**Entity Number Formats**:
+- **Employee Number:** `EMP-YYYY-#####` (e.g., `EMP-2025-00001`)
+  - `YYYY` = Year from hire date
+  - `#####` = Year-based sequential counter (5 digits, zero-padded)
+  - Unique constraint on `employee_number` column
+  - Generated in `HREmployeeService.generateEmployeeNumber()`
+
+- **Deduction Number:** `<CODE>-######` (e.g., `TAX-000001`, `LOAN-000012`)
+  - `<CODE>` = Deduction type code (from `DeductionType.code`)
+  - `######` = Type-based sequential counter (6 digits, zero-padded)
+  - Generated in `EmployeeDeductionService` using type code
 
 **Key Features**:
 - Multi-contract type support with salary calculations
@@ -1250,6 +1267,38 @@ String poNumber = entityIdGeneratorService.generateNextId(
 - Database-backed (survives restarts)
 - Centralized management
 
+**Domain-Specific ID Formats** (Not using EntityIdGeneratorService):
+
+**Employee Number**: `EMP-YYYY-#####`
+```java
+// Repository query
+@Query(value = "SELECT MAX(CAST(SUBSTRING(e.employee_number, 10) AS BIGINT)) " +
+       "FROM employee e WHERE e.employee_number LIKE CONCAT('EMP-', :year, '-%')", nativeQuery = true)
+Long getMaxEmployeeNumberSequenceByYear(@Param("year") String year);
+
+// Service method
+private String generateEmployeeNumber(LocalDate hireDate) {
+    int year = hireDate != null ? hireDate.getYear() : LocalDate.now().getYear();
+    String yearStr = String.valueOf(year);
+    Long maxSequence = employeeRepository.getMaxEmployeeNumberSequenceByYear(yearStr);
+    long nextSequence = (maxSequence != null ? maxSequence : 0) + 1;
+    return String.format("EMP-%s-%05d", yearStr, nextSequence);
+}
+```
+
+**Employee Deduction Number**: `<CODE>-######`
+```java
+// Repository query
+@Query(value = "SELECT MAX(CAST(SUBSTRING(ed.deduction_number, LENGTH(:typeCode) + 2) AS BIGINT)) " +
+       "FROM employee_deductions ed WHERE ed.deduction_number LIKE CONCAT(:typeCode, '-%')", nativeQuery = true)
+Long getMaxDeductionNumberSequenceByTypeCode(@Param("typeCode") String typeCode);
+
+// Generation method
+public static String generateDeductionNumber(String typeCode, long sequenceNumber) {
+    return String.format("%s-%06d", typeCode, sequenceNumber);
+}
+```
+
 ---
 
 ### 6. Multi-Site Data Isolation
@@ -2065,6 +2114,32 @@ if (!SecurityUtils.hasRole(user, Role.EQUIPMENT_MANAGER)) {
 - Documented critical workflows
 - Added technical implementation details
 - Created comprehensive reference document
+
+### 2026-01-23 - Employee Number & Deduction Number System
+**Backend Changes:**
+- `EmployeeRepository.java` - Added `getMaxEmployeeNumberSequenceByYear()` native query for year-based employee number generation
+- `HREmployeeService.java` - Added `generateEmployeeNumber(LocalDate hireDate)` method with format `EMP-YYYY-#####`
+- `EmployeeDeductionRepository.java` - Added `getMaxDeductionNumberSequenceByTypeCode()` native query for type-based deduction numbers
+- `EmployeeDeduction.java` - Updated `generateDeductionNumber(String typeCode, long sequenceNumber)` to use type code prefix
+- `EmployeeResponseDTO.java` - Added `employeeNumber` field
+- `EmployeeSummaryDTO.java` - Added `employeeNumber` field and updated `fromEntity()` mapper
+- `EmployeeController.java` - Added `employeeNumber` to response map
+
+**Frontend Changes:**
+- `EmployeesList.jsx` - Added "Employee #" column with monospace styling
+- `EmployeeDetails.jsx` - Updated subtitle to display employee number instead of UUID
+- `EmployeesList.scss` - Added `.employee-number` styling (monospace font, primary color, badge styling)
+
+**Database Migrations:**
+- `V2026012306__Populate_employee_numbers.sql` - Populates existing employee numbers with format `EMP-YYYY-#####` based on hire year
+- `V2026012307__Fix_deduction_numbers_format.sql` - Fixes existing `DED-XXXX` format to `<CODE>-XXXXXX` using deduction type codes
+- `V2026012308__Fix_existing_employee_numbers_format.sql` - Additional migration for any remaining employee numbers
+
+**Key Technical Details:**
+- Employee numbers are year-partitioned (each year starts from 00001)
+- Deduction numbers use the deduction type code as prefix (e.g., TAX, LOAN, INS)
+- All migrations include backup tables for rollback capability
+- Unique constraint on `employee_number` column ensures no duplicates
 
 ---
 

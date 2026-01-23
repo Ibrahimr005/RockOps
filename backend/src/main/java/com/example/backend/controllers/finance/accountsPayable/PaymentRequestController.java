@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -48,6 +49,20 @@ public class PaymentRequestController {
     public ResponseEntity<List<PaymentRequestResponseDTO>> getReadyToPay() {
         try {
             List<PaymentRequestResponseDTO> requests = paymentRequestService.getApprovedAndReadyToPay();
+            return ResponseEntity.ok(requests);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * GET /api/v1/finance/payment-requests
+     * Get all payment requests
+     */
+    @GetMapping
+    public ResponseEntity<List<PaymentRequestResponseDTO>> getAllPaymentRequests() {
+        try {
+            List<PaymentRequestResponseDTO> requests = paymentRequestService.getAllPaymentRequests();
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -112,23 +127,53 @@ public class PaymentRequestController {
      * POST /api/v1/finance/payment-requests/create-from-po/{purchaseOrderId}
      * Create payment request from purchase order (called by Procurement)
      */
-    @PostMapping("/create-from-po/{purchaseOrderId}")
+// Remove this old endpoint completely and replace with:
+
+    /**
+     * POST /api/v1/finance/payment-requests/create-from-po/{purchaseOrderId}/{offerId}
+     * Create payment request from purchase order (called by Frontend)
+     */
+    @PostMapping("/create-from-po/{purchaseOrderId}/{offerId}")
     public ResponseEntity<?> createPaymentRequestFromPO(
             @PathVariable UUID purchaseOrderId,
             @PathVariable UUID offerId,
-            @AuthenticationPrincipal User user) {
+            @RequestBody(required = false) Map<String, String> body) {
         try {
+            System.out.println("🔵 Controller: Creating payment request");
+            System.out.println("🔵 PO ID: " + purchaseOrderId);
+            System.out.println("🔵 Offer ID: " + offerId);
+
+            // Get username from body or use "system"
+            String username = "system";
+            if (body != null && body.containsKey("username")) {
+                username = body.get("username");
+                System.out.println("🔵 Username from body: " + username);
+            } else {
+                System.out.println("⚠️ No username in body, using: system");
+            }
+
             PaymentRequestResponseDTO paymentRequest = paymentRequestService.createPaymentRequestFromPO(
                     purchaseOrderId,
                     offerId,
-                    user.getUsername()
+                    username
             );
+
+            System.out.println("✅ Payment request created: " + paymentRequest.getRequestNumber());
             return ResponseEntity.ok(paymentRequest);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            System.err.println("❌ Runtime error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", e.getMessage(),
+                    "purchaseOrderId", purchaseOrderId.toString(),
+                    "offerId", offerId.toString()
+            ));
         } catch (Exception e) {
+            System.err.println("❌ Server error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error creating payment request: " + e.getMessage());
+                    .body(Map.of("error", "Error creating payment request: " + e.getMessage()));
         }
     }
 }

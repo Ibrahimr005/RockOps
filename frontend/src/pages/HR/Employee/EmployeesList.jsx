@@ -134,6 +134,16 @@ const EmployeesList = () => {
             )
         },
         {
+            header: 'Employee #',
+            accessor: 'employeeNumber',
+            width: '140px',
+            render: (employee) => (
+                <span className="employee-number">
+                    {employee.employeeNumber || '-'}
+                </span>
+            )
+        },
+        {
             header: 'Name',
             accessor: 'fullName',
             render: (employee) => (
@@ -425,15 +435,13 @@ const EmployeesList = () => {
 
     // Define filterable columns - removed Department from here
     const filterableColumns = [
+        { header: 'Employee #', accessor: 'employeeNumber' },
         { header: 'Name', accessor: 'fullName' },
         { header: 'Email', accessor: 'email' },
         {header: 'Department', accessor: 'jobPositionDepartment', filterType: 'select' },
         {header: 'Position', accessor: 'jobPositionName', filterType: 'select' },
         {header: 'Status', accessor: 'status', filterType: 'select' },
         {header: 'Contract Type', accessor: 'jobPositionType', filterType: 'select' },
-
-
-
     ];
 
     // Define custom filters - Position, Department, Status, and Contract Type as dropdowns

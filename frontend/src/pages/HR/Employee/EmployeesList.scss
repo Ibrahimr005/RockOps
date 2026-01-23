@@ -48,6 +48,18 @@
     }
 }
 
+/* Employee Number Styles */
+.employee-number {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    background-color: var(--color-edit-bg);
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
 /* Employee Name Styles */
 .employee-name {
     &__primary {

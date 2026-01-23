@@ -29,6 +29,9 @@ public class Employee
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(name = "employee_number", unique = true, length = 20)
+    private String employeeNumber;
+
     @Column(nullable = false)
     private String firstName;
 

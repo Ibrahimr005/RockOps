@@ -1,5 +1,6 @@
 -- Migration: Add 4-step workflow fields to direct_purchase_tickets
 -- This adds support for the new 4-step workflow while maintaining backwards compatibility with legacy tickets
+-- Made idempotent to handle re-runs
 
 -- ========== 1. Create direct_purchase_items table ==========
 CREATE TABLE IF NOT EXISTS direct_purchase_items (
@@ -14,8 +15,8 @@ CREATE TABLE IF NOT EXISTS direct_purchase_items (
     version BIGINT
 );
 
-CREATE INDEX idx_direct_purchase_items_ticket_id ON direct_purchase_items(direct_purchase_ticket_id);
-CREATE INDEX idx_direct_purchase_items_created_at ON direct_purchase_items(created_at);
+CREATE INDEX IF NOT EXISTS idx_direct_purchase_items_ticket_id ON direct_purchase_items(direct_purchase_ticket_id);
+CREATE INDEX IF NOT EXISTS idx_direct_purchase_items_created_at ON direct_purchase_items(created_at);
 
 -- ========== 2. Add new columns to direct_purchase_tickets ==========
 
@@ -58,12 +59,44 @@ ALTER TABLE  direct_purchase_tickets ADD COLUMN IF NOT EXISTS completed_at TIMES
 -- ========== 3. Mark all existing tickets as legacy ==========
 UPDATE direct_purchase_tickets SET is_legacy_ticket = true WHERE is_legacy_ticket = false;
 
--- ========== 4. Modify existing columns to be nullable for new workflow ==========
+-- ========== 4. Modify existing columns to be nullable for new workflow (idempotent) ==========
 -- For new workflow, spare_part is deprecated (use items instead)
 -- For legacy tickets, these fields remain required
-ALTER TABLE direct_purchase_tickets ALTER COLUMN spare_part DROP NOT NULL;
-ALTER TABLE direct_purchase_tickets ALTER COLUMN expected_parts_cost DROP NOT NULL;
-ALTER TABLE direct_purchase_tickets ALTER COLUMN expected_transportation_cost DROP NOT NULL;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'direct_purchase_tickets'
+        AND column_name = 'spare_part'
+        AND is_nullable = 'NO'
+    ) THEN
+        ALTER TABLE direct_purchase_tickets ALTER COLUMN spare_part DROP NOT NULL;
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'direct_purchase_tickets'
+        AND column_name = 'expected_parts_cost'
+        AND is_nullable = 'NO'
+    ) THEN
+        ALTER TABLE direct_purchase_tickets ALTER COLUMN expected_parts_cost DROP NOT NULL;
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'direct_purchase_tickets'
+        AND column_name = 'expected_transportation_cost'
+        AND is_nullable = 'NO'
+    ) THEN
+        ALTER TABLE direct_purchase_tickets ALTER COLUMN expected_transportation_cost DROP NOT NULL;
+    END IF;
+END $$;
 
 -- ========== 5. Create indexes for performance ==========
 CREATE INDEX IF NOT EXISTS idx_direct_purchase_tickets_current_step ON direct_purchase_tickets(current_step);
@@ -73,14 +106,22 @@ CREATE INDEX IF NOT EXISTS idx_direct_purchase_tickets_transport_contact ON dire
 CREATE INDEX IF NOT EXISTS idx_direct_purchase_tickets_transport_employee ON direct_purchase_tickets(transport_responsible_employee_id);
 CREATE INDEX IF NOT EXISTS idx_direct_purchase_tickets_completed_at ON direct_purchase_tickets(completed_at);
 
--- ========== 6. Add constraints ==========
+-- ========== 6. Add constraints (idempotent) ==========
 -- Ensure exactly one transport responsible person is set (either contact OR employee, not both)
-ALTER TABLE direct_purchase_tickets ADD CONSTRAINT chk_transport_responsible_one_only
-    CHECK (
-        (transport_responsible_contact_id IS NOT NULL AND transport_responsible_employee_id IS NULL) OR
-        (transport_responsible_contact_id IS NULL AND transport_responsible_employee_id IS NOT NULL) OR
-        (transport_responsible_contact_id IS NULL AND transport_responsible_employee_id IS NULL)
-    );
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'chk_transport_responsible_one_only'
+    ) THEN
+        ALTER TABLE direct_purchase_tickets ADD CONSTRAINT chk_transport_responsible_one_only
+            CHECK (
+                (transport_responsible_contact_id IS NOT NULL AND transport_responsible_employee_id IS NULL) OR
+                (transport_responsible_contact_id IS NULL AND transport_responsible_employee_id IS NOT NULL) OR
+                (transport_responsible_contact_id IS NULL AND transport_responsible_employee_id IS NULL)
+            );
+    END IF;
+END $$;
 
 -- ========== 7. Comments for documentation ==========
 COMMENT ON TABLE direct_purchase_items IS 'Individual items for direct purchase tickets (new 4-step workflow)';

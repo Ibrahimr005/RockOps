@@ -136,6 +136,52 @@ public class MaintenanceController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PostMapping("/records/{id}/submit-approval")
+    public ResponseEntity<Void> submitForApproval(@PathVariable UUID id) {
+        try {
+            maintenanceService.submitForApproval(id);
+            return ResponseEntity.ok().build();
+        } catch (MaintenanceException e) {
+            log.error("Error submitting for approval: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error submitting for approval: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/records/{id}/approve-manager")
+    public ResponseEntity<Void> approveByManager(@PathVariable UUID id) {
+        try {
+            maintenanceService.approveByManager(id);
+            return ResponseEntity.ok().build();
+        } catch (MaintenanceException e) {
+            log.error("Error approving by manager: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error approving by manager: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/records/{id}/reject")
+    public ResponseEntity<Void> rejectRecord(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        try {
+            String reason = body.get("rejectionReason");
+            if (reason == null || reason.trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            maintenanceService.rejectMaintenanceRecord(id, reason);
+            return ResponseEntity.ok().build();
+        } catch (MaintenanceException e) {
+            log.error("Error rejecting record: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error rejecting record: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
     
     @DeleteMapping("/records/{id}")
     public ResponseEntity<Object> deleteMaintenanceRecord(@PathVariable UUID id) {
@@ -155,15 +201,18 @@ public class MaintenanceController {
     // Maintenance Steps
     
     @PostMapping("/records/{recordId}/steps")
-    public ResponseEntity<MaintenanceStepDto> createMaintenanceStep(
+    public ResponseEntity<?> createMaintenanceStep(
             @PathVariable UUID recordId,
             @Valid @RequestBody MaintenanceStepDto dto) {
         try {
             MaintenanceStepDto created = maintenanceService.createMaintenanceStep(recordId, dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (MaintenanceException e) {
+            log.error("Maintenance exception creating step: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             log.error("Error creating maintenance step: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
     
@@ -190,15 +239,18 @@ public class MaintenanceController {
     }
     
     @PutMapping("/steps/{id}")
-    public ResponseEntity<MaintenanceStepDto> updateMaintenanceStep(
+    public ResponseEntity<?> updateMaintenanceStep(
             @PathVariable UUID id,
             @Valid @RequestBody MaintenanceStepDto dto) {
         try {
             MaintenanceStepDto updated = maintenanceService.updateMaintenanceStep(id, dto);
             return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Maintenance exception updating step: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             log.error("Error updating maintenance step: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
     

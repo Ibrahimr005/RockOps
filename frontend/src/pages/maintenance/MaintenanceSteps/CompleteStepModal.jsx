@@ -106,7 +106,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
     };
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-backdrop">
             <div className="modal-container" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div className="modal-title">

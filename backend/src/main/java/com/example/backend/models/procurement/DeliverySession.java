@@ -49,6 +49,10 @@ public class DeliverySession {
     @JsonManagedReference
     private List<DeliveryItemReceipt> itemReceipts = new ArrayList<>();
 
+    @OneToMany(mappedBy = "deliverySession", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Logistics> logistics = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         if (processedAt == null) {

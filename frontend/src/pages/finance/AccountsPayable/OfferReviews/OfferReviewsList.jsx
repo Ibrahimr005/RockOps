@@ -4,6 +4,7 @@ import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
 import OfferReviewForm from './OfferReviewForm';
+import MaintenanceReviewForm from './MaintenanceReviewForm';
 import './OfferReviews.scss';
 
 const OfferReviewsList = () => {
@@ -193,14 +194,25 @@ const OfferReviewsList = () => {
             />
 
             {showReviewForm && selectedOffer && (
-                <OfferReviewForm
-                    offer={selectedOffer}
-                    onClose={() => {
-                        setShowReviewForm(false);
-                        setSelectedOffer(null);
-                    }}
-                    onSubmit={handleReviewSubmit}
-                />
+                (selectedOffer.department === 'Maintenance' || (selectedOffer.offerNumber && selectedOffer.offerNumber.startsWith('MR-'))) ? (
+                    <MaintenanceReviewForm
+                        offerId={selectedOffer.offerId}
+                        onClose={() => {
+                            setShowReviewForm(false);
+                            setSelectedOffer(null);
+                        }}
+                        onSuccess={handleReviewSubmit}
+                    />
+                ) : (
+                    <OfferReviewForm
+                        offer={selectedOffer}
+                        onClose={() => {
+                            setShowReviewForm(false);
+                            setSelectedOffer(null);
+                        }}
+                        onSubmit={handleReviewSubmit}
+                    />
+                )
             )}
         </div>
     );

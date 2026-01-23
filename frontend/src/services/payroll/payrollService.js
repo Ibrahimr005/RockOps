@@ -16,6 +16,7 @@ const PAYROLL_ENDPOINTS = {
     IMPORT_ATTENDANCE: (id) => `/api/v1/payroll/${id}/import-attendance`,
     LEAVE_REVIEW: (id) => `/api/v1/payroll/${id}/leave-review`,
     OVERTIME_REVIEW: (id) => `/api/v1/payroll/${id}/overtime-review`,
+    DEDUCTION_REVIEW: (id) => `/api/v1/payroll/${id}/deduction-review`,
     CONFIRM_LOCK: (id) => `/api/v1/payroll/${id}/confirm-lock`,
 
     // ⭐ Attendance workflow endpoints
@@ -30,6 +31,13 @@ const PAYROLL_ENDPOINTS = {
     FINALIZE_LEAVE: (id) => `/api/v1/payroll/${id}/finalize-leave`,
     NOTIFY_HR_LEAVE: (id) => `/api/v1/payroll/${id}/notify-hr-leave`,
     LEAVE_REQUESTS_FOR_PAYROLL: (id) => `/api/v1/payroll/${id}/leave-requests`,
+
+    // ⭐ Deduction Review workflow endpoints
+    DEDUCTION_STATUS: (id) => `/api/v1/payroll/${id}/deduction-status`,
+    PROCESS_DEDUCTION_REVIEW: (id) => `/api/v1/payroll/${id}/process-deduction-review`,
+    FINALIZE_DEDUCTION: (id) => `/api/v1/payroll/${id}/finalize-deduction`,
+    NOTIFY_HR_DEDUCTION: (id) => `/api/v1/payroll/${id}/notify-hr-deduction`,
+    DEDUCTION_SUMMARIES: (id) => `/api/v1/payroll/${id}/deduction-summaries`,
 
     // Employee payrolls
     EMPLOYEE_PAYROLLS: (id) => `/api/v1/payroll/${id}/employees`,
@@ -593,8 +601,136 @@ export const payrollService = {
     },
 
     // ========================================
-    // SEND TO FINANCE METHOD
+    // ⭐ DEDUCTION REVIEW WORKFLOW METHODS
     // ========================================
+
+    getDeductionStatus: async (payrollId) => {
+        try {
+            console.log('Fetching deduction status for:', payrollId);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.DEDUCTION_STATUS(payrollId));
+            console.log('Deduction status response:', response);
+            console.log('Deduction status data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching deduction status:', error);
+
+            if (error.response?.status === 404) {
+                throw new Error('Payroll not found');
+            }
+
+            throw error;
+        }
+    },
+
+    processDeductionReview: async (payrollId) => {
+        try {
+            console.log('🔵 Processing deduction review for payroll:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.PROCESS_DEDUCTION_REVIEW(payrollId));
+            console.log('✅ Process deduction response:', response);
+            console.log('📊 Process deduction data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error processing deduction review:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Deduction is finalized and locked. Cannot process.');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to process deduction review');
+            }
+
+            throw error;
+        }
+    },
+
+    finalizeDeduction: async (payrollId) => {
+        try {
+            console.log('Finalizing deduction review for payroll:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.FINALIZE_DEDUCTION(payrollId));
+            console.log('Finalize deduction response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error finalizing deduction review:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Cannot finalize deduction review in current state');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to finalize deduction review');
+            }
+
+            throw error;
+        }
+    },
+
+    notifyHRForDeduction: async (payrollId) => {
+        try {
+            console.log('Sending HR notification for deduction review:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.NOTIFY_HR_DEDUCTION(payrollId));
+            console.log('Notify HR for deduction response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error notifying HR for deduction:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Deduction is already finalized. Cannot send notification.');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to send notification');
+            }
+
+            throw error;
+        }
+    },
+
+    getDeductionSummaries: async (payrollId) => {
+        try {
+            console.log('Fetching deduction summaries for payroll:', payrollId);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.DEDUCTION_SUMMARIES(payrollId));
+            console.log('Deduction summaries response:', response);
+            console.log('Deduction summaries data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching deduction summaries for payroll:', error);
+            throw error;
+        }
+    },
+
+    moveToDeductionReview: async (payrollId) => {
+        try {
+            console.log('Moving to deduction review:', payrollId);
+            const username = localStorage.getItem('username') || 'admin';
+            const response = await apiClient.post(
+                `${PAYROLL_ENDPOINTS.DEDUCTION_REVIEW(payrollId)}?username=${username}`
+            );
+            console.log('Deduction review response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error moving to deduction review:', error);
+            throw error;
+        }
+    },
+
+    // ========================================
+    // FINANCE & PAYMENT METHODS
+    // ========================================
+
+    markAsPaid: async (payrollId) => {
+        try {
+            console.log('🔵 Marking payroll as paid:', payrollId);
+            const username = localStorage.getItem('username') || 'admin';
+            const response = await apiClient.post(`/api/v1/payroll/${payrollId}/mark-paid?username=${username}`);
+            console.log('✅ Mark as paid response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error marking payroll as paid:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Payroll must be in PENDING_FINANCE_REVIEW status');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to mark payroll as paid');
+            }
+
+            throw error;
+        }
+    },
 
     sendToFinance: async (payrollId, paymentSource) => {
         try {

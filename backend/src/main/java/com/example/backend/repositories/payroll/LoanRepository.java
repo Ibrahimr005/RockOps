@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -15,6 +16,11 @@ import java.util.UUID;
  */
 @Repository
 public interface LoanRepository extends JpaRepository<Loan, UUID> {
+
+    /**
+     * Find loan by loan number
+     */
+    Optional<Loan> findByLoanNumber(String loanNumber);
 
     /**
      * Find all loans for a specific employee
@@ -86,4 +92,29 @@ public interface LoanRepository extends JpaRepository<Loan, UUID> {
             "AND l.remainingBalance > 0 " +
             "AND l.firstPaymentDate <= :currentDate")
     List<Loan> findLoansRequiringPayment(@Param("currentDate") LocalDate currentDate);
+
+    /**
+     * Get max loan number sequence for a given year prefix
+     */
+    @Query("SELECT MAX(CAST(SUBSTRING(l.loanNumber, 11) AS long)) FROM Loan l " +
+            "WHERE l.loanNumber LIKE :yearPrefix")
+    Long getMaxLoanNumberSequence(@Param("yearPrefix") String yearPrefix);
+
+    /**
+     * Check if loan number exists
+     */
+    boolean existsByLoanNumber(String loanNumber);
+
+    /**
+     * Find loans for a specific employee by multiple statuses
+     */
+    List<Loan> findByEmployeeIdAndStatusIn(UUID employeeId, List<Loan.LoanStatus> statuses);
+
+    /**
+     * Find IDs of active loans for a specific employee
+     */
+    @Query("SELECT l.id FROM Loan l WHERE l.employee.id = :employeeId " +
+            "AND l.status IN ('DISBURSED', 'ACTIVE') " +
+            "AND l.remainingBalance > 0")
+    List<UUID> findActiveEmployeeLoanIds(@Param("employeeId") UUID employeeId);
 }

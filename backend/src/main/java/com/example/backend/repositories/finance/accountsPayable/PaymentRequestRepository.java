@@ -22,8 +22,10 @@ public interface PaymentRequestRepository extends JpaRepository<PaymentRequest, 
 //    // Find by purchase order
 //    Optional<PaymentRequest> findByPurchaseOrderId(UUID purchaseOrderId);
 // In PaymentRequestRepository.java, change this:
-@Query("SELECT pr FROM PaymentRequest pr WHERE pr.purchaseOrder.id = :purchaseOrderId")
-Optional<PaymentRequest> findByPurchaseOrderId(@Param("purchaseOrderId") UUID purchaseOrderId);
+//@Query("SELECT pr FROM PaymentRequest pr WHERE pr.purchaseOrder.id = :purchaseOrderId")
+//Optional<PaymentRequest> findByPurchaseOrderId(@Param("purchaseOrderId") UUID purchaseOrderId);
+// ✅ NEW METHOD (returns list - handles multiple payment requests per PO)
+List<PaymentRequest> findAllByPurchaseOrderId(UUID purchaseOrderId);
     // Find by status
     List<PaymentRequest> findByStatus(PaymentRequestStatus status);
 
@@ -80,4 +82,11 @@ Optional<PaymentRequest> findByPurchaseOrderId(@Param("purchaseOrderId") UUID pu
     // Find deleted requests
     @Query("SELECT pr FROM PaymentRequest pr WHERE pr.deletedAt IS NOT NULL")
     List<PaymentRequest> findDeletedRequests();
+
+    // Maintenance-related queries
+    Optional<PaymentRequest> findByMaintenanceStepId(UUID maintenanceStepId);
+    
+    List<PaymentRequest> findByMaintenanceRecordId(UUID maintenanceRecordId);
+    
+    boolean existsByMaintenanceStepId(UUID maintenanceStepId);
 }

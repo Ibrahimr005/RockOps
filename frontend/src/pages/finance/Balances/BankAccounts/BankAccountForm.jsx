@@ -287,22 +287,23 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                         />
                     </div>
 
-                    <div className="modal-footer">
-                        <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn-primary" disabled={loading}>
-                            {loading ? (
-                                <span>Saving...</span>
-                            ) : (
-                                <>
-                                    <FaSave />
-                                    <span>{mode === 'create' ? 'Create Account' : 'Update Account'}</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
                 </form>
+
+                <div className="modal-footer">
+                    <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+                        Cancel
+                    </button>
+                    <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>
+                        {loading ? (
+                            <span>Saving...</span>
+                        ) : (
+                            <>
+                                <FaSave />
+                                <span>{mode === 'create' ? 'Create Account' : 'Update Account'}</span>
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );

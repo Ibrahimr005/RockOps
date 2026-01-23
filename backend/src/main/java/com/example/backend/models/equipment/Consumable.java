@@ -56,4 +56,11 @@ public class Consumable {
     private boolean resolved = false;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "unit_price")
+    private Double unitPrice; // Price per unit when transferred to equipment
+
+    // NEW: Total value (quantity * unitPrice) - calculated field
+    @Column(name = "total_value")
+    private Double totalValue;
 }

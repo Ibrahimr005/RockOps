@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { FaTimes, FaSave} from 'react-icons/fa';
-import {FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiFileText, FiXCircle } from 'react-icons/fi';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
 
 const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
+    const [showReviewForm, setShowReviewForm] = useState(false);
     const [formData, setFormData] = useState({
         paymentRequestId: request.id,
-        action: 'APPROVE', // 'APPROVE' or 'REJECT'
+        action: 'APPROVE',
         notes: '',
         rejectionReason: ''
     });
-    const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
-    const { showSuccess, showError } = useSnackbar();
+    const { showError, showSuccess } = useSnackbar(); // Add showSuccess
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -22,16 +22,15 @@ const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
             [name]: value
         }));
 
-        // Clear error when field is modified
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
     };
 
-    const validateForm = () => {
+    const validateForm = (action) => {
         const newErrors = {};
 
-        if (formData.action === 'REJECT') {
+        if (action === 'REJECT') {
             if (!formData.rejectionReason.trim()) {
                 newErrors.rejectionReason = 'Rejection reason is required';
             }
@@ -39,6 +38,54 @@ const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
+    };
+
+    const handleApprove = async () => {
+        if (!validateForm('APPROVE')) {
+            showError('Please complete the form');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            await financeService.accountsPayable.paymentRequests.approveReject({
+                ...formData,
+                action: 'APPROVE'
+            });
+            showSuccess('Payment request approved successfully');
+            onApproveReject();
+        } catch (err) {
+            console.error('Error approving request:', err);
+            const errorMessage = err.response?.data?.message || 'Failed to approve request';
+            showError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!validateForm('REJECT')) {
+            showError('Please provide rejection reason');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            await financeService.accountsPayable.paymentRequests.approveReject({
+                ...formData,
+                action: 'REJECT'
+            });
+            showSuccess('Payment request rejected successfully');
+            onApproveReject();
+        } catch (err) {
+            console.error('Error rejecting request:', err);
+            const errorMessage = err.response?.data?.message || 'Failed to reject request';
+            showError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -166,26 +213,86 @@ const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
                         )}
 
                         <div className="modal-footer">
-                            <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className={`btn-primary ${formData.action === 'REJECT' ? 'btn-danger' : ''}`}
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <span>Processing...</span>
-                                ) : (
-                                    <>
-                                        <FaSave />
-                                        <span>{formData.action === 'APPROVE' ? 'Approve Request' : 'Reject Request'}</span>
-                                    </>
-                                )}
+                            {request.status === 'PENDING' && !showReviewForm && (
+                                <button
+                                    className="btn-primary"
+                                    onClick={() => setShowReviewForm(true)}
+                                >
+                                    <FiCheckCircle />
+                                    <span>Review Request</span>
+                                </button>
+                            )}
+
+                            {request.status === 'PENDING' && showReviewForm && (
+                                <>
+                                    <button
+                                        className="btn-danger"
+                                        onClick={handleReject}
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Processing...' : (
+                                            <>
+                                                <FiXCircle />
+                                                <span>Reject Request</span>
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        className="btn-success"
+                                        onClick={handleApprove}
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Processing...' : (
+                                            <>
+                                                <FiCheckCircle />
+                                                <span>Approve Request</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </>
+                            )}
+
+                            <button className="btn-secondary" onClick={onClose}>
+                                Close
                             </button>
                         </div>
                     </form>
                 </div>
+
+                {/* Review Form - Only show for PENDING requests */}
+                {request.status === 'PENDING' && showReviewForm && (
+                    <div className="details-section review-form-section">
+                        <h3>Review Details</h3>
+
+                        <div className="modern-form-field">
+                            <label className="modern-form-label">
+                                Approval Notes
+                            </label>
+                            <textarea
+                                name="notes"
+                                value={formData.notes}
+                                onChange={handleChange}
+                                rows="3"
+                                placeholder="Optional notes about this approval..."
+                            />
+                        </div>
+
+                        <div className="modern-form-field">
+                            <label className="modern-form-label">
+                                Rejection Reason (if rejecting)
+                            </label>
+                            <textarea
+                                name="rejectionReason"
+                                value={formData.rejectionReason}
+                                onChange={handleChange}
+                                className={errors.rejectionReason ? 'error' : ''}
+                                rows="3"
+                                placeholder="Provide reason if you plan to reject this request..."
+                            />
+                            {errors.rejectionReason && <span className="error-text">{errors.rejectionReason}</span>}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

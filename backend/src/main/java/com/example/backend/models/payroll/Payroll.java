@@ -404,11 +404,12 @@ public class Payroll {
     }
 
     /**
-     * Initialize leave workflow fields if they're null
+     * Initialize workflow fields if they're null
      * Call this in @PostLoad or when loading old payroll records
      */
     @PostLoad
-    private void initializeLeaveFields() {
+    private void initializeWorkflowFields() {
+        // Initialize leave fields
         if (this.leaveProcessed == null) {
             this.leaveProcessed = false;
         }
@@ -417,6 +418,26 @@ public class Payroll {
         }
         if (this.leaveHrNotificationSent == null) {
             this.leaveHrNotificationSent = false;
+        }
+        // Initialize overtime fields
+        if (this.overtimeProcessed == null) {
+            this.overtimeProcessed = false;
+        }
+        if (this.overtimeFinalized == null) {
+            this.overtimeFinalized = false;
+        }
+        if (this.overtimeHrNotificationSent == null) {
+            this.overtimeHrNotificationSent = false;
+        }
+        // Initialize deduction fields
+        if (this.deductionProcessed == null) {
+            this.deductionProcessed = false;
+        }
+        if (this.deductionFinalized == null) {
+            this.deductionFinalized = false;
+        }
+        if (this.deductionHrNotificationSent == null) {
+            this.deductionHrNotificationSent = false;
         }
     }
 
@@ -573,6 +594,159 @@ public class Payroll {
      */
     public Boolean getOvertimeHrNotificationSent() {
         return overtimeHrNotificationSent != null ? overtimeHrNotificationSent : false;
+    }
+
+    // ========================================
+    // DEDUCTION REVIEW WORKFLOW FIELDS
+    // ========================================
+
+    @Column(name = "deduction_processed")
+    @Builder.Default
+    private Boolean deductionProcessed = false;
+
+    @Column(name = "deduction_finalized")
+    @Builder.Default
+    private Boolean deductionFinalized = false;
+
+    @Column(name = "last_deduction_processed_at")
+    private LocalDateTime lastDeductionProcessedAt;
+
+    @Column(name = "deduction_finalized_by")
+    private String deductionFinalizedBy;
+
+    @Column(name = "deduction_finalized_at")
+    private LocalDateTime deductionFinalizedAt;
+
+    @Column(name = "deduction_hr_notification_sent")
+    @Builder.Default
+    private Boolean deductionHrNotificationSent = false;
+
+    @Column(name = "deduction_hr_notification_sent_at")
+    private LocalDateTime deductionHrNotificationSentAt;
+
+    @Column(name = "deduction_summary", columnDefinition = "TEXT")
+    private String deductionSummary;
+
+    // ========================================
+    // DEDUCTION REVIEW WORKFLOW METHODS
+    // ========================================
+
+    /**
+     * Initialize deduction fields after loading from database
+     * Ensures null-safe operations for backward compatibility
+     */
+    private void initializeDeductionFields() {
+        if (this.deductionProcessed == null) {
+            this.deductionProcessed = false;
+        }
+        if (this.deductionFinalized == null) {
+            this.deductionFinalized = false;
+        }
+        if (this.deductionHrNotificationSent == null) {
+            this.deductionHrNotificationSent = false;
+        }
+    }
+
+    /**
+     * Mark deduction as processed
+     * Called after successfully processing deduction review
+     */
+    public void markDeductionProcessed() {
+        this.deductionProcessed = true;
+        this.lastDeductionProcessedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Finalize deduction review and lock it
+     * Prevents further changes to deduction data
+     *
+     * @param username The user finalizing the deduction review
+     * @throws IllegalStateException if deduction not processed or already finalized
+     */
+    public void finalizeDeduction(String username) {
+        if (!Boolean.TRUE.equals(this.deductionProcessed)) {
+            throw new IllegalStateException("Cannot finalize deduction review: Deductions have not been processed");
+        }
+        if (Boolean.TRUE.equals(this.deductionFinalized)) {
+            throw new IllegalStateException("Cannot finalize deduction review: Already finalized");
+        }
+
+        this.deductionFinalized = true;
+        this.deductionFinalizedBy = username;
+        this.deductionFinalizedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Check if deduction data can be edited
+     * NULL-SAFE: Returns false if deductionFinalized is null
+     *
+     * @return true if deduction can be edited, false if finalized
+     */
+    public boolean canEditDeduction() {
+        return this.status == PayrollStatus.DEDUCTION_REVIEW &&
+                !Boolean.TRUE.equals(this.deductionFinalized);
+    }
+
+    /**
+     * Check if deduction review can be finalized
+     * NULL-SAFE: Handles null values gracefully
+     *
+     * @return true if deduction can be finalized
+     */
+    public boolean canFinalizeDeduction() {
+        return this.status == PayrollStatus.DEDUCTION_REVIEW &&
+                Boolean.TRUE.equals(this.deductionProcessed) &&
+                !Boolean.TRUE.equals(this.deductionFinalized);
+    }
+
+    /**
+     * Mark that HR notification has been sent for deduction review
+     */
+    public void markDeductionHrNotificationSent() {
+        this.deductionHrNotificationSent = true;
+        this.deductionHrNotificationSentAt = LocalDateTime.now();
+    }
+
+    /**
+     * Reset deduction workflow to initial state
+     * ADMIN FUNCTION: Use with caution
+     */
+    public void resetDeductionWorkflow() {
+        this.deductionProcessed = false;
+        this.deductionFinalized = false;
+        this.lastDeductionProcessedAt = null;
+        this.deductionFinalizedBy = null;
+        this.deductionFinalizedAt = null;
+        this.deductionHrNotificationSent = false;
+        this.deductionHrNotificationSentAt = null;
+        this.deductionSummary = null;
+    }
+
+    /**
+     * Get deduction processed status (NULL-SAFE)
+     *
+     * @return true if deduction is processed, false otherwise
+     */
+    public Boolean getDeductionProcessed() {
+        return deductionProcessed != null ? deductionProcessed : false;
+    }
+
+    /**
+     * Get deduction finalized status (NULL-SAFE)
+     *
+     * @return true if deduction is finalized, false otherwise
+     */
+    public Boolean getDeductionFinalized() {
+        return deductionFinalized != null ? deductionFinalized : false;
+    }
+
+    /**
+     * Get deduction HR notification sent status (NULL-SAFE)
+     *
+     * @return true if HR notification sent, false otherwise
+     */
+    public Boolean getDeductionHrNotificationSent() {
+        return deductionHrNotificationSent != null ? deductionHrNotificationSent : false;
     }
 
     /**

@@ -221,17 +221,17 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                             />
                         </div>
 
-                        {/*<div className="form-group checkbox-group">*/}
-                        {/*    <label>*/}
-                        {/*        <input*/}
-                        {/*            type="checkbox"*/}
-                        {/*            name="isActive"*/}
-                        {/*            checked={formData.isActive}*/}
-                        {/*            onChange={handleChange}*/}
-                        {/*        />*/}
-                        {/*        <span>Active</span>*/}
-                        {/*    </label>*/}
-                        {/*</div>*/}
+                        <div className="form-group checkbox-group">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="isActive"
+                                    checked={formData.isActive}
+                                    onChange={handleChange}
+                                />
+                                <span>Active</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div className="modern-form-field">
@@ -248,22 +248,22 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                         />
                     </div>
 
-                    <div className="modal-footer">
-                        <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn-primary" disabled={loading}>
-                            {loading ? (
-                                <span>Saving...</span>
-                            ) : (
-                                <>
-                                    <FaSave />
-                                    <span>{mode === 'create' ? 'Create' : 'Update'}</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
                 </form>
+                <div className="modal-footer">
+                    <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+                        Cancel
+                    </button>
+                    <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>
+                        {loading ? (
+                            <span>Saving...</span>
+                        ) : (
+                            <>
+                                <FaSave />
+                                <span>{mode === 'create' ? 'Create' : 'Update'}</span>
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -214,4 +214,42 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
             "WHERE e.site.id = :siteId " +
             "AND e.status = 'ACTIVE'")
     List<Employee> findActiveBySiteId(UUID siteId);
+
+    /**
+     * Find by employee number
+     */
+    Optional<Employee> findByEmployeeNumber(String employeeNumber);
+
+    /**
+     * Check if employee number exists
+     */
+    boolean existsByEmployeeNumber(String employeeNumber);
+
+    /**
+     * Get the maximum employee number sequence (legacy - for EMP-XXXXXX format)
+     */
+    @Query(value = "SELECT MAX(CAST(SUBSTRING(e.employee_number, 5) AS BIGINT)) " +
+           "FROM employee e " +
+           "WHERE e.employee_number LIKE 'EMP-%' " +
+           "AND e.employee_number NOT LIKE 'EMP-____-%'", nativeQuery = true)
+    Long getMaxEmployeeNumberSequence();
+
+    /**
+     * Get the maximum employee number sequence for a specific year
+     * Format: EMP-YYYY-#####
+     * @param year The year to get the sequence for (e.g., 2024)
+     * @return The maximum sequence number for that year, or null if none exist
+     */
+    @Query(value = "SELECT MAX(CAST(SUBSTRING(e.employee_number, 10) AS BIGINT)) " +
+           "FROM employee e " +
+           "WHERE e.employee_number LIKE CONCAT('EMP-', :year, '-%')", nativeQuery = true)
+    Long getMaxEmployeeNumberSequenceByYear(@Param("year") String year);
+
+    /**
+     * Count employees by hire year
+     * Used for generating sequential employee numbers per year
+     */
+    @Query(value = "SELECT COUNT(*) FROM employee e " +
+           "WHERE EXTRACT(YEAR FROM e.hire_date) = :year", nativeQuery = true)
+    Long countByHireYear(@Param("year") int year);
 }

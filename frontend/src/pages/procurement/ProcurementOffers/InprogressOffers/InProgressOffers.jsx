@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiSend, FiClock, FiAlertCircle,
-    FiCheckCircle, FiPlusCircle, FiEdit, FiTrash2
+    FiCheckCircle, FiPlusCircle, FiEdit, FiTrash2,
+    FiDownload, FiUpload, FiFileText
 } from 'react-icons/fi';
 
 import "../ProcurementOffers.scss"
@@ -9,10 +10,15 @@ import "./InprogressOffers.scss"
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx"
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
-import ProcurementSolutionModal from './ProcurementSolutionModal.jsx';
+import ProcurementSolutionModal from './ProcurementSolutionModal/ProcurementSolutionModal.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import ModifyRequestItemsModal from './ModifyRequestItems/ModifyRequestItemsModal.jsx';
+import RFQExportDialog from './RFQExportDialog/RFQExportDialog.jsx';
+import RFQImportDialog from './RFQImportDialog/RFQImportDialog.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
 import { procurementService } from '../../../../services/procurement/procurementService.js';
+import { offerRequestItemService } from '../../../../services/procurement/offerRequestItemService.js';
+import { itemTypeService } from '../../../../services/itemTypeService.js';
 
 const InProgressOffers = ({
                               offers,
@@ -31,6 +37,15 @@ const InProgressOffers = ({
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
     const [selectedOfferItem, setSelectedOfferItem] = useState(null);
+
+    // NEW: RFQ related states
+    const [itemTypes, setItemTypes] = useState([]);
+    const [requestItems, setRequestItems] = useState([]);
+    const [showModifyItemsModal, setShowModifyItemsModal] = useState(false);
+    const [showExportDialog, setShowExportDialog] = useState(false);
+    const [showImportDialog, setShowImportDialog] = useState(false);
+    const [effectiveRequestItems, setEffectiveRequestItems] = useState([]);
+    const [allOffersEffectiveItems, setAllOffersEffectiveItems] = useState({});
 
     // Snackbar state
     const [snackbar, setSnackbar] = useState({
@@ -69,6 +84,82 @@ const InProgressOffers = ({
         fetchMerchants();
     }, []);
 
+
+    useEffect(() => {
+        const fetchItemTypes = async () => {
+            try {
+                const response = await itemTypeService.getAll();
+
+                // Extract data array from response
+                const data = response.data || response;
+
+                setItemTypes(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Error fetching item types:', error);
+                setItemTypes([]);
+            }
+        };
+
+        fetchItemTypes();
+    }, []);
+
+    // NEW: RFQ Handlers
+    const handleModifyItems = async () => {
+        if (!activeOffer) return;
+
+        try {
+            // Load effective request items
+            const items = await offerRequestItemService.getEffectiveRequestItems(activeOffer.id);
+            setRequestItems(items);
+            setShowModifyItemsModal(true);
+        } catch (error) {
+            console.error('Error loading request items:', error);
+            showSnackbar('error', 'Failed to load request items');
+        }
+    };
+
+    const handleExportRFQ = async () => {
+        if (!activeOffer) return;
+
+        try {
+            // Load effective request items
+            const items = await offerRequestItemService.getEffectiveRequestItems(activeOffer.id);
+            setRequestItems(items);
+            setShowExportDialog(true);
+        } catch (error) {
+            console.error('Error loading request items:', error);
+            showSnackbar('error', 'Failed to load request items');
+        }
+    };
+
+    const handleImportRFQ = () => {
+        if (!activeOffer) return;
+        setShowImportDialog(true);
+    };
+
+    const handleRFQSuccess = async () => {
+        if (activeOffer) {
+            try {
+                // Reload the entire offer to get updated offerItems
+                const updatedOffer = await offerService.getById(activeOffer.id);
+                setActiveOffer(updatedOffer);
+
+                // Reload effective request items for the active offer
+                const items = await offerRequestItemService.getEffectiveRequestItems(activeOffer.id);
+                setEffectiveRequestItems(items);
+
+                // Update the all offers map
+                setAllOffersEffectiveItems(prev => ({
+                    ...prev,
+                    [activeOffer.id]: items
+                }));
+
+            } catch (error) {
+                console.error('Error reloading offer:', error);
+                showSnackbar('error', 'Failed to reload offer data');
+            }
+        }
+    };    // ... (keep all your existing functions: submitOffer, handleConfirmSubmit, handleDeleteOfferClick, etc.)
     // Submit an offer (change from INPROGRESS to SUBMITTED)
     const submitOffer = (offer) => {
         // Show confirmation dialog before submitting
@@ -87,25 +178,17 @@ const InProgressOffers = ({
         try {
             setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
 
-            // Create the submitted offer object with updated status
             const submittedOffer = {
                 ...offer,
                 status: 'SUBMITTED'
             };
 
-            // Call the parent handler to switch to submitted tab and handle the status update
-            // This will create the timeline event, so we don't call offerService.updateStatus
             if (handleOfferStatusChange) {
                 await handleOfferStatusChange(offer.id, 'SUBMITTED', submittedOffer);
             }
 
-            // Close confirmation dialog
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
-
-            // Show success message
             showSnackbar("success", "Offer submitted successfully");
-
-            // Clear the local active offer since we're switching tabs
             setActiveOffer(null);
 
         } catch (error) {
@@ -122,23 +205,15 @@ const InProgressOffers = ({
 
     const confirmDeleteOffer = async () => {
         setIsDeletingOffer(true);
-        const offerTitle = activeOffer.title; // Store title before deletion
-        const offerIdToDelete = activeOffer.id; // Store ID before deletion
+        const offerTitle = activeOffer.title;
+        const offerIdToDelete = activeOffer.id;
 
         try {
-            // Use offerService to delete the offer
             await offerService.delete(activeOffer.id);
-
-            // Show success notification
             showSnackbar('success', `Offer "${offerTitle}" deleted successfully`);
-
-            // Close confirmation dialog
             setShowDeleteOfferConfirm(false);
-
-            // Clear the active offer first since it's being deleted
             setActiveOffer(null);
 
-            // Call the callback to remove from parent component's state
             if (onDeleteOffer) {
                 onDeleteOffer(offerIdToDelete);
             }
@@ -171,41 +246,33 @@ const InProgressOffers = ({
     };
 
     // Handle confirmed deletion
+// Handle confirmed deletion
     const handleConfirmDelete = async (offerItemId) => {
         if (!activeOffer) return;
 
         try {
             setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
-
-            // Use offerService to delete the item
             await offerService.deleteItem(offerItemId);
 
-            // Update UI to reflect deletion
             const updatedOfferItems = activeOffer.offerItems.filter(item => item.id !== offerItemId);
-
             const updatedOffer = {
                 ...activeOffer,
                 offerItems: updatedOfferItems
             };
 
             setActiveOffer(updatedOffer);
-
-            // Close confirmation dialog
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
 
-            // Force re-render to update completion status
+            // Force re-render with updated data
             setTimeout(() => setActiveOffer({...updatedOffer}), 100);
 
-            showSnackbar('success', 'Procurement solution removed successfully!');
-            setTimeout(() => setSuccess(null), 3000);
+            showSnackbar('success', 'Procurement solution deleted successfully!');
         } catch (error) {
-            console.error('Error removing offer item:', error);
+            console.error('Error deleting offer item:', error);
             setConfirmationDialog(prev => ({ ...prev, isLoading: false }));
-            showSnackbar('error', 'Failed to remove procurement solution. Please try again.');
-            setTimeout(() => setError(null), 3000);
+            showSnackbar('error', error.message || 'Failed to delete procurement solution. Please try again.');
         }
     };
-
     // Handle confirmation dialog cancel
     const handleConfirmationCancel = () => {
         setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
@@ -213,46 +280,58 @@ const InProgressOffers = ({
 
     // Check if an offer is complete (has items for all request items)
     const isOfferComplete = (offer) => {
-        if (!offer || !offer.requestOrder || !offer.offerItems) return false;
+        if (!offer || !effectiveRequestItems || effectiveRequestItems.length === 0) return false;
 
-        // Get all request items
-        const requestItems = offer.requestOrder.requestItems || [];
-        if (requestItems.length === 0) return false;
+        return effectiveRequestItems.every(requestItem => {
+            const itemTypeId = requestItem.itemTypeId || requestItem.itemType?.id;
 
-        // Check each request item to ensure it has enough quantity covered
-        return requestItems.every(requestItem => {
-            // Get all offer items for this request item
+            // Get offer items that match this item type
             const offerItems = (offer.offerItems || []).filter(
-                item => item.requestOrderItemId === requestItem.id ||
-                    (item.requestOrderItem && item.requestOrderItem.id === requestItem.id)
+                item => item.itemType?.id === itemTypeId
             );
 
-            // Calculate total offered quantity
             const totalOfferedQuantity = offerItems.reduce(
                 (total, item) => total + (item.quantity || 0), 0
             );
 
-            // Check if offered quantity meets or exceeds required quantity
             return totalOfferedQuantity >= requestItem.quantity;
         });
     };
 
-    // Check if a request item already has an offer item
-    const hasOfferItem = (requestItemId) => {
+
+    const hasOfferItem = (requestItemId, itemTypeId) => {
         if (!activeOffer || !activeOffer.offerItems) return false;
+
+        // Match by item type ID (handles both original and modified items)
+        if (itemTypeId) {
+            return activeOffer.offerItems.some(
+                item => item.itemType?.id === itemTypeId
+            );
+        }
+
+        // Fallback: match by request item ID (for original items only)
         return activeOffer.offerItems.some(
             item => item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId
         );
     };
 
     // Get offer items for a specific request item
-    const getOfferItemsForRequestItem = (requestItemId) => {
+    // Get offer items for a specific request item (matches by item type ID)
+    const getOfferItemsForRequestItem = (requestItemId, itemTypeId) => {
         if (!activeOffer || !activeOffer.offerItems) return [];
+
+        // Match by item type ID (this handles both original and modified items)
+        if (itemTypeId) {
+            return activeOffer.offerItems.filter(
+                item => item.itemType?.id === itemTypeId
+            );
+        }
+
+        // Fallback: match by request item ID (for original items only)
         return activeOffer.offerItems.filter(
             item => item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId
         );
     };
-
     // Get default currency for the offer
     const getDefaultCurrency = () => {
         if (!activeOffer || !activeOffer.offerItems || activeOffer.offerItems.length === 0) return 'EGP';
@@ -260,18 +339,12 @@ const InProgressOffers = ({
     };
 
     // Handle modal save (both add and edit)
+// Handle modal save (both add and edit)
     const handleModalSave = async (formData) => {
         if (!activeOffer || !selectedRequestItem) return;
 
         try {
-            console.log("=== FRONTEND DEBUG ===");
-            console.log("Modal mode:", modalMode);
-            console.log("Active offer ID:", activeOffer.id);
-            console.log("Selected request item ID:", selectedRequestItem.id);
-            console.log("Form data received from modal:", formData);
-
             if (modalMode === 'add') {
-                // Check if an item with the same merchant, unit price, and currency already exists
                 const existingOfferItems = activeOffer.offerItems || [];
                 const existingItem = existingOfferItems.find(item =>
                     (item.requestOrderItem?.id === selectedRequestItem.id ||
@@ -282,27 +355,19 @@ const InProgressOffers = ({
                 );
 
                 if (existingItem) {
-                    // Merge with existing item by updating quantity and total price
                     const newQuantity = (existingItem.quantity || 0) + (formData.quantity || 0);
                     const newTotalPrice = newQuantity * parseFloat(formData.unitPrice);
 
                     const updateData = {
                         quantity: newQuantity,
                         totalPrice: newTotalPrice,
-                        // Update other fields if they're different
                         estimatedDeliveryDays: formData.estimatedDeliveryDays,
                         deliveryNotes: formData.deliveryNotes,
                         comment: formData.comment
                     };
 
-                    console.log("Merging with existing item:", existingItem.id);
-                    console.log("New quantity:", newQuantity);
-                    console.log("New total price:", newTotalPrice);
-
-                    // Use offerService to update the existing item
                     const updatedItem = await offerService.updateItem(existingItem.id, updateData);
 
-                    // Update the offer item in the current state
                     const updatedOfferItems = activeOffer.offerItems.map(item =>
                         item.id === existingItem.id ? updatedItem : item
                     );
@@ -313,27 +378,14 @@ const InProgressOffers = ({
                     };
 
                     setActiveOffer(updatedOffer);
+                    handleCloseModal();
                     showSnackbar('success', 'Procurement solution merged with existing entry!');
                 } else {
-                    // Add new offer item (original logic)
                     const itemToAdd = {
                         ...formData,
-                        requestOrderItemId: selectedRequestItem.id
+                        itemTypeId: selectedRequestItem.itemTypeId || selectedRequestItem.itemType?.id // Send itemTypeId
                     };
 
-                    console.log("Final item to add:", itemToAdd);
-                    console.log("Item to add details:");
-                    console.log("  requestOrderItemId:", itemToAdd.requestOrderItemId);
-                    console.log("  merchantId:", itemToAdd.merchantId);
-                    console.log("  quantity:", itemToAdd.quantity, "(type:", typeof itemToAdd.quantity, ")");
-                    console.log("  unitPrice:", itemToAdd.unitPrice, "(type:", typeof itemToAdd.unitPrice, ")");
-                    console.log("  totalPrice:", itemToAdd.totalPrice, "(type:", typeof itemToAdd.totalPrice, ")");
-                    console.log("  currency:", itemToAdd.currency);
-                    console.log("  estimatedDeliveryDays:", itemToAdd.estimatedDeliveryDays);
-                    console.log("  deliveryNotes:", itemToAdd.deliveryNotes);
-                    console.log("  comment:", itemToAdd.comment);
-
-                    // Validate data before sending
                     if (!itemToAdd.merchantId) {
                         throw new Error("Merchant ID is required");
                     }
@@ -350,59 +402,39 @@ const InProgressOffers = ({
                         throw new Error("Currency is required");
                     }
 
-                    console.log("Validation passed, sending request...");
-
-                    // Use offerService to add items
                     const addedItems = await offerService.addItems(activeOffer.id, [itemToAdd]);
 
-                    console.log("Response from server:", addedItems);
-
-                    // Update active offer with new items
                     const updatedOffer = {
                         ...activeOffer,
                         offerItems: [...(activeOffer.offerItems || []), ...addedItems]
                     };
 
                     setActiveOffer(updatedOffer);
+                    handleCloseModal();
                     showSnackbar('success', 'Procurement solution added successfully!');
                 }
             } else {
-                // Edit existing offer item (original logic)
-                console.log("Editing offer item ID:", selectedOfferItem.id);
-                console.log("Edit form data:", formData);
-
-                // Use offerService to update item
                 const updatedItem = await offerService.updateItem(selectedOfferItem.id, formData);
 
-                // Update the offer item in the current state
                 const updatedOfferItems = activeOffer.offerItems.map(item =>
                     item.id === selectedOfferItem.id ? updatedItem : item
                 );
 
-                // Update active offer with the updated items
                 const updatedOffer = {
                     ...activeOffer,
                     offerItems: updatedOfferItems
                 };
 
                 setActiveOffer(updatedOffer);
+                handleCloseModal();
                 showSnackbar('success', 'Procurement solution updated successfully!');
             }
-
-            // Close modal and reset state
-            handleCloseModal();
-            setTimeout(() => setSuccess(null), 3000);
         } catch (error) {
             console.error('Error saving offer item:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                response: error.response
-            });
-            showSnackbar('error', `Failed to ${modalMode === 'add' ? 'add' : 'update'} procurement solution. Please try again.`);
-            setTimeout(() => setError(null), 3000);
+            showSnackbar('error', error.message || `Failed to ${modalMode === 'add' ? 'add' : 'update'} procurement solution. Please try again.`);
         }
     };
+
 
     // Handle opening modal for adding new item
     const handleSelectRequestItem = (requestItem) => {
@@ -441,14 +473,12 @@ const InProgressOffers = ({
     const getPrimaryCurrency = (offer) => {
         if (!offer || !offer.offerItems || offer.offerItems.length === 0) return 'USD';
 
-        // Count occurrences of each currency
         const currencyCounts = {};
         offer.offerItems.forEach(item => {
             const currency = item.currency || 'USD';
             currencyCounts[currency] = (currencyCounts[currency] || 0) + 1;
         });
 
-        // Find the most used currency
         let maxCount = 0;
         let primaryCurrency = 'USD';
 
@@ -499,6 +529,66 @@ const InProgressOffers = ({
         }));
     };
 
+    useEffect(() => {
+        const loadAllEffectiveItems = async () => {
+            if (offers && offers.length > 0) {
+                const itemsMap = {};
+
+                // Load effective items for all offers
+                await Promise.all(
+                    offers.map(async (offer) => {
+                        try {
+                            const items = await offerRequestItemService.getEffectiveRequestItems(offer.id);
+                            itemsMap[offer.id] = items;
+                        } catch (error) {
+                            console.error(`Error loading effective items for offer ${offer.id}:`, error);
+                            // Fallback to original items
+                            itemsMap[offer.id] = offer.requestOrder?.requestItems || [];
+                        }
+                    })
+                );
+
+                setAllOffersEffectiveItems(itemsMap);
+            }
+        };
+
+        loadAllEffectiveItems();
+    }, [offers]);
+
+// Keep the existing useEffect for activeOffer
+    useEffect(() => {
+        const loadEffectiveItems = async () => {
+            if (activeOffer && activeOffer.id) {
+                try {
+                    const items = await offerRequestItemService.getEffectiveRequestItems(activeOffer.id);
+                    setEffectiveRequestItems(items);
+                } catch (error) {
+                    console.error('Error loading effective request items:', error);
+                    setEffectiveRequestItems(activeOffer.requestOrder?.requestItems || []);
+                }
+            } else {
+                setEffectiveRequestItems([]);
+            }
+        };
+
+        loadEffectiveItems();
+    }, [activeOffer]);
+
+    useEffect(() => {
+        if (activeOffer && activeOffer.offerItems) {
+            console.log("=== ACTIVE OFFER DEBUG ===");
+            console.log("Active Offer:", activeOffer);
+            console.log("Offer Items:", activeOffer.offerItems);
+            console.log("First offer item:", activeOffer.offerItems[0]);
+            if (activeOffer.offerItems[0]) {
+                console.log("Delivery days:", activeOffer.offerItems[0].estimatedDeliveryDays);
+            }
+            console.log("========================");
+        }
+    }, [activeOffer]);
+
+
+
     return (
         <div className="procurement-offers-main-content">
             {/* Offers List */}
@@ -514,23 +604,38 @@ const InProgressOffers = ({
                     </div>
                 ) : (
                     <div className="procurement-items-list">
-                        {offers.map(offer => (
-                            <div
-                                key={offer.id}
-                                className={`procurement-item-card-inprogress ${activeOffer?.id === offer.id ? 'selected' : ''}`}
-                                onClick={() => setActiveOffer(offer)}
-                            >
-                                <div className="procurement-item-header">
-                                    <h4>{offer.title}</h4>
-                                </div>
-                                <div className="procurement-item-footer">
+                        {offers.map(offer => {
+                            // Get effective items for this specific offer from the map
+                            const offerEffectiveItems = allOffersEffectiveItems[offer.id] || offer.requestOrder?.requestItems || [];
+
+                            const isComplete = offerEffectiveItems.length > 0 && offerEffectiveItems.every(requestItem => {
+                                const itemTypeId = requestItem.itemTypeId || requestItem.itemType?.id;
+                                const offerItems = (offer.offerItems || []).filter(
+                                    item => item.itemType?.id === itemTypeId
+                                );
+                                const totalOfferedQuantity = offerItems.reduce(
+                                    (total, item) => total + (item.quantity || 0), 0
+                                );
+                                return totalOfferedQuantity >= requestItem.quantity;
+                            });
+
+                            return (
+                                <div
+                                    key={offer.id}
+                                    className={`procurement-item-card-inprogress ${activeOffer?.id === offer.id ? 'selected' : ''}`}
+                                    onClick={() => setActiveOffer(offer)}
+                                >
+                                    <div className="procurement-item-header">
+                                        <h4>{offer.title}</h4>
+                                    </div>
+                                    <div className="procurement-item-footer">
                 <span className="procurement-item-date">
                     <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
                 </span>
-                                </div>
-                                <div className="procurement-item-footer">
-                <span className={`procurement-item-status ${isOfferComplete(offer) ? 'completion-complete' : 'completion-incomplete'}`}>
-                    {isOfferComplete(offer) ? (
+                                    </div>
+                                    <div className="procurement-item-footer">
+                <span className={`procurement-item-status ${isComplete ? 'completion-complete' : 'completion-incomplete'}`}>
+                    {isComplete ? (
                         <>
                             <FiCheckCircle /> Complete
                         </>
@@ -540,10 +645,10 @@ const InProgressOffers = ({
                         </>
                     )}
                 </span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            );
+                        })}                    </div>
                 )}
             </div>
 
@@ -565,6 +670,9 @@ const InProgressOffers = ({
                             </div>
 
                             <div className="procurement-details-actions">
+                                {/* NEW: RFQ Action Buttons */}
+
+
                                 <div className="action-buttons-group">
                                     <button
                                         className="btn-primary"
@@ -587,6 +695,7 @@ const InProgressOffers = ({
                             </div>
                         </div>
 
+                        {/* ... Rest of your existing JSX remains exactly the same ... */}
                         {!activeOffer.requestOrder ? (
                             <div className="procurement-loading">
                                 <div className="procurement-spinner"></div>
@@ -594,10 +703,8 @@ const InProgressOffers = ({
                             </div>
                         ) : (
                             <>
-                                {/* Use RequestOrderDetails Component */}
                                 <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
-                                {/* Add OfferTimeline Component - moved under RequestOrderDetails */}
                                 <div className="procurement-request-summary-card-inprogress">
                                     <OfferTimeline
                                         offer={activeOffer}
@@ -606,31 +713,60 @@ const InProgressOffers = ({
                                     />
                                 </div>
 
-                                {/* Request Order Summary */}
                                 <div className="procurement-request-summary-card-inprogress procurement-request-items-summary">
-                                    <h4>Request Order Items</h4>
+                                    <h4>
+                                        <span>Request Order Items</span>
+                                        <div className="request-items-actions">
+                                            <button
+                                                className="btn-modify-items"
+                                                onClick={handleModifyItems}
+                                                title="Modify Request Items"
+                                            >
+                                                <FiEdit /> Modify Items
+                                            </button>
+                                            <button
+                                                className="btn-modify-items"
+                                                onClick={handleExportRFQ}
+                                                title="Export RFQ to Excel"
+                                            >
+                                                <FiDownload /> Export RFQ
+                                            </button>
+                                            <button
+                                                className="btn-modify-items"
+                                                onClick={handleImportRFQ}
+                                                title="Import RFQ Response"
+                                            >
+                                                <FiUpload /> Import Response
+                                            </button>
+                                        </div>
+                                    </h4>
                                     <p className="procurement-section-description-inprogress">
                                         Complete all items below to submit this procurement offer.
                                     </p>
 
-                                    {/* Progress Overview */}
                                     <div className="procurement-overall-progress-inprogress">
                                         <div className="procurement-progress-stats-inprogress">
                                             <div className="procurement-progress-stat-inprogress">
                                                 <div className="procurement-progress-stat-label-inprogress">Total Items</div>
                                                 <div className="procurement-progress-stat-value-inprogress">
-                                                    {activeOffer.requestOrder?.requestItems?.length || 0}
+                                                    {effectiveRequestItems?.length || 0}
                                                 </div>
                                             </div>
+
+
                                             <div className="procurement-progress-stat-inprogress">
                                                 <div className="procurement-progress-stat-label-inprogress">Items Covered</div>
                                                 <div className={`procurement-progress-stat-value-inprogress ${
                                                     isOfferComplete(activeOffer) ? 'fulfilled' : 'unfulfilled'
                                                 }`}>
-                                                    {activeOffer.requestOrder?.requestItems?.filter(item =>
-                                                        hasOfferItem(item.id)).length || 0} / {activeOffer.requestOrder?.requestItems?.length || 0}
+                                                    {effectiveRequestItems?.filter(item => {
+                                                        const itemTypeId = item.itemTypeId || item.itemType?.id;
+                                                        return hasOfferItem(item.id, itemTypeId);
+                                                    }).length || 0} / {effectiveRequestItems?.length || 0}
                                                 </div>
                                             </div>
+
+
                                             <div className="procurement-progress-stat-inprogress">
                                                 <div className="procurement-progress-stat-label-inprogress">Total Value</div>
                                                 <div className="procurement-progress-stat-value-inprogress currency-totals-inprogress">
@@ -653,13 +789,19 @@ const InProgressOffers = ({
                                     </div>
                                 </div>
 
-                                {/* Request Items with their Offer Items */}
                                 <div className="procurement-request-items-section-inprogress">
-                                    {activeOffer.requestOrder?.requestItems?.map(requestItem => {
-                                        const offerItems = getOfferItemsForRequestItem(requestItem.id);
+                                    {effectiveRequestItems?.map(requestItem => {
+                                        const offerItems = getOfferItemsForRequestItem(
+                                            requestItem.id,
+                                            requestItem.itemTypeId || requestItem.itemType?.id
+                                        );
                                         const totalOffered = offerItems.reduce((total, item) => total + (item.quantity || 0), 0);
                                         const progress = Math.min(100, (totalOffered / requestItem.quantity) * 100);
                                         const isComplete = totalOffered >= requestItem.quantity;
+
+                                        // Handle both DTO format and full object format
+                                        const itemTypeName = requestItem.itemTypeName || requestItem.itemType?.name || 'Item';
+                                        const itemTypeMeasuringUnit = requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units';
 
                                         return (
                                             <div key={requestItem.id} className="procurement-request-item-card-inprogress">
@@ -668,7 +810,7 @@ const InProgressOffers = ({
                                                         <div className="item-icon-container-inprogress">
                                                             <FiPackage size={20} />
                                                         </div>
-                                                        <h5>{requestItem.itemType?.name || 'Item'}</h5>
+                                                        <h5>{itemTypeName}</h5>
                                                     </div>
 
                                                     {isComplete ? (
@@ -677,12 +819,11 @@ const InProgressOffers = ({
                                                     </span>
                                                     ) : (
                                                         <span className="procurement-status-badge status-needed">
-                                                        <FiAlertCircle size={14} /> Needs {requestItem.quantity - totalOffered} more {requestItem.itemType.measuringUnit}
-                                                    </span>
+    <FiAlertCircle size={14} /> Needs {requestItem.quantity - totalOffered} more {itemTypeMeasuringUnit}
+</span>
                                                     )}
                                                 </div>
 
-                                                {/* Item Details - Simple Design */}
                                                 <div className="procurement-request-item-details-inprogress">
                                                     <div className="procurement-request-item-info-inprogress">
                                                         {requestItem.comment && (
@@ -694,7 +835,6 @@ const InProgressOffers = ({
                                                     </div>
                                                 </div>
 
-                                                {/* Progress Bar */}
                                                 <div className="procurement-progress-container-inprogress">
                                                     <div className="procurement-progress-bar-inprogress">
                                                         <div
@@ -704,11 +844,10 @@ const InProgressOffers = ({
                                                     </div>
                                                     <div className="procurement-progress-details">
                                                         <span>Progress: {Math.round(progress)}%</span>
-                                                        <span>{totalOffered} of {requestItem.quantity} {requestItem.itemType.measuringUnit}</span>
+                                                        <span>{totalOffered} of {requestItem.quantity} {itemTypeMeasuringUnit}</span>
                                                     </div>
                                                 </div>
 
-                                                {/* Current Offer Items for this Request Item */}
                                                 {offerItems.length > 0 && (
                                                     <div className="procurement-existing-offer-items-inprogress">
                                                         <h6>Current Procurement Solutions</h6>
@@ -727,7 +866,7 @@ const InProgressOffers = ({
                                                             {offerItems.map((offerItem, idx) => (
                                                                 <tr key={offerItem.id || idx}>
                                                                     <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                    <td>{offerItem.quantity} {requestItem.itemType.measuringUnit}</td>
+                                                                    <td>{offerItem.quantity} {itemTypeMeasuringUnit}</td>
                                                                     <td>{offerItem.currency || 'USD'} {offerItem.unitPrice ? parseFloat(offerItem.unitPrice).toFixed(2) : 'N/A'}</td>
                                                                     <td>{offerItem.currency || 'USD'} {offerItem.totalPrice ? parseFloat(offerItem.totalPrice).toFixed(2) : 'N/A'}</td>
                                                                     <td>{offerItem.estimatedDeliveryDays || 'N/A'} days</td>
@@ -762,7 +901,6 @@ const InProgressOffers = ({
                                                     </div>
                                                 )}
 
-                                                {/* Add New Offer Item Button */}
                                                 <div className="procurement-request-item-actions-inprogress">
                                                     <button
                                                         className="btn-add-solution"
@@ -812,6 +950,30 @@ const InProgressOffers = ({
                 onClose={handleCloseModal}
                 onSave={handleModalSave}
                 defaultCurrency={getDefaultCurrency()}
+            />
+
+            <ModifyRequestItemsModal
+                isVisible={showModifyItemsModal}
+                onClose={() => setShowModifyItemsModal(false)}
+                offer={activeOffer}
+                onSuccess={handleRFQSuccess}
+                itemTypes={itemTypes}
+                onShowSnackbar={showSnackbar}
+            />
+            <RFQExportDialog
+                isVisible={showExportDialog}
+                onClose={() => setShowExportDialog(false)}
+                offer={activeOffer}
+                requestItems={requestItems}
+            />
+
+            <RFQImportDialog
+                isVisible={showImportDialog}
+                onClose={() => setShowImportDialog(false)}
+                offer={activeOffer}
+                merchants={merchants}
+                onSuccess={handleRFQSuccess}
+                onShowSnackbar={showSnackbar}
             />
 
             {/* Submit Offer Confirmation Dialog */}

@@ -42,4 +42,11 @@ public interface RequestOrderRepository extends JpaRepository<RequestOrder, UUID
     // For update - check if title and requesterId exists for PENDING status excluding current ID
     @Query("SELECT CASE WHEN COUNT(ro) > 0 THEN true ELSE false END FROM RequestOrder ro WHERE LOWER(ro.title) = LOWER(:title) AND ro.requesterId = :requesterId AND ro.status = 'PENDING' AND ro.id != :excludeId")
     boolean existsByTitleAndRequesterIdAndStatusPendingExcludingId(@Param("title") String title, @Param("requesterId") UUID requesterId, @Param("excludeId") UUID excludeId);
+
+    @Query("SELECT DISTINCT ro FROM RequestOrder ro " +
+            "LEFT JOIN FETCH ro.requestItems ri " +
+            "LEFT JOIN FETCH ri.itemType it " +
+            "LEFT JOIN FETCH it.itemCategory ic " +
+            "WHERE ro.id = :id")
+    Optional<RequestOrder> findByIdForDetails(@Param("id") UUID id);
 }

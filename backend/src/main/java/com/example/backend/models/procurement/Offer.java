@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 
 @Entity
 @Data
@@ -57,6 +59,33 @@ public class Offer {
     @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference  // ORIGINAL VALUE
     private List<OfferItem> offerItems = new ArrayList<>();
+
+    // Add these fields to Offer.java
+
+    @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<OfferRequestItem> offerRequestItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<RequestItemModification> requestItemModifications = new ArrayList<>();
+
+    // Helper method to get effective request items (modified or original)
+    public List<RequestOrderItem> getEffectiveRequestItems() {
+        if (offerRequestItems != null && !offerRequestItems.isEmpty()) {
+            // Return modified items converted to RequestOrderItem format for compatibility
+            return offerRequestItems.stream()
+                    .map(ori -> RequestOrderItem.builder()
+                            .id(ori.getId())
+                            .itemType(ori.getItemType())
+                            .quantity(ori.getQuantity())
+                            .comment(ori.getComment())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+        return requestOrder != null ? requestOrder.getRequestItems() : new ArrayList<>();
+    }
+
 
 
     // Add these fields:

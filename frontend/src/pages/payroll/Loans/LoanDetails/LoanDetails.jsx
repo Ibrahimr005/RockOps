@@ -1,236 +1,247 @@
-import React, { useState, useEffect } from 'react';
+// ========================================
+// FILE: LoanDetails.jsx
+// Loan Details Page - Backend Integrated
+// ========================================
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaEdit, FaCheck, FaTimes, FaCalendarAlt, FaMoneyBillWave, FaUser, FaFileAlt, FaDownload } from 'react-icons/fa';
-import { loanService } from '../../../../services/payroll/loanService.js';
+import {
+    FaArrowLeft,
+    FaEdit,
+    FaCheck,
+    FaTimes,
+    FaCalendarAlt,
+    FaMoneyBillWave,
+    FaUser,
+    FaFileAlt,
+    FaPaperPlane,
+    FaUniversity,
+    FaSpinner,
+    FaPercent,
+    FaClock,
+    FaCheckCircle,
+    FaTimesCircle,
+    FaHourglassHalf,
+    FaHistory,
+    FaInfoCircle
+} from 'react-icons/fa';
+import { loanService, LOAN_STATUS, LOAN_STATUS_CONFIG } from '../../../../services/payroll/loanService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
-import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
+import PageHeader from '../../../../components/common/PageHeader/index.js';
 import './LoanDetails.scss';
 
 const LoanDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { showSuccess, showError, showConfirmation } = useSnackbar();
+    const { showSuccess, showError, showWarning } = useSnackbar();
 
+    // State
     const [loan, setLoan] = useState(null);
-    const [repaymentSchedule, setRepaymentSchedule] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(null);
     const [error, setError] = useState(null);
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [rejectReason, setRejectReason] = useState('');
 
-    useEffect(() => {
-        if (id) {
-            loadLoanDetails();
-            loadRepaymentSchedule();
-        }
-    }, [id]);
+    // ========================================
+    // DATA LOADING
+    // ========================================
+    const loadLoanDetails = useCallback(async () => {
+        if (!id) return;
 
-    const loadLoanDetails = async () => {
         try {
             setLoading(true);
+            setError(null);
             const response = await loanService.getLoanById(id);
             setLoan(response.data);
-        } catch (error) {
-            console.error('Error loading loan details:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to load loan details';
+        } catch (err) {
+            console.error('Error loading loan details:', err);
+            const errorMessage = err.response?.data?.message || 'Failed to load loan details';
             setError(errorMessage);
-            showError('Failed to load loan details');
+            showError(errorMessage);
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, showError]);
 
-    const loadRepaymentSchedule = async () => {
+    useEffect(() => {
+        loadLoanDetails();
+    }, [loadLoanDetails]);
+
+    // ========================================
+    // ACTION HANDLERS
+    // ========================================
+    const handleHRApprove = async () => {
+        if (!window.confirm('Are you sure you want to approve this loan? This will send it to Finance for review.')) {
+            return;
+        }
+
         try {
-            const response = await loanService.getRepaymentSchedule(id);
-            setRepaymentSchedule(response.data || []);
-        } catch (error) {
-            console.error('Error loading repayment schedule:', error);
-            showError('Failed to load repayment schedule');
+            setActionLoading('hr-approve');
+            await loanService.approveLoan(id);
+            showSuccess('Loan approved and sent to Finance for review');
+            loadLoanDetails();
+        } catch (err) {
+            console.error('Error approving loan:', err);
+            showError(err.response?.data?.message || 'Failed to approve loan');
+        } finally {
+            setActionLoading(null);
         }
     };
 
-    const handleProcessRepayment = (scheduleId, amount) => {
-        showConfirmation(
-            `Are you sure you want to process repayment of ${formatCurrency(amount)}?`,
-            async () => {
-                try {
-                    await loanService.processRepayment(scheduleId, amount);
-                    showSuccess('Repayment processed successfully');
-                    loadLoanDetails();
-                    loadRepaymentSchedule();
-                } catch (error) {
-                    console.error('Error processing repayment:', error);
-                    showError('Failed to process repayment');
-                }
-            }
-        );
-    };
+    const handleHRReject = async () => {
+        if (!rejectReason.trim()) {
+            showWarning('Please provide a reason for rejection');
+            return;
+        }
 
-    const handleApproveLoan = () => {
-        showConfirmation(
-            'Are you sure you want to approve this loan? This action cannot be undone.',
-            async () => {
-                try {
-                    await loanService.approveLoan(id);
-                    showSuccess('Loan approved successfully');
-                    loadLoanDetails();
-                } catch (error) {
-                    console.error('Error approving loan:', error);
-                    showError('Failed to approve loan');
-                }
-            }
-        );
-    };
-
-    const handleRejectLoan = () => {
-        showConfirmation(
-            'Are you sure you want to reject this loan? This action cannot be undone.',
-            async () => {
-                try {
-                    const reason = prompt('Please provide a reason for rejection:');
-                    if (reason !== null) {
-                        await loanService.rejectLoan(id, 'SYSTEM', reason);
-                        showSuccess('Loan rejected successfully');
-                        loadLoanDetails();
-                    }
-                } catch (error) {
-                    console.error('Error rejecting loan:', error);
-                    showError('Failed to reject loan');
-                }
-            }
-        );
-    };
-
-    const handleExportSchedule = async () => {
         try {
-            const blob = await loanService.exportLoanReport(loan.startDate, loan.endDate, 'excel');
-            const url = window.URL.createObjectURL(blob.data);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `loan-${id}-schedule.xlsx`;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-            showSuccess('Schedule exported successfully');
-        } catch (error) {
-            console.error('Error exporting schedule:', error);
-            showError('Failed to export schedule');
+            setActionLoading('hr-reject');
+            await loanService.rejectLoan(id, null, rejectReason);
+            showSuccess('Loan rejected');
+            setShowRejectModal(false);
+            setRejectReason('');
+            loadLoanDetails();
+        } catch (err) {
+            console.error('Error rejecting loan:', err);
+            showError(err.response?.data?.message || 'Failed to reject loan');
+        } finally {
+            setActionLoading(null);
         }
     };
 
+    const handleSendToFinance = async () => {
+        if (!window.confirm('Are you sure you want to send this loan to Finance?')) {
+            return;
+        }
+
+        try {
+            setActionLoading('send-finance');
+            await loanService.sendToFinance(id);
+            showSuccess('Loan sent to Finance for approval');
+            loadLoanDetails();
+        } catch (err) {
+            console.error('Error sending to finance:', err);
+            showError(err.response?.data?.message || 'Failed to send to finance');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleCancelLoan = async () => {
+        const reason = window.prompt('Please provide a reason for cancellation:');
+        if (reason === null) return;
+        if (!reason.trim()) {
+            showWarning('Please provide a reason for cancellation');
+            return;
+        }
+
+        try {
+            setActionLoading('cancel');
+            await loanService.cancelLoan(id, reason);
+            showSuccess('Loan cancelled');
+            loadLoanDetails();
+        } catch (err) {
+            console.error('Error cancelling loan:', err);
+            showError(err.response?.data?.message || 'Failed to cancel loan');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // ========================================
+    // HELPER FUNCTIONS
+    // ========================================
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'USD'
+            currency: 'EGP',
+            minimumFractionDigits: 2
         }).format(amount || 0);
     };
 
-    const formatDate = (date) => {
-        return new Date(date).toLocaleDateString();
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
     };
 
-    const getLoanStatusBadge = (status) => {
-        const statusConfig = {
-            PENDING: { class: 'status-warning', text: 'Pending' },
-            APPROVED: { class: 'status-info', text: 'Approved' },
-            ACTIVE: { class: 'status-success', text: 'Active' },
-            COMPLETED: { class: 'status-default', text: 'Completed' },
-            REJECTED: { class: 'status-danger', text: 'Rejected' },
-            CANCELLED: { class: 'status-secondary', text: 'Cancelled' }
-        };
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
 
-        const config = statusConfig[status] || { class: 'status-default', text: status };
-
+    const getStatusBadge = (status) => {
+        const config = LOAN_STATUS_CONFIG[status] || { label: status, color: '#6b7280', bgColor: '#f3f4f6' };
         return (
-            <span className={`status-badge ${config.class}`}>
-        {config.text}
-      </span>
+            <span
+                className="loan-details-status-badge"
+                style={{
+                    color: config.color,
+                    backgroundColor: config.bgColor,
+                    border: `1px solid ${config.color}20`
+                }}
+            >
+                {config.label}
+            </span>
         );
     };
 
-    const getRepaymentStatusBadge = (status) => {
-        const statusConfig = {
-            PENDING: { class: 'status-warning', text: 'Pending' },
-            PAID: { class: 'status-success', text: 'Paid' },
-            OVERDUE: { class: 'status-danger', text: 'Overdue' },
-            CANCELLED: { class: 'status-secondary', text: 'Cancelled' }
+    const getFinanceStatusBadge = (status) => {
+        const configs = {
+            NOT_SUBMITTED: { label: 'Not Submitted', color: '#6b7280', bgColor: '#f3f4f6' },
+            PENDING: { label: 'Pending', color: '#d97706', bgColor: '#fef3c7' },
+            UNDER_REVIEW: { label: 'Under Review', color: '#2563eb', bgColor: '#dbeafe' },
+            APPROVED: { label: 'Approved', color: '#059669', bgColor: '#d1fae5' },
+            REJECTED: { label: 'Rejected', color: '#dc2626', bgColor: '#fee2e2' },
+            REQUIRES_MODIFICATION: { label: 'Needs Changes', color: '#d97706', bgColor: '#fef3c7' }
         };
-
-        const config = statusConfig[status] || { class: 'status-default', text: status };
-
+        const config = configs[status] || { label: status || '-', color: '#6b7280', bgColor: '#f3f4f6' };
         return (
-            <span className={`status-badge ${config.class}`}>
-        {config.text}
-      </span>
+            <span
+                className="loan-details-status-badge"
+                style={{
+                    color: config.color,
+                    backgroundColor: config.bgColor,
+                    border: `1px solid ${config.color}20`
+                }}
+            >
+                {config.label}
+            </span>
         );
     };
 
-    // Define repayment schedule table columns
-    const scheduleColumns = [
-        {
-            key: 'installmentNumber',
-            title: 'Installment #',
-            width: 120,
-            sortable: true,
-            render: (schedule) => `#${schedule.installmentNumber}`
-        },
-        {
-            key: 'dueDate',
-            title: 'Due Date',
-            width: 120,
-            sortable: true,
-            render: (schedule) => formatDate(schedule.dueDate)
-        },
-        {
-            key: 'scheduledAmount',
-            title: 'Scheduled Amount',
-            width: 140,
-            sortable: true,
-            render: (schedule) => formatCurrency(schedule.scheduledAmount)
-        },
-        {
-            key: 'paidAmount',
-            title: 'Paid Amount',
-            width: 120,
-            sortable: true,
-            render: (schedule) => schedule.paidAmount ? formatCurrency(schedule.paidAmount) : '-'
-        },
-        {
-            key: 'paymentDate',
-            title: 'Payment Date',
-            width: 120,
-            sortable: true,
-            render: (schedule) => schedule.paymentDate ? formatDate(schedule.paymentDate) : '-'
-        },
-        {
-            key: 'status',
-            title: 'Status',
-            width: 100,
-            sortable: true,
-            render: (schedule) => getRepaymentStatusBadge(schedule.status)
-        },
-        {
-            key: 'actions',
-            title: 'Actions',
-            width: 120,
-            render: (schedule) => (
-                schedule.status === 'PENDING' && (
-                    <button
-                        className="btn btn-sm btn-success"
-                        onClick={() => handleProcessRepayment(schedule.id, schedule.scheduledAmount)}
-                    >
-                        <FaCheck /> Pay
-                    </button>
-                )
-            )
-        }
-    ];
+    // Calculate progress
+    const getProgress = () => {
+        if (!loan) return { percentage: 0, paid: 0, remaining: 0 };
+        const paid = loan.paymentsMade || 0;
+        const total = loan.effectiveInstallmentMonths || loan.installmentMonths || 1;
+        const percentage = total > 0 ? (paid / total) * 100 : 0;
+        return { percentage, paid, total };
+    };
 
+    // Check action permissions
+    const canHRApprove = loan && [LOAN_STATUS.PENDING_HR_APPROVAL, LOAN_STATUS.PENDING, LOAN_STATUS.DRAFT].includes(loan.status);
+    const canSendToFinance = loan && loan.status === LOAN_STATUS.HR_APPROVED;
+    const canCancel = loan && ![LOAN_STATUS.COMPLETED, LOAN_STATUS.CANCELLED, LOAN_STATUS.ACTIVE, LOAN_STATUS.DISBURSED].includes(loan.status);
+
+    // ========================================
+    // RENDER
+    // ========================================
     if (loading) {
         return (
             <div className="loan-details">
-                <div className="loading-state">
-                    <div className="loading-spinner"></div>
+                <div className="loan-details-loading">
+                    <FaSpinner className="loan-details-spinner" />
                     <span>Loading loan details...</span>
                 </div>
             </div>
@@ -240,266 +251,460 @@ const LoanDetails = () => {
     if (error || !loan) {
         return (
             <div className="loan-details">
-                <div className="error-state">
-                    <div className="error-content">
-                        <h3>Error Loading Loan</h3>
-                        <p>{error || 'Loan not found'}</p>
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => navigate('/payroll/loans')}
-                        >
-                            Back to Loans
-                        </button>
-                    </div>
+                <div className="loan-details-error">
+                    <FaTimesCircle className="loan-details-error-icon" />
+                    <h3>Error Loading Loan</h3>
+                    <p>{error || 'Loan not found'}</p>
+                    <button
+                        className="loan-details-btn loan-details-btn-primary"
+                        onClick={() => navigate('/payroll/loans')}
+                    >
+                        <FaArrowLeft /> Back to Loans
+                    </button>
                 </div>
             </div>
         );
     }
 
+    const progress = getProgress();
+
     return (
         <div className="loan-details">
             {/* Header */}
-            <div className="loan-details__header">
-                <div className="header-content">
-                    <div className="header-left">
+            <PageHeader
+                title={`Loan: ${loan.loanNumber}`}
+                subtitle={`Employee: ${loan.employeeName || 'N/A'}`}
+                actions={
+                    <div className="loan-details-header-actions">
                         <button
-                            className="btn-cancel"
+                            className="loan-details-btn loan-details-btn-secondary"
                             onClick={() => navigate('/payroll/loans')}
                         >
-                            <FaArrowLeft /> Back to Loans
+                            <FaArrowLeft /> Back
                         </button>
-                        <div className="loan-title">
-                            <h1>Loan Details</h1>
-                            <span className="loan-id">Loan ID: {loan.id}</span>
-                        </div>
                     </div>
-                    <div className="header-actions">
-                        {loan.status === 'PENDING' && (
-                            <>
-                                <button
-                                    className="btn btn-success"
-                                    onClick={handleApproveLoan}
-                                >
-                                    <FaCheck /> Approve
-                                </button>
-                                <button
-                                    className="btn btn-danger"
-                                    onClick={handleRejectLoan}
-                                >
-                                    <FaTimes /> Reject
-                                </button>
-                            </>
-                        )}
+                }
+            />
+
+            {/* Status & Actions Bar */}
+            <div className="loan-details-status-bar">
+                <div className="loan-details-status-info">
+                    <span className="loan-details-status-label">Status:</span>
+                    {getStatusBadge(loan.status)}
+                    {loan.financeStatus && loan.financeStatus !== 'NOT_SUBMITTED' && (
+                        <>
+                            <span className="loan-details-status-separator">|</span>
+                            <span className="loan-details-status-label">Finance:</span>
+                            {getFinanceStatusBadge(loan.financeStatus)}
+                        </>
+                    )}
+                </div>
+                <div className="loan-details-actions">
+                    {canHRApprove && (
+                        <>
+                            <button
+                                className="loan-details-btn loan-details-btn-success"
+                                onClick={handleHRApprove}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading === 'hr-approve' ? <FaSpinner className="loan-details-spinner" /> : <FaCheck />}
+                                Approve
+                            </button>
+                            <button
+                                className="loan-details-btn loan-details-btn-danger"
+                                onClick={() => setShowRejectModal(true)}
+                                disabled={actionLoading}
+                            >
+                                <FaTimes /> Reject
+                            </button>
+                        </>
+                    )}
+                    {canSendToFinance && (
                         <button
-                            className="btn btn-secondary"
-                            onClick={handleExportSchedule}
+                            className="loan-details-btn loan-details-btn-primary"
+                            onClick={handleSendToFinance}
+                            disabled={actionLoading}
                         >
-                            <FaDownload /> Export Schedule
+                            {actionLoading === 'send-finance' ? <FaSpinner className="loan-details-spinner" /> : <FaPaperPlane />}
+                            Send to Finance
                         </button>
+                    )}
+                    {canCancel && (
+                        <button
+                            className="loan-details-btn loan-details-btn-outline-danger"
+                            onClick={handleCancelLoan}
+                            disabled={actionLoading}
+                        >
+                            {actionLoading === 'cancel' ? <FaSpinner className="loan-details-spinner" /> : <FaTimes />}
+                            Cancel Loan
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Overview Cards */}
+            <div className="loan-details-overview">
+                <div className="loan-details-card loan-details-card-primary">
+                    <div className="loan-details-card-icon">
+                        <FaMoneyBillWave />
+                    </div>
+                    <div className="loan-details-card-content">
+                        <span className="loan-details-card-label">Loan Amount</span>
+                        <span className="loan-details-card-value">{formatCurrency(loan.loanAmount)}</span>
+                    </div>
+                </div>
+                <div className="loan-details-card loan-details-card-warning">
+                    <div className="loan-details-card-icon">
+                        <FaHourglassHalf />
+                    </div>
+                    <div className="loan-details-card-content">
+                        <span className="loan-details-card-label">Remaining Balance</span>
+                        <span className="loan-details-card-value">{formatCurrency(loan.remainingBalance)}</span>
+                    </div>
+                </div>
+                <div className="loan-details-card loan-details-card-info">
+                    <div className="loan-details-card-icon">
+                        <FaCalendarAlt />
+                    </div>
+                    <div className="loan-details-card-content">
+                        <span className="loan-details-card-label">Monthly Payment</span>
+                        <span className="loan-details-card-value">{formatCurrency(loan.effectiveMonthlyInstallment || loan.monthlyInstallment)}</span>
+                    </div>
+                </div>
+                <div className="loan-details-card loan-details-card-success">
+                    <div className="loan-details-card-icon">
+                        <FaPercent />
+                    </div>
+                    <div className="loan-details-card-content">
+                        <span className="loan-details-card-label">Interest Rate</span>
+                        <span className="loan-details-card-value">{loan.interestRate || 0}%</span>
                     </div>
                 </div>
             </div>
 
-            {/* Loan Overview Cards */}
-            <div className="loan-details__overview">
-                <div className="overview-cards">
-                    <LoanOverviewCard
-                        title="Loan Amount"
-                        value={loan.loanAmount}
-                        format="currency"
-                        icon={<FaMoneyBillWave />}
-                        className="card--primary"
-                    />
-                    <LoanOverviewCard
-                        title="Remaining Balance"
-                        value={loan.remainingBalance}
-                        format="currency"
-                        icon={<FaMoneyBillWave />}
-                        className="card--warning"
-                    />
-                    <LoanOverviewCard
-                        title="Monthly Payment"
-                        value={loan.installmentAmount}
-                        format="currency"
-                        icon={<FaCalendarAlt />}
-                        className="card--info"
-                    />
-                    <LoanOverviewCard
-                        title="Progress"
-                        value={`${loan.paidInstallments || 0}/${loan.totalInstallments}`}
-                        format="text"
-                        icon={<FaFileAlt />}
-                        className="card--success"
-                    />
-                </div>
-            </div>
-
-            {/* Loan Information */}
-            <div className="loan-details__content">
-                <div className="content-grid">
-                    {/* Basic Information */}
-                    <div className="info-card">
-                        <div className="card-header">
-                            <h3><FaUser /> Employee Information</h3>
-                        </div>
-                        <div className="card-content">
-                            <div className="info-grid">
-                                <div className="info-item">
-                                    <label>Employee Name:</label>
-                                    <span>{loan.employeeName}</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>Employee ID:</label>
-                                    <span>{loan.employeeId}</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>Department:</label>
-                                    <span>{loan.departmentName || 'N/A'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>Position:</label>
-                                    <span>{loan.jobPositionName || 'N/A'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Loan Details */}
-                    <div className="info-card">
-                        <div className="card-header">
-                            <h3><FaMoneyBillWave /> Loan Information</h3>
-                        </div>
-                        <div className="card-content">
-                            <div className="info-grid">
-                                <div className="info-item">
-                                    <label>Status:</label>
-                                    <span>{getLoanStatusBadge(loan.status)}</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>Start Date:</label>
-                                    <span>{formatDate(loan.startDate)}</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>End Date:</label>
-                                    <span>{formatDate(loan.endDate)}</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>Interest Rate:</label>
-                                    <span>{loan.interestRate}%</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>Frequency:</label>
-                                    <span>{loan.installmentFrequency}</span>
-                                </div>
-                                <div className="info-item">
-                                    <label>Description:</label>
-                                    <span>{loan.description || 'N/A'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Progress Information */}
-                    <div className="info-card full-width">
-                        <div className="card-header">
-                            <h3><FaFileAlt /> Loan Progress</h3>
-                        </div>
-                        <div className="card-content">
-                            <LoanProgressBar
-                                paid={loan.paidInstallments || 0}
-                                total={loan.totalInstallments}
-                                amount={loan.loanAmount}
-                                remaining={loan.remainingBalance}
+            {/* Progress Bar */}
+            {(loan.status === LOAN_STATUS.ACTIVE || loan.status === LOAN_STATUS.DISBURSED || loan.status === LOAN_STATUS.COMPLETED) && (
+                <div className="loan-details-progress-section">
+                    <h3><FaCheckCircle /> Repayment Progress</h3>
+                    <div className="loan-details-progress-container">
+                        <div className="loan-details-progress-bar">
+                            <div
+                                className="loan-details-progress-fill"
+                                style={{ width: `${Math.min(progress.percentage, 100)}%` }}
                             />
                         </div>
+                        <div className="loan-details-progress-info">
+                            <span>{progress.paid} of {progress.total} payments ({Math.round(progress.percentage)}%)</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Main Content Grid */}
+            <div className="loan-details-content">
+                {/* Employee Information */}
+                <div className="loan-details-section">
+                    <h3><FaUser /> Employee Information</h3>
+                    <div className="loan-details-grid">
+                        <div className="loan-details-field">
+                            <label>Employee Name</label>
+                            <span>{loan.employeeName || '-'}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Employee Number</label>
+                            <span>{loan.employeeNumber || '-'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Loan Information */}
+                <div className="loan-details-section">
+                    <h3><FaFileAlt /> Loan Information</h3>
+                    <div className="loan-details-grid">
+                        <div className="loan-details-field">
+                            <label>Loan Number</label>
+                            <span className="loan-details-mono">{loan.loanNumber}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Loan Amount</label>
+                            <span>{formatCurrency(loan.loanAmount)}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Total Installments</label>
+                            <span>{loan.effectiveInstallmentMonths || loan.installmentMonths} months</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Monthly Installment</label>
+                            <span>{formatCurrency(loan.effectiveMonthlyInstallment || loan.monthlyInstallment)}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Interest Rate</label>
+                            <span>{loan.interestRate || 0}%</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Total Interest</label>
+                            <span>{formatCurrency(loan.totalInterest)}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Total Payment Amount</label>
+                            <span>{formatCurrency(loan.totalPaymentAmount)}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Remaining Balance</label>
+                            <span className="loan-details-highlight">{formatCurrency(loan.remainingBalance)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Dates */}
+                <div className="loan-details-section">
+                    <h3><FaCalendarAlt /> Important Dates</h3>
+                    <div className="loan-details-grid">
+                        <div className="loan-details-field">
+                            <label>Loan Date</label>
+                            <span>{formatDate(loan.loanDate)}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Disbursement Date</label>
+                            <span>{formatDate(loan.disbursementDate)}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>First Payment Date</label>
+                            <span>{formatDate(loan.firstPaymentDate)}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Last Payment Date</label>
+                            <span>{formatDate(loan.lastPaymentDate)}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Completion Date</label>
+                            <span>{formatDate(loan.completionDate)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Purpose & Notes */}
+                {(loan.purpose || loan.notes) && (
+                    <div className="loan-details-section">
+                        <h3><FaInfoCircle /> Purpose & Notes</h3>
+                        <div className="loan-details-grid loan-details-grid-full">
+                            {loan.purpose && (
+                                <div className="loan-details-field loan-details-field-full">
+                                    <label>Purpose</label>
+                                    <span>{loan.purpose}</span>
+                                </div>
+                            )}
+                            {loan.notes && (
+                                <div className="loan-details-field loan-details-field-full">
+                                    <label>Notes</label>
+                                    <span>{loan.notes}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* HR Approval Info */}
+                {(loan.hrApprovedBy || loan.hrRejectedBy) && (
+                    <div className="loan-details-section">
+                        <h3><FaUser /> HR Approval</h3>
+                        <div className="loan-details-grid">
+                            {loan.hrApprovedBy && (
+                                <>
+                                    <div className="loan-details-field">
+                                        <label>Approved By</label>
+                                        <span>{loan.hrApprovedBy}</span>
+                                    </div>
+                                    <div className="loan-details-field">
+                                        <label>Approved At</label>
+                                        <span>{formatDateTime(loan.hrApprovedAt)}</span>
+                                    </div>
+                                </>
+                            )}
+                            {loan.hrRejectedBy && (
+                                <>
+                                    <div className="loan-details-field">
+                                        <label>Rejected By</label>
+                                        <span>{loan.hrRejectedBy}</span>
+                                    </div>
+                                    <div className="loan-details-field">
+                                        <label>Rejected At</label>
+                                        <span>{formatDateTime(loan.hrRejectedAt)}</span>
+                                    </div>
+                                    <div className="loan-details-field loan-details-field-full">
+                                        <label>Rejection Reason</label>
+                                        <span className="loan-details-rejection-reason">{loan.hrRejectionReason}</span>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Finance Info */}
+                {loan.financeStatus && loan.financeStatus !== 'NOT_SUBMITTED' && (
+                    <div className="loan-details-section">
+                        <h3><FaUniversity /> Finance Review</h3>
+                        <div className="loan-details-grid">
+                            <div className="loan-details-field">
+                                <label>Finance Status</label>
+                                <span>{getFinanceStatusBadge(loan.financeStatus)}</span>
+                            </div>
+                            {loan.financeRequestNumber && (
+                                <div className="loan-details-field">
+                                    <label>Request Number</label>
+                                    <span className="loan-details-mono">{loan.financeRequestNumber}</span>
+                                </div>
+                            )}
+                            {loan.financeApprovedAmount && (
+                                <div className="loan-details-field">
+                                    <label>Approved Amount</label>
+                                    <span>{formatCurrency(loan.financeApprovedAmount)}</span>
+                                </div>
+                            )}
+                            {loan.financeApprovedInstallments && (
+                                <div className="loan-details-field">
+                                    <label>Approved Installments</label>
+                                    <span>{loan.financeApprovedInstallments} months</span>
+                                </div>
+                            )}
+                            {loan.financeApprovedBy && (
+                                <>
+                                    <div className="loan-details-field">
+                                        <label>Approved By</label>
+                                        <span>{loan.financeApprovedBy}</span>
+                                    </div>
+                                    <div className="loan-details-field">
+                                        <label>Approved At</label>
+                                        <span>{formatDateTime(loan.financeApprovedAt)}</span>
+                                    </div>
+                                </>
+                            )}
+                            {loan.financeRejectedBy && (
+                                <>
+                                    <div className="loan-details-field">
+                                        <label>Rejected By</label>
+                                        <span>{loan.financeRejectedBy}</span>
+                                    </div>
+                                    <div className="loan-details-field">
+                                        <label>Rejected At</label>
+                                        <span>{formatDateTime(loan.financeRejectedAt)}</span>
+                                    </div>
+                                    <div className="loan-details-field loan-details-field-full">
+                                        <label>Rejection Reason</label>
+                                        <span className="loan-details-rejection-reason">{loan.financeRejectionReason}</span>
+                                    </div>
+                                </>
+                            )}
+                            {loan.financeNotes && (
+                                <div className="loan-details-field loan-details-field-full">
+                                    <label>Finance Notes</label>
+                                    <span>{loan.financeNotes}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Disbursement Info */}
+                {loan.disbursedBy && (
+                    <div className="loan-details-section">
+                        <h3><FaMoneyBillWave /> Disbursement</h3>
+                        <div className="loan-details-grid">
+                            <div className="loan-details-field">
+                                <label>Disbursed By</label>
+                                <span>{loan.disbursedBy}</span>
+                            </div>
+                            <div className="loan-details-field">
+                                <label>Disbursed At</label>
+                                <span>{formatDateTime(loan.disbursedAt)}</span>
+                            </div>
+                            {loan.paymentSourceType && (
+                                <div className="loan-details-field">
+                                    <label>Payment Source</label>
+                                    <span>{loan.paymentSourceType}: {loan.paymentSourceName || loan.paymentSourceId}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Audit Trail */}
+                <div className="loan-details-section">
+                    <h3><FaHistory /> Audit Trail</h3>
+                    <div className="loan-details-grid">
+                        <div className="loan-details-field">
+                            <label>Created By</label>
+                            <span>{loan.createdBy || '-'}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Created At</label>
+                            <span>{formatDateTime(loan.createdAt)}</span>
+                        </div>
+                        {loan.updatedBy && (
+                            <>
+                                <div className="loan-details-field">
+                                    <label>Last Updated By</label>
+                                    <span>{loan.updatedBy}</span>
+                                </div>
+                                <div className="loan-details-field">
+                                    <label>Last Updated At</label>
+                                    <span>{formatDateTime(loan.updatedAt)}</span>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Repayment Schedule */}
-            <div className="loan-details__schedule">
-                <div className="schedule-card">
-                    <div className="card-header">
-                        <h3><FaCalendarAlt /> Repayment Schedule</h3>
-                        <span className="schedule-count">
-              {repaymentSchedule.length} installments
-            </span>
-                    </div>
-                    <div className="card-content">
-                        <DataTable
-                            columns={scheduleColumns}
-                            data={repaymentSchedule}
-                            emptyMessage="No repayment schedule available"
-                            pagination={{
-                                pageSize: 10
-                            }}
-                        />
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Loan Overview Card Component
-const LoanOverviewCard = ({ title, value, format, icon, className = '' }) => {
-    const formatValue = (val) => {
-        switch (format) {
-            case 'currency':
-                return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD'
-                }).format(val);
-            case 'percentage':
-                return `${(val || 0).toFixed(1)}%`;
-            case 'text':
-            default:
-                return val;
-        }
-    };
-
-    return (
-        <div className={`overview-card ${className}`}>
-            <div className="overview-card__icon">
-                {icon}
-            </div>
-            <div className="overview-card__content">
-                <h4 className="overview-card__title">{title}</h4>
-                <div className="overview-card__value">{formatValue(value)}</div>
-            </div>
-        </div>
-    );
-};
-
-// Loan Progress Bar Component
-const LoanProgressBar = ({ paid, total, amount, remaining }) => {
-    const percentage = total > 0 ? (paid / total) * 100 : 0;
-    const paidAmount = amount - remaining;
-
-    return (
-        <div className="loan-progress-bar">
-            <div className="progress-info">
-                <div className="progress-stats">
-                    <div className="stat">
-                        <label>Paid Amount:</label>
-                        <span className="amount-paid">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(paidAmount)}</span>
-                    </div>
-                    <div className="stat">
-                        <label>Remaining:</label>
-                        <span className="amount-remaining">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(remaining)}</span>
-                    </div>
-                    <div className="stat">
-                        <label>Progress:</label>
-                        <span>{paid}/{total} ({Math.round(percentage)}%)</span>
+            {/* Reject Modal */}
+            {showRejectModal && (
+                <div className="loan-details-modal-overlay">
+                    <div className="loan-details-modal">
+                        <div className="loan-details-modal-header">
+                            <h3>Reject Loan</h3>
+                            <button
+                                className="loan-details-modal-close"
+                                onClick={() => {
+                                    setShowRejectModal(false);
+                                    setRejectReason('');
+                                }}
+                            >
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <div className="loan-details-modal-content">
+                            <p>Please provide a reason for rejecting this loan request:</p>
+                            <textarea
+                                className="loan-details-textarea"
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                placeholder="Enter rejection reason..."
+                                rows={4}
+                            />
+                        </div>
+                        <div className="loan-details-modal-actions">
+                            <button
+                                className="loan-details-btn loan-details-btn-secondary"
+                                onClick={() => {
+                                    setShowRejectModal(false);
+                                    setRejectReason('');
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="loan-details-btn loan-details-btn-danger"
+                                onClick={handleHRReject}
+                                disabled={actionLoading === 'hr-reject'}
+                            >
+                                {actionLoading === 'hr-reject' ? <FaSpinner className="loan-details-spinner" /> : <FaTimes />}
+                                Reject Loan
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div className="loan-progress-bar">
-                <div
-                    className="loan-progress-fill"
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                />
-            </div>
+            )}
         </div>
     );
 };

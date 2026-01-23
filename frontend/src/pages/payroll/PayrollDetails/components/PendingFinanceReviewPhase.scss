@@ -1,0 +1,202 @@
+// ========================================
+// FILE: PendingFinanceReviewPhase.scss
+// Pending Finance Review Phase Styles
+// ========================================
+
+.pending-finance-review-phase {
+  width: 100%;
+
+  .phase-action-section {
+    margin-bottom: 24px;
+  }
+
+  .action-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+
+    &.pending-review {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+      border: 2px solid #3b82f6;
+
+      .action-icon { color: #3b82f6; }
+    }
+
+    .action-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+
+      .action-icon { font-size: 48px; }
+      h3 { margin: 0 0 8px 0; font-size: 22px; font-weight: 600; }
+      p { margin: 0; font-size: 15px; color: #6b7280; }
+    }
+
+    .review-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: #3b82f6;
+      color: white;
+      border-radius: 24px;
+      font-weight: 600;
+      font-size: 14px;
+
+      svg { font-size: 16px; }
+    }
+  }
+
+  .payment-details-card,
+  .payroll-summary-card {
+    background: var(--section-background-color, #fff);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+
+    h4 {
+      margin: 0 0 20px 0;
+      font-size: 18px;
+      font-weight: 600;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f3f4f6;
+    }
+  }
+
+  .details-grid,
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .detail-item,
+  .summary-item {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+
+    .label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      svg { font-size: 14px; color: #6b7280; }
+
+      &.deduction { color: #dc2626; }
+      &.overtime { color: #10b981; }
+    }
+
+    &.highlight {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+      border-color: #3b82f6;
+
+      .value { color: #3b82f6; font-size: 24px; }
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+
+    .btn-mark-paid {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+
+      svg { font-size: 20px; }
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .spin {
+        animation: spin 1s linear infinite;
+      }
+    }
+  }
+
+  .info-note {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    color: #92400e;
+    font-size: 14px;
+
+    svg { font-size: 18px; flex-shrink: 0; }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 768px) {
+    .action-card {
+      flex-direction: column;
+      gap: 16px;
+      padding: 20px;
+
+      .action-content {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+
+    .details-grid,
+    .summary-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+
+      .btn-mark-paid {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}

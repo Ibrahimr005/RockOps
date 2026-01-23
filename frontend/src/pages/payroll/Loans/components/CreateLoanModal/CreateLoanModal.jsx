@@ -1,79 +1,98 @@
-// frontend/src/pages/payroll/CreateLoanModal/CreateLoanModal.jsx
-import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave, FaCalculator } from 'react-icons/fa';
+// ========================================
+// FILE: CreateLoanModal.jsx
+// Create Loan Modal - Fixed Backend Integration
+// ========================================
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { FaTimes, FaSave, FaCalculator, FaSpinner, FaUserTie } from 'react-icons/fa';
 import EmployeeSelector from '../../../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 import { loanService } from '../../../../../services/payroll/loanService.js';
-import { formatCurrency } from '../../../../../utils/formatters.js';
+import { useSnackbar } from '../../../../../contexts/SnackbarContext.jsx';
 import './CreateLoanModal.scss';
 
 const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
+    const { showSuccess, showError, showWarning } = useSnackbar();
+
+    // ========================================
+    // STATE
+    // ========================================
     const [formData, setFormData] = useState({
         employeeId: '',
         loanAmount: '',
         interestRate: '0',
-        totalInstallments: '12',
-        startDate: '',
-        endDate: ''
+        installmentMonths: '12',
+        loanDate: new Date().toISOString().split('T')[0],
+        purpose: '',
+        notes: ''
     });
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [validation, setValidation] = useState({});
     const [loading, setLoading] = useState(false);
     const [calculatedValues, setCalculatedValues] = useState({
         monthlyPayment: 0,
-        totalAmount: 0
+        totalAmount: 0,
+        totalInterest: 0,
+        endDate: ''
     });
 
-    useEffect(() => {
-        if (formData.loanAmount && formData.totalInstallments) {
-            calculateLoanDetails();
-        }
-    }, [formData.loanAmount, formData.interestRate, formData.totalInstallments]);
-
-    useEffect(() => {
-        if (formData.startDate && formData.totalInstallments) {
-            calculateEndDate();
-        }
-    }, [formData.startDate, formData.totalInstallments]);
-
-    const calculateLoanDetails = () => {
+    // ========================================
+    // CALCULATIONS
+    // ========================================
+    const calculateLoanDetails = useCallback(() => {
         const principal = parseFloat(formData.loanAmount) || 0;
-        const rate = parseFloat(formData.interestRate) / 100 / 12; // Monthly rate
-        const months = parseInt(formData.totalInstallments) || 1;
+        const annualRate = parseFloat(formData.interestRate) || 0;
+        const months = parseInt(formData.installmentMonths) || 1;
 
         if (principal > 0 && months > 0) {
             let monthlyPayment;
             let totalAmount;
+            let totalInterest;
 
-            if (rate > 0) {
-                // Calculate with interest
-                monthlyPayment = principal * (rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
+            if (annualRate > 0) {
+                // Calculate with interest (monthly rate)
+                const monthlyRate = annualRate / 100 / 12;
+                monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
                 totalAmount = monthlyPayment * months;
+                totalInterest = totalAmount - principal;
             } else {
-                // No interest
+                // No interest - simple division
                 monthlyPayment = principal / months;
                 totalAmount = principal;
+                totalInterest = 0;
+            }
+
+            // Calculate end date
+            let endDate = '';
+            if (formData.loanDate) {
+                const startDate = new Date(formData.loanDate);
+                const calculatedEndDate = new Date(startDate);
+                calculatedEndDate.setMonth(calculatedEndDate.getMonth() + months);
+                endDate = calculatedEndDate.toISOString().split('T')[0];
             }
 
             setCalculatedValues({
                 monthlyPayment: Math.round(monthlyPayment * 100) / 100,
-                totalAmount: Math.round(totalAmount * 100) / 100
+                totalAmount: Math.round(totalAmount * 100) / 100,
+                totalInterest: Math.round(totalInterest * 100) / 100,
+                endDate
+            });
+        } else {
+            setCalculatedValues({
+                monthlyPayment: 0,
+                totalAmount: 0,
+                totalInterest: 0,
+                endDate: ''
             });
         }
-    };
+    }, [formData.loanAmount, formData.interestRate, formData.installmentMonths, formData.loanDate]);
 
-    const calculateEndDate = () => {
-        if (formData.startDate && formData.totalInstallments) {
-            const startDate = new Date(formData.startDate);
-            const endDate = new Date(startDate);
-            endDate.setMonth(endDate.getMonth() + parseInt(formData.totalInstallments));
+    useEffect(() => {
+        calculateLoanDetails();
+    }, [calculateLoanDetails]);
 
-            setFormData(prev => ({
-                ...prev,
-                endDate: endDate.toISOString().split('T')[0]
-            }));
-        }
-    };
-
+    // ========================================
+    // HANDLERS
+    // ========================================
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
 
@@ -83,31 +102,23 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
         }
     };
 
-    const handleEmployeeSelect = async (employee) => {
+    const handleEmployeeSelect = (employee) => {
         setSelectedEmployee(employee);
-        setFormData(prev => ({ ...prev, employeeId: employee.id }));
+        setFormData(prev => ({ ...prev, employeeId: employee?.id || '' }));
 
-        // Validate loan eligibility
-        try {
-            const eligibilityResponse = await loanService.validateLoanEligibility(employee.id);
-            if (!eligibilityResponse.data.eligible) {
-                setValidation(prev => ({
-                    ...prev,
-                    employeeId: eligibilityResponse.data.reason
-                }));
-                // Use your existing snackbar here
-                // showSnackbar(`Employee not eligible: ${eligibilityResponse.data.reason}`, 'warning');
-            } else {
-                // Use your existing snackbar here
-                // showSnackbar('Employee is eligible for loan', 'success');
-            }
-        } catch (err) {
-            console.error('Error validating eligibility:', err);
-            // Use your existing snackbar here
-            // showSnackbar('Failed to validate employee eligibility', 'error');
+        // Clear employee validation error
+        if (validation.employeeId) {
+            setValidation(prev => ({ ...prev, employeeId: null }));
+        }
+
+        if (employee) {
+            showSuccess(`Selected: ${employee.firstName} ${employee.lastName}`);
         }
     };
 
+    // ========================================
+    // VALIDATION
+    // ========================================
     const validateForm = () => {
         const errors = {};
 
@@ -121,25 +132,18 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
             errors.loanAmount = 'Loan amount cannot exceed $100,000';
         }
 
-        if (!formData.totalInstallments || parseInt(formData.totalInstallments) <= 0) {
-            errors.totalInstallments = 'Please enter valid number of installments';
-        } else if (parseInt(formData.totalInstallments) > 60) {
-            errors.totalInstallments = 'Maximum 60 installments allowed';
+        if (!formData.installmentMonths || parseInt(formData.installmentMonths) <= 0) {
+            errors.installmentMonths = 'Please select number of installments';
+        } else if (parseInt(formData.installmentMonths) > 60) {
+            errors.installmentMonths = 'Maximum 60 installments allowed';
         }
 
-        if (!formData.startDate) {
-            errors.startDate = 'Please select a start date';
-        } else {
-            const startDate = new Date(formData.startDate);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            if (startDate < today) {
-                errors.startDate = 'Start date cannot be in the past';
-            }
+        if (!formData.loanDate) {
+            errors.loanDate = 'Please select a loan date';
         }
 
-        if (parseFloat(formData.interestRate) < 0 || parseFloat(formData.interestRate) > 25) {
+        const interestRate = parseFloat(formData.interestRate);
+        if (isNaN(interestRate) || interestRate < 0 || interestRate > 25) {
             errors.interestRate = 'Interest rate must be between 0% and 25%';
         }
 
@@ -147,76 +151,94 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
         return Object.keys(errors).length === 0;
     };
 
+    // ========================================
+    // SUBMIT
+    // ========================================
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) {
-            // Use your existing snackbar here
-            // showSnackbar('Please fix the form errors', 'error');
-            return;
-        }
-
-        // Validate that calculated values exist
-        if (!calculatedValues.monthlyPayment || calculatedValues.monthlyPayment <= 0) {
-            console.error('Monthly payment not calculated properly:', calculatedValues);
-            // showSnackbar('Error calculating loan payments. Please try again.', 'error');
+            showWarning('Please fix the form errors before submitting');
             return;
         }
 
         try {
             setLoading(true);
+
+            // Build loan data matching backend LoanDTO expectations
             const loanData = {
                 employeeId: formData.employeeId,
                 loanAmount: parseFloat(formData.loanAmount),
-                interestRate: parseFloat(formData.interestRate),
-                totalInstallments: parseInt(formData.totalInstallments),
-                startDate: formData.startDate,
-                endDate: formData.endDate,
-                // FIX: Ensure installmentAmount is properly set and not null
-                installmentAmount: calculatedValues.monthlyPayment,
-                installmentFrequency: 'MONTHLY', // Set the frequency
-                description: `Loan for ${selectedEmployee?.firstName} ${selectedEmployee?.lastName}` // Add description
+                installmentMonths: parseInt(formData.installmentMonths),
+                interestRate: parseFloat(formData.interestRate) || 0,
+                loanDate: formData.loanDate,
+                purpose: formData.purpose || `Loan for ${selectedEmployee?.firstName} ${selectedEmployee?.lastName}`,
+                notes: formData.notes || ''
             };
 
-            // Validate the loan data before sending
-            console.log('Sending loan data:', loanData);
-
-            // Additional validation to ensure no null values for required fields
-            if (!loanData.installmentAmount || loanData.installmentAmount <= 0) {
-                throw new Error('Invalid installment amount calculated');
-            }
+            console.log('Creating loan with data:', loanData);
 
             const response = await loanService.createLoan(loanData);
+
+            showSuccess(`Loan ${response.data?.loanNumber || ''} created successfully! Pending HR approval.`);
             onLoanCreated(response.data);
         } catch (err) {
             console.error('Error creating loan:', err);
-            // Use your existing snackbar here
-            // showSnackbar('Failed to create loan. Please try again.', 'error');
+            const errorMessage = err.response?.data?.message
+                || err.response?.data?.error
+                || 'Failed to create loan. Please try again.';
+            showError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
+    // ========================================
+    // MODAL HANDLERS
+    // ========================================
     const handleOverlayClick = (e) => {
-        if (e.target === e.currentTarget) {
-            onClose();
-        }
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
+        if (e.target === e.currentTarget && !loading) {
             onClose();
         }
     };
 
     useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && !loading) {
+                onClose();
+            }
+        };
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    }, [onClose, loading]);
 
+    // ========================================
+    // HELPER FUNCTIONS
+    // ========================================
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        }).format(amount || 0);
+    };
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
+
+    // ========================================
+    // RENDER
+    // ========================================
     return (
         <div className="create-loan-modal-overlay" onClick={handleOverlayClick}>
             <div className="create-loan-modal">
+                {/* Header */}
                 <div className="create-loan-modal-header">
                     <h2>Create New Loan</h2>
                     <button
@@ -224,18 +246,20 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                         onClick={onClose}
                         type="button"
                         aria-label="Close modal"
+                        disabled={loading}
                     >
                         <FaTimes />
                     </button>
                 </div>
 
+                {/* Content */}
                 <div className="create-loan-modal-content">
                     <form onSubmit={handleSubmit} className="create-loan-form">
-                        {/* Employee Selection */}
+                        {/* Employee Selection Section */}
                         <div className="create-loan-form-section">
-                            <h3>Employee Information</h3>
+                            <h3><FaUserTie /> Employee Information</h3>
                             <div className="create-loan-form-group">
-                                <label>Employee *</label>
+                                <label>Select Employee *</label>
                                 <EmployeeSelector
                                     employees={employees}
                                     selectedEmployee={selectedEmployee}
@@ -252,19 +276,29 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                                 <div className="create-loan-employee-preview">
                                     <div className="create-loan-employee-details">
                                         <h4>{selectedEmployee.firstName} {selectedEmployee.lastName}</h4>
-                                        <p>{selectedEmployee.jobPositionName} - {selectedEmployee.departmentName}</p>
-                                        <p>Monthly Salary: {formatCurrency(selectedEmployee.monthlySalary)}</p>
+                                        <p>
+                                            {selectedEmployee.jobPositionName || 'N/A'}
+                                            {selectedEmployee.departmentName && ` - ${selectedEmployee.departmentName}`}
+                                        </p>
+                                        {selectedEmployee.monthlySalary && (
+                                            <p>Monthly Salary: {formatCurrency(selectedEmployee.monthlySalary)}</p>
+                                        )}
+                                        {selectedEmployee.employeeNumber && (
+                                            <p className="create-loan-employee-number">
+                                                Employee #: {selectedEmployee.employeeNumber}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Loan Details */}
+                        {/* Loan Details Section */}
                         <div className="create-loan-form-section">
                             <h3>Loan Details</h3>
                             <div className="create-loan-form-row">
                                 <div className="create-loan-form-group">
-                                    <label>Loan Amount *</label>
+                                    <label>Loan Amount ($) *</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -274,6 +308,7 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                                         onChange={(e) => handleInputChange('loanAmount', e.target.value)}
                                         className={`create-loan-form-input ${validation.loanAmount ? 'create-loan-error' : ''}`}
                                         placeholder="Enter loan amount"
+                                        disabled={loading}
                                     />
                                     {validation.loanAmount && (
                                         <span className="create-loan-error-message">{validation.loanAmount}</span>
@@ -281,7 +316,7 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                                 </div>
 
                                 <div className="create-loan-form-group">
-                                    <label>Interest Rate (%) *</label>
+                                    <label>Interest Rate (% per annum)</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -290,24 +325,31 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                                         value={formData.interestRate}
                                         onChange={(e) => handleInputChange('interestRate', e.target.value)}
                                         className={`create-loan-form-input ${validation.interestRate ? 'create-loan-error' : ''}`}
-                                        placeholder="Enter interest rate"
+                                        placeholder="0 for interest-free"
+                                        disabled={loading}
                                     />
                                     {validation.interestRate && (
                                         <span className="create-loan-error-message">{validation.interestRate}</span>
                                     )}
+                                    <small className="create-loan-field-help">
+                                        Enter 0 for interest-free loans
+                                    </small>
                                 </div>
                             </div>
 
                             <div className="create-loan-form-row">
                                 <div className="create-loan-form-group">
-                                    <label>Total Installments *</label>
+                                    <label>Number of Installments *</label>
                                     <select
-                                        value={formData.totalInstallments}
-                                        onChange={(e) => handleInputChange('totalInstallments', e.target.value)}
-                                        className={`create-loan-form-select ${validation.totalInstallments ? 'create-loan-error' : ''}`}
+                                        value={formData.installmentMonths}
+                                        onChange={(e) => handleInputChange('installmentMonths', e.target.value)}
+                                        className={`create-loan-form-select ${validation.installmentMonths ? 'create-loan-error' : ''}`}
+                                        disabled={loading}
                                     >
                                         <option value="">Select installments</option>
+                                        <option value="3">3 months</option>
                                         <option value="6">6 months</option>
+                                        <option value="9">9 months</option>
                                         <option value="12">12 months</option>
                                         <option value="18">18 months</option>
                                         <option value="24">24 months</option>
@@ -315,73 +357,113 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                                         <option value="48">48 months</option>
                                         <option value="60">60 months</option>
                                     </select>
-                                    {validation.totalInstallments && (
-                                        <span className="create-loan-error-message">{validation.totalInstallments}</span>
+                                    {validation.installmentMonths && (
+                                        <span className="create-loan-error-message">{validation.installmentMonths}</span>
                                     )}
                                 </div>
 
                                 <div className="create-loan-form-group">
-                                    <label>Start Date *</label>
+                                    <label>Loan Date *</label>
                                     <input
                                         type="date"
-                                        value={formData.startDate}
-                                        onChange={(e) => handleInputChange('startDate', e.target.value)}
-                                        className={`create-loan-form-input ${validation.startDate ? 'create-loan-error' : ''}`}
-                                        min={new Date().toISOString().split('T')[0]}
+                                        value={formData.loanDate}
+                                        onChange={(e) => handleInputChange('loanDate', e.target.value)}
+                                        className={`create-loan-form-input ${validation.loanDate ? 'create-loan-error' : ''}`}
+                                        disabled={loading}
                                     />
-                                    {validation.startDate && (
-                                        <span className="create-loan-error-message">{validation.startDate}</span>
+                                    {validation.loanDate && (
+                                        <span className="create-loan-error-message">{validation.loanDate}</span>
                                     )}
                                 </div>
                             </div>
 
                             <div className="create-loan-form-group">
-                                <label>End Date</label>
+                                <label>Purpose</label>
                                 <input
-                                    type="date"
-                                    value={formData.endDate}
-                                    readOnly
-                                    className="create-loan-form-input create-loan-readonly-field"
+                                    type="text"
+                                    value={formData.purpose}
+                                    onChange={(e) => handleInputChange('purpose', e.target.value)}
+                                    className="create-loan-form-input"
+                                    placeholder="e.g., Home renovation, Medical expenses, Education"
+                                    maxLength={500}
+                                    disabled={loading}
                                 />
                                 <small className="create-loan-field-help">
-                                    Automatically calculated based on start date and installments
+                                    Optional - describe the purpose of the loan
                                 </small>
+                            </div>
+
+                            <div className="create-loan-form-group">
+                                <label>Notes</label>
+                                <textarea
+                                    value={formData.notes}
+                                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                                    className="create-loan-form-input create-loan-textarea"
+                                    placeholder="Additional notes or comments..."
+                                    rows={3}
+                                    maxLength={1000}
+                                    disabled={loading}
+                                />
                             </div>
                         </div>
 
-                        {/* Calculation Summary */}
+                        {/* Calculation Summary Section */}
                         {calculatedValues.monthlyPayment > 0 && (
                             <div className="create-loan-form-section">
                                 <h3><FaCalculator /> Loan Summary</h3>
                                 <div className="create-loan-calculation-summary">
                                     <div className="create-loan-summary-row">
                                         <span className="create-loan-label">Principal Amount:</span>
-                                        <span className="create-loan-value">{formatCurrency(parseFloat(formData.loanAmount) || 0)}</span>
+                                        <span className="create-loan-value">
+                                            {formatCurrency(parseFloat(formData.loanAmount) || 0)}
+                                        </span>
                                     </div>
                                     <div className="create-loan-summary-row">
                                         <span className="create-loan-label">Interest Rate:</span>
-                                        <span className="create-loan-value">{formData.interestRate}% per annum</span>
+                                        <span className="create-loan-value">
+                                            {formData.interestRate || 0}% per annum
+                                        </span>
+                                    </div>
+                                    <div className="create-loan-summary-row">
+                                        <span className="create-loan-label">Duration:</span>
+                                        <span className="create-loan-value">
+                                            {formData.installmentMonths} months
+                                        </span>
                                     </div>
                                     <div className="create-loan-summary-row">
                                         <span className="create-loan-label">Monthly Payment:</span>
-                                        <span className="create-loan-value create-loan-monthly-payment">{formatCurrency(calculatedValues.monthlyPayment)}</span>
+                                        <span className="create-loan-value create-loan-monthly-payment">
+                                            {formatCurrency(calculatedValues.monthlyPayment)}
+                                        </span>
                                     </div>
-                                    <div className="create-loan-summary-row">
-                                        <span className="create-loan-label">Total Installments:</span>
-                                        <span className="create-loan-value">{formData.totalInstallments} months</span>
-                                    </div>
-                                    <div className="create-loan-summary-row create-loan-total-row">
-                                        <span className="create-loan-label">Total Amount to be Paid:</span>
-                                        <span className="create-loan-value create-loan-total-amount">{formatCurrency(calculatedValues.totalAmount)}</span>
-                                    </div>
-                                    {calculatedValues.totalAmount > parseFloat(formData.loanAmount || 0) && (
+                                    {calculatedValues.totalInterest > 0 && (
                                         <div className="create-loan-summary-row">
                                             <span className="create-loan-label">Total Interest:</span>
                                             <span className="create-loan-value create-loan-interest-amount">
-                                                {formatCurrency(calculatedValues.totalAmount - parseFloat(formData.loanAmount || 0))}
+                                                {formatCurrency(calculatedValues.totalInterest)}
                                             </span>
                                         </div>
                                     )}
+                                    <div className="create-loan-summary-row create-loan-total-row">
+                                        <span className="create-loan-label">Total Repayment:</span>
+                                        <span className="create-loan-value create-loan-total-amount">
+                                            {formatCurrency(calculatedValues.totalAmount)}
+                                        </span>
+                                    </div>
+                                    {calculatedValues.endDate && (
+                                        <div className="create-loan-summary-row">
+                                            <span className="create-loan-label">Expected Completion:</span>
+                                            <span className="create-loan-value">
+                                                {formatDate(calculatedValues.endDate)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="create-loan-workflow-note">
+                                    <strong>Note:</strong> After creation, this loan will require HR approval.
+                                    Once HR approves, a finance payment request will be automatically generated
+                                    for disbursement.
                                 </div>
                             </div>
                         )}
@@ -399,9 +481,19 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                             <button
                                 type="submit"
                                 className="create-loan-submit-btn"
-                                disabled={loading || !formData.employeeId || !formData.loanAmount || calculatedValues.monthlyPayment <= 0}
+                                disabled={loading || !formData.employeeId || !formData.loanAmount}
                             >
-                                <FaSave /> {loading ? 'Creating...' : 'Create Loan'}
+                                {loading ? (
+                                    <>
+                                        <FaSpinner className="create-loan-spinner" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaSave />
+                                        Create Loan
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>

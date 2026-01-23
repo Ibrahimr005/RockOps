@@ -1,346 +1,337 @@
-// frontend/src/services/payroll/deductionService.js
+// ========================================
+// FILE: deductionService.js
+// Deduction Management Service - Complete Backend Integration
+// ========================================
+
 import apiClient from '../../utils/apiClient.js';
 
-const DEDUCTION_ENDPOINTS = {
-    BASE: '/api/v1/payroll/deductions',
-    MANUAL: '/api/v1/payroll/deductions/manual',
-    MANUAL_BY_ID: (deductionId) => `/api/v1/payroll/deductions/manual/${deductionId}`,
-    MANUAL_DEACTIVATE: (deductionId) => `/api/v1/payroll/deductions/manual/${deductionId}/deactivate`,
-    EMPLOYEE: (employeeId) => `/api/v1/payroll/deductions/employee/${employeeId}`,
-    EMPLOYEE_ACTIVE: (employeeId) => `/api/v1/payroll/deductions/employee/${employeeId}/active`,
-    EMPLOYEE_SUMMARY: (employeeId) => `/api/v1/payroll/deductions/employee/${employeeId}/summary`,
-    TYPES: '/api/v1/payroll/deductions/types',
-    TYPES_ACTIVE: '/api/v1/payroll/deductions/types/active',
-    TYPES_BY_CATEGORY: (category) => `/api/v1/payroll/deductions/types/category/${category}`,
-    TYPES_BY_ID: (typeId) => `/api/v1/payroll/deductions/types/${typeId}`,
-    TYPES_DEACTIVATE: (typeId) => `/api/v1/payroll/deductions/types/${typeId}/deactivate`,
-    BULK_CREATE: '/api/v1/payroll/deductions/manual/bulk',
-    BULK_DEACTIVATE: '/api/v1/payroll/deductions/manual/bulk/deactivate',
-    STATISTICS: '/api/v1/payroll/deductions/statistics',
-    EXPORT: '/api/v1/payroll/deductions/export'
+// ========================================
+// API ENDPOINTS
+// ========================================
+
+const DEDUCTION_TYPE_ENDPOINTS = {
+    BASE: '/api/v1/payroll/deduction-types',
+    BY_ID: (id) => `/api/v1/payroll/deduction-types/${id}`,
+    BY_SITE: (siteId) => `/api/v1/payroll/deduction-types/site/${siteId}`,
+    BY_CATEGORY: (category) => `/api/v1/payroll/deduction-types/category/${category}`,
+    CATEGORIES: '/api/v1/payroll/deduction-types/categories',
+    REACTIVATE: (id) => `/api/v1/payroll/deduction-types/${id}/reactivate`,
+    INIT_SYSTEM_TYPES: '/api/v1/payroll/deduction-types/initialize-system-types'
 };
 
+const EMPLOYEE_DEDUCTION_ENDPOINTS = {
+    BASE: '/api/v1/payroll/employee-deductions',
+    BY_ID: (id) => `/api/v1/payroll/employee-deductions/${id}`,
+    BY_EMPLOYEE: (employeeId) => `/api/v1/payroll/employee-deductions/employee/${employeeId}`,
+    ACTIVE_BY_EMPLOYEE: (employeeId) => `/api/v1/payroll/employee-deductions/employee/${employeeId}/active`,
+    BY_PERIOD: (employeeId) => `/api/v1/payroll/employee-deductions/employee/${employeeId}/period`,
+    REACTIVATE: (id) => `/api/v1/payroll/employee-deductions/${id}/reactivate`,
+    PERMANENT_DELETE: (id) => `/api/v1/payroll/employee-deductions/${id}/permanent`,
+    CALCULATION_METHODS: '/api/v1/payroll/employee-deductions/calculation-methods',
+    FREQUENCIES: '/api/v1/payroll/employee-deductions/frequencies',
+    CALCULATE_PREVIEW: '/api/v1/payroll/employee-deductions/calculate-preview'
+};
+
+// ========================================
+// DEDUCTION CATEGORIES
+// ========================================
+
+export const DEDUCTION_CATEGORY = {
+    LOAN: 'LOAN',
+    TAX: 'TAX',
+    INSURANCE: 'INSURANCE',
+    ABSENCE: 'ABSENCE',
+    LATE: 'LATE',
+    LEAVE: 'LEAVE',
+    ADVANCE: 'ADVANCE',
+    FINE: 'FINE',
+    OTHER: 'OTHER'
+};
+
+export const DEDUCTION_CATEGORY_CONFIG = {
+    [DEDUCTION_CATEGORY.LOAN]: { label: 'Loan', color: '#3b82f6', icon: 'money-bill' },
+    [DEDUCTION_CATEGORY.TAX]: { label: 'Tax', color: '#ef4444', icon: 'file-invoice' },
+    [DEDUCTION_CATEGORY.INSURANCE]: { label: 'Insurance', color: '#10b981', icon: 'shield' },
+    [DEDUCTION_CATEGORY.ABSENCE]: { label: 'Absence', color: '#f59e0b', icon: 'user-times' },
+    [DEDUCTION_CATEGORY.LATE]: { label: 'Late', color: '#8b5cf6', icon: 'clock' },
+    [DEDUCTION_CATEGORY.LEAVE]: { label: 'Leave', color: '#06b6d4', icon: 'calendar' },
+    [DEDUCTION_CATEGORY.ADVANCE]: { label: 'Advance', color: '#ec4899', icon: 'dollar-sign' },
+    [DEDUCTION_CATEGORY.FINE]: { label: 'Fine', color: '#dc2626', icon: 'exclamation' },
+    [DEDUCTION_CATEGORY.OTHER]: { label: 'Other', color: '#6b7280', icon: 'question' }
+};
+
+// ========================================
+// SERVICE METHODS
+// ========================================
+
 export const deductionService = {
-    // ===== MANUAL DEDUCTION MANAGEMENT =====
+    // ========================================
+    // DEDUCTION TYPE MANAGEMENT
+    // ========================================
 
     /**
-     * Create new manual deduction for an employee
-     * @param {Object} request - CreateManualDeductionRequest object
-     * @param {string} createdBy - User who created the deduction
-     * @returns {Promise} API response
-     */
-    createManualDeduction: (request, createdBy = 'SYSTEM') => {
-        return apiClient.post(DEDUCTION_ENDPOINTS.MANUAL, request, {
-            params: { createdBy }
-        });
-    },
-
-    /**
-     * Get manual deduction by ID
-     * @param {string} deductionId - Deduction ID
-     * @returns {Promise} API response
-     */
-    getManualDeductionById: (deductionId) => {
-        return apiClient.get(DEDUCTION_ENDPOINTS.MANUAL_BY_ID(deductionId));
-    },
-
-    /**
-     * Update manual deduction
-     * @param {string} deductionId - Deduction ID
-     * @param {Object} request - UpdateManualDeductionRequest object
-     * @returns {Promise} API response
-     */
-    updateManualDeduction: (deductionId, request) => {
-        return apiClient.put(DEDUCTION_ENDPOINTS.MANUAL_BY_ID(deductionId), request);
-    },
-
-    /**
-     * Deactivate manual deduction
-     * @param {string} deductionId - Deduction ID
-     * @returns {Promise} API response
-     */
-    deactivateManualDeduction: (deductionId) => {
-        return apiClient.put(DEDUCTION_ENDPOINTS.MANUAL_DEACTIVATE(deductionId));
-    },
-
-    /**
-     * Delete manual deduction
-     * @param {string} deductionId - Deduction ID
-     * @returns {Promise} API response
-     */
-    deleteManualDeduction: (deductionId) => {
-        return apiClient.delete(DEDUCTION_ENDPOINTS.MANUAL_BY_ID(deductionId));
-    },
-
-    // ===== EMPLOYEE DEDUCTION QUERIES =====
-
-    /**
-     * Get all manual deductions for an employee
-     * @param {string} employeeId - Employee ID
-     * @returns {Promise} API response
-     */
-    getEmployeeManualDeductions: (employeeId) => {
-        return apiClient.get(DEDUCTION_ENDPOINTS.EMPLOYEE(employeeId));
-    },
-
-    /**
-     * Get active manual deductions for an employee on a specific date
-     * @param {string} employeeId - Employee ID
-     * @param {string} asOfDate - Date in YYYY-MM-DD format (optional)
-     * @returns {Promise} API response
-     */
-    getActiveEmployeeDeductions: (employeeId, asOfDate = null) => {
-        const params = asOfDate ? { asOfDate } : {};
-        return apiClient.get(DEDUCTION_ENDPOINTS.EMPLOYEE_ACTIVE(employeeId), { params });
-    },
-
-    /**
-     * Get deduction summary for an employee in a period
-     * @param {string} employeeId - Employee ID
-     * @param {string} periodStart - Start date in YYYY-MM-DD format
-     * @param {string} periodEnd - End date in YYYY-MM-DD format
-     * @returns {Promise} API response
-     */
-    getEmployeeDeductionSummary: (employeeId, periodStart, periodEnd) => {
-        return apiClient.get(DEDUCTION_ENDPOINTS.EMPLOYEE_SUMMARY(employeeId), {
-            params: { periodStart, periodEnd }
-        });
-    },
-
-    // ===== ADMIN QUERIES =====
-
-    /**
-     * Get all manual deductions with pagination
-     * @param {number} page - Page number (0-based)
-     * @param {number} size - Page size
-     * @returns {Promise} API response
-     */
-    getAllManualDeductions: (page = 0, size = 20) => {
-        return apiClient.get(DEDUCTION_ENDPOINTS.MANUAL, {
-            params: { page, size }
-        });
-    },
-
-    // ===== DEDUCTION TYPE MANAGEMENT =====
-
-    /**
-     * Get all deduction types
-     * @returns {Promise} API response
+     * Get all active deduction types
      */
     getAllDeductionTypes: () => {
-        return apiClient.get(DEDUCTION_ENDPOINTS.TYPES);
+        return apiClient.get(DEDUCTION_TYPE_ENDPOINTS.BASE);
     },
 
     /**
-     * Get active deduction types
-     * @returns {Promise} API response
+     * Get deduction type by ID
      */
-    getActiveDeductionTypes: () => {
-        return apiClient.get(DEDUCTION_ENDPOINTS.TYPES_ACTIVE);
+    getDeductionTypeById: (id) => {
+        return apiClient.get(DEDUCTION_TYPE_ENDPOINTS.BY_ID(id));
+    },
+
+    /**
+     * Get deduction types for a site
+     */
+    getDeductionTypesForSite: (siteId) => {
+        return apiClient.get(DEDUCTION_TYPE_ENDPOINTS.BY_SITE(siteId));
     },
 
     /**
      * Get deduction types by category
-     * @param {string} category - Category name
-     * @returns {Promise} API response
      */
     getDeductionTypesByCategory: (category) => {
-        return apiClient.get(DEDUCTION_ENDPOINTS.TYPES_BY_CATEGORY(category));
+        return apiClient.get(DEDUCTION_TYPE_ENDPOINTS.BY_CATEGORY(category));
     },
 
     /**
-     * Create new deduction type
-     * @param {Object} deductionTypeDTO - DeductionTypeDTO object
-     * @param {string} createdBy - User who created the type
-     * @returns {Promise} API response
+     * Get all deduction categories
      */
-    createDeductionType: (deductionTypeDTO, createdBy = 'SYSTEM') => {
-        return apiClient.post(DEDUCTION_ENDPOINTS.TYPES, deductionTypeDTO, {
-            params: { createdBy }
+    getDeductionCategories: () => {
+        return apiClient.get(DEDUCTION_TYPE_ENDPOINTS.CATEGORIES);
+    },
+
+    /**
+     * Create a new deduction type
+     */
+    createDeductionType: (deductionTypeData) => {
+        return apiClient.post(DEDUCTION_TYPE_ENDPOINTS.BASE, deductionTypeData);
+    },
+
+    /**
+     * Update a deduction type
+     */
+    updateDeductionType: (id, deductionTypeData) => {
+        return apiClient.put(DEDUCTION_TYPE_ENDPOINTS.BY_ID(id), deductionTypeData);
+    },
+
+    /**
+     * Deactivate a deduction type
+     */
+    deactivateDeductionType: (id) => {
+        return apiClient.delete(DEDUCTION_TYPE_ENDPOINTS.BY_ID(id));
+    },
+
+    /**
+     * Reactivate a deduction type
+     */
+    reactivateDeductionType: (id) => {
+        return apiClient.post(DEDUCTION_TYPE_ENDPOINTS.REACTIVATE(id));
+    },
+
+    /**
+     * Initialize system deduction types (admin only)
+     */
+    initializeSystemTypes: () => {
+        return apiClient.post(DEDUCTION_TYPE_ENDPOINTS.INIT_SYSTEM_TYPES);
+    },
+
+    // ========================================
+    // EMPLOYEE DEDUCTION MANAGEMENT
+    // ========================================
+
+    /**
+     * Get all deductions for an employee
+     */
+    getDeductionsByEmployee: (employeeId) => {
+        return apiClient.get(EMPLOYEE_DEDUCTION_ENDPOINTS.BY_EMPLOYEE(employeeId));
+    },
+
+    /**
+     * Get active deductions for an employee
+     */
+    getActiveDeductionsByEmployee: (employeeId) => {
+        return apiClient.get(EMPLOYEE_DEDUCTION_ENDPOINTS.ACTIVE_BY_EMPLOYEE(employeeId));
+    },
+
+    /**
+     * Get deduction by ID
+     */
+    getDeductionById: (id) => {
+        return apiClient.get(EMPLOYEE_DEDUCTION_ENDPOINTS.BY_ID(id));
+    },
+
+    /**
+     * Get deductions for a payroll period
+     */
+    getDeductionsForPayrollPeriod: (employeeId, startDate, endDate) => {
+        return apiClient.get(EMPLOYEE_DEDUCTION_ENDPOINTS.BY_PERIOD(employeeId), {
+            params: { startDate, endDate }
         });
     },
 
     /**
-     * Update deduction type
-     * @param {string} typeId - Type ID
-     * @param {Object} deductionTypeDTO - DeductionTypeDTO object
-     * @returns {Promise} API response
+     * Create a new employee deduction
      */
-    updateDeductionType: (typeId, deductionTypeDTO) => {
-        return apiClient.put(DEDUCTION_ENDPOINTS.TYPES_BY_ID(typeId), deductionTypeDTO);
+    createDeduction: (deductionData) => {
+        return apiClient.post(EMPLOYEE_DEDUCTION_ENDPOINTS.BASE, deductionData);
     },
 
     /**
-     * Deactivate deduction type
-     * @param {string} typeId - Type ID
-     * @returns {Promise} API response
+     * Update an employee deduction
      */
-    deactivateDeductionType: (typeId) => {
-        return apiClient.put(DEDUCTION_ENDPOINTS.TYPES_DEACTIVATE(typeId));
+    updateDeduction: (id, deductionData) => {
+        return apiClient.put(EMPLOYEE_DEDUCTION_ENDPOINTS.BY_ID(id), deductionData);
     },
 
-    // ===== BULK OPERATIONS =====
+    /**
+     * Deactivate a deduction
+     */
+    deactivateDeduction: (id) => {
+        return apiClient.delete(EMPLOYEE_DEDUCTION_ENDPOINTS.BY_ID(id));
+    },
 
     /**
-     * Bulk create manual deductions for multiple employees
-     * @param {Array} requests - Array of CreateManualDeductionRequest objects
-     * @param {string} createdBy - User who created the deductions
-     * @returns {Promise} API response
+     * Reactivate a deduction
      */
-    bulkCreateManualDeductions: (requests, createdBy = 'SYSTEM') => {
-        return apiClient.post(DEDUCTION_ENDPOINTS.BULK_CREATE, requests, {
-            params: { createdBy }
+    reactivateDeduction: (id) => {
+        return apiClient.post(EMPLOYEE_DEDUCTION_ENDPOINTS.REACTIVATE(id));
+    },
+
+    /**
+     * Permanently delete a deduction (admin only)
+     */
+    permanentlyDeleteDeduction: (id) => {
+        return apiClient.delete(EMPLOYEE_DEDUCTION_ENDPOINTS.PERMANENT_DELETE(id));
+    },
+
+    // ========================================
+    // UTILITY & REFERENCE DATA
+    // ========================================
+
+    /**
+     * Get calculation methods
+     */
+    getCalculationMethods: () => {
+        return apiClient.get(EMPLOYEE_DEDUCTION_ENDPOINTS.CALCULATION_METHODS);
+    },
+
+    /**
+     * Get deduction frequencies
+     */
+    getFrequencies: () => {
+        return apiClient.get(EMPLOYEE_DEDUCTION_ENDPOINTS.FREQUENCIES);
+    },
+
+    /**
+     * Calculate deductions preview (without applying)
+     */
+    calculateDeductionsPreview: (employeeId, periodStart, periodEnd, grossSalary, basicSalary) => {
+        return apiClient.post(EMPLOYEE_DEDUCTION_ENDPOINTS.CALCULATE_PREVIEW, {
+            employeeId,
+            periodStart,
+            periodEnd,
+            grossSalary,
+            basicSalary
         });
     },
 
-    /**
-     * Bulk deactivate manual deductions
-     * @param {Array} deductionIds - Array of deduction IDs
-     * @returns {Promise} API response
-     */
-    bulkDeactivateManualDeductions: (deductionIds) => {
-        return apiClient.put(DEDUCTION_ENDPOINTS.BULK_DEACTIVATE, deductionIds);
-    },
-
-    // ===== REPORTING ENDPOINTS =====
+    // ========================================
+    // HELPER METHODS
+    // ========================================
 
     /**
-     * Get deduction statistics
-     * @param {string} fromDate - Start date in YYYY-MM-DD format (optional)
-     * @param {string} toDate - End date in YYYY-MM-DD format (optional)
-     * @returns {Promise} API response
+     * Get category display configuration
      */
-    getDeductionStatistics: (fromDate = null, toDate = null) => {
-        const params = {};
-        if (fromDate) params.fromDate = fromDate;
-        if (toDate) params.toDate = toDate;
-        return apiClient.get(DEDUCTION_ENDPOINTS.STATISTICS, { params });
+    getCategoryConfig: (category) => {
+        return DEDUCTION_CATEGORY_CONFIG[category] || {
+            label: category || 'Unknown',
+            color: '#6b7280',
+            icon: 'question'
+        };
     },
 
     /**
-     * Export employee deductions for a period
-     * @param {string} periodStart - Start date in YYYY-MM-DD format
-     * @param {string} periodEnd - End date in YYYY-MM-DD format
-     * @param {Array} employeeIds - Array of employee IDs (optional)
-     * @returns {Promise} API response
+     * Format currency amount
      */
-    exportEmployeeDeductions: (periodStart, periodEnd, employeeIds = null) => {
-        const params = { periodStart, periodEnd };
-        if (employeeIds && employeeIds.length > 0) {
-            params.employeeIds = employeeIds;
-        }
-        return apiClient.get(DEDUCTION_ENDPOINTS.EXPORT, {
-            params,
-            responseType: 'blob'
+    formatCurrency: (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        }).format(amount || 0);
+    },
+
+    /**
+     * Format percentage
+     */
+    formatPercentage: (value) => {
+        return `${(value || 0).toFixed(2)}%`;
+    },
+
+    /**
+     * Calculate statistics from deductions array
+     */
+    calculateStatistics: (deductions = []) => {
+        const stats = {
+            total: deductions.length,
+            active: 0,
+            inactive: 0,
+            totalAmount: 0,
+            byCategory: {}
+        };
+
+        deductions.forEach(deduction => {
+            if (deduction.isActive !== false) {
+                stats.active++;
+            } else {
+                stats.inactive++;
+            }
+
+            stats.totalAmount += parseFloat(deduction.amount || 0);
+
+            const category = deduction.category || 'OTHER';
+            if (!stats.byCategory[category]) {
+                stats.byCategory[category] = { count: 0, amount: 0 };
+            }
+            stats.byCategory[category].count++;
+            stats.byCategory[category].amount += parseFloat(deduction.amount || 0);
         });
-    },
 
-    // ===== CONVENIENCE METHODS =====
-
-    /**
-     * Get deduction by ID (alias for getManualDeductionById)
-     * @param {string} deductionId - Deduction ID
-     * @returns {Promise} API response
-     */
-    getDeductionById: (deductionId) => {
-        return deductionService.getManualDeductionById(deductionId);
+        return stats;
     },
 
     /**
-     * Search deductions with filters
-     * @param {Object} searchCriteria - Search criteria object
-     * @returns {Promise} API response
+     * Validate deduction data before creation/update
      */
-    searchDeductions: (searchCriteria = {}) => {
-        const { page = 0, size = 20, ...filters } = searchCriteria;
-        return apiClient.get(DEDUCTION_ENDPOINTS.MANUAL, {
-            params: { page, size, ...filters }
-        });
-    },
-
-    /**
-     * Get current month deductions
-     * @returns {Promise} API response
-     */
-    getCurrentMonthDeductions: () => {
-        const now = new Date();
-        const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-        const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-
-        return deductionService.getDeductionStatistics(startDate, endDate);
-    },
-
-    /**
-     * Get deduction types with enhanced data
-     * @returns {Promise} Enhanced deduction types with statistics
-     */
-    getDeductionTypesWithStats: async () => {
-        try {
-            const [typesResponse, statsResponse] = await Promise.allSettled([
-                deductionService.getAllDeductionTypes(),
-                deductionService.getDeductionStatistics()
-            ]);
-
-            const types = typesResponse.status === 'fulfilled' ? typesResponse.value.data : [];
-            const stats = statsResponse.status === 'fulfilled' ? statsResponse.value.data : {};
-
-            // Enhance types with usage statistics if available
-            return {
-                data: types.map(type => ({
-                    ...type,
-                    usageCount: stats.typeUsage?.[type.id] || 0
-                }))
-            };
-        } catch (error) {
-            console.error('Error getting deduction types with stats:', error);
-            throw error;
-        }
-    },
-
-    /**
-     * Validate deduction type before creation/update
-     * @param {Object} deductionTypeData - Deduction type data to validate
-     * @returns {Object} Validation result
-     */
-    validateDeductionType: (deductionTypeData) => {
+    validateDeduction: (deductionData) => {
         const errors = {};
 
-        // Required fields
-        if (!deductionTypeData.typeName?.trim()) {
-            errors.typeName = 'Type name is required';
+        if (!deductionData.employeeId) {
+            errors.employeeId = 'Employee is required';
         }
 
-        if (!deductionTypeData.category) {
-            errors.category = 'Category is required';
+        if (!deductionData.deductionTypeId) {
+            errors.deductionTypeId = 'Deduction type is required';
         }
 
-        if (!deductionTypeData.description?.trim()) {
-            errors.description = 'Description is required';
+        if (!deductionData.amount && !deductionData.percentage) {
+            errors.amount = 'Either amount or percentage is required';
         }
 
-        // Amount configuration validation
-        if (!deductionTypeData.allowCustomAmount && !deductionTypeData.allowCustomPercentage) {
-            errors.amountConfiguration = 'At least one amount type must be allowed';
+        if (deductionData.amount && deductionData.amount < 0) {
+            errors.amount = 'Amount cannot be negative';
         }
 
-        // Percentage validation
-        if (deductionTypeData.defaultPercentage &&
-            (deductionTypeData.defaultPercentage < 0 || deductionTypeData.defaultPercentage > 100)) {
-            errors.defaultPercentage = 'Default percentage must be between 0 and 100';
+        if (deductionData.percentage && (deductionData.percentage < 0 || deductionData.percentage > 100)) {
+            errors.percentage = 'Percentage must be between 0 and 100';
         }
 
-        if (deductionTypeData.maxPercentage &&
-            (deductionTypeData.maxPercentage < 0 || deductionTypeData.maxPercentage > 100)) {
-            errors.maxPercentage = 'Maximum percentage must be between 0 and 100';
-        }
-
-        // Amount validation
-        if (deductionTypeData.defaultAmount && deductionTypeData.defaultAmount < 0) {
-            errors.defaultAmount = 'Default amount cannot be negative';
-        }
-
-        if (deductionTypeData.maxAmount && deductionTypeData.maxAmount < 0) {
-            errors.maxAmount = 'Maximum amount cannot be negative';
+        if (!deductionData.effectiveDate) {
+            errors.effectiveDate = 'Effective date is required';
         }
 
         return {
@@ -349,3 +340,5 @@ export const deductionService = {
         };
     }
 };
+
+export default deductionService;

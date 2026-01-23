@@ -9,6 +9,7 @@ import RequestOrderDetails from '../../../../components/procurement/RequestOrder
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
+import  {financeService} from '../../../../services/financeService';
 import "../ProcurementOffers.scss";
 import "./FinalizeOffers.scss";
 
@@ -199,23 +200,141 @@ const FinalizeOffers = ({
         setShowUnfinalizedItemsDialog(false);
     };
 
+    // const processFinalizeOffer = async (finalizedItemIds, createOfferForRemaining = false) => {
+    //     setLoading(true);
+    //     setShowConfirmDialog(false);
+    //     setShowUnfinalizedItemsDialog(false);
+    //
+    //     try {
+    //         console.log('Finalizing offer with ID:', activeOffer.id);
+    //         console.log('Finalized item IDs:', finalizedItemIds);
+    //
+    //         let responseData;
+    //
+    //         if (createOfferForRemaining) {
+    //             // Use new endpoint for creating offer with remaining items
+    //             responseData = await offerService.finalizeWithRemaining(activeOffer.id, finalizedItemIds);
+    //         } else {
+    //             // Use the purchaseOrderService instead of direct fetch
+    //             responseData = await purchaseOrderService.finalizeOffer(activeOffer.id, finalizedItemIds);
+    //         }
+    //
+    //         // Create the completed offer object
+    //         const completedOffer = {
+    //             ...activeOffer,
+    //             status: 'COMPLETED',
+    //             finalizedAt: new Date().toISOString(),
+    //             finalizedBy: 'Current User'
+    //         };
+    //
+    //         let successMessage = 'Offer finalized successfully! A purchase order has been created.';
+    //
+    //         if (createOfferForRemaining && responseData.newOffer) {
+    //             successMessage += ' A new offer has been created for the remaining items.';
+    //
+    //             // Handle the new offer for remaining items
+    //             if (onRetryOffer) {
+    //                 onRetryOffer(responseData.newOffer);
+    //             }
+    //         }
+    //
+    //         handleSuccess(responseData.message || successMessage);
+    //
+    //         // Call the callback to switch to completed tab with this offer
+    //         if (onOfferCompleted) {
+    //             onOfferCompleted(completedOffer);
+    //         }
+    //
+    //         // Remove the offer from current list
+    //         if (onOfferFinalized) {
+    //             onOfferFinalized(activeOffer.id);
+    //         }
+    //
+    //     } catch (err) {
+    //         console.error('Error finalizing offer:', err);
+    //         handleError('Failed to finalize offer: ' + (err.message || 'Unknown error'));
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
     const processFinalizeOffer = async (finalizedItemIds, createOfferForRemaining = false) => {
         setLoading(true);
         setShowConfirmDialog(false);
         setShowUnfinalizedItemsDialog(false);
 
         try {
-            console.log('Finalizing offer with ID:', activeOffer.id);
-            console.log('Finalized item IDs:', finalizedItemIds);
+            console.log('🔵 Finalizing offer with ID:', activeOffer.id);
+            console.log('🔵 Finalized item IDs:', finalizedItemIds);
 
             let responseData;
 
             if (createOfferForRemaining) {
-                // Use new endpoint for creating offer with remaining items
                 responseData = await offerService.finalizeWithRemaining(activeOffer.id, finalizedItemIds);
             } else {
-                // Use the purchaseOrderService instead of direct fetch
                 responseData = await purchaseOrderService.finalizeOffer(activeOffer.id, finalizedItemIds);
+            }
+
+            console.log('✅ Offer finalized, PO created:', responseData);
+
+            // Extract PO ID and Offer ID
+            // ✅ NEW CODE - Check multiple possible locations for PO ID
+            console.log('🔵 Full responseData:', responseData);
+
+// Try different possible locations for the PO ID
+            const purchaseOrderId = responseData.id ||
+                responseData.purchaseOrderId ||
+                responseData.data?.id ||
+                responseData.data?.purchaseOrderId ||
+                (responseData.purchaseOrder && responseData.purchaseOrder.id);
+
+            const offerId = activeOffer.id;
+
+            console.log('🔵 Extracted PO ID:', purchaseOrderId);
+            console.log('🔵 Extracted Offer ID:', offerId);
+            console.log('🔵 Response structure:', Object.keys(responseData));
+
+
+            // ✅ CREATE PAYMENT REQUEST using financeService
+            if (purchaseOrderId && offerId) {
+                try {
+                    console.log('🔵 Creating payment request via financeService...');
+
+                    // Get username from localStorage
+                    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                    const username = userInfo?.username || userInfo?.name || 'system';
+
+                    console.log('🔵 Username:', username);
+
+                    // Call financeService.paymentRequests.createFromPurchaseOrder
+                    const response = await financeService.accountsPayable.paymentRequests.createFromPurchaseOrder(
+                        purchaseOrderId,
+                        offerId,
+                        username
+                    );
+
+                    const paymentRequest = response.data || response;
+                    console.log('✅ Payment request created successfully:', paymentRequest);
+
+                    handleSuccess(
+                        'Offer finalized successfully! Purchase Order and Payment Request created.'
+                    );
+                } catch (prError) {
+                    console.error('❌ Failed to create payment request:', prError);
+                    console.error('❌ Error details:', prError.response?.data);
+
+                    // Still show success for PO, but warn about payment request
+                    const errorMessage = prError.response?.data?.error || prError.message || 'Unknown error';
+                    handleSuccess(
+                        `Offer finalized and Purchase Order created. Payment Request creation failed: ${errorMessage}`
+                    );
+                }
+            } else {
+                console.warn('⚠️ Missing purchaseOrderId or offerId');
+                console.warn('⚠️ purchaseOrderId:', purchaseOrderId);
+                console.warn('⚠️ offerId:', offerId);
+                console.warn('⚠️ responseData:', responseData);
+                handleSuccess('Offer finalized successfully! Purchase Order created.');
             }
 
             // Create the completed offer object
@@ -226,31 +345,24 @@ const FinalizeOffers = ({
                 finalizedBy: 'Current User'
             };
 
-            let successMessage = 'Offer finalized successfully! A purchase order has been created.';
-
+            // Handle new offer for remaining items if applicable
             if (createOfferForRemaining && responseData.newOffer) {
-                successMessage += ' A new offer has been created for the remaining items.';
-
-                // Handle the new offer for remaining items
                 if (onRetryOffer) {
                     onRetryOffer(responseData.newOffer);
                 }
             }
 
-            handleSuccess(responseData.message || successMessage);
-
-            // Call the callback to switch to completed tab with this offer
+            // Call callbacks
             if (onOfferCompleted) {
                 onOfferCompleted(completedOffer);
             }
 
-            // Remove the offer from current list
             if (onOfferFinalized) {
                 onOfferFinalized(activeOffer.id);
             }
 
         } catch (err) {
-            console.error('Error finalizing offer:', err);
+            console.error('❌ Error finalizing offer:', err);
             handleError('Failed to finalize offer: ' + (err.message || 'Unknown error'));
         } finally {
             setLoading(false);
@@ -297,6 +409,8 @@ const FinalizeOffers = ({
                 return acc + (item ? parseFloat(item.totalPrice) : 0);
             }, 0);
     };
+
+
 
     return (
         <div className="procurement-offers-main-content">

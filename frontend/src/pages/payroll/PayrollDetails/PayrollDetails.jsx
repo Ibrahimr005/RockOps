@@ -25,7 +25,9 @@ import PublicHolidaysPhase from './components/PublicHolidaysPhase';
 import AttendanceImportPhase from './components/AttendanceImportPhase';
 import LeaveReviewPhase from './components/LeaveReviewPhase';
 import OvertimeReviewPhase from './components/OvertimeReviewPhase';
+import DeductionReviewPhase from './components/DeductionReviewPhase';
 import ConfirmedLockedPhase from './components/ConfirmedLockedPhase';
+import PendingFinanceReviewPhase from './components/PendingFinanceReviewPhase';
 import PaidPhase from './components/PaidPhase';
 
 import './PayrollDetails.scss';
@@ -97,14 +99,16 @@ const PayrollDetails = () => {
         });
     };
 
-    // Get phase steps configuration
+    // Get phase steps configuration - 8 phases
     const getPhaseSteps = () => [
         { key: 'PUBLIC_HOLIDAYS_REVIEW', number: 1, title: 'Public Holidays Review', nextAction: 'import-attendance', nextLabel: 'Import Attendance' },
         { key: 'ATTENDANCE_IMPORT', number: 2, title: 'Attendance Import', nextAction: 'leave-review', nextLabel: 'Move to Leave Review' },
         { key: 'LEAVE_REVIEW', number: 3, title: 'Leave Review', nextAction: 'overtime-review', nextLabel: 'Move to Overtime Review' },
-        { key: 'OVERTIME_REVIEW', number: 4, title: 'Overtime Review', nextAction: 'confirm-lock', nextLabel: 'Confirm & Lock' },
-        { key: 'CONFIRMED_AND_LOCKED', number: 5, title: 'Confirmed & Locked', nextAction: null, nextLabel: 'Mark as Paid' },
-        { key: 'PAID', number: 6, title: 'Paid', nextAction: null, nextLabel: null },
+        { key: 'OVERTIME_REVIEW', number: 4, title: 'Overtime Review', nextAction: 'deduction-review', nextLabel: 'Move to Deduction Review' },
+        { key: 'DEDUCTION_REVIEW', number: 5, title: 'Deduction Review', nextAction: 'confirm-lock', nextLabel: 'Confirm & Lock' },
+        { key: 'CONFIRMED_AND_LOCKED', number: 6, title: 'Confirmed & Locked', nextAction: null, nextLabel: null },
+        { key: 'PENDING_FINANCE_REVIEW', number: 7, title: 'Pending Finance Review', nextAction: null, nextLabel: null },
+        { key: 'PAID', number: 8, title: 'Paid', nextAction: null, nextLabel: null },
     ];
 
     // Get current phase index
@@ -176,8 +180,14 @@ const PayrollDetails = () => {
             case 'OVERTIME_REVIEW':
                 return <OvertimeReviewPhase {...phaseProps} />;
 
+            case 'DEDUCTION_REVIEW':
+                return <DeductionReviewPhase {...phaseProps} />;
+
             case 'CONFIRMED_AND_LOCKED':
                 return <ConfirmedLockedPhase {...phaseProps} />;
+
+            case 'PENDING_FINANCE_REVIEW':
+                return <PendingFinanceReviewPhase {...phaseProps} />;
 
             case 'PAID':
                 return <PaidPhase {...phaseProps} />;
@@ -208,7 +218,7 @@ const PayrollDetails = () => {
     const currentPhaseIndex = getCurrentPhaseIndex();
     const phaseSteps = getPhaseSteps();
     const currentStep = phaseSteps[currentPhaseIndex];
-    const isLocked = payroll.status === 'CONFIRMED_AND_LOCKED' || payroll.status === 'PAID';
+    const isLocked = payroll.status === 'CONFIRMED_AND_LOCKED' || payroll.status === 'PENDING_FINANCE_REVIEW' || payroll.status === 'PAID';
 
     return (
         <div className="payroll-details-page">

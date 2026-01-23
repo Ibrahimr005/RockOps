@@ -78,4 +78,49 @@ public class PayrollDTO {
      * Whether HR notification has been sent
      */
     private Boolean hrNotificationSent;
+
+    // ========================================
+    // LEAVE REVIEW WORKFLOW FIELDS
+    // ========================================
+
+    private Boolean leaveProcessed;
+    private Boolean leaveFinalized;
+    private LocalDateTime lastLeaveProcessedAt;
+    private String leaveFinalizedBy;
+    private LocalDateTime leaveFinalizedAt;
+    private Boolean leaveHrNotificationSent;
+
+    // ========================================
+    // OVERTIME REVIEW WORKFLOW FIELDS
+    // ========================================
+
+    private Boolean overtimeProcessed;
+    private Boolean overtimeFinalized;
+    private LocalDateTime lastOvertimeProcessedAt;
+    private String overtimeFinalizedBy;
+    private LocalDateTime overtimeFinalizedAt;
+    private Boolean overtimeHrNotificationSent;
+
+    // ========================================
+    // DEDUCTION REVIEW WORKFLOW FIELDS
+    // ========================================
+
+    private Boolean deductionProcessed;
+    private Boolean deductionFinalized;
+    private LocalDateTime lastDeductionProcessedAt;
+    private String deductionFinalizedBy;
+    private LocalDateTime deductionFinalizedAt;
+    private Boolean deductionHrNotificationSent;
+
+    // ========================================
+    // FINANCE REVIEW WORKFLOW FIELDS
+    // ========================================
+
+    private LocalDateTime sentToFinanceAt;
+    private String sentToFinanceBy;
+    private String paymentSourceType;
+    private UUID paymentSourceId;
+    private String paymentSourceName;
+    private LocalDateTime financeReviewedAt;
+    private String financeReviewedBy;
 }

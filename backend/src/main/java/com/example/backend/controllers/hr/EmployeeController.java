@@ -163,6 +163,7 @@ public class EmployeeController {
 
             // Basic information
             employeeData.put("id", emp.getId());
+            employeeData.put("employeeNumber", emp.getEmployeeNumber());
             employeeData.put("firstName", emp.getFirstName());
             employeeData.put("lastName", emp.getLastName());
             employeeData.put("middleName", emp.getMiddleName());

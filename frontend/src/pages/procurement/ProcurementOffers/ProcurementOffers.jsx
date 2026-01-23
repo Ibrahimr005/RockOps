@@ -135,10 +135,10 @@ const ProcurementOffers = () => {
                     offersData = await offerService.getByStatus('SUBMITTED');
                 } else if (activeTab === 'validated') {
                     offersData = await offerService.getMultipleStatuses(['MANAGERACCEPTED', 'MANAGERREJECTED']);
+// ✅ CORRECT - Use the dedicated method
                 } else if (activeTab === 'finance') {
-                    offersData = await offerService.getMultipleStatuses(['FINANCE_ACCEPTED', 'FINANCE_PARTIALLY_ACCEPTED', 'FINANCE_REJECTED']);
-                } else if (activeTab === 'finalize') {
-                    offersData = await offerService.getByStatus('FINALIZING');
+                    offersData = await offerService.getCompletedFinanceOffers();;                } else if (activeTab === 'finalize') {
+                     offersData = await offerService.getByStatus('FINALIZING');
                 } else if (activeTab === 'completed') {
                     offersData = await offerService.getByStatus('COMPLETED');
                 } else {

@@ -19,7 +19,8 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PurchaseOrder {
+public class
+PurchaseOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -66,4 +67,8 @@ public class PurchaseOrder {
 
     @Column(name = "total_paid_amount", precision = 15, scale = 2)
     private BigDecimal totalPaidAmount;
+
+    @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Logistics> logistics = new ArrayList<>();
 }

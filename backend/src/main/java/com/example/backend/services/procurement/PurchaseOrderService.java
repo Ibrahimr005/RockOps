@@ -3,6 +3,7 @@ package com.example.backend.services.procurement;
 import com.example.backend.dto.merchant.MerchantDTO;
 import com.example.backend.dto.procurement.*;
 import com.example.backend.dto.warehouse.ItemTypeDTO;
+import com.example.backend.mappers.procurement.PurchaseOrderMapper;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.*;
 import com.example.backend.models.warehouse.*;
@@ -32,6 +33,7 @@ public class PurchaseOrderService {
     private final DeliverySessionRepository deliverySessionRepository;
     private final DeliveryItemReceiptRepository deliveryItemReceiptRepository;
     private final PaymentRequestService paymentRequestService;
+    private final PurchaseOrderMapper purchaseOrderMapper;
 
     @Autowired
     private EntityManager entityManager;
@@ -47,7 +49,8 @@ public class PurchaseOrderService {
             WarehouseRepository warehouseRepository,
             DeliverySessionRepository deliverySessionRepository,
             DeliveryItemReceiptRepository deliveryItemReceiptRepository,
-            PaymentRequestService paymentRequestService) {
+            PaymentRequestService paymentRequestService,
+            PurchaseOrderMapper purchaseOrderMapper) {
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
@@ -58,203 +61,204 @@ public class PurchaseOrderService {
         this.deliverySessionRepository = deliverySessionRepository;
         this.deliveryItemReceiptRepository = deliveryItemReceiptRepository;
         this.paymentRequestService = paymentRequestService;
+        this.purchaseOrderMapper = purchaseOrderMapper;
     }
 
-//    @Transactional
-//    public PurchaseOrder finalizeOfferAndCreatePurchaseOrder(UUID offerId, List<UUID> finalizedItemIds, String username) {
-//        Offer offer = offerRepository.findById(offerId)
-//                .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
-//
-//        if (!"FINALIZING".equals(offer.getStatus())) {
-//            throw new IllegalStateException("Offer must be in FINALIZING status to be finalized. Current status: " + offer.getStatus());
-//        }
-//
-//        List<OfferItem> finalizedItems = offerItemRepository.findAllById(finalizedItemIds);
-//
-//        for (OfferItem item : finalizedItems) {
-//            if (!item.getOffer().getId().equals(offerId)) {
-//                throw new IllegalArgumentException("Item " + item.getId() + " does not belong to offer " + offerId);
-//            }
-//
-//            if (!"ACCEPTED".equals(item.getFinanceStatus())) {
-//                throw new IllegalArgumentException("Cannot finalize item " + item.getId() + " as it is not finance-accepted");
-//            }
-//        }
-//
-//        if (finalizedItems.isEmpty()) {
-//            throw new IllegalArgumentException("No valid items to finalize");
-//        }
-//
-//        for (OfferItem item : finalizedItems) {
-//            item.setFinalized(true);
-//            offerItemRepository.save(item);
-//        }
-//
-//        String previousStatus = offer.getStatus();
-//
-//        offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_FINALIZED, username,
-//                "Starting finalization process with " + finalizedItems.size() + " items",
-//                previousStatus, "COMPLETED");
-//
-//        offer.setStatus("COMPLETED");
-//        offerRepository.save(offer);
-//
-//        PurchaseOrder purchaseOrder = new PurchaseOrder();
-//        purchaseOrder.setPoNumber("PO-" + generatePoNumber());
-//        purchaseOrder.setCreatedAt(LocalDateTime.now());
-//        purchaseOrder.setUpdatedAt(LocalDateTime.now());
-//        purchaseOrder.setStatus("PENDING");
-//        purchaseOrder.setRequestOrder(offer.getRequestOrder());
-//        purchaseOrder.setOffer(offer);
-//        purchaseOrder.setCreatedBy(username);
-//        purchaseOrder.setPaymentTerms("Net 30");
-//        purchaseOrder.setExpectedDeliveryDate(LocalDateTime.now().plusDays(30));
-//        purchaseOrder.setPurchaseOrderItems(new ArrayList<>());
-//        purchaseOrder.setDeliverySessions(new ArrayList<>());
-//
-//        String currency = finalizedItems.get(0).getCurrency();
-//        purchaseOrder.setCurrency(currency);
-//
-//        double totalAmount = 0.0;
-//
-//        for (OfferItem offerItem : finalizedItems) {
-//            PurchaseOrderItem poItem = new PurchaseOrderItem();
-//            poItem.setQuantity(offerItem.getQuantity());
-//            poItem.setUnitPrice(offerItem.getUnitPrice().doubleValue());
-//            poItem.setTotalPrice(offerItem.getTotalPrice().doubleValue());
-//            poItem.setStatus("PENDING");
-//            poItem.setEstimatedDeliveryDays(offerItem.getEstimatedDeliveryDays() != null ? offerItem.getEstimatedDeliveryDays() : 30);
-//            poItem.setDeliveryNotes(offerItem.getDeliveryNotes());
-//            poItem.setComment(offerItem.getComment());
-//            poItem.setPurchaseOrder(purchaseOrder);
-//            poItem.setOfferItem(offerItem);
-//            poItem.setItemType(offerItem.getRequestOrderItem().getItemType());
-//            poItem.setItemReceipts(new ArrayList<>());
-//
-//            if (offerItem.getMerchant() != null) {
-//                poItem.setMerchant(offerItem.getMerchant());
-//            }
-//
-//            purchaseOrder.getPurchaseOrderItems().add(poItem);
-//            totalAmount += poItem.getTotalPrice();
-//        }
-//
-//        purchaseOrder.setTotalAmount(totalAmount);
-//
-//        PurchaseOrder savedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
-//
-//        offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_COMPLETED, username,
-//                "Purchase order " + savedPurchaseOrder.getPoNumber() + " created with total value: " +
-//                        savedPurchaseOrder.getCurrency() + " " + String.format("%.2f", totalAmount),
-//                "COMPLETED", "COMPLETED");
-//
-//        return savedPurchaseOrder;
-//    }
-@Transactional
-public PurchaseOrder finalizeOfferAndCreatePurchaseOrder(UUID offerId, List<UUID> finalizedItemIds, String username) {
-    Offer offer = offerRepository.findById(offerId)
-            .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
+    @Transactional
+    public PurchaseOrder finalizeOfferAndCreatePurchaseOrder(UUID offerId, List<UUID> finalizedItemIds, String username) {
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
 
-    if (!"FINALIZING".equals(offer.getStatus())) {
-        throw new IllegalStateException("Offer must be in FINALIZING status to be finalized. Current status: " + offer.getStatus());
-    }
-
-    List<OfferItem> finalizedItems = offerItemRepository.findAllById(finalizedItemIds);
-
-    for (OfferItem item : finalizedItems) {
-        if (!item.getOffer().getId().equals(offerId)) {
-            throw new IllegalArgumentException("Item " + item.getId() + " does not belong to offer " + offerId);
-        }
-    }
-
-    if (finalizedItems.isEmpty()) {
-        throw new IllegalArgumentException("No valid items to finalize");
-    }
-
-    // Mark items as finalized
-    for (OfferItem item : finalizedItems) {
-        item.setFinalized(true);
-        offerItemRepository.save(item);
-    }
-
-    String previousStatus = offer.getStatus();
-
-    offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_FINALIZED, username,
-            "Starting finalization process with " + finalizedItems.size() + " items",
-            previousStatus, "COMPLETED");
-
-    offer.setStatus("COMPLETED");
-    offerRepository.save(offer);
-
-    PurchaseOrder purchaseOrder = new PurchaseOrder();
-    purchaseOrder.setPoNumber("PO-" + generatePoNumber());
-    purchaseOrder.setCreatedAt(LocalDateTime.now());
-    purchaseOrder.setUpdatedAt(LocalDateTime.now());
-    purchaseOrder.setStatus("PENDING");
-    purchaseOrder.setRequestOrder(offer.getRequestOrder());
-    purchaseOrder.setOffer(offer);
-    purchaseOrder.setCreatedBy(username);
-    purchaseOrder.setPaymentTerms("Net 30");
-    purchaseOrder.setExpectedDeliveryDate(LocalDateTime.now().plusDays(30));
-    purchaseOrder.setPurchaseOrderItems(new ArrayList<>());
-    purchaseOrder.setDeliverySessions(new ArrayList<>());
-
-    String currency = finalizedItems.get(0).getCurrency();
-    purchaseOrder.setCurrency(currency);
-
-    double totalAmount = 0.0;
-
-    for (OfferItem offerItem : finalizedItems) {
-        PurchaseOrderItem poItem = new PurchaseOrderItem();
-        poItem.setQuantity(offerItem.getQuantity());
-        poItem.setUnitPrice(offerItem.getUnitPrice().doubleValue());
-        poItem.setTotalPrice(offerItem.getTotalPrice().doubleValue());
-        poItem.setStatus("PENDING");
-        poItem.setEstimatedDeliveryDays(offerItem.getEstimatedDeliveryDays() != null ? offerItem.getEstimatedDeliveryDays() : 30);
-        poItem.setDeliveryNotes(offerItem.getDeliveryNotes());
-        poItem.setComment(offerItem.getComment());
-        poItem.setPurchaseOrder(purchaseOrder);
-        poItem.setOfferItem(offerItem);
-        poItem.setItemType(offerItem.getRequestOrderItem().getItemType());
-        poItem.setItemReceipts(new ArrayList<>());
-
-        if (offerItem.getMerchant() != null) {
-            poItem.setMerchant(offerItem.getMerchant());
+        if (!"FINALIZING".equals(offer.getStatus())) {
+            throw new IllegalStateException("Offer must be in FINALIZING status to be finalized. Current status: " + offer.getStatus());
         }
 
-        purchaseOrder.getPurchaseOrderItems().add(poItem);
-        totalAmount += poItem.getTotalPrice();
+        List<OfferItem> finalizedItems = offerItemRepository.findAllById(finalizedItemIds);
+
+        for (OfferItem item : finalizedItems) {
+            if (!item.getOffer().getId().equals(offerId)) {
+                throw new IllegalArgumentException("Item " + item.getId() + " does not belong to offer " + offerId);
+            }
+
+            if (!"ACCEPTED".equals(item.getFinanceStatus())) {
+                throw new IllegalArgumentException("Cannot finalize item " + item.getId() + " as it is not finance-accepted");
+            }
+        }
+
+        if (finalizedItems.isEmpty()) {
+            throw new IllegalArgumentException("No valid items to finalize");
+        }
+
+        for (OfferItem item : finalizedItems) {
+            item.setFinalized(true);
+            offerItemRepository.save(item);
+        }
+
+        String previousStatus = offer.getStatus();
+
+        offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_FINALIZED, username,
+                "Starting finalization process with " + finalizedItems.size() + " items",
+                previousStatus, "COMPLETED");
+
+        offer.setStatus("COMPLETED");
+        offerRepository.save(offer);
+
+        PurchaseOrder purchaseOrder = new PurchaseOrder();
+        purchaseOrder.setPoNumber("PO-" + generatePoNumber());
+        purchaseOrder.setCreatedAt(LocalDateTime.now());
+        purchaseOrder.setUpdatedAt(LocalDateTime.now());
+        purchaseOrder.setStatus("PENDING");
+        purchaseOrder.setRequestOrder(offer.getRequestOrder());
+        purchaseOrder.setOffer(offer);
+        purchaseOrder.setCreatedBy(username);
+        purchaseOrder.setPaymentTerms("Net 30");
+        purchaseOrder.setExpectedDeliveryDate(LocalDateTime.now().plusDays(30));
+        purchaseOrder.setPurchaseOrderItems(new ArrayList<>());
+        purchaseOrder.setDeliverySessions(new ArrayList<>());
+
+        String currency = finalizedItems.get(0).getCurrency();
+        purchaseOrder.setCurrency(currency);
+
+        double totalAmount = 0.0;
+
+        for (OfferItem offerItem : finalizedItems) {
+            PurchaseOrderItem poItem = new PurchaseOrderItem();
+            poItem.setQuantity(offerItem.getQuantity());
+            poItem.setUnitPrice(offerItem.getUnitPrice().doubleValue());
+            poItem.setTotalPrice(offerItem.getTotalPrice().doubleValue());
+            poItem.setStatus("PENDING");
+            poItem.setEstimatedDeliveryDays(offerItem.getEstimatedDeliveryDays() != null ? offerItem.getEstimatedDeliveryDays() : 30);
+            poItem.setDeliveryNotes(offerItem.getDeliveryNotes());
+            poItem.setComment(offerItem.getComment());
+            poItem.setPurchaseOrder(purchaseOrder);
+            poItem.setOfferItem(offerItem);
+            poItem.setItemType(offerItem.getRequestOrderItem().getItemType());
+            poItem.setItemReceipts(new ArrayList<>());
+
+            if (offerItem.getMerchant() != null) {
+                poItem.setMerchant(offerItem.getMerchant());
+            }
+
+            purchaseOrder.getPurchaseOrderItems().add(poItem);
+            totalAmount += poItem.getTotalPrice();
+        }
+
+        purchaseOrder.setTotalAmount(totalAmount);
+
+        PurchaseOrder savedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
+
+        offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_COMPLETED, username,
+                "Purchase order " + savedPurchaseOrder.getPoNumber() + " created with total value: " +
+                        savedPurchaseOrder.getCurrency() + " " + String.format("%.2f", totalAmount),
+                "COMPLETED", "COMPLETED");
+
+        return savedPurchaseOrder;
     }
-
-    purchaseOrder.setTotalAmount(totalAmount);
-
-    PurchaseOrder savedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
-
-    offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_COMPLETED, username,
-            "Purchase order " + savedPurchaseOrder.getPoNumber() + " created with total value: " +
-                    savedPurchaseOrder.getCurrency() + " " + String.format("%.2f", totalAmount),
-            "COMPLETED", "COMPLETED");
-
-//    System.err.println("🔵🔵🔵 PO SAVED, FLUSHING TO DATABASE");
-//    entityManager.flush(); // Force write to database
-//    System.err.println("🔵🔵🔵 FLUSH COMPLETE, NOW CREATING PAYMENT REQUEST");
+//@Transactional
+//public PurchaseOrder finalizeOfferAndCreatePurchaseOrder(UUID offerId, List<UUID> finalizedItemIds, String username) {
+//    Offer offer = offerRepository.findById(offerId)
+//            .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
 //
-//    // NOW create payment request - this will use REQUIRES_NEW and happen in a separate transaction
-//    try {
-//        paymentRequestService.createPaymentRequestFromPO(
-//                savedPurchaseOrder.getId(),
-//                offerId,
-//                username
-//        );
-//        System.err.println("✅✅✅ Payment request created successfully");
-//    } catch (Exception e) {
-//        System.err.println("❌❌❌ Payment request creation failed: " + e.getMessage());
-//        e.printStackTrace();
-//        // Don't throw - let the PO creation succeed even if payment request fails
+//    if (!"FINALIZING".equals(offer.getStatus())) {
+//        throw new IllegalStateException("Offer must be in FINALIZING status to be finalized. Current status: " + offer.getStatus());
 //    }
-
-    return savedPurchaseOrder;
-}
+//
+//    List<OfferItem> finalizedItems = offerItemRepository.findAllById(finalizedItemIds);
+//
+//    for (OfferItem item : finalizedItems) {
+//        if (!item.getOffer().getId().equals(offerId)) {
+//            throw new IllegalArgumentException("Item " + item.getId() + " does not belong to offer " + offerId);
+//        }
+//    }
+//
+//    if (finalizedItems.isEmpty()) {
+//        throw new IllegalArgumentException("No valid items to finalize");
+//    }
+//
+//    // Mark items as finalized
+//    for (OfferItem item : finalizedItems) {
+//        item.setFinalized(true);
+//        offerItemRepository.save(item);
+//    }
+//
+//    String previousStatus = offer.getStatus();
+//
+//    offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_FINALIZED, username,
+//            "Starting finalization process with " + finalizedItems.size() + " items",
+//            previousStatus, "COMPLETED");
+//
+//    offer.setStatus("COMPLETED");
+//    offerRepository.save(offer);
+//
+//    PurchaseOrder purchaseOrder = new PurchaseOrder();
+//    purchaseOrder.setPoNumber("PO-" + generatePoNumber());
+//    purchaseOrder.setCreatedAt(LocalDateTime.now());
+//    purchaseOrder.setUpdatedAt(LocalDateTime.now());
+//    purchaseOrder.setStatus("PENDING");
+//    purchaseOrder.setRequestOrder(offer.getRequestOrder());
+//    purchaseOrder.setOffer(offer);
+//    purchaseOrder.setCreatedBy(username);
+//    purchaseOrder.setPaymentTerms("Net 30");
+//    purchaseOrder.setExpectedDeliveryDate(LocalDateTime.now().plusDays(30));
+//    purchaseOrder.setPurchaseOrderItems(new ArrayList<>());
+//    purchaseOrder.setDeliverySessions(new ArrayList<>());
+//
+//    String currency = finalizedItems.get(0).getCurrency();
+//    purchaseOrder.setCurrency(currency);
+//
+//    double totalAmount = 0.0;
+//
+//    for (OfferItem offerItem : finalizedItems) {
+//        PurchaseOrderItem poItem = new PurchaseOrderItem();
+//        poItem.setQuantity(offerItem.getQuantity());
+//        poItem.setUnitPrice(offerItem.getUnitPrice().doubleValue());
+//        poItem.setTotalPrice(offerItem.getTotalPrice().doubleValue());
+//        poItem.setStatus("PENDING");
+//        poItem.setEstimatedDeliveryDays(offerItem.getEstimatedDeliveryDays() != null ? offerItem.getEstimatedDeliveryDays() : 30);
+//        poItem.setDeliveryNotes(offerItem.getDeliveryNotes());
+//        poItem.setComment(offerItem.getComment());
+//        poItem.setPurchaseOrder(purchaseOrder);
+//        poItem.setOfferItem(offerItem);
+//        poItem.setItemType(offerItem.getRequestOrderItem().getItemType());
+//        poItem.setItemReceipts(new ArrayList<>());
+//
+//        if (offerItem.getMerchant() != null) {
+//            poItem.setMerchant(offerItem.getMerchant());
+//        }
+//
+//        purchaseOrder.getPurchaseOrderItems().add(poItem);
+//        totalAmount += poItem.getTotalPrice();
+//    }
+//
+//    purchaseOrder.setTotalAmount(totalAmount);
+//
+//    PurchaseOrder savedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
+//
+//    offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_COMPLETED, username,
+//            "Purchase order " + savedPurchaseOrder.getPoNumber() + " created with total value: " +
+//                    savedPurchaseOrder.getCurrency() + " " + String.format("%.2f", totalAmount),
+//            "COMPLETED", "COMPLETED");
+//
+////    System.err.println("🔵🔵🔵 PO SAVED, FLUSHING TO DATABASE");
+////    entityManager.flush(); // Force write to database
+////    System.err.println("🔵🔵🔵 FLUSH COMPLETE, NOW CREATING PAYMENT REQUEST");
+////
+////    // NOW create payment request - this will use REQUIRES_NEW and happen in a separate transaction
+////    try {
+////        paymentRequestService.createPaymentRequestFromPO(
+////                savedPurchaseOrder.getId(),
+////                offerId,
+////                username
+////        );
+////        System.err.println("✅✅✅ Payment request created successfully");
+////    } catch (Exception e) {
+////        System.err.println("❌❌❌ Payment request creation failed: " + e.getMessage());
+////        e.printStackTrace();
+////        // Don't throw - let the PO creation succeed even if payment request fails
+////    }
+//
+//    return savedPurchaseOrder;
+//}
 
     private String generatePoNumber() {
         String datePart = LocalDateTime.now().toString().substring(0, 10).replace("-", "");
@@ -366,7 +370,7 @@ public PurchaseOrder finalizeOfferAndCreatePurchaseOrder(UUID offerId, List<UUID
     }
 
     private DeliveryItemReceiptDTO convertReceiptToDTO(DeliveryItemReceipt receipt) {
-        return DeliveryItemReceiptDTO.builder()
+        DeliveryItemReceiptDTO dto = DeliveryItemReceiptDTO.builder()
                 .id(receipt.getId())
                 .deliverySessionId(receipt.getDeliverySession().getId())
                 .purchaseOrderItemId(receipt.getPurchaseOrderItem().getId())
@@ -374,12 +378,20 @@ public PurchaseOrder finalizeOfferAndCreatePurchaseOrder(UUID offerId, List<UUID
                 .measuringUnit(receipt.getPurchaseOrderItem().getItemType().getMeasuringUnit())
                 .goodQuantity(receipt.getGoodQuantity())
                 .isRedelivery(receipt.getIsRedelivery())
-                .processedBy(receipt.getDeliverySession().getProcessedBy())    // ADD THIS
-                .processedAt(receipt.getDeliverySession().getProcessedAt())    // ADD THIS
+                .processedBy(receipt.getDeliverySession().getProcessedBy())
+                .processedAt(receipt.getDeliverySession().getProcessedAt())
                 .issues(receipt.getIssues().stream()
                         .map(this::convertIssueToDTO)
                         .toList())
                 .build();
+
+        // ADD CATEGORY INFO
+        if (receipt.getPurchaseOrderItem().getItemType().getItemCategory() != null) {
+            dto.setItemCategoryName(receipt.getPurchaseOrderItem().getItemType().getItemCategory().getName());
+            dto.setItemCategoryId(receipt.getPurchaseOrderItem().getItemType().getItemCategory().getId());
+        }
+
+        return dto;
     }
 
     private PurchaseOrderIssueDTO convertIssueToDTO(PurchaseOrderIssue issue) {
@@ -605,5 +617,178 @@ public PurchaseOrder finalizeOfferAndCreatePurchaseOrder(UUID offerId, List<UUID
         }
 
         return dto;
+    }
+
+    /**
+     * FIXED: Create multiple purchase orders grouped by merchant
+     * Simplified version - returns minimal data to avoid transaction issues
+     */
+    @Transactional
+    public Map<String, Object> createPurchaseOrdersFromAcceptedItems(
+            UUID offerId,
+            List<UUID> finalizedItemIds,
+            String username) {
+
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+        if (!"FINALIZING".equals(offer.getStatus())) {
+            throw new IllegalStateException("Offer must be in FINALIZING status");
+        }
+
+        // 1. Get ONLY the accepted items from the finalized list
+        List<OfferItem> acceptedItems = offer.getOfferItems().stream()
+                .filter(item -> finalizedItemIds.contains(item.getId()))
+                .filter(item -> "ACCEPTED".equals(item.getFinanceStatus()))
+                .collect(Collectors.toList());
+
+        if (acceptedItems.isEmpty()) {
+            throw new IllegalStateException("No accepted items found to finalize");
+        }
+
+        // 2. Group accepted items by merchant
+        Map<Merchant, List<OfferItem>> itemsByMerchant = acceptedItems.stream()
+                .collect(Collectors.groupingBy(OfferItem::getMerchant));
+
+        System.out.println("=== DEBUG INFO ===");
+        System.out.println("Total accepted items: " + acceptedItems.size());
+        System.out.println("Merchants found: " + itemsByMerchant.size());
+        for (Map.Entry<Merchant, List<OfferItem>> entry : itemsByMerchant.entrySet()) {
+            System.out.println("  - Merchant: " + entry.getKey().getName() +
+                    " has " + entry.getValue().size() + " items");
+        }
+
+        // 3. Create one PO per merchant
+        List<Map<String, Object>> purchaseOrderSummaries = new ArrayList<>();
+        List<UUID> paymentRequestIds = new ArrayList<>();
+
+        for (Map.Entry<Merchant, List<OfferItem>> entry : itemsByMerchant.entrySet()) {
+            Merchant merchant = entry.getKey();
+            List<OfferItem> merchantItems = entry.getValue();
+
+            try {
+                // Create PO for this merchant
+                PurchaseOrder po = createPurchaseOrderForMerchant(offer, merchant, merchantItems, username);
+
+                // ✅ FIXED: Extract primitive data immediately, don't store the entity
+                Map<String, Object> poSummary = new HashMap<>();
+                poSummary.put("id", po.getId());
+                poSummary.put("poNumber", po.getPoNumber());
+                poSummary.put("totalAmount", po.getTotalAmount());
+                poSummary.put("currency", po.getCurrency());
+                poSummary.put("merchantName", merchant.getName());
+                poSummary.put("status", po.getStatus());
+                purchaseOrderSummaries.add(poSummary);
+
+                // Mark items as finalized
+                for (OfferItem item : merchantItems) {
+                    item.setFinalized(true);
+                    offerItemRepository.save(item);
+                }
+
+                // Create Payment Request for this PO
+                try {
+                    var prResponse = paymentRequestService.createPaymentRequestFromPO(
+                            po.getId(),
+                            offerId,
+                            username
+                    );
+                    paymentRequestIds.add(prResponse.getId());
+                    System.out.println("✅ Payment request created: " + prResponse.getId());
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to create payment request for PO: " + po.getId());
+                    e.printStackTrace();
+                    // Continue with other merchants even if one fails
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Failed to create PO for merchant: " + merchant.getName());
+                e.printStackTrace();
+                throw new RuntimeException("Failed to create PO for merchant " + merchant.getName() + ": " + e.getMessage(), e);
+            }
+        }
+
+        System.out.println("POs created: " + purchaseOrderSummaries.size());
+        System.out.println("Payment Requests created: " + paymentRequestIds.size());
+        System.out.println("==================");
+
+        // 4. Update offer status
+        offer.setStatus("COMPLETED");
+        offerRepository.save(offer);
+
+        // 5. Create timeline event
+        offerTimelineService.createTimelineEvent(
+                offer,
+                TimelineEventType.OFFER_COMPLETED,
+                username,
+                String.format("Created %d purchase orders and %d payment requests for %d merchants",
+                        purchaseOrderSummaries.size(), paymentRequestIds.size(), itemsByMerchant.size()),
+                "FINALIZING",
+                "COMPLETED"
+        );
+
+        // 6. ✅ FIXED: Return simple data structures instead of DTOs
+        Map<String, Object> result = new HashMap<>();
+        result.put("purchaseOrders", purchaseOrderSummaries); // Simple maps instead of DTOs
+        result.put("paymentRequests", paymentRequestIds);
+        result.put("message", String.format("Successfully created %d POs and %d payment requests",
+                purchaseOrderSummaries.size(), paymentRequestIds.size()));
+
+        return result;
+    }
+
+    /**
+     * NEW: Create purchase order for specific merchant
+     */
+    private PurchaseOrder createPurchaseOrderForMerchant(
+            Offer offer,
+            Merchant merchant,
+            List<OfferItem> items,
+            String username) {
+
+        String poNumber = "PO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        PurchaseOrder po = PurchaseOrder.builder()
+                .poNumber(poNumber)
+                .createdAt(LocalDateTime.now())
+                .status("PENDING")
+                .requestOrder(offer.getRequestOrder())
+                .offer(offer)
+                .createdBy(username)
+                .purchaseOrderItems(new ArrayList<>())
+                .paymentTerms("Net 30")
+                .currency("EGP")
+                .build();
+
+        PurchaseOrder savedPO = purchaseOrderRepository.save(po);
+
+        double totalAmount = 0.0;
+        int maxDeliveryDays = 0;
+
+        // Create PO items
+        for (OfferItem offerItem : items) {
+            PurchaseOrderItem poItem = new PurchaseOrderItem();
+            poItem.setQuantity(offerItem.getQuantity());
+            poItem.setUnitPrice(offerItem.getUnitPrice().doubleValue());
+            poItem.setTotalPrice(offerItem.getTotalPrice().doubleValue());
+            // ✅ REMOVED: poItem.setCurrency(offerItem.getCurrency()); - PurchaseOrderItem doesn't have this field
+            poItem.setEstimatedDeliveryDays(offerItem.getEstimatedDeliveryDays() != null ?
+                    offerItem.getEstimatedDeliveryDays() : 30);
+            poItem.setDeliveryNotes(offerItem.getDeliveryNotes());
+            poItem.setComment(offerItem.getComment());
+            poItem.setPurchaseOrder(savedPO);
+            poItem.setOfferItem(offerItem);
+            poItem.setItemType(offerItem.getRequestOrderItem().getItemType());
+            poItem.setMerchant(merchant);
+            poItem.setItemReceipts(new ArrayList<>());
+
+            savedPO.getPurchaseOrderItems().add(poItem);
+            totalAmount += poItem.getTotalPrice();
+            maxDeliveryDays = Math.max(maxDeliveryDays, poItem.getEstimatedDeliveryDays());
+        }
+
+        savedPO.setTotalAmount(totalAmount);
+        savedPO.setExpectedDeliveryDate(LocalDateTime.now().plusDays(maxDeliveryDays > 0 ? maxDeliveryDays : 30));
+
+        return purchaseOrderRepository.save(savedPO);
     }
 }

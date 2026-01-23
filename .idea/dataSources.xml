@@ -28,5 +28,12 @@
       <jdbc-url>jdbc:postgresql://dpg-d1sj36p5pdvs7397hja0-a.frankfurt-postgres.render.com:5432/postgres</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="RockOps Prod" uuid="b3d91a63-cf3d-450d-8658-f232746ab164">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://dpg-d4tdb8ur433s738cign0-a.frankfurt-postgres.render.com:5432/rockops_prod</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>

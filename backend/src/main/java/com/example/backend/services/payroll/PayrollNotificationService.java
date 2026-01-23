@@ -282,6 +282,90 @@ public class PayrollNotificationService {
     }
 
     // ========================================
+    // DEDUCTION REVIEW NOTIFICATION METHODS
+    // ========================================
+
+    public void notifyHRForDeductionReview(Payroll payroll, String requestedBy) {
+        log.info("Sending HR notification for deduction review - payroll {} requested by {}", payroll.getId(), requestedBy);
+
+        try {
+            String title = String.format("Deduction Review Required: %s Payroll", formatPayrollPeriod(payroll));
+            String message = String.format(
+                    "Please review all deductions for the %s payroll period (%s to %s). " +
+                            "This includes loan installments, manual deductions, absence deductions, and other payroll deductions. " +
+                            "Review and approve all deductions before finalization. Requested by: %s",
+                    formatPayrollPeriod(payroll), payroll.getStartDate(), payroll.getEndDate(), requestedBy
+            );
+            String actionUrl = String.format("/payroll/%s", payroll.getId());
+            String relatedEntity = getPayrollIdentifier(payroll);
+
+            notificationService.sendNotificationToHRUsers(title, message, NotificationType.INFO, actionUrl, relatedEntity);
+            log.info("✅ HR deduction review notification sent successfully for payroll {}", payroll.getId());
+        } catch (Exception e) {
+            log.error("❌ Failed to send HR deduction review notification: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to send HR notification", e);
+        }
+    }
+
+    public void notifyHRDeductionFinalized(Payroll payroll, String finalizedBy) {
+        log.info("Notifying HR that deduction review is finalized for payroll {}", payroll.getId());
+
+        try {
+            String title = String.format("Deduction Review Finalized: %s Payroll", formatPayrollPeriod(payroll));
+            String message = String.format(
+                    "Deduction review for %s payroll has been finalized and locked by %s. " +
+                            "All deductions including loans, manual deductions, and absence deductions are now confirmed. " +
+                            "Payroll has moved to Confirmed & Locked phase.",
+                    formatPayrollPeriod(payroll), finalizedBy
+            );
+            String actionUrl = String.format("/payroll/%s", payroll.getId());
+            String relatedEntity = getPayrollIdentifier(payroll);
+
+            notificationService.sendNotificationToHRUsers(title, message, NotificationType.SUCCESS, actionUrl, relatedEntity);
+            log.info("✅ HR deduction finalization notification sent for payroll {}", payroll.getId());
+        } catch (Exception e) {
+            log.error("❌ Failed to send HR deduction finalization notification: {}", e.getMessage(), e);
+        }
+    }
+
+    public void notifyHRDeductionIssues(Payroll payroll, int issueCount) {
+        log.info("Notifying HR about {} deduction issues for payroll {}", issueCount, payroll.getId());
+
+        try {
+            String title = String.format("Deduction Issues Found: %s Payroll", formatPayrollPeriod(payroll));
+            String message = String.format(
+                    "%d deduction issue(s) detected in %s payroll period. " +
+                            "Issues may include missing loan installments, invalid deduction amounts, or employees with excessive deductions. " +
+                            "Please review and address these issues before finalization.",
+                    issueCount, formatPayrollPeriod(payroll)
+            );
+            String actionUrl = String.format("/payroll/%s", payroll.getId());
+            String relatedEntity = getPayrollIdentifier(payroll);
+
+            notificationService.sendNotificationToHRUsers(title, message, NotificationType.WARNING, actionUrl, relatedEntity);
+            log.info("✅ HR deduction issues notification sent for payroll {}", payroll.getId());
+        } catch (Exception e) {
+            log.error("❌ Failed to send HR deduction issues notification: {}", e.getMessage(), e);
+        }
+    }
+
+    public void notifyUserDeductionProcessComplete(Payroll payroll, String username, int deductionsProcessed) {
+        try {
+            String title = "Deduction Processing Complete";
+            String message = String.format(
+                    "Deduction review for %s payroll completed successfully. Processed %d deduction(s) including loans and manual deductions.",
+                    formatPayrollPeriod(payroll), deductionsProcessed
+            );
+            String relatedEntity = getPayrollIdentifier(payroll);
+
+            notificationService.broadcastSuccessNotification(title, message, relatedEntity);
+            log.info("✅ Deduction processing completion notification sent");
+        } catch (Exception e) {
+            log.error("❌ Failed to send deduction processing completion notification: {}", e.getMessage(), e);
+        }
+    }
+
+    // ========================================
     // HELPER METHODS
     // ========================================
 

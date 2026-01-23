@@ -3,6 +3,7 @@ package com.example.backend.services;
 import com.example.backend.dtos.*;
 import com.example.backend.models.*;
 import com.example.backend.models.maintenance.MaintenanceRecord;
+import com.example.backend.models.equipment.MaintenanceStatus;
 
 import com.example.backend.models.contact.Contact;
 import com.example.backend.models.contact.ContactLog;
@@ -25,6 +26,10 @@ import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.models.maintenance.StepType;
 import com.example.backend.repositories.StepTypeRepository;
 import com.example.backend.services.notification.NotificationService;
+import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
+import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
+import com.example.backend.repositories.finance.accountsPayable.OfferFinancialReviewRepository;
+import com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -34,7 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,6 +65,8 @@ public class MaintenanceService {
     private final MerchantRepository merchantRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final OfferFinancialReviewRepository offerFinancialReviewRepository;
+    private final PaymentRequestService paymentRequestService;
 
     // Maintenance Record Operations
 
@@ -96,11 +105,17 @@ public class MaintenanceService {
                 .issueDate(dto.getIssueDate())
                 .sparePartName(dto.getSparePartName().trim())
                 .expectedCompletionDate(dto.getExpectedCompletionDate())
-                .status(MaintenanceRecord.MaintenanceStatus.ACTIVE)
-                // ADD THIS LINE - Set initial cost from DTO
-                .totalCost(dto.getTotalCost() != null ? dto.getTotalCost()
-                        : (dto.getEstimatedCost() != null ? dto.getEstimatedCost() : BigDecimal.ZERO))
+                .status(MaintenanceStatus.DRAFT)
+                // Set expectedCost from DTO (this is the budget request)
+                .expectedCost(dto.getExpectedCost() != null ? dto.getExpectedCost()
+                        : (dto.getTotalCost() != null ? dto.getTotalCost() : BigDecimal.ZERO))
+                // totalCost starts at 0 and is calculated from steps
+                .totalCost(BigDecimal.ZERO)
                 .build();
+
+        // Determine initial status based on user role (will be set properly after user
+        // check)
+        MaintenanceStatus initialStatus = MaintenanceStatus.PENDING_MANAGER_APPROVAL;
 
         // Set responsible user (defaults to current authenticated user if not provided)
         final UUID responsibleUserId;
@@ -127,6 +142,11 @@ public class MaintenanceService {
             if (!allowedRoles.contains(responsibleUser.getRole())) {
                 throw new MaintenanceException(
                         "User must have Admin, Maintenance Manager, or Maintenance Employee role");
+            }
+
+            // Set initial status based on role
+            if (responsibleUser.getRole() == Role.MAINTENANCE_MANAGER || responsibleUser.getRole() == Role.ADMIN) {
+                initialStatus = MaintenanceStatus.PENDING_FINANCE_APPROVAL;
             }
 
             record.setResponsibleUser(responsibleUser);
@@ -159,7 +179,13 @@ public class MaintenanceService {
             }
         }
 
+        record.setStatus(initialStatus);
         MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
+
+        // If status is PENDING_FINANCE_APPROVAL, create the OfferFinancialReview entity
+        if (savedRecord.getStatus() == MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
+            createPendingFinancialReview(savedRecord);
+        }
 
         // Update equipment status to IN_MAINTENANCE if not already in maintenance
         if (equipment.getStatus() != EquipmentStatus.IN_MAINTENANCE) {
@@ -200,6 +226,38 @@ public class MaintenanceService {
         return convertToDto(savedRecord);
     }
 
+    private void createPendingFinancialReview(MaintenanceRecord record) {
+        try {
+            // Check if there is already a PENDING review
+            List<OfferFinancialReview> reviews = offerFinancialReviewRepository
+                    .findByMaintenanceRecordId(record.getId());
+            boolean hasPendingReview = reviews.stream()
+                    .anyMatch(r -> r
+                            .getStatus() == com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus.PENDING);
+
+            if (hasPendingReview) {
+                return;
+            }
+
+            com.example.backend.models.finance.accountsPayable.OfferFinancialReview review = com.example.backend.models.finance.accountsPayable.OfferFinancialReview
+                    .builder()
+                    .maintenanceRecord(record)
+                    // Use expectedCost as the budget being approved
+                    .totalAmount(record.getExpectedCost() != null ? record.getExpectedCost() : BigDecimal.ZERO)
+                    .currency("EGP")
+                    .department("Maintenance")
+                    .status(com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus.PENDING)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            offerFinancialReviewRepository.save(review);
+            log.info("Created PENDING OfferFinancialReview for maintenance record: {}", record.getId());
+        } catch (Exception e) {
+            log.error("Failed to create OfferFinancialReview for maintenance record: {}", e.getMessage());
+            // Don't block creation, but log error
+        }
+    }
+
     public MaintenanceRecordDto getMaintenanceRecord(UUID id) {
         MaintenanceRecord record = maintenanceRecordRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
@@ -220,7 +278,7 @@ public class MaintenanceService {
     }
 
     public List<MaintenanceRecordDto> getActiveMaintenanceRecords() {
-        return maintenanceRecordRepository.findByStatus(MaintenanceRecord.MaintenanceStatus.ACTIVE).stream()
+        return maintenanceRecordRepository.findByStatus(MaintenanceStatus.ACTIVE).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -232,13 +290,136 @@ public class MaintenanceService {
     }
 
     public MaintenanceRecordDto completeMaintenanceRecord(UUID id) {
+        // Legacy support or direct completion if needed, otherwise this might be
+        // deprecated or restricted
+        // For now, let's redirect to submitForApproval if status is DRAFT
         MaintenanceRecord record = maintenanceRecordRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
 
-        // Complete the record using the centralized completion logic
-        completeMaintenanceRecordIfFinalStepCompleted(record);
+        if (record.getStatus() == MaintenanceStatus.DRAFT) {
+            return submitForApproval(id);
+        }
 
-        return convertToDto(record);
+        // Only allow explicit completion if not in approval flow or if approved
+        if (record.getStatus() == MaintenanceStatus.ACTIVE) {
+            completeMaintenanceRecordIfFinalStepCompleted(record);
+            return convertToDto(record);
+        }
+
+        throw new MaintenanceException("Cannot complete record. Current status: " + record.getStatus());
+    }
+
+    // ==================================================================================
+    // APPROVAL WORKFLOW
+    // ==================================================================================
+
+    public MaintenanceRecordDto submitForApproval(UUID id) {
+        MaintenanceRecord record = maintenanceRecordRepository.findById(id)
+                .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
+
+        if (record.getStatus() != MaintenanceStatus.DRAFT && record.getStatus() != MaintenanceStatus.REJECTED) {
+            throw new MaintenanceException("Only DRAFT or REJECTED records can be submitted for approval.");
+        }
+
+        User currentUser = getCurrentAuthenticatedUser();
+        if (currentUser == null) {
+            throw new MaintenanceException("User must be authenticated to submit for approval.");
+        }
+
+        // Workflow Logic:
+        // MAINTENANCE_EMPLOYEE -> PENDING_MANAGER_APPROVAL
+        // MAINTENANCE_MANAGER / ADMIN -> PENDING_FINANCE_APPROVAL (Skip 1st step)
+
+        if (currentUser.getRole() == Role.MAINTENANCE_MANAGER || currentUser.getRole() == Role.ADMIN) {
+            record.setStatus(MaintenanceStatus.PENDING_FINANCE_APPROVAL);
+            record.setManagerApprovalDate(LocalDateTime.now());
+            log.info("Record {} submitted by Manager/Admin. Skipping Manager approval. now PENDING_FINANCE_APPROVAL",
+                    id);
+            // Create PENDING OfferFinancialReview
+            createPendingFinancialReview(record);
+        } else {
+            record.setStatus(MaintenanceStatus.PENDING_MANAGER_APPROVAL);
+            log.info("Record {} submitted by Employee. now PENDING_MANAGER_APPROVAL", id);
+            // Notify Managers
+        }
+
+        MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
+        return convertToDto(savedRecord);
+    }
+
+    public MaintenanceRecordDto approveByManager(UUID id) {
+        MaintenanceRecord record = maintenanceRecordRepository.findById(id)
+                .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
+
+        if (record.getStatus() != MaintenanceStatus.PENDING_MANAGER_APPROVAL) {
+            throw new MaintenanceException("Record is not pending manager approval.");
+        }
+
+        // Role check (Enforced by SecurityConfig usually, but good to have safety net)
+        User currentUser = getCurrentAuthenticatedUser();
+        if (currentUser.getRole() != Role.MAINTENANCE_MANAGER && currentUser.getRole() != Role.ADMIN) {
+            throw new MaintenanceException("Only Managers or Admins can approve.");
+        }
+
+        record.setStatus(MaintenanceStatus.PENDING_FINANCE_APPROVAL);
+        record.setManagerApprovalDate(LocalDateTime.now());
+        log.info("Record {} approved by Manager {}. now PENDING_FINANCE_APPROVAL", id, currentUser.getId());
+
+        MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
+
+        // Create the OfferFinancialReview entity
+        createPendingFinancialReview(savedRecord);
+
+        return convertToDto(savedRecord);
+    }
+
+    public MaintenanceRecordDto approveByFinance(UUID id) {
+        MaintenanceRecord record = maintenanceRecordRepository.findById(id)
+                .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
+
+        if (record.getStatus() != MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
+            // Idempotency: if already active, just return
+            if (record.getStatus() == MaintenanceStatus.ACTIVE)
+                return convertToDto(record);
+            throw new MaintenanceException("Record is not pending finance approval.");
+        }
+
+        record.setStatus(MaintenanceStatus.APPROVED_BY_FINANCE);
+        // Set approved budget from expected cost
+        record.setApprovedBudget(record.getExpectedCost());
+        log.info("Record {} approved by Finance with budget {}. now APPROVED_BY_FINANCE", id, record.getApprovedBudget());
+
+        // Logic to update Equipment status to IN_MAINTENANCE if not already
+        Equipment equipment = equipmentRepository.findById(record.getEquipmentId()).orElse(null);
+        if (equipment != null && equipment.getStatus() != EquipmentStatus.IN_MAINTENANCE) {
+            equipment.setStatus(EquipmentStatus.IN_MAINTENANCE);
+            equipmentRepository.save(equipment);
+        }
+
+        MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
+        return convertToDto(savedRecord);
+    }
+
+    public MaintenanceRecordDto rejectMaintenanceRecord(UUID id, String rejectionReason) {
+        MaintenanceRecord record = maintenanceRecordRepository.findById(id)
+                .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
+
+        // Can reject from PENDING_MANAGER or PENDING_FINANCE
+        if (record.getStatus() != MaintenanceStatus.PENDING_MANAGER_APPROVAL &&
+                record.getStatus() != MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
+            throw new MaintenanceException("Cannot reject record. Current status: " + record.getStatus());
+        }
+
+        record.setStatus(MaintenanceStatus.REJECTED);
+        // We might want to store the reason on the record?
+        // For now, logging it. Ideally MaintenanceRecord should have 'rejectionReason'
+        // field.
+        // Assuming we rely on the FinancialReview for the finance rejection reason.
+
+        log.info("Record {} rejected. Reason: {}", id, rejectionReason);
+
+        MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
+        return convertToDto(savedRecord);
     }
 
     public MaintenanceRecordDto updateMaintenanceRecord(UUID id, MaintenanceRecordDto dto) {
@@ -263,7 +444,7 @@ public class MaintenanceService {
             List<MaintenanceRecord> oldEquipmentActiveRecords = maintenanceRecordRepository
                     .findByEquipmentIdOrderByCreationDateDesc(oldEquipment.getId())
                     .stream()
-                    .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE
+                    .filter(r -> r.getStatus() == MaintenanceStatus.ACTIVE
                             && !r.getId().equals(record.getId()))
                     .collect(Collectors.toList());
 
@@ -274,7 +455,7 @@ public class MaintenanceService {
             }
 
             // If current record is active, set new equipment to IN_MAINTENANCE
-            if (record.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE) {
+            if (record.getStatus() == MaintenanceStatus.ACTIVE) {
                 newEquipment.setStatus(EquipmentStatus.IN_MAINTENANCE);
                 equipmentRepository.save(newEquipment);
             }
@@ -311,7 +492,7 @@ public class MaintenanceService {
             record.setStatus(dto.getStatus());
 
             // If completing maintenance, check if there are other active records
-            if (dto.getStatus() == MaintenanceRecord.MaintenanceStatus.COMPLETED) {
+            if (dto.getStatus() == MaintenanceStatus.COMPLETED) {
                 Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                         .orElseThrow(() -> new MaintenanceException("Equipment not found"));
 
@@ -319,7 +500,7 @@ public class MaintenanceService {
                 List<MaintenanceRecord> activeRecords = maintenanceRecordRepository
                         .findByEquipmentIdOrderByCreationDateDesc(equipment.getId())
                         .stream()
-                        .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE
+                        .filter(r -> r.getStatus() == MaintenanceStatus.ACTIVE
                                 && !r.getId().equals(record.getId()))
                         .collect(Collectors.toList());
 
@@ -378,6 +559,14 @@ public class MaintenanceService {
         Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                 .orElseThrow(() -> new MaintenanceException("Equipment not found"));
 
+        // Delete potential OfferFinancialReview associated with this record
+        // Delete potential OfferFinancialReviews associated with this record
+        List<OfferFinancialReview> reviews = offerFinancialReviewRepository.findByMaintenanceRecordId(record.getId());
+        if (!reviews.isEmpty()) {
+            offerFinancialReviewRepository.deleteAll(reviews);
+            log.info("Deleted associated OfferFinancialReviews for maintenance record: {}", record.getId());
+        }
+
         // Delete the maintenance record
         maintenanceRecordRepository.delete(record);
 
@@ -386,7 +575,7 @@ public class MaintenanceService {
         List<MaintenanceRecord> remainingActiveRecords = maintenanceRecordRepository
                 .findByEquipmentIdOrderByCreationDateDesc(equipment.getId())
                 .stream()
-                .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE)
+                .filter(r -> r.getStatus() == MaintenanceStatus.ACTIVE)
                 .collect(Collectors.toList());
 
         // If no active maintenance records remain, change equipment status to AVAILABLE
@@ -412,37 +601,20 @@ public class MaintenanceService {
                 .orElseThrow(
                         () -> new MaintenanceException("Maintenance record not found with id: " + maintenanceRecordId));
 
+        if (record.getStatus() == MaintenanceStatus.PENDING_MANAGER_APPROVAL ||
+                record.getStatus() == MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
+            throw new MaintenanceException("Cannot add steps while record is pending approval.");
+        }
+        if (record.getStatus() == MaintenanceStatus.COMPLETED) {
+            throw new MaintenanceException("Cannot add steps to a completed record.");
+        }
+
         // Get all existing steps ordered by start date
         List<MaintenanceStep> existingSteps = maintenanceStepRepository
                 .findByMaintenanceRecordIdOrderByStartDateAsc(maintenanceRecordId);
 
-        // VALIDATION 1: All previous steps must be completed before adding a new step
-        List<MaintenanceStep> incompleteSteps = existingSteps.stream()
-                .filter(step -> step.getActualEndDate() == null)
-                .collect(Collectors.toList());
-
-        if (!incompleteSteps.isEmpty()) {
-            String incompleteStepDescriptions = incompleteSteps.stream()
-                    .map(step -> step.getDescription())
-                    .collect(Collectors.joining(", "));
-            throw new MaintenanceException(
-                    "Cannot add new step. Please complete all previous steps first. Incomplete steps: "
-                            + incompleteStepDescriptions);
-        }
-
-        // VALIDATION 2: New step's start date must be >= latest step's actual
-        // completion date
-        if (!existingSteps.isEmpty()) {
-            MaintenanceStep latestStep = existingSteps.get(existingSteps.size() - 1);
-            if (latestStep.getActualEndDate() != null && dto.getStartDate() != null) {
-                if (dto.getStartDate().isBefore(latestStep.getActualEndDate())) {
-                    throw new MaintenanceException("New step start date must be on or after " +
-                            latestStep.getActualEndDate().toLocalDate() +
-                            ". The previous step was completed on " +
-                            latestStep.getActualEndDate().toLocalDate() + ".");
-                }
-            }
-        }
+        // NOTE: Removed validation that required all previous steps to be completed
+        // Users can now add concurrent steps without waiting for existing ones to finish
 
         // Get the step type
         StepType stepType = stepTypeRepository.findById(dto.getStepTypeId())
@@ -460,26 +632,38 @@ public class MaintenanceService {
                             "Employee not found with id: " + dto.getResponsibleEmployeeId()));
             log.info("Assigned employee {} as responsible person for step",
                     responsibleEmployee.getFirstName() + " " + responsibleEmployee.getLastName());
-        }
-        // Priority 2: Check if contact ID is provided (external contact assignment)
-        else if (dto.getResponsibleContactId() != null) {
-            try {
+        } else {
+            // Not an employee, so it must be a Merchant Contact (or just Merchant)
+
+            // Priority 2: Check for Contact (The human responsible)
+            if (dto.getResponsibleContactId() != null) {
                 responsibleContact = contactRepository.findById(dto.getResponsibleContactId())
                         .orElseThrow(() -> new MaintenanceException(
                                 "Contact not found with ID: " + dto.getResponsibleContactId()));
-                log.info("Assigned contact {} as responsible person for step",
-                        responsibleContact.getFirstName() + " " + responsibleContact.getLastName());
-            } catch (Exception e) {
-                log.warn("Could not assign contact with ID {} to step: {}", dto.getResponsibleContactId(),
-                        e.getMessage());
+
+                // CRITICAL: A contact MUST belong to a merchant (as per domain rules)
+                // Automatically assign the contact's merchant to this step
+                if (responsibleContact.getMerchant() != null) {
+                    selectedMerchant = responsibleContact.getMerchant();
+                } else if (dto.getSelectedMerchantId() != null) {
+                    // Fallback to manually selected merchant if contact has no linked merchant
+                    // (should not happen normally)
+                    selectedMerchant = merchantRepository.findById(dto.getSelectedMerchantId())
+                            .orElseThrow(() -> new MaintenanceException(
+                                    "Merchant not found with id: " + dto.getSelectedMerchantId()));
+                }
+
+                log.info("Assigned contact {} (Merchant: {}) as responsible person for step",
+                        responsibleContact.getFullName(),
+                        selectedMerchant != null ? selectedMerchant.getName() : "None");
+
+            } else if (dto.getSelectedMerchantId() != null) {
+                // Priority 3: Merchant only (no specific human contact selected yet)
+                selectedMerchant = merchantRepository.findById(dto.getSelectedMerchantId())
+                        .orElseThrow(() -> new MaintenanceException(
+                                "Merchant not found with id: " + dto.getSelectedMerchantId()));
+                log.info("Assigned merchant {} as responsible for step", selectedMerchant.getName());
             }
-        }
-        // Priority 3: Check if merchant ID is provided (merchant assignment)
-        else if (dto.getSelectedMerchantId() != null) {
-            selectedMerchant = merchantRepository.findById(dto.getSelectedMerchantId())
-                    .orElseThrow(() -> new MaintenanceException(
-                            "Merchant not found with id: " + dto.getSelectedMerchantId()));
-            log.info("Assigned merchant {} as responsible for step", selectedMerchant.getName());
         }
 
         // LOCATION TRACKING LOGIC
@@ -516,10 +700,21 @@ public class MaintenanceService {
         String toLocation = dto.getToLocation() != null ? dto.getToLocation() : "";
 
         // Calculate remaining amount
-        BigDecimal expectedCost = dto.getExpectedCost() != null ? dto.getExpectedCost() : BigDecimal.ZERO;
+        BigDecimal stepExpectedCost = dto.getExpectedCost() != null ? dto.getExpectedCost() : BigDecimal.ZERO;
         BigDecimal downPayment = dto.getDownPayment() != null ? dto.getDownPayment() : BigDecimal.ZERO;
         BigDecimal remaining;
         boolean remainingManuallySet = false;
+
+        // BUDGET VALIDATION: Check if step expected cost exceeds remaining budget
+        if (record.getApprovedBudget() != null) {
+            BigDecimal remainingBudget = calculateRemainingBudget(record);
+            if (stepExpectedCost.compareTo(remainingBudget) > 0) {
+                throw new MaintenanceException(
+                        String.format("Step expected cost (%.2f EGP) exceeds remaining budget (%.2f EGP). " +
+                                "Please request a budget increase from finance.",
+                                stepExpectedCost, remainingBudget));
+            }
+        }
 
         if (dto.getRemainingManuallySet() != null && dto.getRemainingManuallySet() && dto.getRemaining() != null) {
             // User manually set the remaining value
@@ -527,7 +722,7 @@ public class MaintenanceService {
             remainingManuallySet = true;
         } else {
             // Auto-calculate remaining = expectedCost - downPayment
-            remaining = expectedCost.subtract(downPayment);
+            remaining = stepExpectedCost.subtract(downPayment);
         }
 
         MaintenanceStep step = MaintenanceStep.builder()
@@ -543,7 +738,7 @@ public class MaintenanceService {
                 .toLocation(toLocation)
                 .stepCost(dto.getStepCost() != null ? dto.getStepCost() : BigDecimal.ZERO)
                 .downPayment(downPayment)
-                .expectedCost(expectedCost)
+                .expectedCost(stepExpectedCost)
                 .remaining(remaining)
                 .remainingManuallySet(remainingManuallySet)
                 .actualCost(dto.getActualCost())
@@ -575,6 +770,22 @@ public class MaintenanceService {
             record.setCurrentResponsibleContact(responsibleContact);
         }
         maintenanceRecordRepository.save(record);
+
+        // If this is the FIRST step and status is APPROVED_BY_FINANCE, activate the
+        // record
+        if (record.getStatus() == MaintenanceStatus.APPROVED_BY_FINANCE) {
+            // Check if this is indeed the first step (existingSteps only contained steps
+            // before this one was saved)
+            // But we already saved this step, so steps count should be >= 1.
+            // Actually, we can just check the current status.
+            record.setStatus(MaintenanceStatus.ACTIVE);
+            log.info("Record {} transitioned from APPROVED_BY_FINANCE to ACTIVE upon adding first step",
+                    record.getId());
+            maintenanceRecordRepository.save(record);
+        }
+
+        // Flush to ensure valid data before sending notifications
+        maintenanceStepRepository.flush();
 
         // Send notifications
         try {
@@ -628,6 +839,16 @@ public class MaintenanceService {
     public MaintenanceStepDto updateMaintenanceStep(UUID id, MaintenanceStepDto dto) {
         MaintenanceStep step = maintenanceStepRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + id));
+        MaintenanceRecord record = step.getMaintenanceRecord();
+
+        // Validation: Prevent modification if pending approval
+        if (record.getStatus() == MaintenanceStatus.PENDING_MANAGER_APPROVAL ||
+                record.getStatus() == MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
+            throw new MaintenanceException("Cannot update steps while record is pending approval.");
+        }
+        if (record.getStatus() == MaintenanceStatus.COMPLETED) {
+            throw new MaintenanceException("Cannot update steps of a completed record.");
+        }
 
         // Update step type if provided
         if (dto.getStepTypeId() != null) {
@@ -648,20 +869,60 @@ public class MaintenanceService {
             step.setResponsibleEmployee(employee);
             step.setResponsibleContact(null);
             step.setSelectedMerchant(null);
-        } else if (dto.getResponsibleContactId() != null) {
-            Contact contact = contactRepository.findById(dto.getResponsibleContactId())
-                    .orElseThrow(() -> new MaintenanceException(
-                            "Contact not found with id: " + dto.getResponsibleContactId()));
-            step.setResponsibleContact(contact);
-            step.setResponsibleEmployee(null);
-            step.setSelectedMerchant(null);
-        } else if (dto.getSelectedMerchantId() != null) {
-            Merchant merchant = merchantRepository.findById(dto.getSelectedMerchantId())
-                    .orElseThrow(() -> new MaintenanceException(
-                            "Merchant not found with id: " + dto.getSelectedMerchantId()));
-            step.setSelectedMerchant(merchant);
-            step.setResponsibleEmployee(null);
-            step.setResponsibleContact(null);
+        } else {
+            // Not an employee, so it must be a Merchant Contact (or just Merchant)
+
+            // Priority 2: Check for Contact Change
+            if (dto.getResponsibleContactId() != null) {
+                Contact contact = contactRepository.findById(dto.getResponsibleContactId())
+                        .orElseThrow(() -> new MaintenanceException(
+                                "Contact not found with id: " + dto.getResponsibleContactId()));
+                step.setResponsibleContact(contact);
+
+                // CRITICAL: A contact MUST belong to a merchant
+                // Automatically assign the contact's merchant to this step
+                if (contact.getMerchant() != null) {
+                    step.setSelectedMerchant(contact.getMerchant());
+                } else if (dto.getSelectedMerchantId() != null) {
+                    Merchant merchant = merchantRepository.findById(dto.getSelectedMerchantId())
+                            .orElseThrow(() -> new MaintenanceException(
+                                    "Merchant not found with id: " + dto.getSelectedMerchantId()));
+                    step.setSelectedMerchant(merchant);
+                }
+
+                // Ensure we clear any site employee settings
+                step.setResponsibleEmployee(null);
+
+            } else if (dto.getSelectedMerchantId() != null) {
+                // Priority 3: Merchant only (no specific human contact or changing merchant)
+                Merchant merchant = merchantRepository.findById(dto.getSelectedMerchantId())
+                        .orElseThrow(() -> new MaintenanceException(
+                                "Merchant not found with id: " + dto.getSelectedMerchantId()));
+                step.setSelectedMerchant(merchant);
+
+                // If we set a merchant explicitly without a contact, do we clear the old
+                // contact?
+                // Logic: If I change from "Merchant A - Bob" to "Merchant B", Bob is invalid.
+                // So yes, if I set a Merchant explicitly and didn't provide a contact, I likely
+                // mean "Merchant B (Generic)".
+                // UNTLESS the frontend sends full object state.
+
+                // Front-end sends responsibleContactId: null if not selected.
+                // If it was selected before, it will be null now if deselected.
+                // However, `if (dto.getResponsibleContactId() != null)` only catches NON-NULL.
+                // If the user UNSETS the contact, we need to handle that.
+                // But wait, the frontend sends everything.
+                // If I switch from "Merchant A - Bob" to "Merchant B", `responsibleContactId`
+                // will be null.
+                // My code above only enters `if (dto.getResponsibleContactId() != null)`.
+                // So it goes to `else if (dto.getSelectedMerchantId() != null)`.
+                // Here, I set the Merchant. I MUST clear the Contact because the old contact
+                // (Bob) belongs to Merchant A.
+                step.setResponsibleContact(null);
+
+                // Ensure we clear any site employee settings
+                step.setResponsibleEmployee(null);
+            }
         }
 
         if (dto.getStartDate() != null) {
@@ -722,7 +983,17 @@ public class MaintenanceService {
         MaintenanceStep step = maintenanceStepRepository.findById(stepId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + stepId));
 
-        UUID recordId = step.getMaintenanceRecord().getId();
+        MaintenanceRecord record = step.getMaintenanceRecord();
+        UUID recordId = record.getId();
+
+        // Validation: Prevent modification if pending approval
+        if (record.getStatus() == MaintenanceStatus.PENDING_MANAGER_APPROVAL ||
+                record.getStatus() == MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
+            throw new MaintenanceException("Cannot delete steps while record is pending approval.");
+        }
+        if (record.getStatus() == MaintenanceStatus.COMPLETED) {
+            throw new MaintenanceException("Cannot delete steps of a completed record.");
+        }
 
         maintenanceStepRepository.delete(step);
 
@@ -807,6 +1078,23 @@ public class MaintenanceService {
 
         // Update actual cost if provided
         if (completionData.getActualCost() != null) {
+            // BUDGET VALIDATION: Check if actual cost exceeds available budget
+            MaintenanceRecord record = step.getMaintenanceRecord();
+            if (record.getApprovedBudget() != null) {
+                BigDecimal stepExpectedCost = step.getExpectedCost() != null ? step.getExpectedCost() : BigDecimal.ZERO;
+                BigDecimal remainingBudget = calculateRemainingBudget(record);
+                // The step's expected cost is already "reserved" in the consumed budget,
+                // so actual remaining = remainingBudget + stepExpectedCost
+                BigDecimal actualRemaining = remainingBudget.add(stepExpectedCost);
+                
+                if (completionData.getActualCost().compareTo(actualRemaining) > 0) {
+                    throw new MaintenanceException(
+                            String.format("Actual cost (%.2f EGP) exceeds available budget (%.2f EGP). " +
+                                    "Please request a budget increase from finance.",
+                                    completionData.getActualCost(), actualRemaining));
+                }
+            }
+            
             step.setActualCost(completionData.getActualCost());
             step.setStepCost(completionData.getActualCost()); // Also update stepCost for backward compatibility
         } else if (completionData.getStepCost() != null) {
@@ -874,7 +1162,7 @@ public class MaintenanceService {
      */
     private void completeMaintenanceRecordIfFinalStepCompleted(MaintenanceRecord record) {
         // Complete the maintenance record
-        record.setStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED);
+        record.setStatus(MaintenanceStatus.COMPLETED);
         record.setActualCompletionDate(LocalDateTime.now());
         maintenanceRecordRepository.save(record);
 
@@ -886,7 +1174,7 @@ public class MaintenanceService {
         List<MaintenanceRecord> otherActiveRecords = maintenanceRecordRepository
                 .findByEquipmentIdOrderByCreationDateDesc(equipment.getId())
                 .stream()
-                .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE &&
+                .filter(r -> r.getStatus() == MaintenanceStatus.ACTIVE &&
                         !r.getId().equals(record.getId()))
                 .collect(Collectors.toList());
 
@@ -928,6 +1216,96 @@ public class MaintenanceService {
         } catch (Exception e) {
             log.error("Failed to send maintenance record completion notifications: {}", e.getMessage());
         }
+
+        // Generate Payment Requests for Finance reconciliation
+        try {
+            generatePaymentRequestsForCompletedRecord(record);
+        } catch (Exception e) {
+            log.error("Failed to generate payment requests for maintenance record {}: {}", 
+                    record.getId(), e.getMessage());
+            // Don't fail the completion if payment request generation fails
+            // Finance can manually create payment requests if needed
+        }
+    }
+
+    /**
+     * Generate Payment Requests for each step with a merchant when a maintenance record is completed.
+     * This allows Finance to reconcile actual payments made during maintenance.
+     * 
+     * Key behaviors:
+     * - Only creates payment requests for steps with a selectedMerchant (vendor steps)
+     * - Skips steps with responsibleEmployee (internal work, no vendor payment)
+     * - Uses actualCost if available, otherwise falls back to stepCost
+     * - Payment requests are created with APPROVED status (money already paid in real life)
+     * - Idempotent: won't create duplicates if called multiple times
+     */
+    private void generatePaymentRequestsForCompletedRecord(MaintenanceRecord record) {
+        log.info("Generating payment requests for completed maintenance record: {}", record.getId());
+
+        // Get all steps for this record
+        List<MaintenanceStep> steps = maintenanceStepRepository
+                .findByMaintenanceRecordIdOrderByStartDateAsc(record.getId());
+
+        if (steps.isEmpty()) {
+            log.info("No steps found for maintenance record: {}", record.getId());
+            return;
+        }
+
+        // Get the approved financial review (for linking to approved budget)
+        OfferFinancialReview approvedReview = offerFinancialReviewRepository
+                .findByMaintenanceRecordId(record.getId())
+                .stream()
+                .filter(r -> r.getStatus() == FinanceReviewStatus.APPROVED)
+                .findFirst()
+                .orElse(null);
+
+        if (approvedReview == null) {
+            log.warn("No approved financial review found for maintenance record: {}. " +
+                    "Payment requests will be created without budget linkage.", record.getId());
+        }
+
+        // Get username for audit trail
+        String createdByUsername = "System - Maintenance Completion";
+        try {
+            User currentUser = getCurrentAuthenticatedUser();
+            if (currentUser != null) {
+                createdByUsername = currentUser.getUsername();
+            }
+        } catch (Exception e) {
+            log.debug("Could not get current user for payment request creation: {}", e.getMessage());
+        }
+
+        int createdCount = 0;
+        int skippedCount = 0;
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        // Create payment request for each step with a merchant
+        for (MaintenanceStep step : steps) {
+            try {
+                var paymentRequest = paymentRequestService.createPaymentRequestFromMaintenanceStep(
+                        step, record, approvedReview, createdByUsername
+                );
+
+                if (paymentRequest != null) {
+                    createdCount++;
+                    totalAmount = totalAmount.add(paymentRequest.getRequestedAmount());
+                    log.debug("Created payment request {} for step {}", 
+                            paymentRequest.getRequestNumber(), step.getId());
+                } else {
+                    skippedCount++;
+                    log.debug("Skipped payment request creation for step {} (no merchant or zero cost)", 
+                            step.getId());
+                }
+            } catch (Exception e) {
+                log.error("Failed to create payment request for step {}: {}", 
+                        step.getId(), e.getMessage());
+                // Continue with other steps - don't fail entire process
+            }
+        }
+
+        log.info("Payment request generation complete for record {}. " +
+                "Created: {}, Skipped: {}, Total Amount: {} EGP",
+                record.getId(), createdCount, skippedCount, totalAmount);
     }
 
     public MaintenanceStepDto assignContactToStep(UUID stepId, UUID contactId) {
@@ -1024,10 +1402,10 @@ public class MaintenanceService {
 
     public MaintenanceDashboardDto getDashboardData() {
         long totalRecords = maintenanceRecordRepository.count();
-        long activeRecords = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ACTIVE);
+        long activeRecords = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE);
         long overdueRecords = maintenanceRecordRepository.findOverdueRecords(LocalDateTime.now()).size();
         long completedRecords = maintenanceRecordRepository
-                .countByStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED);
+                .countByStatus(MaintenanceStatus.COMPLETED);
 
         // Get recent records for dashboard display
         List<MaintenanceRecordDto> recentRecords = maintenanceRecordRepository.findAll().stream()
@@ -1076,19 +1454,156 @@ public class MaintenanceService {
                 .equipmentInMaintenance(equipmentInMaintenance)
                 .equipmentAvailable(equipmentAvailable)
                 .build();
+
     }
 
-    // Private conversion methods
-
     private MaintenanceRecordDto convertToDto(MaintenanceRecord record) {
+        if (record == null)
+            return null;
+
+        // Get maintenance steps
         List<MaintenanceStep> steps = maintenanceStepRepository
                 .findByMaintenanceRecordIdOrderByStartDateAsc(record.getId());
-        Optional<MaintenanceStep> currentStep = steps.stream()
-                .filter(step -> step.getActualEndDate() == null)
+
+        List<MaintenanceStepDto> stepDtos = steps.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+
+        // Calculate steps stats
+        int totalSteps = stepDtos.size();
+        int completedSteps = (int) stepDtos.stream().filter(MaintenanceStepDto::getIsCompleted).count();
+        int activeSteps = totalSteps - completedSteps;
+
+        // Get current step info
+        String currentStepDescription = null;
+        String currentStepResponsiblePerson = null;
+        LocalDateTime currentStepExpectedEndDate = null;
+        boolean currentStepIsOverdue = false;
+
+        Optional<MaintenanceStepDto> currentStep = stepDtos.stream()
+                .filter(s -> !s.getIsCompleted())
                 .findFirst();
 
-        // Get equipment information
+        if (currentStep.isPresent()) {
+            currentStepDescription = currentStep.get().getDescription() + " (" + currentStep.get().getStepTypeName()
+                    + ")";
+            currentStepResponsiblePerson = currentStep.get().getResponsiblePerson();
+            currentStepExpectedEndDate = currentStep.get().getExpectedEndDate();
+            currentStepIsOverdue = currentStep.get().getIsOverdue();
+        }
+
+        // Get responsible person details
+        String responsiblePersonName = record.getCurrentResponsiblePersonName();
+        String responsiblePersonPhone = record.getCurrentResponsiblePersonPhone();
+        String responsiblePersonEmail = record.getCurrentResponsiblePersonEmail();
+
+        // Fetch rejection reason if status is REJECTED
+        // Fetch reviews for timeline and rejection reason
+        List<OfferFinancialReview> reviews = offerFinancialReviewRepository
+                .findByMaintenanceRecordIdOrderByCreatedAtDesc(record.getId());
+
+        // Fetch rejection reason if status is REJECTED
+        String rejectionReason = null;
+        if (record.getStatus() == MaintenanceStatus.REJECTED) {
+            if (!reviews.isEmpty()) {
+                // The latest review should be the one that rejected it
+                Optional<OfferFinancialReview> rejectedReview = reviews.stream()
+                        .filter(r -> r
+                                .getStatus() == com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus.REJECTED)
+                        .findFirst();
+
+                if (rejectedReview.isPresent()) {
+                    rejectionReason = rejectedReview.get().getRejectionReason();
+                }
+            }
+        }
+
+        // Build Timeline Logic
+        List<MaintenanceTimelineEventDto> timelineEvents = new ArrayList<>();
+
+        // 1. Created
+        timelineEvents.add(MaintenanceTimelineEventDto.builder()
+                .timestamp(record.getCreationDate())
+                .title("Maintenance Record Created")
+                .description("Initial record created")
+                .type("CREATED")
+                .actorName("System") // Or creator if we had it easily accessible
+                .build());
+
+        // 2. Manager Approval
+        if (record.getManagerApprovalDate() != null) {
+            timelineEvents.add(MaintenanceTimelineEventDto.builder()
+                    .timestamp(record.getManagerApprovalDate())
+                    .title("Manager Approved")
+                    .description("Approved by Maintenance Manager")
+                    .type("APPROVED")
+                    .actorName("Manager")
+                    .build());
+        }
+
+        // 3. Finance Events
+        for (OfferFinancialReview review : reviews) {
+            // Submitted to Finance (Review Created)
+            timelineEvents.add(MaintenanceTimelineEventDto.builder()
+                    .timestamp(review.getCreatedAt())
+                    .title("Submitted to Finance")
+                    .description("Submitted for financial review")
+                    .type("INFO")
+                    .actorName("System")
+                    .build());
+
+            // Review Outcome
+            if (review
+                    .getStatus() != com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus.PENDING) {
+                String reviewType = (review
+                        .getStatus() == com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus.APPROVED)
+                                ? "APPROVED"
+                                : "REJECTED";
+                String reviewTitle = (review
+                        .getStatus() == com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus.APPROVED)
+                                ? "Finance Approved"
+                                : "Finance Rejected";
+                String reviewDesc = (review
+                        .getStatus() == com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus.APPROVED)
+                                ? "Approved by Finance Team"
+                                : "Rejected: " + review.getRejectionReason();
+
+                timelineEvents.add(MaintenanceTimelineEventDto.builder()
+                        .timestamp(review.getReviewedAt() != null ? review.getReviewedAt() : review.getUpdatedAt())
+                        .title(reviewTitle)
+                        .description(reviewDesc)
+                        .type(reviewType)
+                        .actorName(review.getReviewedByUserName() != null ? review.getReviewedByUserName()
+                                : "Finance Team")
+                        .build());
+            }
+        }
+
+        // 4. Completion
+        if (record.getActualCompletionDate() != null) {
+            timelineEvents.add(MaintenanceTimelineEventDto.builder().timestamp(record.getActualCompletionDate())
+                    .title("Maintenance Completed").description("Work completed").type("COMPLETED").actorName("System")
+                    .build());
+        }
+
+        // Sort events by timeline
+        timelineEvents.sort(Comparator.comparing(MaintenanceTimelineEventDto::getTimestamp));
+
+        // Get equipment details
+        String equipmentName = null;
+        String equipmentModel = null;
+        String equipmentType = null;
+        String equipmentSerialNumber = null;
+        String site = null;
+
         Equipment equipment = equipmentRepository.findById(record.getEquipmentId()).orElse(null);
+        if (equipment != null) {
+            equipmentName = equipment.getName();
+            equipmentModel = equipment.getModel();
+            equipmentType = equipment.getType() != null ? equipment.getType().getName() : null;
+            equipmentSerialNumber = equipment.getSerialNumber();
+            site = equipment.getSite() != null ? equipment.getSite().getName() : null;
+        }
 
         // Only recalculate cost from steps if there are steps, otherwise preserve the
         // record's totalCost
@@ -1097,52 +1612,50 @@ public class MaintenanceService {
             totalCost = steps.stream()
                     .map(step -> step.getStepCost() != null ? step.getStepCost() : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-            record.setTotalCost(totalCost);
+            // We don't save here to avoid side effects in GET, but we return the calculated
+            // cost
         } else {
-            // No steps yet, use the record's stored totalCost
             totalCost = record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO;
         }
 
-        return MaintenanceRecordDto.builder()
-                .id(record.getId())
-                .equipmentId(record.getEquipmentId())
+        // Calculate budget tracking fields
+        BigDecimal consumedBudget = calculateConsumedBudget(record.getId());
+        BigDecimal remainingBudget = null;
+        Boolean isOverBudget = null;
+        if (record.getApprovedBudget() != null) {
+            remainingBudget = record.getApprovedBudget().subtract(consumedBudget);
+            isOverBudget = consumedBudget.compareTo(record.getApprovedBudget()) > 0;
+        }
+
+        return MaintenanceRecordDto.builder().id(record.getId()).equipmentId(record.getEquipmentId())
                 .equipmentInfo(record.getEquipmentInfo())
                 .initialIssueDescription(record.getInitialIssueDescription())
                 .finalDescription(record.getFinalDescription())
-                .issueDate(record.getIssueDate())
-                .sparePartName(record.getSparePartName())
-                .creationDate(record.getCreationDate())
-                .expectedCompletionDate(record.getExpectedCompletionDate())
+                .issueDate(record.getIssueDate()).sparePartName(record.getSparePartName())
+                .creationDate(record.getCreationDate()).expectedCompletionDate(record.getExpectedCompletionDate())
                 .actualCompletionDate(record.getActualCompletionDate())
-                .totalCost(record.getTotalCost())
+                // Budget tracking fields
+                .expectedCost(record.getExpectedCost())
+                .approvedBudget(record.getApprovedBudget())
+                .consumedBudget(consumedBudget)
+                .totalCost(totalCost)
+                .remainingBudget(remainingBudget)
+                .isOverBudget(isOverBudget)
                 .status(record.getStatus())
+                .rejectionReason(rejectionReason)
                 .responsibleUserId(record.getResponsibleUser() != null ? record.getResponsibleUser().getId() : null)
                 .currentResponsibleContactId(
                         record.getCurrentResponsibleContact() != null ? record.getCurrentResponsibleContact().getId()
                                 : null)
-                .lastUpdated(record.getLastUpdated())
-                .version(record.getVersion())
-                .isOverdue(record.isOverdue())
-                .durationInDays(record.getDurationInDays())
-                .totalSteps(steps.size())
-                .completedSteps((int) steps.stream().filter(MaintenanceStep::isCompleted).count())
-                .activeSteps((int) steps.stream().filter(step -> !step.isCompleted()).count())
-                .steps(steps.stream().map(this::convertToDto).collect(Collectors.toList()))
-                .currentStepDescription(currentStep.map(MaintenanceStep::getDescription).orElse(null))
-                .currentStepResponsiblePerson(currentStep
-                        .map(step -> step.getResponsibleContact() != null ? step.getResponsibleContact().getFullName()
-                                : null)
-                        .orElse(null))
-                .currentStepExpectedEndDate(currentStep.map(MaintenanceStep::getExpectedEndDate).orElse(null))
-                .currentStepIsOverdue(currentStep.map(MaintenanceStep::isOverdue).orElse(false))
-                .equipmentName(equipment != null ? equipment.getName() : null)
-                .equipmentModel(equipment != null ? equipment.getModel() : null)
-                .equipmentType(equipment != null && equipment.getType() != null ? equipment.getType().getName() : null)
-                .equipmentSerialNumber(equipment != null ? equipment.getSerialNumber() : null)
-                .site(equipment != null && equipment.getSite() != null ? equipment.getSite().getName() : "N/A")
-                .currentResponsiblePerson(record.getCurrentResponsiblePersonName())
-                .currentResponsiblePhone(record.getCurrentResponsiblePersonPhone())
-                .currentResponsibleEmail(record.getCurrentResponsiblePersonEmail())
+                .lastUpdated(record.getLastUpdated()).version(record.getVersion()).isOverdue(record.isOverdue())
+                .durationInDays(record.getDurationInDays()).totalSteps(totalSteps).completedSteps(completedSteps)
+                .activeSteps(activeSteps).steps(stepDtos).timelineEvents(timelineEvents)
+                .currentStepDescription(currentStepDescription)
+                .currentStepResponsiblePerson(currentStepResponsiblePerson)
+                .currentStepExpectedEndDate(currentStepExpectedEndDate).currentStepIsOverdue(currentStepIsOverdue)
+                .equipmentName(equipmentName).equipmentModel(equipmentModel).equipmentType(equipmentType)
+                .equipmentSerialNumber(equipmentSerialNumber).site(site).currentResponsiblePerson(responsiblePersonName)
+                .currentResponsiblePhone(responsiblePersonPhone).currentResponsibleEmail(responsiblePersonEmail)
                 .build();
     }
 
@@ -1246,6 +1759,40 @@ public class MaintenanceService {
 
         record.setTotalCost(totalCost);
         maintenanceRecordRepository.save(record);
+    }
+
+    /**
+     * Calculate consumed budget for a maintenance record.
+     * Consumed = sum of actualCost for completed steps + expectedCost for incomplete steps
+     */
+    private BigDecimal calculateConsumedBudget(UUID recordId) {
+        List<MaintenanceStep> steps = maintenanceStepRepository
+                .findByMaintenanceRecordIdOrderByStartDateAsc(recordId);
+
+        return steps.stream()
+                .map(step -> {
+                    if (step.isCompleted()) {
+                        // For completed steps, use actual cost (or stepCost as fallback)
+                        return step.getActualCost() != null ? step.getActualCost()
+                                : (step.getStepCost() != null ? step.getStepCost() : BigDecimal.ZERO);
+                    } else {
+                        // For incomplete steps, use expected cost
+                        return step.getExpectedCost() != null ? step.getExpectedCost() : BigDecimal.ZERO;
+                    }
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Calculate remaining budget for a maintenance record.
+     * Remaining = approvedBudget - consumedBudget
+     */
+    private BigDecimal calculateRemainingBudget(MaintenanceRecord record) {
+        if (record.getApprovedBudget() == null) {
+            return null;
+        }
+        BigDecimal consumed = calculateConsumedBudget(record.getId());
+        return record.getApprovedBudget().subtract(consumed);
     }
 
     /**
