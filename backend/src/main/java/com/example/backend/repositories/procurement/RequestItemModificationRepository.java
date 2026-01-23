@@ -1,8 +1,8 @@
 // RequestItemModificationRepository.java
 package com.example.backend.repositories.procurement;
 
-import com.example.backend.models.procurement.RequestItemModification;
-import com.example.backend.models.procurement.Offer;
+import com.example.backend.models.procurement.Offer.RequestItemModification;
+import com.example.backend.models.procurement.Offer.Offer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

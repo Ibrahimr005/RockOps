@@ -1,7 +1,7 @@
 package com.example.backend.mappers.procurement;
 
 import com.example.backend.dto.procurement.OfferTimelineEventDTO;
-import com.example.backend.models.procurement.OfferTimelineEvent;
+import com.example.backend.models.procurement.Offer.OfferTimelineEvent;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;

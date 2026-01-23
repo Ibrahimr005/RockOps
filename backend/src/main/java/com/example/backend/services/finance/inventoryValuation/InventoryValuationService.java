@@ -482,4 +482,88 @@ public class InventoryValuationService {
             return "Unknown";
         }
     }
+
+    /**
+     * Get ALL item history for a warehouse (transactions + manual entries + purchase orders + initial stock)
+     */
+    public List<WarehouseTransactionHistoryDTO> getWarehouseAllItemHistory(UUID warehouseId) {
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+
+        List<WarehouseTransactionHistoryDTO> result = new ArrayList<>();
+
+        // 1. Get all IN_WAREHOUSE items (includes all sources)
+        List<Item> allItems = itemRepository.findByWarehouseAndItemStatus(warehouse, ItemStatus.IN_WAREHOUSE);
+
+        for (Item item : allItems) {
+            String itemSource = item.getItemSource() != null ? item.getItemSource().name() : "UNKNOWN";
+
+            // Check if item came from a transaction
+            if (item.getTransactionItem() != null && item.getTransactionItem().getTransaction() != null) {
+                Transaction tx = item.getTransactionItem().getTransaction();
+                String senderName = getEntityName(tx.getSenderType(), tx.getSenderId());
+
+                result.add(WarehouseTransactionHistoryDTO.builder()
+                        .itemId(item.getId())
+                        .transactionId(tx.getId())
+                        .batchNumber(tx.getBatchNumber())
+                        .transactionDate(tx.getTransactionDate() != null ? tx.getTransactionDate().toString() : null)
+                        .status(tx.getStatus() != null ? tx.getStatus().name() : null)
+                        .senderName(senderName)
+                        .senderType(tx.getSenderType() != null ? tx.getSenderType().name() : null)
+                        .receiverName(warehouse.getName())
+                        .receiverType("WAREHOUSE")
+                        .itemName(item.getItemType().getName())
+                        .quantity(item.getQuantity())
+                        .measuringUnit(item.getItemType().getMeasuringUnit())
+                        .unitPrice(item.getUnitPrice())
+                        .totalValue(item.getTotalValue())
+                        .createdBy(item.getCreatedBy())
+                        .approvedBy(tx.getApprovedBy())
+                        .completedAt(tx.getCompletedAt() != null ? tx.getCompletedAt().toString() : null)
+                        .itemSource("TRANSACTION")
+                        .sourceReference(tx.getBatchNumber() != null ? tx.getBatchNumber().toString() : null)
+                        .merchantName(null)
+                        .createdAt(item.getCreatedAt() != null ? item.getCreatedAt().toString() : null)
+                        .build());
+            } else {
+                // Non-transaction item (manual entry, purchase order, initial stock)
+                result.add(WarehouseTransactionHistoryDTO.builder()
+                        .itemId(item.getId())
+                        .transactionId(null)
+                        .batchNumber(null)
+                        .transactionDate(null)
+                        .status(null)
+                        .senderName(item.getMerchantName())
+                        .senderType(null)
+                        .receiverName(warehouse.getName())
+                        .receiverType("WAREHOUSE")
+                        .itemName(item.getItemType().getName())
+                        .quantity(item.getQuantity())
+                        .measuringUnit(item.getItemType().getMeasuringUnit())
+                        .unitPrice(item.getUnitPrice())
+                        .totalValue(item.getTotalValue())
+                        .createdBy(item.getCreatedBy())
+                        .approvedBy(item.getPriceApprovedBy())
+                        .completedAt(item.getPriceApprovedAt() != null ? item.getPriceApprovedAt().toString() : null)
+                        .itemSource(itemSource)
+                        .sourceReference(item.getSourceReference())
+                        .merchantName(item.getMerchantName())
+                        .createdAt(item.getCreatedAt() != null ? item.getCreatedAt().toString() : null)
+                        .build());
+            }
+        }
+
+        // Sort by createdAt descending (most recent first)
+        result.sort((a, b) -> {
+            String dateA = a.getCreatedAt();
+            String dateB = b.getCreatedAt();
+            if (dateA == null) return 1;
+            if (dateB == null) return -1;
+            return dateB.compareTo(dateA);
+        });
+
+        System.out.println("✅ Found " + result.size() + " item history entries for warehouse: " + warehouse.getName());
+        return result;
+    }
 }

@@ -1,16 +1,12 @@
 package com.example.backend.controllers.procurement;
 
-import com.example.backend.dto.finance.accountsPayable.PaymentRequestResponseDTO;
 import com.example.backend.dto.procurement.*;
-import com.example.backend.models.procurement.Offer;
+import com.example.backend.models.procurement.Offer.Offer;
 import com.example.backend.models.procurement.PurchaseOrder;
 import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import com.example.backend.services.procurement.PurchaseOrderService;
 import com.example.backend.services.procurement.DeliveryProcessingService;
 import com.example.backend.services.procurement.IssueResolutionService;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

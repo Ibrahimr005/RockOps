@@ -1,4 +1,4 @@
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.Offer;
 
 public enum TimelineEventType {
     // Core workflow events

@@ -1,8 +1,8 @@
 // OfferRequestItemRepository.java
 package com.example.backend.repositories.procurement;
 
-import com.example.backend.models.procurement.OfferRequestItem;
-import com.example.backend.models.procurement.Offer;
+import com.example.backend.models.procurement.Offer.OfferRequestItem;
+import com.example.backend.models.procurement.Offer.Offer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

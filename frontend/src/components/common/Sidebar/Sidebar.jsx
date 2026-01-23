@@ -50,7 +50,9 @@ import {
     FaAddressBook,
     FaDatabase,
     FaUserClock,
+    FaMoneyCheckAlt
 } from 'react-icons/fa';
+
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE } from '../../../utils/roles';
 
 import './Sidebar.css';
@@ -546,6 +548,12 @@ const Sidebar = () => {
                     title: 'Purchase Orders',
                     icon: <FaFileInvoice/>,
                     path: '/procurement/purchase-orders',
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
+                },
+                {
+                    title: 'Price Approvals',
+                    icon: <FaMoneyCheckAlt />,
+                    path: '/procurement/price-approvals',
                     roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 }
             ]

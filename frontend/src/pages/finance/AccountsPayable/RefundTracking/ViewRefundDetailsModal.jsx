@@ -115,7 +115,7 @@ const ViewRefundDetailsModal = ({ refund, onClose }) => {
 
                 {/* Footer */}
                 <div className="modal-footer">
-                    <button className="btn-close" onClick={onClose}>
+                    <button className="btn-danger" onClick={onClose}>
                         Close
                     </button>
                 </div>

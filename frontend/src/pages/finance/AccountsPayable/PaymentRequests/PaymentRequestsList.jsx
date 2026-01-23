@@ -3,18 +3,16 @@ import { FiEye, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
-import PaymentRequestDetails from './PaymentRequestDetails';
-import ApproveRejectModal from './ApproveRejectModal';
+import { useNavigate } from 'react-router-dom';
+
 import './PaymentRequests.scss';
 
 const PaymentRequestsList = () => {
     const [paymentRequests, setPaymentRequests] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showDetails, setShowDetails] = useState(false);
-    const [showApproveReject, setShowApproveReject] = useState(false);
-    const [selectedRequest, setSelectedRequest] = useState(null);
     const [activeFilter, setActiveFilter] = useState('pending'); // 'pending', 'ready-to-pay', 'all'
     const { showSuccess, showError } = useSnackbar();
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchPaymentRequests();
@@ -43,21 +41,13 @@ const PaymentRequestsList = () => {
     };
 
     const handleView = (request) => {
-        setSelectedRequest(request);
-        setShowDetails(true);
+        navigate(`/finance/accounts-payable/payment-requests/${request.id}`);
     };
 
-    const handleApproveReject = (request) => {
-        setShowDetails(false); // Close the details modal
-        setSelectedRequest(null); // Clear selected request
-        fetchPaymentRequests(); // Refresh the list
+    const handleApproveReject = () => {
+        fetchPaymentRequests(); // Just refresh the list
     };
 
-    const handleApproveRejectSubmit = () => {
-        setShowApproveReject(false);
-        setSelectedRequest(null);
-        fetchPaymentRequests();
-    };
 
     const formatCurrency = (amount) => {
         if (!amount || isNaN(amount)) return 'EGP 0.00';
@@ -95,9 +85,31 @@ const PaymentRequestsList = () => {
             sortable: true
         },
         {
-            header: 'PO Number',
-            accessor: 'purchaseOrderNumber',
-            sortable: true
+            header: 'Source',
+            accessor: 'sourceReference',
+            sortable: true,
+            render: (row) => {
+                if (row.purchaseOrderNumber) {
+                    return (
+                        <span style={{
+                            color: 'var(--primary-color)',
+                            fontWeight: 500
+                        }}>
+                            {row.purchaseOrderNumber}
+                </span>
+                    );
+                } else if (row.maintenanceStepId) {
+                    return (
+                        <span style={{
+                            color: 'var(--success-color)',
+                            fontWeight: 500
+                        }}>
+                            {row.maintenanceStepId.substring(0, 8)}
+                        </span>
+                    );
+                }
+                return <span style={{ color: 'var(--text-muted)' }}>N/A</span>;
+            }
         },
         {
             header: 'Merchant',
@@ -153,12 +165,12 @@ const PaymentRequestsList = () => {
     ];
 
     const actions = [
-        {
-            label: 'View Details',
-            icon: <FiEye />,
-            onClick: handleView,
-            className: 'rockops-table__action-button primary'
-        },
+        // {
+        //     label: 'View Details',
+        //     icon: <FiEye />,
+        //     onClick: handleView,
+        //     className: 'rockops-table__action-button primary'
+        // },
         // {
         //     label: 'Approve/Reject',
         //     icon: <FiCheckCircle />,
@@ -228,30 +240,6 @@ const PaymentRequestsList = () => {
                 defaultSortDirection="desc"
             />
 
-            {showDetails && selectedRequest && (
-                <PaymentRequestDetails
-                    request={selectedRequest}
-                    onClose={() => {
-                        setShowDetails(false);
-                        setSelectedRequest(null);
-                    }}
-                    onApproveReject={() => {
-                        setShowDetails(false);
-                        handleApproveReject(selectedRequest);
-                    }}
-                />
-            )}
-
-            {showApproveReject && selectedRequest && (
-                <ApproveRejectModal
-                    request={selectedRequest}
-                    onClose={() => {
-                        setShowApproveReject(false);
-                        setSelectedRequest(null);
-                    }}
-                    onSubmit={handleApproveRejectSubmit}
-                />
-            )}
         </div>
     );
 };

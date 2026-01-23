@@ -52,21 +52,90 @@ const RequestOrderModal = ({
     // Loading state
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+// Update the useEffect to fetch warehouses and set the site properly
     useEffect(() => {
         if (isOpen) {
-            fetchInitialData();
-            setIsFormDirty(false);
-            setCurrentStep(1); // Always start at step 1
+            const initializeModal = async () => {
+                // First fetch all initial data
+                await fetchInitialData();
 
-            if (userType === 'WAREHOUSE' && currentWarehouseId && currentSiteId) {
+                // Then set form data for WAREHOUSE mode
+                if (userType === 'WAREHOUSE' && currentWarehouseId && currentSiteId) {
+                    // Wait a tiny bit for warehouses state to update
+                    setTimeout(() => {
+                        setFormData(prev => ({
+                            ...prev,
+                            siteId: currentSiteId,
+                            requesterId: currentWarehouseId
+                        }));
+                    }, 50);
+                }
+            };
+
+            initializeModal();
+            setIsFormDirty(false);
+            setCurrentStep(1);
+        }
+    }, [isOpen, userType, currentWarehouseId, currentSiteId]);
+
+    // Set warehouse name when warehouses are loaded and requesterId is set
+    useEffect(() => {
+        if (formData.requesterId && warehouses.length > 0) {
+            const selectedWarehouse = warehouses.find(w => w.id === formData.requesterId);
+            if (selectedWarehouse && selectedWarehouse.name !== formData.requesterName) {
                 setFormData(prev => ({
                     ...prev,
-                    siteId: currentSiteId,
-                    requesterId: currentWarehouseId
+                    requesterName: selectedWarehouse.name
                 }));
             }
         }
-    }, [isOpen, userType, currentWarehouseId, currentSiteId]);
+    }, [warehouses, formData.requesterId]);
+
+// Add this new function to fetch all warehouses
+    const fetchAllWarehouses = async () => {
+        try {
+            const data = await warehouseService.getAll(); // Assuming this method exists
+            setWarehouses(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Error fetching all warehouses:', err);
+            setWarehouses([]);
+        }
+    };
+
+// Update fetchInitialData to include all warehouses
+    const fetchInitialData = async () => {
+        try {
+            await Promise.all([
+                fetchSites(),
+                fetchItemTypes(),
+                fetchEmployees(),
+                fetchParentCategories(),
+                fetchAllWarehouses()  // Add this line
+            ]);
+        } catch (error) {
+            console.error('Error fetching initial data:', error);
+            onError?.('Failed to load initial data');
+        }
+    };
+
+
+
+// Update handleSiteChange to filter warehouses instead of replacing them
+
+// Add this new function
+    const fetchWarehouseDetails = async (warehouseId) => {
+        try {
+            const warehouse = await warehouseService.getById(warehouseId);
+            setFormData(prev => ({
+                ...prev,
+                requesterName: warehouse.name || ''
+            }));
+            // Also set it in warehouses array so the banner can find it
+            setWarehouses([warehouse]);
+        } catch (err) {
+            console.error('Error fetching warehouse details:', err);
+        }
+    };
 
     useEffect(() => {
         if (isOpen && existingOrder) {
@@ -141,19 +210,6 @@ const RequestOrderModal = ({
         }
     };
 
-    const fetchInitialData = async () => {
-        try {
-            await Promise.all([
-                fetchSites(),
-                fetchItemTypes(),
-                fetchEmployees(),
-                fetchParentCategories()
-            ]);
-        } catch (error) {
-            console.error('Error fetching initial data:', error);
-            onError?.('Failed to load initial data');
-        }
-    };
 
     const fetchSites = async () => {
         try {
@@ -236,16 +292,16 @@ const RequestOrderModal = ({
         }));
 
         if (siteId) {
+            // Filter warehouses by site
             try {
                 const data = await warehouseService.getBySite(siteId);
                 setWarehouses(Array.isArray(data) ? data : []);
             } catch (err) {
                 console.error('Error fetching warehouses:', err);
-                setWarehouses([]);
-                onError?.('Failed to load warehouses');
             }
         } else {
-            setWarehouses([]);
+            // If no site selected, show all warehouses again
+            await fetchAllWarehouses();
         }
     };
 
@@ -843,6 +899,7 @@ const RequestOrderModal = ({
                             )}
 
                             {/* Step 3: Requester Information */}
+                            {/* Step 3: Requester Information */}
                             {currentStep === 3 && (
                                 <div className="modal-section">
                                     <h3 className="modal-section-title">Requester Details</h3>
@@ -875,7 +932,7 @@ const RequestOrderModal = ({
                                             <div className="form-row">
                                                 <div className="form-group">
                                                     <label htmlFor="site" className="form-label">
-                                                        Site <span className="required">*</span>
+                                                        Site
                                                     </label>
                                                     <select
                                                         id="site"
@@ -885,7 +942,7 @@ const RequestOrderModal = ({
                                                         onChange={handleSiteChange}
                                                         disabled={isSubmitting}
                                                     >
-                                                        <option value="">Select Site</option>
+                                                        <option value="">All Sites</option>
                                                         {sites.map(site => (
                                                             <option key={site.id} value={site.id}>
                                                                 {site.name || 'Unknown Site'}
@@ -894,28 +951,28 @@ const RequestOrderModal = ({
                                                     </select>
                                                 </div>
 
-                                                {formData.siteId && (
-                                                    <div className="form-group">
-                                                        <label htmlFor="requesterId" className="form-label">
-                                                            Warehouse <span className="required">*</span>
-                                                        </label>
-                                                        <select
-                                                            id="requesterId"
-                                                            name="requesterId"
-                                                            className="form-select"
-                                                            value={formData.requesterId}
-                                                            onChange={handleWarehouseChange}
-                                                            disabled={isSubmitting}
-                                                        >
-                                                            <option value="">Select Warehouse</option>
-                                                            {warehouses.map(warehouse => (
-                                                                <option key={warehouse.id} value={warehouse.id}>
-                                                                    {warehouse.name || 'Unknown Warehouse'}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                )}
+                                                {/* REMOVED THE CONDITIONAL - Always show warehouse dropdown */}
+                                                <div className="form-group">
+                                                    <label htmlFor="requesterId" className="form-label">
+                                                        Warehouse <span className="required">*</span>
+                                                    </label>
+                                                    <select
+                                                        id="requesterId"
+                                                        name="requesterId"
+                                                        className="form-select"
+                                                        value={formData.requesterId}
+                                                        onChange={handleWarehouseChange}
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        <option value="">Select Warehouse</option>
+                                                        {warehouses.map(warehouse => (
+                                                            <option key={warehouse.id} value={warehouse.id}>
+                                                                {warehouse.name || 'Unknown Warehouse'}
+                                                                {warehouse.site?.name ? ` (${warehouse.site.name})` : ''}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </div>
 
                                             {formData.requesterId && formData.requesterName && (
@@ -932,6 +989,24 @@ const RequestOrderModal = ({
                                                 </div>
                                             )}
                                         </>
+                                    )}
+
+                                    {userType === 'WAREHOUSE' && formData.requesterId && (
+                                        <div className="selected-requester-info">
+                                            <div className="info-icon">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <div className="info-content">
+                                                <span className="info-label">Selected Warehouse:</span>
+                                                <span className="info-value">
+                        {warehouses.find(w => w.id === formData.requesterId)?.name ||
+                            formData.requesterName ||
+                            'Current Warehouse'}
+                    </span>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             )}

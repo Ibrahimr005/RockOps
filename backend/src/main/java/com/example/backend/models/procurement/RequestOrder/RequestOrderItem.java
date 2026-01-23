@@ -1,8 +1,7 @@
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.RequestOrder;
 
 import com.example.backend.models.warehouse.ItemType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,22 +21,16 @@ public class RequestOrderItem {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    // Item quantity requested
     private double quantity;
-
-    // Any additional comments for this specific item
     private String comment;
 
-    // Relationship with parent request
     @ManyToOne
     @JoinColumn(name = "request_order_id")
-    @JsonBackReference // ✅ This is correct
+    @JsonBackReference
     private RequestOrder requestOrder;
 
-
-    // The type of item being requested
     @ManyToOne
     @JoinColumn(name = "item_type_id")
-    @JsonManagedReference
+    // ✅ REMOVED @JsonManagedReference - it doesn't belong on @ManyToOne
     private ItemType itemType;
 }

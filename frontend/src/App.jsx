@@ -48,6 +48,7 @@ import WarehouseViewItemCategoriesTable from "./pages/warehouse/WarehouseCategor
 import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable.jsx";
 import ItemDetailsPage from "./pages/warehouse/WarehouseItems/ItemDetailsPage/ItemDetailsPage.jsx";
 import TransactionDetailsPage from "./components/common/TransactionDetailsPage/TransactionDetailsPage.jsx";
+import ItemTypeDetailsPage from "./pages/warehouse/WarehouseItemTypes/ItemTypeDetailsPage/ItemTypeDetailsPage.jsx";
 
 // ===================== Merchant & Procurement Components =====================
 import ProcurementOffers from "./pages/procurement/ProcurementOffers/ProcurementOffers.jsx";
@@ -62,6 +63,7 @@ import PurchaseOrderDetails
 import ResolveIssuesPage from "./pages/procurement/ProcurementPurchaseOrders/ResolveIssuesPage/ResolveIssuesPage.jsx";
 import PurchaseOrderDetailsPage from "./components/procurement/PurchaseOrderDetailsPage/PurchaseOrderDetailsPage.jsx";
 import RequestOrderDetailsPage from "./components/procurement/RequestOrderDetailsPage/RequestOrderDetailsPage.jsx";
+import PriceApprovals from "./pages/procurement/ProcurementPriceApprovals/PriceApprovals.jsx";
 
 // ===================== Finance Imports =====================
 import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
@@ -71,6 +73,7 @@ import BankReconciliation from "./pages/finance/BankReconciliation/BankReconcili
 import InventoryValuation from "./pages/finance/InventoryValuation/InventoryValuation.jsx";
 import Balances from "./pages/finance/Balances/Balances.jsx";
 import AccountsPayable from "./pages/finance/AccountsPayable/AccountsPayable.jsx";
+import PaymentRequestDetailsPage from "./pages/finance/AccountsPayable/PaymentRequests/PaymentRequestDetailsPage.jsx";
 
 // ===================== HR & Payroll Imports =====================
 import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
@@ -209,6 +212,7 @@ function App() {
                                             <Route path=":id/items/:itemTypeId" element={<ItemDetailsPage/>}/>
                                             <Route path=":id/request-orders/:requestOrderId" element={<RequestOrderDetailsPage />} />
                                             <Route path=":id/transactions/:transaction" element={<TransactionDetailsPage />} />
+                                            <Route path="item-types/:itemTypeId" element={<RoleRoute allowedRoles={allRoles}><ItemTypeDetailsPage/></RoleRoute>}/>
                                         </Route>
 
                                         {/* ===================== Merchant Routes ===================== */}
@@ -225,6 +229,7 @@ function App() {
                                             <Route path="purchase-orders/:id" element={<PurchaseOrderDetails/>}/>
                                             <Route path="purchase-orders/:id/resolve-issues" element={<ResolveIssuesPage/>}/>
                                             <Route path="purchase-orders/details/:id/" element={<PurchaseOrderDetailsPage/>}/>
+                                            <Route path="price-approvals" element={<PriceApprovals/>}/>
                                         </Route>
 
                                         {/* ===================== HR Management Routes ===================== */}
@@ -306,7 +311,7 @@ function App() {
                                         <Route path="/finance/inventory-valuation" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><InventoryValuation/></RoleRoute>} />
                                         <Route path="/finance/balances" element={<RoleRoute allowedRoles={allRoles}><Balances/></RoleRoute>} />
                                         <Route path="/finance/accounts-payable" element={<RoleRoute allowedRoles={allRoles}><AccountsPayable/></RoleRoute>} />
-
+                                        <Route path="/finance/accounts-payable/payment-requests/:id" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><PaymentRequestDetailsPage/></RoleRoute>} />
                                         {/* ===================== Generic Related Documents Route ===================== */}
                                         <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
                                         <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>

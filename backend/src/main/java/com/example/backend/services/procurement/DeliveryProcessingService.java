@@ -2,18 +2,20 @@ package com.example.backend.services.procurement;
 
 import com.example.backend.dto.procurement.*;
 import com.example.backend.models.procurement.*;
+import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.models.warehouse.*;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
+import com.example.backend.services.warehouse.ItemTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -25,76 +27,134 @@ public class DeliveryProcessingService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final PurchaseOrderIssueRepository purchaseOrderIssueRepository;
-    private final ItemRepository itemRepository; // ADD THIS
-    private final WarehouseRepository warehouseRepository; // ADD THIS
+    private final ItemRepository itemRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final ItemTypeService itemTypeService;
+
 
     @Transactional
     public DeliverySessionDTO processDelivery(ProcessDeliveryRequest request) {
-        PurchaseOrder po = purchaseOrderRepository.findById(request.getPurchaseOrderId())
-                .orElseThrow(() -> new RuntimeException("PO not found"));
+        try {
+            System.out.println("=== DELIVERY PROCESSING START ===");
+            System.out.println("PO ID: " + request.getPurchaseOrderId());
+            System.out.println("Processed by: " + request.getProcessedBy());
 
-        // Create delivery session
-        DeliverySession session = DeliverySession.builder()
-                .purchaseOrder(po)
-                .merchant(po.getPurchaseOrderItems().get(0).getMerchant())
-                .processedBy(request.getProcessedBy())
-                .processedAt(LocalDateTime.now())
-                .deliveryNotes(request.getDeliveryNotes())
-                .itemReceipts(new ArrayList<>())
-                .build();
+            PurchaseOrder po = purchaseOrderRepository.findById(request.getPurchaseOrderId())
+                    .orElseThrow(() -> new RuntimeException("PO not found"));
+            System.out.println("✅ Found PO: " + po.getPoNumber());
 
-        // Process each item receipt
-        for (ProcessItemReceiptRequest itemRequest : request.getItemReceipts()) {
-            PurchaseOrderItem poItem = purchaseOrderItemRepository.findById(itemRequest.getPurchaseOrderItemId())
-                    .orElseThrow(() -> new RuntimeException("PO Item not found"));
-
-            DeliveryItemReceipt receipt = DeliveryItemReceipt.builder()
-                    .deliverySession(session)
-                    .purchaseOrderItem(poItem)
-                    .goodQuantity(itemRequest.getGoodQuantity())
-                    .isRedelivery(itemRequest.getIsRedelivery())
-                    .issues(new ArrayList<>())
+            System.out.println("Creating DeliverySession...");
+            DeliverySession session = DeliverySession.builder()
+                    .purchaseOrder(po)
+                    .merchant(po.getPurchaseOrderItems().get(0).getMerchant())
+                    .processedBy(request.getProcessedBy())
+                    .processedAt(LocalDateTime.now())
+                    .deliveryNotes(request.getDeliveryNotes())
+                    .itemReceipts(new ArrayList<>())
                     .build();
+            System.out.println("✅ DeliverySession created");
 
-            // IMPORTANT: Add receipt to the item's list (bidirectional relationship)
-            poItem.getItemReceipts().add(receipt);
+            System.out.println("Processing " + request.getItemReceipts().size() + " item receipts...");
+            for (int i = 0; i < request.getItemReceipts().size(); i++) {
+                ProcessItemReceiptRequest itemRequest = request.getItemReceipts().get(i);
+                System.out.println("\n--- Item Receipt #" + (i+1) + " ---");
+                System.out.println("PO Item ID: " + itemRequest.getPurchaseOrderItemId());
+                System.out.println("Good Qty: " + itemRequest.getGoodQuantity());
+                System.out.println("Is Redelivery: " + itemRequest.getIsRedelivery());
 
-            // Create issues
-            if (itemRequest.getIssues() != null) {
-                for (CreateIssueRequest issueRequest : itemRequest.getIssues()) {
-                    PurchaseOrderIssue issue = PurchaseOrderIssue.builder()
-                            .purchaseOrder(po)
+                PurchaseOrderItem poItem = purchaseOrderItemRepository.findById(itemRequest.getPurchaseOrderItemId())
+                        .orElseThrow(() -> new RuntimeException("PO Item not found"));
+                System.out.println("✅ Found PO Item: " + poItem.getItemType().getName());
+
+                System.out.println("Building DeliveryItemReceipt...");
+                DeliveryItemReceipt receipt;
+                try {
+                    receipt = DeliveryItemReceipt.builder()
+                            .deliverySession(session)
                             .purchaseOrderItem(poItem)
-                            .deliveryItemReceipt(receipt)
-                            .issueType(issueRequest.getIssueType())
-                            .issueStatus(IssueStatus.REPORTED)
-                            .affectedQuantity(issueRequest.getAffectedQuantity())
-                            .reportedBy(request.getProcessedBy())
-                            .reportedAt(LocalDateTime.now())
-                            .issueDescription(issueRequest.getIssueDescription())
+                            .goodQuantity(itemRequest.getGoodQuantity())
+                            .isRedelivery(itemRequest.getIsRedelivery())
+                            .issues(new ArrayList<>())
                             .build();
-
-                    receipt.getIssues().add(issue);
+                    System.out.println("✅ DeliveryItemReceipt built");
+                } catch (Exception e) {
+                    System.err.println("❌ FAILED to build DeliveryItemReceipt:");
+                    e.printStackTrace();
+                    throw e;
                 }
+
+                System.out.println("Adding receipt to poItem.itemReceipts...");
+                try {
+                    if (poItem.getItemReceipts() == null) {
+                        poItem.setItemReceipts(new ArrayList<>());
+                    }
+                    poItem.getItemReceipts().add(receipt);
+                    System.out.println("✅ Added to poItem");
+                } catch (Exception e) {
+                    System.err.println("❌ FAILED to add receipt to poItem:");
+                    e.printStackTrace();
+                    throw e;
+                }
+
+                if (itemRequest.getIssues() != null && !itemRequest.getIssues().isEmpty()) {
+                    System.out.println("Processing " + itemRequest.getIssues().size() + " issues...");
+                    for (CreateIssueRequest issueRequest : itemRequest.getIssues()) {
+                        PurchaseOrderIssue issue = PurchaseOrderIssue.builder()
+                                .purchaseOrder(po)
+                                .purchaseOrderItem(poItem)
+                                .deliveryItemReceipt(receipt)
+                                .issueType(issueRequest.getIssueType())
+                                .issueStatus(IssueStatus.REPORTED)
+                                .affectedQuantity(issueRequest.getAffectedQuantity())
+                                .reportedBy(request.getProcessedBy())
+                                .reportedAt(LocalDateTime.now())
+                                .issueDescription(issueRequest.getIssueDescription())
+                                .build();
+                        receipt.getIssues().add(issue);
+                    }
+                    System.out.println("✅ Issues added");
+                }
+
+                session.getItemReceipts().add(receipt);
+                System.out.println("✅ Receipt added to session");
             }
 
-            session.getItemReceipts().add(receipt);
+            System.out.println("\nSaving delivery session...");
+            deliverySessionRepository.save(session);
+            System.out.println("✅ Session saved");
+
+            System.out.println("Creating warehouse items...");
+            createWarehouseItems(session);
+            System.out.println("✅ Warehouse items created");
+
+            System.out.println("Updating item statuses...");
+            updateItemStatuses(po);
+            System.out.println("✅ Item statuses updated");
+
+            System.out.println("Updating PO status...");
+            updatePOStatus(po);
+            System.out.println("✅ PO status updated");
+
+            System.out.println("Saving PO...");
+            purchaseOrderRepository.save(po);
+            System.out.println("✅ PO saved");
+
+            System.out.println("Converting to DTO...");
+            DeliverySessionDTO dto = convertToDTO(session);
+            System.out.println("✅ DTO created");
+
+            System.out.println("=== DELIVERY PROCESSING COMPLETE ===\n");
+            return dto;
+
+        } catch (Exception e) {
+            System.err.println("\n❌❌❌ DELIVERY PROCESSING FAILED ❌❌❌");
+            System.err.println("Error: " + e.getMessage());
+            System.err.println("Full stack trace:");
+            e.printStackTrace();
+            throw e;
         }
-
-        // Save the session (cascades to receipts and issues)
-        deliverySessionRepository.save(session);
-
-        createWarehouseItems(session);
-
-        // Update statuses based on what was just processed
-        updateItemStatuses(po);
-        updatePOStatus(po);
-
-        // Save the updated PO with new statuses
-        purchaseOrderRepository.save(po);
-
-        return convertToDTO(session);
     }
+
     private void updateItemStatuses(PurchaseOrder po) {
         for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
             double totalGood = item.getItemReceipts().stream()
@@ -159,26 +219,46 @@ public class DeliveryProcessingService {
         boolean hasDisputedItems = false;
 
         for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
-            // Check if item has disputed/unresolved issues
             if ("DISPUTED".equals(item.getStatus())) {
                 hasDisputedItems = true;
             }
-
-            // Check if item still needs delivery
             if (!"COMPLETED".equals(item.getStatus())) {
                 hasItemsToArrive = true;
             }
         }
 
-        // Set status based on conditions
+        String oldStatus = po.getStatus();
+
         if (hasDisputedItems && hasItemsToArrive) {
-            po.setStatus("PARTIAL_DISPUTED"); // Both conditions
+            po.setStatus("PARTIAL_DISPUTED");
         } else if (hasDisputedItems) {
-            po.setStatus("DISPUTED"); // Only issues
+            po.setStatus("DISPUTED");
         } else if (hasItemsToArrive) {
-            po.setStatus("PARTIAL"); // Only pending items
+            po.setStatus("PARTIAL");
         } else {
-            po.setStatus("COMPLETED"); // Everything done
+            po.setStatus("COMPLETED");
+        }
+
+        // Update ItemType base prices when PO becomes COMPLETED
+        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
+            System.out.println("🎯 PO status changed to COMPLETED, updating base prices...");
+
+            try {
+                Set<UUID> itemTypeIds = po.getPurchaseOrderItems().stream()
+                        .filter(item -> item.getItemType() != null)
+                        .map(item -> item.getItemType().getId())
+                        .collect(java.util.stream.Collectors.toSet());
+
+                for (UUID itemTypeId : itemTypeIds) {
+                    try {
+                        itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, "SYSTEM");
+                    } catch (Exception e) {
+                        System.err.println("⚠️ Failed to update base price for item type: " + e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to collect item types: " + e.getMessage());
+            }
         }
     }
 

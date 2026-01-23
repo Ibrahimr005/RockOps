@@ -3,7 +3,7 @@ package com.example.backend.controllers.procurement;
 import com.example.backend.dto.procurement.*;
 import com.example.backend.mappers.procurement.OfferMapper;
 import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
-import com.example.backend.models.procurement.Offer;
+import com.example.backend.models.procurement.Offer.Offer;
 import com.example.backend.repositories.procurement.OfferRepository;
 import com.example.backend.services.procurement.OfferService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,9 +53,21 @@ public class OfferController {
     @PostMapping("/{offerId}/items")
     public ResponseEntity<?> addOfferItems(@PathVariable UUID offerId, @RequestBody List<OfferItemDTO> offerItemDTOs, HttpServletRequest request) {
         try {
-            System.out.println("=== CONTROLLER CALLED ===");
+            System.out.println("=== CONTROLLER RECEIVED ===");
             System.out.println("Offer ID: " + offerId);
             System.out.println("Number of DTOs: " + offerItemDTOs.size());
+
+            // ADD DETAILED LOGGING FOR EACH DTO
+            for (int i = 0; i < offerItemDTOs.size(); i++) {
+                OfferItemDTO dto = offerItemDTOs.get(i);
+                System.out.println("--- DTO #" + i + " ---");
+                System.out.println("itemTypeId: " + dto.getItemTypeId());
+                System.out.println("merchantId: " + dto.getMerchantId());
+                System.out.println("quantity: " + dto.getQuantity());
+                System.out.println("unitPrice: " + dto.getUnitPrice());
+                System.out.println("currency: " + dto.getCurrency());
+            }
+            System.out.println("========================");
 
             List<OfferItemDTO> savedItems = offerService.addOfferItems(offerId, offerItemDTOs);
 

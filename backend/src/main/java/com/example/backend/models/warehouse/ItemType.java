@@ -1,7 +1,7 @@
 package com.example.backend.models.warehouse;
 
-import com.example.backend.models.procurement.OfferItem;
-import com.example.backend.models.procurement.RequestOrderItem;
+import com.example.backend.models.procurement.Offer.OfferItem;
+import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
 import com.example.backend.models.transaction.TransactionItem;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
