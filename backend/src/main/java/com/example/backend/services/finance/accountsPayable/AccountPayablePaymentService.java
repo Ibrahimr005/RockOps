@@ -131,8 +131,10 @@ public class AccountPayablePaymentService {
         // 9. Create financial transaction (ledger entry)
         financialTransactionService.createPaymentTransaction(savedPayment);
 
-        // 10. Update Purchase Order payment status
-        updatePurchaseOrderPaymentStatus(paymentRequest.getPurchaseOrder().getId());
+        // 10. Update Purchase Order payment status (only if PO exists - maintenance requests don't have PO)
+        if (paymentRequest.getPurchaseOrder() != null) {
+            updatePurchaseOrderPaymentStatus(paymentRequest.getPurchaseOrder().getId());
+        }
 
         // 11. TODO: Send notification to procurement team
 

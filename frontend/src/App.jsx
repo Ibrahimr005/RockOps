@@ -76,6 +76,7 @@ import BankReconciliation from "./pages/finance/BankReconciliation/BankReconcili
 import InventoryValuation from "./pages/finance/InventoryValuation/InventoryValuation.jsx";
 import Balances from "./pages/finance/Balances/Balances.jsx";
 import AccountsPayable from "./pages/finance/AccountsPayable/AccountsPayable.jsx";
+import PaymentRequestDetailsPage from "./pages/finance/AccountsPayable/PaymentRequests/PaymentRequestDetailsPage.jsx";
 
 // ===================== HR & Payroll Imports =====================
 import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
@@ -295,7 +296,7 @@ function App() {
                                         <Route path="/finance/inventory-valuation" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><InventoryValuation/></RoleRoute>} />
                                         <Route path="/finance/balances" element={<RoleRoute allowedRoles={allRoles}><Balances/></RoleRoute>} />
                                         <Route path="/finance/accounts-payable" element={<RoleRoute allowedRoles={allRoles}><AccountsPayable/></RoleRoute>} />
-
+                                        <Route path="/finance/accounts-payable/payment-requests/:id" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><PaymentRequestDetailsPage/></RoleRoute>} />
                                         {/* ===================== Generic Related Documents Route ===================== */}
                                         <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
                                         <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>

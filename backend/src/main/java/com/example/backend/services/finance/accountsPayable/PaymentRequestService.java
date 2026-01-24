@@ -265,7 +265,7 @@ public class PaymentRequestService {
                         .offerFinancialReview(offerFinancialReview)
                         .requestedAmount(BigDecimal.valueOf(merchantTotal))
                         .currency(po.getCurrency())
-                        .description("Payment for PO " + po.getPoNumber() + " - " + merchant.getName())
+                        .description(po.getPoNumber() + " - " + merchant.getName())
                         .status(PaymentRequestStatus.PENDING)
                         .requestedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
                         .requestedByUserName(createdByUsername)
@@ -417,7 +417,7 @@ public class PaymentRequestService {
         
         // 5. Build description with step details
         String stepTypeName = step.getStepType() != null ? step.getStepType().getName() : "Maintenance";
-        String description = String.format("Maintenance Step: %s - %s", stepTypeName, step.getDescription());
+        String description = String.format(stepTypeName, step.getDescription());
         if (description.length() > 500) {
             description = description.substring(0, 497) + "...";
         }
@@ -728,9 +728,14 @@ public class PaymentRequestService {
         // Handle nullable purchaseOrder (maintenance-sourced requests don't have PO)
         UUID purchaseOrderId = null;
         String purchaseOrderNumber = null;
+        String requestOrderTitle = null;
         if (request.getPurchaseOrder() != null) {
             purchaseOrderId = request.getPurchaseOrder().getId();
             purchaseOrderNumber = request.getPurchaseOrder().getPoNumber();
+            // Get title from RequestOrder if available
+            if (request.getPurchaseOrder().getRequestOrder() != null) {
+                requestOrderTitle = request.getPurchaseOrder().getRequestOrder().getTitle();
+            }
         }
         
         // Handle maintenance-sourced fields
@@ -750,6 +755,7 @@ public class PaymentRequestService {
                 .requestNumber(request.getRequestNumber())
                 .purchaseOrderId(purchaseOrderId)
                 .purchaseOrderNumber(purchaseOrderNumber)
+                .requestOrderTitle(requestOrderTitle)
                 .maintenanceStepId(maintenanceStepId)
                 .maintenanceRecordId(maintenanceRecordId)
                 .maintenanceStepDescription(maintenanceStepDescription)
