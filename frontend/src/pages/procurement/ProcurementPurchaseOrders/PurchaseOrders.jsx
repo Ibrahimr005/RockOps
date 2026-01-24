@@ -3,11 +3,13 @@ import { useNavigate,useLocation } from 'react-router-dom';
 
 import { FiClock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService.js';
-import PendingPurchaseOrders from './PendingPurchaseOrders/PendingPurchaseOrders.jsx';
+import PendingPurchaseOrders from './AwaitingDeliveryPurchaseOrders/PendingPurchaseOrders.jsx';
 import CompletedPurchaseOrders from './CompletedPurchaseOrders/CompletedPurchaseOrders.jsx';
 import DisputedPurchaseOrders from './DisputedPurchaseOrders/DisputedPurchaseOrders.jsx';
 import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 import Tabs from '../../../components/common/Tabs/Tabs.jsx';
+import AwaitingPaymentPurchaseOrders from './AwaitingPaymentPurchaseOrders/AwaitingPaymentPurchaseOrders.jsx';
+import { FiDollarSign } from 'react-icons/fi';
 import "./PurchaseOrders.scss";
 
 const PurchaseOrders = () => {
@@ -25,12 +27,14 @@ const PurchaseOrders = () => {
             setLoading(true);
             const data = await purchaseOrderService.getAll();
 
-            // ADD THESE LOGS
             console.log('=== ALL PURCHASE ORDERS FROM API ===');
-            console.log(data);
-            console.log('Purchase Order Statuses:', data.map(po => ({
+            console.log('Full data:', data);
+            console.log('Purchase Order Details:', data.map(po => ({
                 poNumber: po.poNumber,
-                status: po.status
+                status: po.status,
+                paymentStatus: po.paymentStatus,  // ← ADD THIS
+                totalAmount: po.totalAmount,
+                currency: po.currency
             })));
 
             setAllPurchaseOrders(data);
@@ -69,6 +73,13 @@ const PurchaseOrders = () => {
         return disputed;
     };
 
+    const getAwaitingPaymentOrders = () => {
+        return allPurchaseOrders.filter(order =>
+            order.paymentStatus !== 'PAID' &&
+            order.status !== 'CANCELLED'
+        );
+    };
+
     const getCompletedOrders = () => {
         return allPurchaseOrders.filter(order =>
             order.status === 'COMPLETED' ||
@@ -86,7 +97,14 @@ const PurchaseOrders = () => {
             id: 'pending',
             label: 'Awaiting Delivery',
             icon: <FiClock />,
-            badge: 0
+            badge: getPendingOrders().length
+        },
+        {
+            id: 'awaiting-payment',
+            label: 'Awaiting Payment',
+            icon: <FiDollarSign />,
+            badge: getAwaitingPaymentOrders().length,
+            badgeVariant: 'warning'
         },
         {
             id: 'disputed',
@@ -132,6 +150,15 @@ const PurchaseOrders = () => {
                         loading={loading}
                     />
                 )}
+
+                {activeTab === 'awaiting-payment' && (
+                    <AwaitingPaymentPurchaseOrders
+                        purchaseOrders={getAwaitingPaymentOrders()}
+                        onDataChange={handleDataChange}
+                        loading={loading}
+                    />
+                )}
+
                 {activeTab === 'completed' && (
                     <CompletedPurchaseOrders
                         purchaseOrders={getCompletedOrders()} // Pass filtered data

@@ -1,13 +1,14 @@
-package com.example.backend.dto.procurement;
+package com.example.backend.dto.procurement.PurchaseOrder;
 
 import com.example.backend.dto.merchant.MerchantDTO;
+import com.example.backend.dto.procurement.DeliveryItemReceiptDTO;
 import com.example.backend.dto.warehouse.ItemTypeDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime; // ADD THIS IMPORT
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,9 +27,9 @@ public class PurchaseOrderItemDTO {
     private String deliveryNotes;
 
     // ADD THESE THREE FIELDS:
-    private Double receivedQuantity;  // Quantity received
-    private LocalDateTime receivedAt; // When received
-    private String receivedBy;        // Who received it
+    private Double receivedQuantity;
+    private LocalDateTime receivedAt;
+    private String receivedBy;
 
     // Parent Purchase Order reference (minimal to avoid circular deps)
     private UUID purchaseOrderId;
@@ -43,8 +44,13 @@ public class PurchaseOrderItemDTO {
     private UUID merchantId;
     private MerchantDTO merchant;
 
-    // Add these at the end of the class:
+    // ✅ ADD THESE NEW FIELDS:
+    private String itemTypeName;
+    private String measuringUnit;
+    private String currency;
+    private String merchantName;
 
+    // Add these at the end of the class:
     private List<DeliveryItemReceiptDTO> itemReceipts;
 
     // All issues for this item (aggregated from all deliveries)

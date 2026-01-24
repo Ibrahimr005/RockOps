@@ -69,6 +69,9 @@ public class PaymentRequestItem {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "purchase_order_item_id")
+    private UUID purchaseOrderItemId;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

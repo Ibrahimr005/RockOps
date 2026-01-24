@@ -2,13 +2,21 @@ package com.example.backend.services.procurement;
 
 import com.example.backend.dto.merchant.MerchantDTO;
 import com.example.backend.dto.procurement.*;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderDTO;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderIssueDTO;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderItemDTO;
 import com.example.backend.dto.warehouse.ItemTypeDTO;
 import com.example.backend.mappers.procurement.PurchaseOrderMapper;
+import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.*;
 import com.example.backend.models.procurement.Offer.Offer;
 import com.example.backend.models.procurement.Offer.OfferItem;
 import com.example.backend.models.procurement.Offer.TimelineEventType;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderResolutionType;
 import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.warehouse.ItemRepository;
@@ -20,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -137,6 +146,9 @@ public class PurchaseOrderService {
 
         String currency = finalizedItems.get(0).getCurrency();
         purchaseOrder.setCurrency(currency);
+
+        purchaseOrder.setPaymentStatus(POPaymentStatus.REQUESTED);  // ← ADD THIS
+        purchaseOrder.setTotalPaidAmount(BigDecimal.ZERO);
 
         double totalAmount = 0.0;
 
@@ -321,7 +333,7 @@ public class PurchaseOrderService {
     }
 
     public PurchaseOrder getPurchaseOrderById(UUID id) {
-        return purchaseOrderRepository.findById(id)
+        return purchaseOrderRepository.findByIdWithDetails(id) // CHANGED
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
     }
 
@@ -588,8 +600,13 @@ public class PurchaseOrderService {
                 .purchaseOrderId(item.getPurchaseOrder().getId())
                 .build();
 
+        // ✅ ADD THESE DIRECT FIELDS
         if (item.getItemType() != null) {
             dto.setItemTypeId(item.getItemType().getId());
+            dto.setItemTypeName(item.getItemType().getName());  // ADD THIS
+            dto.setMeasuringUnit(item.getItemType().getMeasuringUnit());  // ADD THIS
+
+            // ✅ CREATE AND SET THE FULL itemType OBJECT
             ItemTypeDTO itemTypeDTO = new ItemTypeDTO();
             itemTypeDTO.setId(item.getItemType().getId());
             itemTypeDTO.setName(item.getItemType().getName());
@@ -601,10 +618,13 @@ public class PurchaseOrderService {
                 itemTypeDTO.setItemCategoryName(item.getItemType().getItemCategory().getName());
             }
 
-            dto.setItemType(itemTypeDTO);
+            dto.setItemType(itemTypeDTO);  // ✅ SET THE itemType OBJECT
         }
+
         if (item.getMerchant() != null) {
             dto.setMerchantId(item.getMerchant().getId());
+            dto.setMerchantName(item.getMerchant().getName());  // ADD THIS
+
             MerchantDTO merchantDTO = new MerchantDTO();
             merchantDTO.setId(item.getMerchant().getId());
             merchantDTO.setName(item.getMerchant().getName());
@@ -617,12 +637,16 @@ public class PurchaseOrderService {
             dto.setMerchant(merchantDTO);
         }
 
+        // ✅ ADD CURRENCY
+        dto.setCurrency(item.getPurchaseOrder().getCurrency());
+
         return dto;
     }
+
     public List<PurchaseOrderDTO> getAllPurchaseOrderDTOs() {
-        List<PurchaseOrder> purchaseOrders = getAllPurchaseOrders();
+        List<PurchaseOrder> purchaseOrders = purchaseOrderRepository.findAllWithDetails(); // CHANGED
         return purchaseOrders.stream()
-                .map(this::convertToBasicDTO)  // We'll create this method next
+                .map(this::convertToBasicDTO)
                 .collect(Collectors.toList());
     }
 
@@ -635,7 +659,12 @@ public class PurchaseOrderService {
         dto.setStatus(po.getStatus());
         dto.setTotalAmount(po.getTotalAmount());
         dto.setCurrency(po.getCurrency());
+        dto.setPaymentStatus(po.getPaymentStatus());
+        dto.setPaymentRequestId(po.getPaymentRequestId());
         dto.setExpectedDeliveryDate(po.getExpectedDeliveryDate());
+
+        System.out.println("Payment Status set in DTO: " + dto.getPaymentStatus());
+        System.out.println("========================");
 
         if (po.getRequestOrder() != null) {
             dto.setRequestOrderId(po.getRequestOrder().getId());
@@ -646,9 +675,8 @@ public class PurchaseOrderService {
             requestOrderDTO.setDescription(po.getRequestOrder().getDescription());
             requestOrderDTO.setRequesterName(po.getRequestOrder().getRequesterName());
             requestOrderDTO.setDeadline(po.getRequestOrder().getDeadline());
-            requestOrderDTO.setRequesterId(po.getRequestOrder().getRequesterId()); // ADD THIS LINE
-            requestOrderDTO.setPartyType(po.getRequestOrder().getPartyType());     // ADD THIS LINE TOO
-            // Add any other fields your RequestOrderDTO needs
+            requestOrderDTO.setRequesterId(po.getRequestOrder().getRequesterId());
+            requestOrderDTO.setPartyType(po.getRequestOrder().getPartyType());
             dto.setRequestOrder(requestOrderDTO);
         }
 
@@ -661,8 +689,15 @@ public class PurchaseOrderService {
             offerDTO.setDescription(po.getOffer().getDescription());
             offerDTO.setCreatedBy(po.getOffer().getCreatedBy());
             offerDTO.setCreatedAt(po.getOffer().getCreatedAt());
-            // Add any other fields your OfferDTO needs
             dto.setOffer(offerDTO);
+        }
+
+        // ✅ ADD THIS: Include purchase order items
+        if (po.getPurchaseOrderItems() != null && !po.getPurchaseOrderItems().isEmpty()) {
+            List<PurchaseOrderItemDTO> itemDTOs = po.getPurchaseOrderItems().stream()
+                    .map(this::convertItemToDTO)
+                    .collect(Collectors.toList());
+            dto.setPurchaseOrderItems(itemDTOs);
         }
 
         return dto;

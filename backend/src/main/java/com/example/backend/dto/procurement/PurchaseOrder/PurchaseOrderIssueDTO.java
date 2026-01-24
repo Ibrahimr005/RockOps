@@ -1,8 +1,8 @@
-package com.example.backend.dto.procurement;
+package com.example.backend.dto.procurement.PurchaseOrder;
 
 import com.example.backend.models.procurement.IssueStatus;
 import com.example.backend.models.procurement.IssueType;
-import com.example.backend.models.procurement.PurchaseOrderResolutionType;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderResolutionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

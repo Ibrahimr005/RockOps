@@ -2,6 +2,10 @@ package com.example.backend.services.procurement;
 
 import com.example.backend.dto.procurement.ResolveIssueRequest;
 import com.example.backend.models.procurement.*;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderResolutionType;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.services.finance.refunds.RefundRequestService;
 import com.example.backend.services.warehouse.ItemTypeService;

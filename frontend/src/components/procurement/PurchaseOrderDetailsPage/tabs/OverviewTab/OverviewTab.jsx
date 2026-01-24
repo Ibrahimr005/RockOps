@@ -1,17 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { offerService } from '../../../../../services/procurement/offerService';
+import { offerRequestItemService } from '../../../../../services/procurement/offerRequestItemService';
 import './OverviewTab.scss';
 
 const OverviewTab = ({ purchaseOrder }) => {
 
     const [timelineEvents, setTimelineEvents] = useState([]);
     const [timelineLoading, setTimelineLoading] = useState(false);
+    const [modificationHistory, setModificationHistory] = useState([]);
+    const [modificationsLoading, setModificationsLoading] = useState(false);
 
 
     // Format date helper
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         return new Date(dateString).toLocaleDateString('en-GB');
+    };
+
+    // Format date and time helper
+    const formatDateTime = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return `${date.toLocaleDateString('en-GB')} ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
     };
 
     // Format currency
@@ -46,6 +56,32 @@ const OverviewTab = ({ purchaseOrder }) => {
         return `${quantity} ${unit}`;
     };
 
+    // Check if an item was modified
+    const getItemModification = (item) => {
+        if (!modificationHistory || modificationHistory.length === 0) return null;
+
+        const itemTypeId = item.itemType?.id || item.offerItem?.requestOrderItem?.itemType?.id;
+        if (!itemTypeId) return null;
+
+        // Find modifications for this specific item
+        const itemMods = modificationHistory.filter(mod =>
+            mod.itemTypeId === itemTypeId
+        );
+
+        if (itemMods.length === 0) return null;
+
+        // Get the most recent modification
+        const latestMod = itemMods[0]; // Already sorted by timestamp desc
+
+        return {
+            action: latestMod.action,
+            oldQuantity: latestMod.oldQuantity,
+            newQuantity: latestMod.newQuantity,
+            modifiedBy: latestMod.actionBy,
+            modifiedAt: latestMod.timestamp
+        };
+    };
+
     useEffect(() => {
         const fetchTimeline = async () => {
             if (purchaseOrder?.offer?.id) {
@@ -61,6 +97,23 @@ const OverviewTab = ({ purchaseOrder }) => {
         };
         fetchTimeline();
     }, [purchaseOrder?.offer?.id]);
+
+    useEffect(() => {
+        const fetchModificationHistory = async () => {
+            if (purchaseOrder?.offer?.id) {
+                setModificationsLoading(true);
+                try {
+                    const history = await offerRequestItemService.getModificationHistory(purchaseOrder.offer.id);
+                    setModificationHistory(Array.isArray(history) ? history : []);
+                } catch (err) {
+                    console.error('Error fetching modification history:', err);
+                    setModificationHistory([]);
+                }
+                setModificationsLoading(false);
+            }
+        };
+        fetchModificationHistory();
+    }, [purchaseOrder?.offer?.id]);;
 
     useEffect(() => {
         const updateTimelineLineHeight = () => {
@@ -89,6 +142,31 @@ const OverviewTab = ({ purchaseOrder }) => {
             setTimeout(updateTimelineLineHeight, 250);
         }
     }, [timelineLoading, timelineEvents, purchaseOrder]);
+
+    // Get modification badge component
+    const getModificationBadge = (modification) => {
+        if (!modification) return null;
+
+        const badgeConfig = {
+            ADD: { label: 'ADDED', className: 'mod-badge-added' },
+            EDIT: { label: 'MODIFIED', className: 'mod-badge-edited' },
+            DELETE: { label: 'DELETED', className: 'mod-badge-deleted' }
+        };
+
+        const config = badgeConfig[modification.action] || badgeConfig.EDIT;
+
+        return (
+            <div className={`modification-badge ${config.className}`}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    {modification.action === 'ADD' && <path d="M12 5v14m-7-7h14"/>}
+                    {modification.action === 'EDIT' && <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>}
+                    {modification.action === 'EDIT' && <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>}
+                    {modification.action === 'DELETE' && <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>}
+                </svg>
+                {config.label}
+            </div>
+        );
+    };
 
     return (
         <div className="overview-tab">
@@ -587,6 +665,135 @@ const OverviewTab = ({ purchaseOrder }) => {
                 </div>
             )}
 
+            {/* Item Modifications History Section */}
+            {modificationHistory && modificationHistory.length > 0 && (
+                <div className="overview-section">
+                    <h3 className="section-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Item Modification History
+                        <span className="modification-count">{modificationHistory.length} changes</span>
+                    </h3>
+
+                    <div className="modifications-timeline-container">
+                        {modificationsLoading ? (
+                            <div className="modifications-loading">Loading modification history...</div>
+                        ) : (
+                            <div className="modifications-list">
+                                {modificationHistory.map((mod, index) => (
+                                    <div key={mod.id || index} className={`modification-entry modification-${mod.action.toLowerCase()}`}>
+                                        <div className="modification-icon">
+                                            {mod.action === 'ADD' && (
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <circle cx="12" cy="12" r="10"/>
+                                                    <line x1="12" y1="8" x2="12" y2="16"/>
+                                                    <line x1="8" y1="12" x2="16" y2="12"/>
+                                                </svg>
+                                            )}
+                                            {mod.action === 'EDIT' && (
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                                </svg>
+                                            )}
+                                            {mod.action === 'DELETE' && (
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <polyline points="3 6 5 6 21 6"/>
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                                </svg>
+                                            )}
+                                        </div>
+
+                                        <div className="modification-content">
+                                            <div className="modification-header">
+                                                <div className="modification-action-badge">
+                                                    {mod.action === 'ADD' && 'Item Added'}
+                                                    {mod.action === 'EDIT' && 'Item Modified'}
+                                                    {mod.action === 'DELETE' && 'Item Deleted'}
+                                                </div>
+                                                <div className="modification-timestamp">
+                                                    {formatDateTime(mod.timestamp)}
+                                                </div>
+                                            </div>
+
+                                            <div className="modification-item-name">{mod.itemTypeName}</div>
+
+                                            <div className="modification-details">
+                                                {mod.action === 'ADD' && (
+                                                    <div className="modification-change">
+                                                        <span className="change-label">Quantity:</span>
+                                                        <span className="change-value new-value">
+                                                            {mod.newQuantity} {mod.itemTypeMeasuringUnit}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {mod.action === 'EDIT' && (
+                                                    <>
+                                                        {mod.oldQuantity !== mod.newQuantity && (
+                                                            <div className="modification-change">
+                                                                <span className="change-label">Quantity:</span>
+                                                                <span className="change-value old-value">
+                                                                    {mod.oldQuantity} {mod.itemTypeMeasuringUnit}
+                                                                </span>
+                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <polyline points="9 18 15 12 9 6"/>
+                                                                </svg>
+                                                                <span className="change-value new-value">
+                                                                    {mod.newQuantity} {mod.itemTypeMeasuringUnit}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {mod.oldComment !== mod.newComment && (
+                                                            <div className="modification-change">
+                                                                <span className="change-label">Comment:</span>
+                                                                {mod.oldComment && (
+                                                                    <span className="change-value old-value">"{mod.oldComment}"</span>
+                                                                )}
+                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <polyline points="9 18 15 12 9 6"/>
+                                                                </svg>
+                                                                <span className="change-value new-value">
+                                                                    {mod.newComment ? `"${mod.newComment}"` : 'No comment'}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+
+                                                {mod.action === 'DELETE' && (
+                                                    <div className="modification-change">
+                                                        <span className="change-label">Quantity:</span>
+                                                        <span className="change-value old-value">
+                                                            {mod.oldQuantity} {mod.itemTypeMeasuringUnit}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="modification-footer">
+                                                <div className="modification-user">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                        <circle cx="12" cy="7" r="4"/>
+                                                    </svg>
+                                                    {mod.actionBy}
+                                                </div>
+                                                {mod.notes && (
+                                                    <div className="modification-notes">{mod.notes}</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Purchase Order Items Section */}
             <div className="overview-section">
                 <h3 className="section-title">
@@ -599,64 +806,110 @@ const OverviewTab = ({ purchaseOrder }) => {
                 </h3>
 
                 {purchaseOrder.purchaseOrderItems && purchaseOrder.purchaseOrderItems.length > 0 ? (
-                    <div className="items-grid">
-                        {purchaseOrder.purchaseOrderItems.map((item, index) => (
-                            <div key={item.id || index} className="item-card">
-                                <div className="item-header">
-                                    <div className="item-icon-container">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                                            <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
-                                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    <>
+                        {/* Group items by merchant */}
+                        {Object.entries(
+                            purchaseOrder.purchaseOrderItems.reduce((acc, item) => {
+                                const merchantId = item.merchant?.id || 'no-merchant';
+                                const merchantName = item.merchant?.name || 'Unknown Merchant';
+
+                                if (!acc[merchantId]) {
+                                    acc[merchantId] = {
+                                        merchantName: merchantName,
+                                        merchant: item.merchant,
+                                        items: []
+                                    };
+                                }
+                                acc[merchantId].items.push(item);
+                                return acc;
+                            }, {})
+                        ).map(([merchantId, merchantGroup]) => (
+                            <div key={merchantId} className="merchant-group">
+                                {/* Merchant Header */}
+                                <div className="merchant-header">
+                                    <div className="merchant-icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                            <polyline points="9 22 9 12 15 12 15 22"/>
                                         </svg>
                                     </div>
-                                    <div className="item-title-container">
-                                        <div className="item-name">{getItemName(item)}</div>
-                                        {getItemCategory(item) && (
-                                            <div className="item-category">{getItemCategory(item)}</div>
-                                        )}
+                                    <div className="merchant-info">
+                                        <div className="merchant-name">{merchantGroup.merchantName}</div>
+                                        <div className="merchant-item-count">
+                                            {merchantGroup.items.length} {merchantGroup.items.length === 1 ? 'item' : 'items'}
+                                        </div>
                                     </div>
-                                    <div className="item-quantity">{formatQuantity(item)}</div>
-                                </div>
-
-                                <div className="item-divider"></div>
-
-                                <div className="item-details">
-                                    <div className="item-detail-row">
-                                        <span className="item-detail-label">Unit Price:</span>
-                                        <span className="item-detail-value">
-                                            {formatCurrency(item.unitPrice, purchaseOrder.currency)}
-                                        </span>
-                                    </div>
-                                    <div className="item-detail-row">
-                                        <span className="item-detail-label">Total Price:</span>
-                                        <span className="item-detail-value">
-                                            {formatCurrency(item.totalPrice, purchaseOrder.currency)}
-                                        </span>
-                                    </div>
-                                    {item.estimatedDeliveryDays && (
-                                        <div className="item-detail-row">
-                                            <span className="item-detail-label">Delivery:</span>
-                                            <span className="item-detail-value">
-                                                {item.estimatedDeliveryDays} days
-                                            </span>
+                                    {merchantGroup.merchant?.contactPhone && (
+                                        <div className="merchant-contact">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                            </svg>
+                                            {merchantGroup.merchant.contactPhone}
                                         </div>
                                     )}
-
                                 </div>
 
-                                {item.comment && (
-                                    <>
-                                        <div className="item-divider"></div>
-                                        <div className="item-comment">
-                                            <div className="item-comment-label">Comment:</div>
-                                            <div className="item-comment-text">{item.comment}</div>
+                                {/* Items Grid for this Merchant */}
+                                <div className="items-grid">
+                                    {merchantGroup.items.map((item, index) => (
+                                        <div key={item.id || index} className="item-card">
+                                            <div className="item-header">
+                                                <div className="item-icon-container">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                                        <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+                                                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                                    </svg>
+                                                </div>
+                                                <div className="item-title-container">
+                                                    <div className="item-name">{getItemName(item)}</div>
+                                                    {getItemCategory(item) && (
+                                                        <div className="item-category">{getItemCategory(item)}</div>
+                                                    )}
+                                                </div>
+                                                <div className="item-quantity">{formatQuantity(item)}</div>
+                                            </div>
+
+                                            <div className="item-divider"></div>
+
+                                            <div className="item-details">
+                                                <div className="item-detail-row">
+                                                    <span className="item-detail-label">Unit Price:</span>
+                                                    <span className="item-detail-value">
+                                            {formatCurrency(item.unitPrice, item.currency || purchaseOrder.currency)}
+                                        </span>
+                                                </div>
+                                                <div className="item-detail-row">
+                                                    <span className="item-detail-label">Total Price:</span>
+                                                    <span className="item-detail-value">
+                                            {formatCurrency(item.totalPrice, item.currency || purchaseOrder.currency)}
+                                        </span>
+                                                </div>
+                                                {item.estimatedDeliveryDays && (
+                                                    <div className="item-detail-row">
+                                                        <span className="item-detail-label">Delivery:</span>
+                                                        <span className="item-detail-value">
+                                                {item.estimatedDeliveryDays} days
+                                            </span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {item.comment && (
+                                                <>
+                                                    <div className="item-divider"></div>
+                                                    <div className="item-comment">
+                                                        <div className="item-comment-label">Comment:</div>
+                                                        <div className="item-comment-text">{item.comment}</div>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                    </>
-                                )}
+                                    ))}
+                                </div>
                             </div>
                         ))}
-                    </div>
+                    </>
                 ) : (
                     <div className="empty-state">
                         <div className="empty-icon">

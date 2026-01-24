@@ -87,7 +87,19 @@ const PendingPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataChan
 
     // Define columns for DataTable
     const columns = [
-
+        {
+            id: 'poNumber',
+            header: 'PO NUMBER',
+            accessor: 'poNumber',
+            sortable: true,
+            filterable: true,
+            minWidth: '130px',
+            render: (row) => (
+                <span className="po-number-cell">
+                    {row.poNumber || '-'}
+                </span>
+            )
+        },
         {
             id: 'title',
             header: 'TITLE',
@@ -119,8 +131,32 @@ const PendingPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataChan
             header: 'DEADLINE',
             accessor: 'requestOrder.deadline',
             sortable: true,
-            minWidth: '150px',
-            render: (row) => purchaseOrderService.utils.formatDate(row.requestOrder?.deadline)
+            minWidth: '180px',
+            render: (row) => {
+                const deadline = row.requestOrder?.deadline;
+                const formattedDate = purchaseOrderService.utils.formatDate(deadline);
+                const isOverdue = deadline && new Date(deadline) < new Date();
+
+                return (
+                    <span style={{
+                        color: isOverdue ? '#dc3545' : 'inherit',
+                        fontWeight: isOverdue ? '600' : 'normal',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}>
+                        {isOverdue && (
+                            <FiClock
+                                style={{
+                                    fontSize: '16px',
+                                    color: '#dc3545'
+                                }}
+                            />
+                        )}
+                        {formattedDate}
+                    </span>
+                );
+            }
         },
         {
             id: 'expectedDeliveryDate',

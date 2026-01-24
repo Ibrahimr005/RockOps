@@ -8,7 +8,7 @@ import com.example.backend.models.finance.accountsPayable.enums.PaymentStatus;
 import com.example.backend.models.finance.balances.BankAccount;
 import com.example.backend.models.finance.balances.CashSafe;
 import com.example.backend.models.finance.balances.CashWithPerson;
-import com.example.backend.models.procurement.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.example.backend.repositories.finance.accountsPayable.AccountPayablePaymentRepository;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.finance.balances.BankAccountRepository;

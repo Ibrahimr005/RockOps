@@ -1,5 +1,8 @@
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.PurchaseOrder;
 
+import com.example.backend.models.procurement.DeliveryItemReceipt;
+import com.example.backend.models.procurement.IssueStatus;
+import com.example.backend.models.procurement.IssueType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

@@ -595,7 +595,14 @@ const InWarehouseItems = ({
                                 </div>
                                 <div className="add-item-form-group">
                                     <label htmlFor="initialQuantity">Quantity <span style={{ color: 'red' }}>*</span></label>
-                                    <input type="number" id="initialQuantity" name="initialQuantity" value={addItemData.initialQuantity} onChange={handleAddItemInputChange} placeholder="Enter quantity" required />
+                                    <input
+                                        type="number"
+                                        id="initialQuantity"
+                                        name="initialQuantity"
+                                        onWheel={(e) => e.target.blur()}  // ADD THIS LINE
+                                        value={addItemData.initialQuantity}
+                                        onChange={handleAddItemInputChange}
+                                        placeholder="Enter quantity" required />
                                 </div>
                                 <div className="add-item-form-group">
                                     <label htmlFor="createdAt">Entry Date <span style={{ color: 'red' }}>*</span></label>

@@ -1,6 +1,8 @@
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.PurchaseOrder;
 
 import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
+import com.example.backend.models.procurement.DeliverySession;
+import com.example.backend.models.procurement.Logistics.Logistics;
 import com.example.backend.models.procurement.Offer.Offer;
 import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -69,7 +71,4 @@ public class PurchaseOrder {
     @Column(name = "total_paid_amount", precision = 15, scale = 2)
     private BigDecimal totalPaidAmount;
 
-    @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<Logistics> logistics = new ArrayList<>();
 }

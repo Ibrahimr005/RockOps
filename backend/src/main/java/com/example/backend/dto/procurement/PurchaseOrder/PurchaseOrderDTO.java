@@ -1,5 +1,9 @@
-package com.example.backend.dto.procurement;
+package com.example.backend.dto.procurement.PurchaseOrder;
 
+import com.example.backend.dto.procurement.DeliverySessionDTO;
+import com.example.backend.dto.procurement.OfferDTO;
+import com.example.backend.dto.procurement.RequestOrderDTO;
+import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,6 +30,9 @@ public class PurchaseOrderDTO {
     private LocalDateTime expectedDeliveryDate;
     private double totalAmount;
     private String currency;
+
+    private POPaymentStatus paymentStatus;
+    private UUID paymentRequestId;
 
     // Request Order reference (minimal to avoid circular deps)
     private UUID requestOrderId;

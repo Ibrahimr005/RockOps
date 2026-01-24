@@ -1,7 +1,7 @@
 package com.example.backend.repositories.procurement;
 
 import com.example.backend.models.procurement.IssueStatus;
-import com.example.backend.models.procurement.PurchaseOrderIssue;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

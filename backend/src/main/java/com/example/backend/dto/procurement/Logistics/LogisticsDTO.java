@@ -1,4 +1,4 @@
-package com.example.backend.dto.procurement;
+package com.example.backend.dto.procurement.Logistics;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

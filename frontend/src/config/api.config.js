@@ -1042,18 +1042,29 @@ export const EQUIPMENT_FINANCE_ENDPOINTS = {
 export const LOGISTICS_ENDPOINTS = {
     BASE: '/api/procurement/logistics',
 
+    // Get all logistics entries
+    GET_ALL: '/api/procurement/logistics',
+
+    // Get logistics by ID
+    GET_BY_ID: (id) => `/api/procurement/logistics/${id}`,
+
+    // Get pending approval logistics
+    PENDING_APPROVAL: '/api/procurement/logistics/pending-approval',
+
+    // Get history logistics (approved/rejected/paid)
+    HISTORY: '/api/procurement/logistics/history',
+
     // Get all logistics for a purchase order
     BY_PURCHASE_ORDER: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}`,
 
-    // Get total logistics cost
-    TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total`,
+    // Get total logistics cost for a purchase order
+    TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total-cost`,
 
     // Create new logistics
     CREATE: '/api/procurement/logistics',
 
-    // Update logistics
-    UPDATE: (id) => `/api/procurement/logistics/${id}`,
-
-    // Delete logistics
-    DELETE: (id) => `/api/procurement/logistics/${id}`
+    // Payment webhook endpoints
+    PAYMENT_APPROVED: (paymentRequestId) => `/api/procurement/logistics/payment-approved/${paymentRequestId}`,
+    PAYMENT_REJECTED: (paymentRequestId) => `/api/procurement/logistics/payment-rejected/${paymentRequestId}`,
+    PAYMENT_COMPLETED: (paymentRequestId) => `/api/procurement/logistics/payment-completed/${paymentRequestId}`
 };

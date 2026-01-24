@@ -1,8 +1,6 @@
 // inprogress-offers.scss - Enhanced styles matching Unstarted design (Dark Mode Compatible)
 
-.procurement-main-title{
-  font-size: 1.7rem;
-}
+
 // In Progress specific list items
 // Make InProgress cards IDENTICAL to Unstarted cards - copy exact measurements
 
@@ -787,52 +785,7 @@
 }
 
 // Fix for the procurement details header action buttons alignment
-.procurement-details-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2rem;
-  gap: 2rem;
 
-  .procurement-title-section {
-    flex: 1;
-    min-width: 0; // Allow text to truncate if needed
-  }
-
-  .procurement-details-actions {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-
-
-    .action-buttons-group {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-
-      .btn-primary {
-        white-space: nowrap;
-        min-width: auto;
-        padding: 0.75rem 1.25rem;
-      }
-    }
-  }
-
-  // Responsive
-  @media (max-width: 1024px) {
-    .procurement-details-actions {
-      .rfq-actions-group {
-        flex-direction: column;
-
-        .btn-rfq {
-          width: 100%;
-        }
-      }
-    }
-  }
-}
 
 // Responsive adjustments
 @media (max-width: 768px) {

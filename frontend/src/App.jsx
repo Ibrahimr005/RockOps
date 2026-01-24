@@ -64,6 +64,9 @@ import ResolveIssuesPage from "./pages/procurement/ProcurementPurchaseOrders/Res
 import PurchaseOrderDetailsPage from "./components/procurement/PurchaseOrderDetailsPage/PurchaseOrderDetailsPage.jsx";
 import RequestOrderDetailsPage from "./components/procurement/RequestOrderDetailsPage/RequestOrderDetailsPage.jsx";
 import PriceApprovals from "./pages/procurement/ProcurementPriceApprovals/PriceApprovals.jsx";
+import ProcurementLogistics from "./pages/procurement/ProcurementLogistics/ProcurementLogistics.jsx";
+import LogisticsDetailsPage
+    from "./pages/procurement/ProcurementLogistics/LogisticsDetailsPage/LogisticsDetailsPage.jsx";
 
 // ===================== Finance Imports =====================
 import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
@@ -224,6 +227,9 @@ function App() {
                                             <Route path="purchase-orders/details/:id/" element={<PurchaseOrderDetailsPage/>}/>
                                             <Route path="request-orders/:requestOrderId" element={<RequestOrderDetailsPage/>}/>
                                             <Route path="price-approvals" element={<PriceApprovals/>}/>
+                                            <Route path="logistics" element={<ProcurementLogistics/>}/>
+                                            <Route path="logistics/:id" element={<LogisticsDetailsPage/>}/>
+
 
                                         </Route>
 

@@ -7,13 +7,15 @@ import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
 import com.example.backend.models.finance.accountsPayable.PaymentRequestItem;
 import com.example.backend.models.finance.accountsPayable.PaymentRequestStatusHistory;
+import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestItemStatus;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.example.backend.models.maintenance.MaintenanceStep;
 import com.example.backend.models.merchant.Merchant;
-import com.example.backend.models.procurement.PurchaseOrder;
-import com.example.backend.models.procurement.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.POItemPaymentStatus;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.repositories.finance.accountsPayable.OfferFinancialReviewRepository;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestItemRepository;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
@@ -21,12 +23,12 @@ import com.example.backend.repositories.finance.accountsPayable.PaymentRequestSt
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
 import com.example.backend.models.warehouse.ItemType;
 import java.math.BigDecimal;  // ✅ ADD THIS if not present
+
+import com.example.backend.services.procurement.LogisticsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -40,6 +42,7 @@ public class PaymentRequestService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final OfferFinancialReviewRepository offerFinancialReviewRepository;
     private final PaymentRequestItemRepository paymentRequestItemRepository;
+    private final LogisticsService logisticsService;
 
     @Autowired
     public PaymentRequestService(
@@ -47,12 +50,13 @@ public class PaymentRequestService {
             PaymentRequestStatusHistoryRepository statusHistoryRepository,
             PurchaseOrderRepository purchaseOrderRepository,
             OfferFinancialReviewRepository offerFinancialReviewRepository,
-            PaymentRequestItemRepository paymentRequestItemRepository) {
+            PaymentRequestItemRepository paymentRequestItemRepository,LogisticsService logisticsService) {
         this.paymentRequestRepository = paymentRequestRepository;
         this.statusHistoryRepository = statusHistoryRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.offerFinancialReviewRepository = offerFinancialReviewRepository;
         this.paymentRequestItemRepository = paymentRequestItemRepository;
+        this.logisticsService = logisticsService;
     }
 
     public List<PaymentRequestResponseDTO> getAllPaymentRequests() {
@@ -293,7 +297,8 @@ public class PaymentRequestService {
 
                     PaymentRequestItem prItem = PaymentRequestItem.builder()
                             .paymentRequest(savedPaymentRequest)
-                            .itemId(poItem.getId())  // ✅ FIXED: Use itemId, not purchaseOrderItemId
+                            .itemId(poItem.getId())  // Keep for backward compatibility
+                            .purchaseOrderItemId(poItem.getId())  // NEW: explicit link to PO item
                             .itemName(itemName)
                             .itemDescription(itemDescription)
                             .quantity(BigDecimal.valueOf(poItem.getQuantity()))
@@ -309,8 +314,18 @@ public class PaymentRequestService {
                 }
 
                 if (!prItems.isEmpty()) {
-                    paymentRequestItemRepository.saveAll(prItems);
-                    System.err.println("💚 ✓ Created " + prItems.size() + " payment request items");
+                    List<PaymentRequestItem> savedPRItems = paymentRequestItemRepository.saveAll(prItems);
+                    System.err.println("💚 ✓ Created " + savedPRItems.size() + " payment request items");
+
+                    // Link PO items back to payment request items
+                    for (int i = 0; i < merchantItems.size(); i++) {
+                        PurchaseOrderItem poItem = merchantItems.get(i);
+                        PaymentRequestItem prItem = savedPRItems.get(i);
+                        poItem.setPaymentRequestItemId(prItem.getId());
+                        poItem.setPaymentStatus(POItemPaymentStatus.PENDING);  // Set initial status
+                    }
+                    purchaseOrderRepository.save(po);
+                    System.err.println("💚 ✓ Linked PO items to payment request items");
                 }
 
                 // ✅ Store first payment request DTO for return (backward compatibility)
@@ -484,6 +499,21 @@ public class PaymentRequestService {
     /**
      * Approve or Reject payment request
      */
+    /**
+     * Approve or Reject payment request
+     */
+    /**
+     * Approve or Reject payment request
+     */
+    /**
+     * Approve or Reject payment request
+     */
+    /**
+     * Approve or Reject payment request
+     */
+    /**
+     * Approve or Reject payment request
+     */
     @Transactional
     public PaymentRequestResponseDTO approveOrRejectPaymentRequest(
             ApproveRejectPaymentRequestDTO request,
@@ -534,11 +564,73 @@ public class PaymentRequestService {
         createStatusHistory(savedRequest, oldStatus, newStatus, reviewerUserId,
                 isApproval ? request.getNotes() : request.getRejectionReason());
 
+        // Update PurchaseOrder and PurchaseOrderItem payment statuses
+        if (savedRequest.getPurchaseOrder() != null) {
+            PurchaseOrder po = savedRequest.getPurchaseOrder();
+
+            // Update each PO item linked to this payment request
+            for (PaymentRequestItem prItem : savedRequest.getPaymentRequestItems()) {
+                UUID poItemId = prItem.getPurchaseOrderItemId();
+                if (poItemId != null) {
+                    PurchaseOrderItem poItem = po.getPurchaseOrderItems().stream()
+                            .filter(item -> item.getId().equals(poItemId))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (poItem != null) {
+                        if (isApproval) {
+                            poItem.setPaymentStatus(POItemPaymentStatus.APPROVED);
+                        } else {
+                            poItem.setPaymentStatus(POItemPaymentStatus.REJECTED);
+                        }
+                    }
+                }
+            }
+
+            // Update overall PO payment status based on ALL items
+            List<PurchaseOrderItem> allItems = po.getPurchaseOrderItems();
+            long approvedCount = allItems.stream()
+                    .filter(item -> item.getPaymentStatus() == POItemPaymentStatus.APPROVED)
+                    .count();
+            long paidCount = allItems.stream()
+                    .filter(item -> item.getPaymentStatus() == POItemPaymentStatus.PAID)
+                    .count();
+            long rejectedCount = allItems.stream()
+                    .filter(item -> item.getPaymentStatus() == POItemPaymentStatus.REJECTED)
+                    .count();
+
+            if (paidCount == allItems.size()) {
+                // All items paid
+                po.setPaymentStatus(POPaymentStatus.PAID);
+            } else if (rejectedCount == allItems.size()) {
+                // All items rejected
+                po.setPaymentStatus(POPaymentStatus.REJECTED);
+            } else if (approvedCount > 0 || paidCount > 0) {
+                // Some items approved or paid
+                po.setPaymentStatus(POPaymentStatus.APPROVED);
+            }
+
+            purchaseOrderRepository.save(po);
+            System.out.println("✅ Updated PO " + po.getPoNumber() + " and " +
+                    savedRequest.getPaymentRequestItems().size() + " items payment status");
+        }
+
+        // Payment request approval is independent of logistics
+        // Logistics has its own separate approval workflow
+
         // TODO: Send notification to procurement team
 
         return convertToDTO(savedRequest);
     }
-
+    /**
+     * Update payment request amounts after payment (called by PaymentService)
+     */
+    /**
+     * Update payment request amounts after payment (called by PaymentService)
+     */
+    /**
+     * Update payment request amounts after payment (called by PaymentService)
+     */
     /**
      * Update payment request amounts after payment (called by PaymentService)
      */
@@ -568,6 +660,37 @@ public class PaymentRequestService {
         if (newStatus != oldStatus) {
             paymentRequest.setStatus(newStatus);
             createStatusHistory(paymentRequest, oldStatus, newStatus, null, "Status updated after payment");
+
+            // Update PO items to PAID when payment request is fully paid
+            if (newStatus == PaymentRequestStatus.PAID && paymentRequest.getPurchaseOrder() != null) {
+                PurchaseOrder po = paymentRequest.getPurchaseOrder();
+
+                // Mark all items linked to this payment request as PAID
+                for (PaymentRequestItem prItem : paymentRequest.getPaymentRequestItems()) {
+                    UUID poItemId = prItem.getPurchaseOrderItemId();
+                    if (poItemId != null) {
+                        PurchaseOrderItem poItem = po.getPurchaseOrderItems().stream()
+                                .filter(item -> item.getId().equals(poItemId))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (poItem != null) {
+                            poItem.setPaymentStatus(POItemPaymentStatus.PAID);
+                        }
+                    }
+                }
+
+                // Check if all PO items are paid
+                boolean allItemsPaid = po.getPurchaseOrderItems().stream()
+                        .allMatch(item -> item.getPaymentStatus() == POItemPaymentStatus.PAID);
+
+                if (allItemsPaid) {
+                    po.setPaymentStatus(POPaymentStatus.PAID);
+                }
+
+                purchaseOrderRepository.save(po);
+                System.out.println("✅ Updated PO items and PO payment status after payment");
+            }
         }
 
         paymentRequestRepository.save(paymentRequest);

@@ -1,6 +1,7 @@
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.PurchaseOrder;
 
 import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.procurement.DeliveryItemReceipt;
 import com.example.backend.models.procurement.Offer.OfferItem;
 import com.example.backend.models.warehouse.ItemType;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -57,4 +58,11 @@ public class PurchaseOrderItem {
     @OneToMany(mappedBy = "purchaseOrderItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<DeliveryItemReceipt> itemReceipts = new ArrayList<>();
+
+    @Column(name = "payment_status")
+    @Enumerated(EnumType.STRING)
+    private POItemPaymentStatus paymentStatus = POItemPaymentStatus.PENDING;
+
+    @Column(name = "payment_request_item_id")
+    private UUID paymentRequestItemId;
 }

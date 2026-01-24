@@ -1,4 +1,4 @@
-package com.example.backend.models.procurement;
+package com.example.backend.models.procurement.PurchaseOrder;
 
 public enum PurchaseOrderResolutionType {
     REDELIVERY("Re-delivery - Merchant will reship items"),

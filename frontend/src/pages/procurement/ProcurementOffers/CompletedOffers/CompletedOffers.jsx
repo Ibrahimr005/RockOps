@@ -14,19 +14,20 @@ import {
     FiX,
     FiShoppingCart
 } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import "../ProcurementOffers.scss";
 import "./CompletedOffers.scss";
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
+import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 
 const CompletedOffers = ({
                              offers,
                              activeOffer,
                              setActiveOffer,
-                             getTotalPrice,
-                             fetchWithAuth,
-                             API_URL
+                             getTotalPrice
                          }) => {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [purchaseOrder, setPurchaseOrder] = useState(null);
 
@@ -45,7 +46,7 @@ const CompletedOffers = ({
 
         setLoading(true);
         try {
-            const response = await fetchWithAuth(`${API_URL}/purchaseOrders/offers/${offerId}/purchase-order`);
+            const response = await purchaseOrderService.getPurchaseOrderByOffer(offerId);
             setPurchaseOrder(response);
         } catch (err) {
             console.error('Error fetching purchase order:', err);
@@ -54,8 +55,7 @@ const CompletedOffers = ({
         }
     };
 
-    // Group offer items by itemType - only show items that have been through finance review
-// Group offer items by itemType
+    // Group offer items by itemType
     const getOfferItemsByItemType = () => {
         if (!activeOffer || !activeOffer.offerItems) {
             console.log('No active offer or offer items');
@@ -99,6 +99,14 @@ const CompletedOffers = ({
         console.log('Final items map:', itemsMap);
         return itemsMap;
     };
+
+    // Navigate to purchase order details
+    const handleViewPurchaseOrder = () => {
+        if (purchaseOrder && purchaseOrder.id) {
+            navigate(`/procurement/purchase-orders/details/${purchaseOrder.id}`);
+        }
+    };
+
     // Fetch purchase order when active offer changes
     React.useEffect(() => {
         if (activeOffer && activeOffer.status === 'COMPLETED') {
@@ -157,7 +165,7 @@ const CompletedOffers = ({
                                 <div className="procurement-title-section">
                                     <h2 className="procurement-main-title">{activeOffer.title}</h2>
                                     <div className="procurement-header-meta">
-                                        <span className={`procurement-status-badge-it status-${activeOffer.status.toLowerCase()}`}>
+                                        <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
                                             {formatStatus(activeOffer.status)}
                                         </span>
                                         <span className="procurement-meta-item">
@@ -224,8 +232,8 @@ const CompletedOffers = ({
                                                                 <tr key={offerItem.id || idx} className={`item-${offerItem.financeStatus.toLowerCase()} ${offerItem.finalized ? 'finalized' : 'not-finalized'}`}>
                                                                     <td>{offerItem.merchant?.name || 'Unknown'}</td>
                                                                     <td>{offerItem.quantity} {itemGroup.measuringUnit}</td>
-                                                                    <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
-                                                                    <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
+                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice).toFixed(2)}</td>
+                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice).toFixed(2)}</td>
                                                                     <td>
                                                                         {offerItem.financeStatus === 'ACCEPTED' ? (
                                                                             <span className="completed-item-status accepted">
@@ -273,7 +281,7 @@ const CompletedOffers = ({
                                             </div>
                                             <button
                                                 className="btn-primary"
-                                                onClick={() => window.location.href = `/procurement/purchase-orders`}
+                                                onClick={handleViewPurchaseOrder}
                                             >
                                                 View Purchase Order
                                                 <FiArrowRight size={16} />

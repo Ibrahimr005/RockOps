@@ -1,7 +1,12 @@
 package com.example.backend.services.procurement;
 
 import com.example.backend.dto.procurement.*;
+import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import com.example.backend.models.procurement.*;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderResolutionType;
 import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.models.warehouse.*;
 import com.example.backend.models.warehouse.Warehouse;
@@ -214,6 +219,7 @@ public class DeliveryProcessingService {
             }
         }
     }
+
     private void updatePOStatus(PurchaseOrder po) {
         boolean hasItemsToArrive = false;
         boolean hasDisputedItems = false;
@@ -229,19 +235,25 @@ public class DeliveryProcessingService {
 
         String oldStatus = po.getStatus();
 
-        if (hasDisputedItems && hasItemsToArrive) {
-            po.setStatus("PARTIAL_DISPUTED");
-        } else if (hasDisputedItems) {
+        // Check if finance has FULLY paid
+        boolean isFullyPaid = po.getPaymentStatus() == POPaymentStatus.PAID;
+
+        // Determine PO status based on BOTH delivery AND payment
+        if (hasDisputedItems) {
             po.setStatus("DISPUTED");
         } else if (hasItemsToArrive) {
             po.setStatus("PARTIAL");
+        } else if (!isFullyPaid) {
+            // All items delivered but NOT paid yet
+            po.setStatus("AWAITING_PAYMENT");
         } else {
+            // All items delivered AND fully paid
             po.setStatus("COMPLETED");
         }
 
-        // Update ItemType base prices when PO becomes COMPLETED
+        // Update ItemType base prices ONLY when FULLY COMPLETED (items + payment)
         if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
-            System.out.println("🎯 PO status changed to COMPLETED, updating base prices...");
+            System.out.println("🎯 PO fully completed (delivery + payment), updating base prices...");
 
             try {
                 Set<UUID> itemTypeIds = po.getPurchaseOrderItems().stream()
@@ -249,15 +261,23 @@ public class DeliveryProcessingService {
                         .map(item -> item.getItemType().getId())
                         .collect(java.util.stream.Collectors.toSet());
 
+                System.out.println("📊 Found " + itemTypeIds.size() + " unique item types to update");
+
                 for (UUID itemTypeId : itemTypeIds) {
                     try {
+                        System.out.println("🔄 Updating base price for item type ID: " + itemTypeId);
                         itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, "SYSTEM");
+                        System.out.println("✅ Successfully updated base price for item type ID: " + itemTypeId);
                     } catch (Exception e) {
-                        System.err.println("⚠️ Failed to update base price for item type: " + e.getMessage());
+                        System.err.println("❌ Failed to update base price for item type " + itemTypeId);
+                        System.err.println("❌ Error: " + e.getClass().getName() + " - " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
             } catch (Exception e) {
-                System.err.println("⚠️ Failed to collect item types: " + e.getMessage());
+                System.err.println("❌ Failed to collect item types for base price update");
+                System.err.println("❌ Error: " + e.getClass().getName() + " - " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }

@@ -612,6 +612,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                             placeholder="Min qty"
                                             value={filters.minOrdered}
                                             onChange={(e) => setFilters(prev => ({ ...prev, minOrdered: e.target.value }))}
+                                            onWheel={(e) => e.target.blur()}
                                         />
                                     </div>
                                     <div className="filter-item">
@@ -619,6 +620,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                         <input
                                             type="number"
                                             placeholder="Min qty"
+                                            onWheel={(e) => e.target.blur()}
                                             value={filters.minReceived}
                                             onChange={(e) => setFilters(prev => ({ ...prev, minReceived: e.target.value }))}
                                         />
@@ -628,6 +630,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                         <input
                                             type="number"
                                             placeholder="Min qty"
+                                            onWheel={(e) => e.target.blur()}
                                             value={filters.minRemaining}
                                             onChange={(e) => setFilters(prev => ({ ...prev, minRemaining: e.target.value }))}
                                         />
@@ -917,6 +920,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                             <input
                                 type="number"
                                 placeholder="Min qty"
+                                onWheel={(e) => e.target.blur()}
                                 value={filters.minOrdered}
                                 onChange={(e) => setFilters(prev => ({ ...prev, minOrdered: e.target.value }))}
                             />
@@ -925,6 +929,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                             <label>Min Received</label>
                             <input
                                 type="number"
+                                onWheel={(e) => e.target.blur()}
                                 placeholder="Min qty"
                                 value={filters.minReceived}
                                 onChange={(e) => setFilters(prev => ({ ...prev, minReceived: e.target.value }))}
@@ -934,6 +939,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                             <label>Min Remaining</label>
                             <input
                                 type="number"
+                                onWheel={(e) => e.target.blur()}
                                 placeholder="Min qty"
                                 value={filters.minRemaining}
                                 onChange={(e) => setFilters(prev => ({ ...prev, minRemaining: e.target.value }))}
@@ -1053,6 +1059,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                 <div className="input-with-unit">
                                                                     <input
                                                                         type="number"
+                                                                        onWheel={(e) => e.target.blur()}
                                                                         min="0"
                                                                         value={data.goodQuantity}
                                                                         onChange={(e) => handleGoodQuantityChange(item.id, e.target.value)}
@@ -1070,6 +1077,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                 <div className="input-with-unit">
                                                                     <input
                                                                         type="number"
+                                                                        onWheel={(e) => e.target.blur()}
                                                                         min="0"
                                                                         value={data.issues.find(i => i.issueType === 'DAMAGED')?.affectedQuantity || ''}
                                                                         onChange={(e) => {
@@ -1104,6 +1112,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                 <div className="input-with-unit">
                                                                     <input
                                                                         type="number"
+                                                                        onWheel={(e) => e.target.blur()}
                                                                         min="0"
                                                                         value={data.issues.find(i => i.issueType === 'NOT_ARRIVED')?.affectedQuantity || ''}
                                                                         onChange={(e) => {
@@ -1138,6 +1147,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                 <div className="input-with-unit">
                                                                     <input
                                                                         type="number"
+                                                                        onWheel={(e) => e.target.blur()}
                                                                         min="0"
                                                                         value={data.issues.find(i => i.issueType === 'WRONG_ITEM')?.affectedQuantity || ''}
                                                                         onChange={(e) => {
@@ -1172,6 +1182,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                 <div className="input-with-unit">
                                                                     <input
                                                                         type="number"
+                                                                        onWheel={(e) => e.target.blur()}
                                                                         min="0"
                                                                         value={data.issues.find(i => i.issueType === 'QUALITY_ISSUE')?.affectedQuantity || ''}
                                                                         onChange={(e) => {

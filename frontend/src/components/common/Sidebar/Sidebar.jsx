@@ -544,6 +544,12 @@ const Sidebar = () => {
                     icon: <FaMoneyCheckAlt />,
                     path: '/procurement/price-approvals',
                     roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
+                },
+                {
+                    title: 'Logistics',
+                    icon: <FaMoneyCheckAlt />,
+                    path: '/procurement/logistics',
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 }
             ]
         },

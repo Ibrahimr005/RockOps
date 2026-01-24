@@ -1,8 +1,9 @@
 package com.example.backend.controllers.procurement;
 
 import com.example.backend.dto.procurement.*;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderDTO;
 import com.example.backend.models.procurement.Offer.Offer;
-import com.example.backend.models.procurement.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import com.example.backend.services.procurement.PurchaseOrderService;
 import com.example.backend.services.procurement.DeliveryProcessingService;
