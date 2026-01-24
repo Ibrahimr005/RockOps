@@ -470,30 +470,30 @@ const Sidebar = () => {
                     path: '/dashboards/finance-manager',
                     roles: [ADMIN]
                 },
-                {
-                    title: 'General Ledger',
-                    icon: <FaBook/>,
-                    path: '/finance/general-ledger',
-                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
-                },
-                {
-                    title: 'Payables',
-                    icon: <FaFileInvoiceDollar/>,
-                    path: '/finance/payables',
-                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
-                },
+                // {
+                //     title: 'General Ledger',
+                //     icon: <FaBook/>,
+                //     path: '/finance/general-ledger',
+                //     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                // },
+                // {
+                //     title: 'Payables',
+                //     icon: <FaFileInvoiceDollar/>,
+                //     path: '/finance/payables',
+                //     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                // },
                 {
                     title: 'Inventory Valuation',
                     icon: <FaBuilding/>,
                     path: '/finance/inventory-valuation',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
-                {
-                    title: 'Bank Reconciliation',
-                    icon: <FaBalanceScale/>,
-                    path: '/finance/bank-reconciliation',
-                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
-                },
+                // {
+                //     title: 'Bank Reconciliation',
+                //     icon: <FaBalanceScale/>,
+                //     path: '/finance/bank-reconciliation',
+                //     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
+                // },
                 {
                     title: 'Balances',
                     icon: <FaPiggyBank/>,
