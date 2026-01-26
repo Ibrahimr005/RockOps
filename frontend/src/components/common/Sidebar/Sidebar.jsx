@@ -57,6 +57,7 @@ import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPL
 import './Sidebar.css';
 import logoDarkImage from "../../../assets/logos/Logo-dark.png";
 import logoImage from "../../../assets/logos/Logo.png";
+import {FiDollarSign} from "react-icons/fi";
 
 // Create Sidebar Context
 const SidebarContext = createContext();
@@ -505,7 +506,13 @@ const Sidebar = () => {
                     icon: <FaFileInvoiceDollar/>,
                     path: '/finance/accounts-payable',
                     roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],
-                }
+                },
+                // Under Finance menu items, add:
+                {
+                    title: 'Company Loans',
+                    path: '/finance/company-loans',
+                    icon: <FiDollarSign />,
+                    roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],}
             ]
         },
         {

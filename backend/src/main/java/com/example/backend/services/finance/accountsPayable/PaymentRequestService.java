@@ -626,6 +626,33 @@ public class PaymentRequestService {
         if (request.getMaintenanceRecord() != null) {
             maintenanceRecordId = request.getMaintenanceRecord().getId();
         }
+
+        // Handle loan-sourced fields
+        UUID loanInstallmentId = null;
+        Integer loanInstallmentNumber = null;
+        UUID companyLoanId = null;
+        String companyLoanNumber = null;
+        UUID financialInstitutionId = null;
+        String institutionName = request.getInstitutionName();
+        String institutionAccountNumber = request.getInstitutionAccountNumber();
+        String institutionBankName = request.getInstitutionBankName();
+        String institutionContactPerson = request.getInstitutionContactPerson();
+        String institutionContactPhone = request.getInstitutionContactPhone();
+        String institutionContactEmail = request.getInstitutionContactEmail();
+
+        if (request.getLoanInstallment() != null) {
+            loanInstallmentId = request.getLoanInstallment().getId();
+            loanInstallmentNumber = request.getLoanInstallment().getInstallmentNumber();
+
+            if (request.getLoanInstallment().getCompanyLoan() != null) {
+                companyLoanId = request.getLoanInstallment().getCompanyLoan().getId();
+                companyLoanNumber = request.getLoanInstallment().getCompanyLoan().getLoanNumber();
+            }
+        }
+
+        if (request.getFinancialInstitution() != null) {
+            financialInstitutionId = request.getFinancialInstitution().getId();
+        }
         
         return PaymentRequestResponseDTO.builder()
                 .id(request.getId())
@@ -680,6 +707,17 @@ public class PaymentRequestService {
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())
                 .deletedAt(request.getDeletedAt())
+                .loanInstallmentId(loanInstallmentId)
+                .loanInstallmentNumber(loanInstallmentNumber)
+                .companyLoanId(companyLoanId)
+                .companyLoanNumber(companyLoanNumber)
+                .financialInstitutionId(financialInstitutionId)
+                .institutionName(institutionName)
+                .institutionAccountNumber(institutionAccountNumber)
+                .institutionBankName(institutionBankName)
+                .institutionContactPerson(institutionContactPerson)
+                .institutionContactPhone(institutionContactPhone)
+                .institutionContactEmail(institutionContactEmail)
                 .build();
     }
 

@@ -1,5 +1,6 @@
 package com.example.backend.services.site;
 
+import com.example.backend.models.id.EntityTypeConfig;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.Warehouse;
@@ -18,6 +19,7 @@ import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SitePartnerRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import com.example.backend.services.notification.NotificationService;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
@@ -41,12 +43,21 @@ public class SiteAdminService
     private final FixedAssetsRepository fixedAssetsRepository;
     private final SitePartnerRepository sitePartnerRepository;
     private final NotificationService notificationService;
+    private final EntityIdGeneratorService idGeneratorService;
 
     @Autowired
     private EntityManager entityManager;
 
     @Autowired
-    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetsRepository fixedAssetsRepository, SitePartnerRepository sitePartnerRepository, NotificationService notificationService) {
+    public SiteAdminService(SiteRepository siteRepository,
+                            PartnerRepository partnerRepository,
+                            EquipmentRepository equipmentRepository,
+                            EmployeeRepository employeeRepository,
+                            WarehouseRepository warehouseRepository,
+                            FixedAssetsRepository fixedAssetsRepository,
+                            SitePartnerRepository sitePartnerRepository,
+                            NotificationService notificationService,
+                            EntityIdGeneratorService idGeneratorService) {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.equipmentRepository = equipmentRepository;
@@ -55,6 +66,7 @@ public class SiteAdminService
         this.fixedAssetsRepository = fixedAssetsRepository;
         this.sitePartnerRepository = sitePartnerRepository;
         this.notificationService = notificationService;
+        this.idGeneratorService = idGeneratorService;
     }
 
 
@@ -65,6 +77,8 @@ public class SiteAdminService
 
             // Create site entity
             Site site = new Site();
+            String siteNo = idGeneratorService.generateNextId(EntityTypeConfig.SITE);
+            site.setSiteNo(siteNo);
             site.setName((String) siteData.get("name"));
             site.setPhysicalAddress((String) siteData.get("physicalAddress"));
             site.setCompanyAddress((String) siteData.get("companyAddress"));
