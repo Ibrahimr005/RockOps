@@ -10,7 +10,9 @@ const CreateLogisticsModal = ({
                                   onClose,
                                   onSuccess,
                                   onError,
-                                  availablePurchaseOrders = []
+                                  availablePurchaseOrders = [],
+                                  existingLogistics = null,  // ← ADD THIS
+                                  isEditMode = false          // ← ADD THIS
                               }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [isSaving, setIsSaving] = useState(false);
@@ -51,9 +53,13 @@ const CreateLogisticsModal = ({
     useEffect(() => {
         if (isOpen) {
             fetchServiceMerchants();
-            resetForm();
+            if (isEditMode && existingLogistics) {
+                loadExistingData();
+            } else {
+                resetForm();
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, isEditMode, existingLogistics]);;
 
     useEffect(() => {
         if (isOpen) {
@@ -93,6 +99,35 @@ const CreateLogisticsModal = ({
             }]
         });
         setCurrentStep(1);
+    };
+
+    const loadExistingData = async () => {
+        try {
+            // Fetch full logistics details
+            const fullLogistics = await logisticsService.getById(existingLogistics.id);
+
+            // Transform purchase orders data
+            const purchaseOrders = fullLogistics.purchaseOrders.map(po => ({
+                purchaseOrderId: po.purchaseOrderId,
+                selectedItemIds: po.items.map(item => item.purchaseOrderItemId)
+            }));
+
+            setFormData({
+                merchantId: fullLogistics.merchantId,
+                totalCost: fullLogistics.totalCost.toString(),
+                currency: fullLogistics.currency,
+                carrierCompany: fullLogistics.carrierCompany,
+                driverName: fullLogistics.driverName,
+                driverPhone: fullLogistics.driverPhone || '',
+                notes: fullLogistics.notes || '',
+                purchaseOrders: purchaseOrders
+            });
+
+            setCurrentStep(1);
+        } catch (error) {
+            console.error('Error loading logistics data:', error);
+            onError('Failed to load logistics data');
+        }
     };
 
     // NEW: Check if form has been modified
@@ -279,7 +314,6 @@ const CreateLogisticsModal = ({
 
         setIsSaving(true);
         try {
-            // Transform formData to match backend DTO structure
             const payload = {
                 merchantId: formData.merchantId,
                 totalCost: parseFloat(formData.totalCost),
@@ -294,15 +328,22 @@ const CreateLogisticsModal = ({
                 }))
             };
 
-            await logisticsService.create(payload);
-            onSuccess('Logistics created successfully');
+            if (isEditMode && existingLogistics) {
+                await logisticsService.update(existingLogistics.id, payload);
+                onSuccess('Logistics updated successfully');
+            } else {
+                await logisticsService.create(payload);
+                onSuccess('Logistics created successfully');
+            }
+
             onClose();
         } catch (error) {
-            onError(error.message || 'Failed to create logistics');
+            onError(error.message || `Failed to ${isEditMode ? 'update' : 'create'} logistics`);
         } finally {
             setIsSaving(false);
         }
     };
+
 
     const getSelectedPO = (poIndex) => {
         const poId = formData.purchaseOrders[poIndex]?.purchaseOrderId;
@@ -325,7 +366,7 @@ const CreateLogisticsModal = ({
                     <div className="modal-header">
                         <h2 className="modal-title">
                             <FiTruck />
-                            Create Logistics Entry
+                            {isEditMode ? 'Edit Logistics Entry' : 'Create Logistics Entry'}
                         </h2>
                         <button className="btn-close" onClick={handleCloseAttempt}> {/* CHANGED */}
                             <FiX />
@@ -538,11 +579,22 @@ const CreateLogisticsModal = ({
                                                             required
                                                         >
                                                             <option value="">Choose a purchase order...</option>
-                                                            {availablePurchaseOrders.map(availablePO => (
-                                                                <option key={availablePO.id} value={availablePO.id}>
-                                                                    {availablePO.poNumber} - {availablePO.merchantName}
-                                                                </option>
-                                                            ))}
+                                                            {availablePurchaseOrders
+                                                                .filter(availablePO => {
+                                                                    // Show this PO if:
+                                                                    // 1. It's not selected in any OTHER PO entry, OR
+                                                                    // 2. It's the currently selected PO for THIS entry
+                                                                    const isSelectedElsewhere = formData.purchaseOrders.some(
+                                                                        (p, idx) => idx !== poIndex && p.purchaseOrderId === availablePO.id
+                                                                    );
+                                                                    return !isSelectedElsewhere;
+                                                                })
+                                                                .map(availablePO => (
+                                                                    <option key={availablePO.id} value={availablePO.id}>
+                                                                        {availablePO.poNumber} - {availablePO.merchantName}
+                                                                    </option>
+                                                                ))
+                                                            }
                                                         </select>
                                                     </div>
 
@@ -643,7 +695,10 @@ const CreateLogisticsModal = ({
                                     disabled={isSaving}
                                 >
                                     {isSaving && <span className="spinner" />}
-                                    {isSaving ? 'Creating...' : 'Create Logistics'}
+                                    {isSaving
+                                        ? (isEditMode ? 'Updating...' : 'Creating...')
+                                        : (isEditMode ? 'Update Logistics' : 'Create Logistics')
+                                    }
                                 </button>
                             )}
                         </div>

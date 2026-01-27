@@ -113,7 +113,37 @@ const OverviewTab = ({ purchaseOrder }) => {
             }
         };
         fetchModificationHistory();
-    }, [purchaseOrder?.offer?.id]);;
+    }, [purchaseOrder?.offer?.id]);
+
+    // Get payment status badge
+    const getPaymentStatusBadge = (paymentStatus) => {
+        if (!paymentStatus) return null;
+
+        const statusConfig = {
+            PENDING: { label: 'Payment Pending', className: 'payment-status-pending' },
+            APPROVED: { label: 'Payment Approved', className: 'payment-status-approved' },
+            PAID: { label: 'Paid', className: 'payment-status-paid' },
+            REJECTED: { label: 'Payment Rejected', className: 'payment-status-rejected' }
+        };
+
+        const config = statusConfig[paymentStatus] || statusConfig.PENDING;
+
+        return (
+            <div className={`payment-status-badge ${config.className}`}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    {paymentStatus === 'PENDING' && <circle cx="12" cy="12" r="10"/>}
+                    {paymentStatus === 'PENDING' && <polyline points="12,6 12,12 16,14"/>}
+                    {paymentStatus === 'APPROVED' && <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>}
+                    {paymentStatus === 'APPROVED' && <polyline points="22 4 12 14.01 9 11.01"/>}
+                    {paymentStatus === 'PAID' && <polyline points="20 6 9 17 4 12"/>}
+                    {paymentStatus === 'REJECTED' && <circle cx="12" cy="12" r="10"/>}
+                    {paymentStatus === 'REJECTED' && <line x1="15" y1="9" x2="9" y2="15"/>}
+                    {paymentStatus === 'REJECTED' && <line x1="9" y1="9" x2="15" y2="15"/>}
+                </svg>
+                {config.label}
+            </div>
+        );
+    };
 
     useEffect(() => {
         const updateTimelineLineHeight = () => {
@@ -876,21 +906,30 @@ const OverviewTab = ({ purchaseOrder }) => {
                                                 <div className="item-detail-row">
                                                     <span className="item-detail-label">Unit Price:</span>
                                                     <span className="item-detail-value">
-                                            {formatCurrency(item.unitPrice, item.currency || purchaseOrder.currency)}
-                                        </span>
+            {formatCurrency(item.unitPrice, item.currency || purchaseOrder.currency)}
+        </span>
                                                 </div>
                                                 <div className="item-detail-row">
                                                     <span className="item-detail-label">Total Price:</span>
                                                     <span className="item-detail-value">
-                                            {formatCurrency(item.totalPrice, item.currency || purchaseOrder.currency)}
-                                        </span>
+            {formatCurrency(item.totalPrice, item.currency || purchaseOrder.currency)}
+        </span>
                                                 </div>
                                                 {item.estimatedDeliveryDays && (
                                                     <div className="item-detail-row">
                                                         <span className="item-detail-label">Delivery:</span>
                                                         <span className="item-detail-value">
-                                                {item.estimatedDeliveryDays} days
-                                            </span>
+                {item.estimatedDeliveryDays} days
+            </span>
+                                                    </div>
+                                                )}
+                                                {/* ADD PAYMENT STATUS */}
+                                                {item.paymentStatus && (
+                                                    <div className="item-detail-row">
+                                                        <span className="item-detail-label">Payment:</span>
+                                                        <span className="item-detail-value">
+                {getPaymentStatusBadge(item.paymentStatus)}
+            </span>
                                                     </div>
                                                 )}
                                             </div>

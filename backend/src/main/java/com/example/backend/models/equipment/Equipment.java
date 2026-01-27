@@ -89,6 +89,15 @@ public class Equipment {
     @Column(nullable = true)
     private Integer workedHours;
 
+    @Column(name = "useful_life_years")
+    private Integer usefulLifeYears; // How many years equipment is expected to last
+
+    @Column(name = "salvage_value")
+    private Double salvageValue; // Resale value at end of useful life
+
+    @Column(name = "depreciation_start_date")
+    private LocalDate depreciationStartDate; // When to start calculating depreciation (usually purchase date)
+
     @ManyToOne
     @JoinColumn(name = "site_id", referencedColumnName = "id")
     @JsonBackReference
@@ -115,7 +124,7 @@ public class Equipment {
 
     // Financial tracking fields
     @Column(name = "current_inventory_value")
-    private Double currentInventoryValue = 0.0; // Value of consumables IN_WAREHOUSE
+    private Double currentInventoryValue = 0.0;
 
     @Column(name = "total_expenses")
     private Double totalExpenses = 0.0; // Value of consumables CONSUMED

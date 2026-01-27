@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
-import RequestOrderViewModal from '../RequestOrderViewModal/RequestOrderViewModal.jsx';
+
 import './ApprovedRequestOrders.scss';
 import { offerService } from '../../../../services/procurement/offerService.js';
 

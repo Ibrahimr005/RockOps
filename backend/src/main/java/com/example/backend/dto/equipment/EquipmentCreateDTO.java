@@ -33,6 +33,12 @@ public class EquipmentCreateDTO {
     private EquipmentStatus status;
     private String relatedDocuments;
     private Integer workedHours;
+
+    // Depreciation fields
+    private Integer usefulLifeYears;
+    private Double salvageValue;
+    private LocalDate depreciationStartDate;
+
     private UUID siteId;
     private UUID mainDriverId;
     private UUID subDriverId;

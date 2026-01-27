@@ -80,7 +80,22 @@ export const logisticsService = {
     completePayment: async (paymentRequestId) => {
         const response = await apiClient.post(LOGISTICS_ENDPOINTS.PAYMENT_COMPLETED(paymentRequestId));
         return response.data || response;
-    }
+    },
+    /**
+     * Update logistics entry
+     */
+    update: async (id, logisticsData) => {
+        const response = await apiClient.put(LOGISTICS_ENDPOINTS.UPDATE(id), logisticsData);
+        return response.data || response;
+    },
+
+    /**
+     * Delete logistics entry
+     */
+    delete: async (id) => {
+        const response = await apiClient.delete(LOGISTICS_ENDPOINTS.DELETE(id));
+        return response.data || response;
+    },
 };
 
 export default logisticsService;

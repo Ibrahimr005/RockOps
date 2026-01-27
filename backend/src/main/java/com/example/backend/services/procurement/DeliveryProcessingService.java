@@ -35,6 +35,7 @@ public class DeliveryProcessingService {
     private final ItemRepository itemRepository;
     private final WarehouseRepository warehouseRepository;
     private final ItemTypeService itemTypeService;
+    private final PurchaseOrderService purchaseOrderService;
 
 
     @Transactional
@@ -221,65 +222,8 @@ public class DeliveryProcessingService {
     }
 
     private void updatePOStatus(PurchaseOrder po) {
-        boolean hasItemsToArrive = false;
-        boolean hasDisputedItems = false;
-
-        for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
-            if ("DISPUTED".equals(item.getStatus())) {
-                hasDisputedItems = true;
-            }
-            if (!"COMPLETED".equals(item.getStatus())) {
-                hasItemsToArrive = true;
-            }
-        }
-
-        String oldStatus = po.getStatus();
-
-        // Check if finance has FULLY paid
-        boolean isFullyPaid = po.getPaymentStatus() == POPaymentStatus.PAID;
-
-        // Determine PO status based on BOTH delivery AND payment
-        if (hasDisputedItems) {
-            po.setStatus("DISPUTED");
-        } else if (hasItemsToArrive) {
-            po.setStatus("PARTIAL");
-        } else if (!isFullyPaid) {
-            // All items delivered but NOT paid yet
-            po.setStatus("AWAITING_PAYMENT");
-        } else {
-            // All items delivered AND fully paid
-            po.setStatus("COMPLETED");
-        }
-
-        // Update ItemType base prices ONLY when FULLY COMPLETED (items + payment)
-        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
-            System.out.println("🎯 PO fully completed (delivery + payment), updating base prices...");
-
-            try {
-                Set<UUID> itemTypeIds = po.getPurchaseOrderItems().stream()
-                        .filter(item -> item.getItemType() != null)
-                        .map(item -> item.getItemType().getId())
-                        .collect(java.util.stream.Collectors.toSet());
-
-                System.out.println("📊 Found " + itemTypeIds.size() + " unique item types to update");
-
-                for (UUID itemTypeId : itemTypeIds) {
-                    try {
-                        System.out.println("🔄 Updating base price for item type ID: " + itemTypeId);
-                        itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, "SYSTEM");
-                        System.out.println("✅ Successfully updated base price for item type ID: " + itemTypeId);
-                    } catch (Exception e) {
-                        System.err.println("❌ Failed to update base price for item type " + itemTypeId);
-                        System.err.println("❌ Error: " + e.getClass().getName() + " - " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                }
-            } catch (Exception e) {
-                System.err.println("❌ Failed to collect item types for base price update");
-                System.err.println("❌ Error: " + e.getClass().getName() + " - " + e.getMessage());
-                e.printStackTrace();
-            }
-        }
+        // Delegate to PurchaseOrderService for unified logic
+        purchaseOrderService.updatePurchaseOrderStatusComplete(po.getId());
     }
 
     private DeliverySessionDTO convertToDTO(DeliverySession session) {

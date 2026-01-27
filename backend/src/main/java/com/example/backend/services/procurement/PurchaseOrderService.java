@@ -50,10 +50,8 @@ public class PurchaseOrderService {
     private final ItemTypeService itemTypeService;
 
 
-
     @Autowired
     private EntityManager entityManager;
-
 
 
     @Autowired
@@ -277,27 +275,27 @@ public class PurchaseOrderService {
 //                    savedPurchaseOrder.getCurrency() + " " + String.format("%.2f", totalAmount),
 //            "COMPLETED", "COMPLETED");
 //
-////    System.err.println("🔵🔵🔵 PO SAVED, FLUSHING TO DATABASE");
-////    entityManager.flush(); // Force write to database
-////    System.err.println("🔵🔵🔵 FLUSH COMPLETE, NOW CREATING PAYMENT REQUEST");
-////
-////    // NOW create payment request - this will use REQUIRES_NEW and happen in a separate transaction
-////    try {
-////        paymentRequestService.createPaymentRequestFromPO(
-////                savedPurchaseOrder.getId(),
-////                offerId,
-////                username
-////        );
-////        System.err.println("✅✅✅ Payment request created successfully");
-////    } catch (Exception e) {
-////        System.err.println("❌❌❌ Payment request creation failed: " + e.getMessage());
-////        e.printStackTrace();
-////        // Don't throw - let the PO creation succeed even if payment request fails
-////    }
+
+    /// /    System.err.println("🔵🔵🔵 PO SAVED, FLUSHING TO DATABASE");
+    /// /    entityManager.flush(); // Force write to database
+    /// /    System.err.println("🔵🔵🔵 FLUSH COMPLETE, NOW CREATING PAYMENT REQUEST");
+    /// /
+    /// /    // NOW create payment request - this will use REQUIRES_NEW and happen in a separate transaction
+    /// /    try {
+    /// /        paymentRequestService.createPaymentRequestFromPO(
+    /// /                savedPurchaseOrder.getId(),
+    /// /                offerId,
+    /// /                username
+    /// /        );
+    /// /        System.err.println("✅✅✅ Payment request created successfully");
+    /// /    } catch (Exception e) {
+    /// /        System.err.println("❌❌❌ Payment request creation failed: " + e.getMessage());
+    /// /        e.printStackTrace();
+    /// /        // Don't throw - let the PO creation succeed even if payment request fails
+    /// /    }
 //
 //    return savedPurchaseOrder;
 //}
-
     private String generatePoNumber() {
         String datePart = LocalDateTime.now().toString().substring(0, 10).replace("-", "");
         int randomNum = new Random().nextInt(10000);
@@ -597,6 +595,8 @@ public class PurchaseOrderService {
                 .estimatedDeliveryDays(item.getEstimatedDeliveryDays())
                 .deliveryNotes(item.getDeliveryNotes())
                 .comment(item.getComment())
+                .paymentStatus(item.getPaymentStatus())              // ← ADD THIS
+                .paymentRequestItemId(item.getPaymentRequestItemId()) // ← ADD THIS
                 .purchaseOrderId(item.getPurchaseOrder().getId())
                 .build();
 
@@ -763,5 +763,73 @@ public class PurchaseOrderService {
         savedPO.setExpectedDeliveryDate(LocalDateTime.now().plusDays(maxDeliveryDays > 0 ? maxDeliveryDays : 30));
 
         return purchaseOrderRepository.save(savedPO);
+    }
+
+    /**
+     * Unified PO status update logic - checks BOTH delivery completion AND payment status
+     * Call this from delivery processing, issue resolution, AND payment processing
+     */
+    @Transactional
+    public void updatePurchaseOrderStatusComplete(UUID purchaseOrderId) {
+        PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
+                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
+
+        boolean hasItemsToArrive = false;
+        boolean hasDisputedItems = false;
+
+        // Check delivery status of all items
+        for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
+            if ("DISPUTED".equals(item.getStatus())) {
+                hasDisputedItems = true;
+            }
+            if (!"COMPLETED".equals(item.getStatus())) {
+                hasItemsToArrive = true;
+            }
+        }
+
+        String oldStatus = po.getStatus();
+
+        // Check if fully paid
+        boolean isFullyPaid = po.getPaymentStatus() == POPaymentStatus.PAID;
+
+        // Determine PO status based on BOTH delivery AND payment
+        if (hasDisputedItems && hasItemsToArrive) {
+            po.setStatus("PARTIAL_DISPUTED");
+        } else if (hasDisputedItems) {
+            po.setStatus("DISPUTED");
+        } else if (hasItemsToArrive) {
+            po.setStatus("PARTIAL");
+        } else if (!isFullyPaid) {
+            // All items delivered but NOT paid yet
+            po.setStatus("AWAITING_PAYMENT");
+        } else {
+            // All items delivered AND fully paid
+            po.setStatus("COMPLETED");
+        }
+
+        purchaseOrderRepository.save(po);
+
+        // Update ItemType base prices ONLY when FULLY COMPLETED (items + payment)
+// Update ItemType base prices ONLY when FULLY COMPLETED (items + payment)
+        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
+            System.out.println("🎯 PO fully completed (delivery + payment), updating base prices...");
+
+            try {
+                Set<UUID> itemTypeIds = po.getPurchaseOrderItems().stream()
+                        .filter(item -> item.getItemType() != null)  // ← FIXED
+                        .map(item -> item.getItemType().getId())
+                        .collect(Collectors.toSet());
+
+                for (UUID itemTypeId : itemTypeIds) {
+                    try {
+                        itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, "SYSTEM");
+                    } catch (Exception e) {
+                        System.err.println("⚠️ Failed to update base price for item type: " + e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to collect item types: " + e.getMessage());
+            }
+        }
     }
 }

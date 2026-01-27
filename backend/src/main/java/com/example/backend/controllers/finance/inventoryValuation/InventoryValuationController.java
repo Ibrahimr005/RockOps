@@ -1,6 +1,9 @@
 package com.example.backend.controllers.finance.inventoryValuation;
 
 import com.example.backend.dto.finance.inventoryValuation.*;
+import com.example.backend.dto.finance.valuation.ConsumableBreakdownDTO;
+import com.example.backend.dto.finance.valuation.EquipmentFinancialBreakdownDTO;
+import com.example.backend.dto.finance.valuation.SiteValuationDTO;
 import com.example.backend.services.finance.inventoryValuation.InventoryValuationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -43,28 +46,6 @@ public class InventoryValuationController {
         }
     }
 
-    /**
-     * POST manually trigger warehouse balance recalculation
-     * Endpoint: POST /api/finance/inventory-valuation/warehouse/{warehouseId}/recalculate-balance
-     */
-    @PostMapping("/warehouse/{warehouseId}/recalculate-balance")
-    public ResponseEntity<WarehouseBalanceDTO> recalculateWarehouseBalance(@PathVariable UUID warehouseId) {
-        try {
-            System.out.println("🔄 Manually recalculating balance for warehouse: " + warehouseId);
-            inventoryValuationService.updateWarehouseBalance(warehouseId);
-            WarehouseBalanceDTO balance = inventoryValuationService.getWarehouseBalance(warehouseId);
-            System.out.println("✅ Balance recalculated: " + balance.getTotalValue());
-            return ResponseEntity.ok(balance);
-        } catch (IllegalArgumentException e) {
-            System.err.println("❌ Warehouse not found: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        } catch (Exception e) {
-            System.err.println("❌ Error recalculating warehouse balance: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
     // ========================================
     // SITE BALANCE ENDPOINTS
     // ========================================
@@ -91,7 +72,7 @@ public class InventoryValuationController {
     }
 
     /**
-     * GET all site balances
+     * GET all site balances (EXISTING - backward compatible)
      * Endpoint: GET /api/finance/inventory-valuation/sites/balances
      */
     @GetMapping("/sites/balances")
@@ -108,23 +89,71 @@ public class InventoryValuationController {
         }
     }
 
+    // ========================================
+    // NEW: SITE VALUATION ENDPOINTS (WITH EXPENSES)
+    // ========================================
+
     /**
-     * POST manually trigger site balance recalculation
-     * Endpoint: POST /api/finance/inventory-valuation/site/{siteId}/recalculate-balance
+     * GET complete site valuation with expenses breakdown
+     * Endpoint: GET /api/finance/inventory-valuation/site/{siteId}/valuation
      */
-    @PostMapping("/site/{siteId}/recalculate-balance")
-    public ResponseEntity<SiteBalanceDTO> recalculateSiteBalance(@PathVariable UUID siteId) {
+    @GetMapping("/site/{siteId}/valuation")
+    public ResponseEntity<SiteValuationDTO> getSiteValuation(@PathVariable UUID siteId) {
         try {
-            System.out.println("🔄 Manually recalculating balance for site: " + siteId);
-            inventoryValuationService.updateSiteBalance(siteId);
-            SiteBalanceDTO balance = inventoryValuationService.getSiteBalance(siteId);
-            System.out.println("✅ Balance recalculated: " + balance.getTotalValue());
-            return ResponseEntity.ok(balance);
+            System.out.println("📊 Fetching complete valuation for site: " + siteId);
+            SiteValuationDTO valuation = inventoryValuationService.getSiteValuationComplete(siteId);
+            System.out.println("✅ Site valuation - Value: " + valuation.getTotalValue() +
+                    ", Expenses: " + valuation.getTotalExpenses());
+            return ResponseEntity.ok(valuation);
         } catch (IllegalArgumentException e) {
             System.err.println("❌ Site not found: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
-            System.err.println("❌ Error recalculating site balance: " + e.getMessage());
+            System.err.println("❌ Error fetching site valuation: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * GET all sites with complete valuation data including expenses
+     * Endpoint: GET /api/finance/inventory-valuation/sites/valuations
+     */
+    @GetMapping("/sites/valuations")
+    public ResponseEntity<List<SiteValuationDTO>> getAllSiteValuations() {
+        try {
+            System.out.println("📊 Fetching complete valuations for all sites");
+            List<SiteValuationDTO> valuations = inventoryValuationService.getAllSiteValuations();
+            System.out.println("✅ Found " + valuations.size() + " site valuations");
+            return ResponseEntity.ok(valuations);
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching site valuations: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ========================================
+    // NEW: EQUIPMENT FINANCIAL ENDPOINTS
+    // ========================================
+
+    /**
+     * GET equipment financial breakdown (value composition)
+     * Endpoint: GET /api/finance/inventory-valuation/equipment/{equipmentId}/financials
+     */
+    @GetMapping("/equipment/{equipmentId}/financials")
+    public ResponseEntity<EquipmentFinancialBreakdownDTO> getEquipmentFinancials(@PathVariable UUID equipmentId) {
+        try {
+            System.out.println("📊 Fetching financials for equipment: " + equipmentId);
+            EquipmentFinancialBreakdownDTO financials = inventoryValuationService.getEquipmentFinancials(equipmentId);
+            System.out.println("✅ Equipment financials - Current Value: " + financials.getCurrentValue() +
+                    ", Expenses: " + financials.getTotalExpenses());
+            return ResponseEntity.ok(financials);
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Equipment not found: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching equipment financials: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -156,29 +185,6 @@ public class InventoryValuationController {
     }
 
     /**
-     * GET transaction history for a warehouse (finance view)
-     * Endpoint: GET /api/finance/inventory-valuation/warehouse/{warehouseId}/transactions
-     */
-    @GetMapping("/warehouse/{warehouseId}/transactions")
-    public ResponseEntity<List<WarehouseTransactionHistoryDTO>> getWarehouseTransactionHistory(
-            @PathVariable UUID warehouseId) {
-        try {
-            System.out.println("📜 Fetching transaction history for warehouse: " + warehouseId);
-            List<WarehouseTransactionHistoryDTO> history =
-                    inventoryValuationService.getWarehouseTransactionHistory(warehouseId);
-            System.out.println("✅ Found " + history.size() + " transactions");
-            return ResponseEntity.ok(history);
-        } catch (IllegalArgumentException e) {
-            System.err.println("❌ Warehouse not found: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        } catch (Exception e) {
-            System.err.println("❌ Error fetching transaction history: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
      * GET all item history for a warehouse (all sources: transactions, manual entries, etc.)
      * Endpoint: GET /api/finance/inventory-valuation/warehouse/{warehouseId}/item-history
      */
@@ -197,6 +203,17 @@ public class InventoryValuationController {
             System.err.println("❌ Error fetching item history: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/equipment/{equipmentId}/consumables-breakdown")
+    public ResponseEntity<?> getEquipmentConsumablesBreakdown(@PathVariable UUID equipmentId) {
+        try {
+            List<ConsumableBreakdownDTO> breakdown = inventoryValuationService.getEquipmentConsumablesBreakdown(equipmentId);
+            return ResponseEntity.ok(breakdown);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to get consumables breakdown: " + e.getMessage());
         }
     }
 }

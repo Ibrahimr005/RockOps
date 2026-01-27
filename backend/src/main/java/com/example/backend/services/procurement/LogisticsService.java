@@ -400,4 +400,140 @@ public class LogisticsService {
                 .createdBy(logistics.getCreatedBy())
                 .build();
     }
+
+    @Transactional
+    public LogisticsResponseDTO updateLogistics(UUID id, CreateLogisticsDTO dto, String username) {
+        Logistics logistics = logisticsRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Logistics not found"));
+
+        // Only allow editing if status is PENDING_APPROVAL
+        if (logistics.getStatus() != LogisticsStatus.PENDING_APPROVAL) {
+            throw new RuntimeException("Can only edit logistics with PENDING_APPROVAL status");
+        }
+
+        // Update merchant if changed
+        if (!logistics.getMerchant().getId().equals(dto.getMerchantId())) {
+            Merchant merchant = merchantRepository.findById(dto.getMerchantId())
+                    .orElseThrow(() -> new RuntimeException("Merchant not found"));
+            logistics.setMerchant(merchant);
+            logistics.setMerchantName(merchant.getName());
+        }
+
+        // Update basic fields
+        logistics.setTotalCost(dto.getTotalCost());
+        logistics.setCurrency(dto.getCurrency());
+        logistics.setCarrierCompany(dto.getCarrierCompany());
+        logistics.setDriverName(dto.getDriverName());
+        logistics.setDriverPhone(dto.getDriverPhone());
+        logistics.setNotes(dto.getNotes());
+        logistics.setUpdatedBy(username);
+        logistics.setUpdatedAt(LocalDateTime.now());
+
+        // Remove old purchase orders and items
+        logistics.getPurchaseOrders().clear();
+
+        // Recalculate and add new purchase orders (same logic as create)
+        BigDecimal grandTotalItemsValue = BigDecimal.ZERO;
+
+        for (CreateLogisticsDTO.LogisticsPurchaseOrderDTO poDto : dto.getPurchaseOrders()) {
+            List<PurchaseOrderItem> items = purchaseOrderItemRepository
+                    .findAllByIdIn(poDto.getSelectedItemIds());
+
+            BigDecimal poItemsTotal = items.stream()
+                    .map(item -> BigDecimal.valueOf(item.getUnitPrice())
+                            .multiply(BigDecimal.valueOf(item.getQuantity()))
+                            .setScale(2, RoundingMode.HALF_UP))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            grandTotalItemsValue = grandTotalItemsValue.add(poItemsTotal);
+        }
+
+        if (grandTotalItemsValue.compareTo(BigDecimal.ZERO) == 0) {
+            throw new RuntimeException("Total items value cannot be zero");
+        }
+
+        for (CreateLogisticsDTO.LogisticsPurchaseOrderDTO poDto : dto.getPurchaseOrders()) {
+            PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(poDto.getPurchaseOrderId())
+                    .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
+
+            List<PurchaseOrderItem> items = purchaseOrderItemRepository
+                    .findAllByIdIn(poDto.getSelectedItemIds());
+
+            BigDecimal poItemsTotal = items.stream()
+                    .map(item -> BigDecimal.valueOf(item.getUnitPrice())
+                            .multiply(BigDecimal.valueOf(item.getQuantity()))
+                            .setScale(2, RoundingMode.HALF_UP))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal percentage = poItemsTotal
+                    .divide(grandTotalItemsValue, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"))
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal allocatedCost = dto.getTotalCost()
+                    .multiply(percentage)
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+            LogisticsPurchaseOrder logisticsPO = LogisticsPurchaseOrder.builder()
+                    .logistics(logistics)
+                    .purchaseOrder(purchaseOrder)
+                    .allocatedCost(allocatedCost)
+                    .costPercentage(percentage)
+                    .totalItemsValue(poItemsTotal)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            for (PurchaseOrderItem item : items) {
+                BigDecimal itemTotal = BigDecimal.valueOf(item.getUnitPrice())
+                        .multiply(BigDecimal.valueOf(item.getQuantity()))
+                        .setScale(2, RoundingMode.HALF_UP);
+
+                LogisticsPurchaseOrderItem logisticsItem = LogisticsPurchaseOrderItem.builder()
+                        .logisticsPurchaseOrder(logisticsPO)
+                        .purchaseOrderItem(item)
+                        .itemTypeName(item.getItemType().getName())
+                        .quantity(BigDecimal.valueOf(item.getQuantity()))
+                        .unitPrice(BigDecimal.valueOf(item.getUnitPrice()))
+                        .totalValue(itemTotal)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+
+                logisticsPO.getItems().add(logisticsItem);
+            }
+
+            logistics.getPurchaseOrders().add(logisticsPO);
+        }
+
+        // Update payment request amount
+        if (logistics.getPaymentRequest() != null) {
+            PaymentRequest pr = logistics.getPaymentRequest();
+            pr.setRequestedAmount(dto.getTotalCost());
+            pr.setCurrency(dto.getCurrency());
+            pr.setDescription("Logistics payment for " + logistics.getLogisticsNumber() +
+                    " - " + logistics.getCarrierCompany());
+            paymentRequestRepository.save(pr);
+        }
+
+        Logistics savedLogistics = logisticsRepository.save(logistics);
+        return convertToResponseDTO(savedLogistics);
+    }
+
+    @Transactional
+    public void deleteLogistics(UUID id) {
+        Logistics logistics = logisticsRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Logistics not found"));
+
+        // Only allow deleting if status is PENDING_APPROVAL
+        if (logistics.getStatus() != LogisticsStatus.PENDING_APPROVAL) {
+            throw new RuntimeException("Can only delete logistics with PENDING_APPROVAL status");
+        }
+
+        // Delete associated payment request
+        if (logistics.getPaymentRequest() != null) {
+            paymentRequestRepository.delete(logistics.getPaymentRequest());
+        }
+
+        // Delete logistics (will cascade to purchase orders and items)
+        logisticsRepository.delete(logistics);
+    }
 }

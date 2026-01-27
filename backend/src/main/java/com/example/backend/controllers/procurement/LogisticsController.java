@@ -149,4 +149,31 @@ public class LogisticsController {
                     .body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateLogistics(
+            @PathVariable UUID id,
+            @RequestBody CreateLogisticsDTO dto) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+
+            LogisticsResponseDTO response = logisticsService.updateLogistics(id, dto, username);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteLogistics(@PathVariable UUID id) {
+        try {
+            logisticsService.deleteLogistics(id);
+            return ResponseEntity.ok(Map.of("message", "Logistics deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
 }

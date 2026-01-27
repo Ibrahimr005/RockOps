@@ -5,6 +5,7 @@ import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
 const FinanceAssetCard = ({
                               title,
                               value,
+                              expenses,  // ✅ ADDED
                               subtitle,
                               icon: Icon,
                               imageUrl,
@@ -60,10 +61,24 @@ const FinanceAssetCard = ({
                     {subtitle && <p className="finance-card-subtitle">{subtitle}</p>}
                 </div>
 
-                <div className="finance-card-value">
-                    {showValueLabel && <span className="value-label">Value:</span>}
-                    <span className="value-amount">{value}</span>
-                    <span className="value-currency">EGP</span>
+                <div className="finance-card-values-wrapper">
+                    <div className="finance-card-value-container">
+                        <div className="finance-card-value">
+                            {showValueLabel && <span className="value-label">Value</span>}
+                            <span className="value-amount">{value}</span>
+                            <span className="value-currency">EGP</span>
+                        </div>
+                    </div>
+
+                    {expenses && (
+                        <div className="finance-card-expenses-container">
+                            <div className="finance-card-expenses">
+                                <span className="expenses-label">Expenses</span>
+                                <span className="expenses-amount">{expenses}</span>
+                                <span className="expenses-currency">EGP</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {onExpand && !categoryBreakdown.length && (
@@ -108,10 +123,28 @@ const FinanceAssetCard = ({
                                 <span className="breakdown-label">{category.label}</span>
                                 <span className="breakdown-count">{category.count}</span>
                             </div>
-                            <div className="breakdown-value">
-                                <span className="breakdown-value-label">Value:</span>
-                                <span className="breakdown-amount">{formatCurrency(category.value)}</span>
+
+
+                            <div className="breakdown-values-wrapper">
+                                <div className="breakdown-value-container">
+                                    <div className="breakdown-value">
+                                        <span className="breakdown-value-label">Value</span>
+                                        <span className="breakdown-amount">{formatCurrency(category.value)}</span>
+                                        <span className="breakdown-currency">EGP</span>
+                                    </div>
+                                </div>
+
+                                {category.expenses !== undefined && (
+                                    <div className="breakdown-expenses-container">
+                                        <div className="breakdown-expenses">
+                                            <span className="breakdown-expenses-label">Expenses</span>
+                                            <span className="breakdown-expenses-amount">{formatCurrency(category.expenses)}</span>
+                                            <span className="breakdown-expenses-currency">EGP</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
                             {!category.disabled ? (
                                 <button
                                     className="breakdown-expand-btn"

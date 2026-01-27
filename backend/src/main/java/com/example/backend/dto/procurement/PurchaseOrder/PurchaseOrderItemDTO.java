@@ -3,6 +3,7 @@ package com.example.backend.dto.procurement.PurchaseOrder;
 import com.example.backend.dto.merchant.MerchantDTO;
 import com.example.backend.dto.procurement.DeliveryItemReceiptDTO;
 import com.example.backend.dto.warehouse.ItemTypeDTO;
+import com.example.backend.models.procurement.PurchaseOrder.POItemPaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -49,6 +50,9 @@ public class PurchaseOrderItemDTO {
     private String measuringUnit;
     private String currency;
     private String merchantName;
+
+    private POItemPaymentStatus paymentStatus;  // ← ADD THIS
+    private UUID paymentRequestItemId;
 
     // Add these at the end of the class:
     private List<DeliveryItemReceiptDTO> itemReceipts;

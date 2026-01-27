@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate,useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { FiClock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService.js';
@@ -32,7 +32,7 @@ const PurchaseOrders = () => {
             console.log('Purchase Order Details:', data.map(po => ({
                 poNumber: po.poNumber,
                 status: po.status,
-                paymentStatus: po.paymentStatus,  // ← ADD THIS
+                paymentStatus: po.paymentStatus,
                 totalAmount: po.totalAmount,
                 currency: po.currency
             })));
@@ -55,28 +55,29 @@ const PurchaseOrders = () => {
         const pending = allPurchaseOrders.filter(order =>
             order.status !== 'DISPUTED' &&
             order.status !== 'COMPLETED' &&
-            order.status !== 'CANCELLED'
+            order.status !== 'CANCELLED' &&
+            order.status !== 'AWAITING_PAYMENT' &&
+            order.status !== 'PARTIAL_DISPUTED'
         );
 
-        // ADD THIS LOG
         console.log('=== PENDING ORDERS ===', pending.map(o => ({ poNumber: o.poNumber, status: o.status })));
         return pending;
     };
 
     const getDisputedOrders = () => {
         const disputed = allPurchaseOrders.filter(order =>
-            order.status === 'DISPUTED'
+            order.status === 'DISPUTED' ||
+            order.status === 'PARTIAL_DISPUTED'
         );
 
-        // ADD THIS LOG
         console.log('=== DISPUTED ORDERS ===', disputed.map(o => ({ poNumber: o.poNumber, status: o.status })));
         return disputed;
     };
 
     const getAwaitingPaymentOrders = () => {
         return allPurchaseOrders.filter(order =>
-            order.paymentStatus !== 'PAID' &&
-            order.status !== 'CANCELLED'
+            (order.paymentStatus !== 'PAID' && order.status !== 'CANCELLED') ||
+            order.status === 'AWAITING_PAYMENT'
         );
     };
 
@@ -138,14 +139,14 @@ const PurchaseOrders = () => {
             <div className="tab-content-po">
                 {activeTab === 'pending' && (
                     <PendingPurchaseOrders
-                        purchaseOrders={getPendingOrders()} // Pass filtered data
+                        purchaseOrders={getPendingOrders()}
                         onDataChange={handleDataChange}
                         loading={loading}
                     />
                 )}
                 {activeTab === 'disputed' && (
                     <DisputedPurchaseOrders
-                        purchaseOrders={getDisputedOrders()} // Pass filtered data
+                        purchaseOrders={getDisputedOrders()}
                         onDataChange={handleDataChange}
                         loading={loading}
                     />
@@ -161,7 +162,7 @@ const PurchaseOrders = () => {
 
                 {activeTab === 'completed' && (
                     <CompletedPurchaseOrders
-                        purchaseOrders={getCompletedOrders()} // Pass filtered data
+                        purchaseOrders={getCompletedOrders()}
                         onDataChange={handleDataChange}
                         loading={loading}
                     />

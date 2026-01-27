@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import CreateLogisticsModal from '../CreateLogisticsModal/CreateLogisticsModal';
 import { logisticsService } from '../../../../services/procurement/logisticsService';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService';
@@ -14,7 +15,14 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
 
     // Modal state
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedLogistics, setSelectedLogistics] = useState(null);
     const [availablePurchaseOrders, setAvailablePurchaseOrders] = useState([]);
+
+    // Delete state
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [logisticsToDelete, setLogisticsToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Notification state
     const [showNotification, setShowNotification] = useState(false);
@@ -47,7 +55,6 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
             const allPOs = await purchaseOrderService.getAll();
             console.log('All POs with items:', allPOs);
 
-            // Filter POs that have items
             const filtered = allPOs.filter(po => {
                 const items = po.purchaseOrderItems || [];
                 console.log(`PO ${po.poNumber}: has ${items.length} items, will ${items.length > 0 ? 'INCLUDE' : 'EXCLUDE'}`);
@@ -56,7 +63,6 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
 
             console.log('Filtered POs with items:', filtered);
 
-            // Transform items to match modal expectations
             const transformedPOs = filtered.map(po => ({
                 ...po,
                 items: po.purchaseOrderItems.map(item => ({
@@ -68,7 +74,7 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
                     unitPrice: item.unitPrice,
                     totalPrice: item.totalPrice,
                     merchantName: item.merchant?.name || '',
-                    itemType: item.itemType  // ✅ ADD THIS LINE - include the full itemType object
+                    itemType: item.itemType
                 })),
                 merchantName: po.requestOrder?.requesterName || 'N/A'
             }));
@@ -98,13 +104,58 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
         setShowCreateModal(true);
     };
 
-    const handleCloseModal = () => {
+    const handleEdit = async (logistics) => {
+        await fetchAvailablePurchaseOrders();
+        setSelectedLogistics(logistics);
+        setShowEditModal(true);
+    };
+
+    const handleDeleteClick = (logistics) => {
+        setLogisticsToDelete(logistics);
+        setShowDeleteDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!logisticsToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await logisticsService.delete(logisticsToDelete.id);
+            showSuccessNotification('Logistics deleted successfully');
+            fetchLogistics();
+            setShowDeleteDialog(false);
+            setLogisticsToDelete(null);
+        } catch (error) {
+            console.error('Error deleting logistics:', error);
+            showErrorNotification(error.message || 'Failed to delete logistics');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setShowDeleteDialog(false);
+        setLogisticsToDelete(null);
+    };
+
+    const handleCloseCreateModal = () => {
         setShowCreateModal(false);
     };
 
-    const handleModalSuccess = (message) => {
+    const handleCloseEditModal = () => {
+        setShowEditModal(false);
+        setSelectedLogistics(null);
+    };
+
+    const handleCreateSuccess = (message) => {
         showSuccessNotification(message);
-        fetchLogistics(); // Refresh the list
+        fetchLogistics();
+    };
+
+    const handleEditSuccess = (message) => {
+        showSuccessNotification(message);
+        fetchLogistics();
+        handleCloseEditModal();
     };
 
     const handleRowClick = (row) => {
@@ -187,6 +238,21 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
         }
     ];
 
+    const actions = [
+        {
+            label: 'Edit',
+            icon: <FiEdit />,
+            onClick: (row) => handleEdit(row),
+            className: 'edit'
+        },
+        {
+            label: 'Delete',
+            icon: <FiTrash />,
+            onClick: (row) => handleDeleteClick(row),
+            className: 'delete'
+        }
+    ];
+
     const filterableColumns = [
         {
             header: 'Logistics #',
@@ -215,6 +281,7 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
             <DataTable
                 data={logistics}
                 columns={columns}
+                actions={actions}
                 onRowClick={handleRowClick}
                 loading={loading}
                 emptyMessage="No pending logistics entries"
@@ -233,12 +300,40 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
                 exportButtonText="Export Logistics"
             />
 
+            {/* Create Modal */}
             <CreateLogisticsModal
                 isOpen={showCreateModal}
-                onClose={handleCloseModal}
-                onSuccess={handleModalSuccess}
+                onClose={handleCloseCreateModal}
+                onSuccess={handleCreateSuccess}
                 onError={showErrorNotification}
                 availablePurchaseOrders={availablePurchaseOrders}
+            />
+
+            {/* Edit Modal */}
+            {selectedLogistics && (
+                <CreateLogisticsModal
+                    isOpen={showEditModal}
+                    onClose={handleCloseEditModal}
+                    onSuccess={handleEditSuccess}
+                    onError={showErrorNotification}
+                    availablePurchaseOrders={availablePurchaseOrders}
+                    existingLogistics={selectedLogistics}
+                    isEditMode={true}
+                />
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showDeleteDialog}
+                type="danger"
+                title="Delete Logistics?"
+                message={`Are you sure you want to delete logistics "${logisticsToDelete?.logisticsNumber}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+                size="medium"
+                isLoading={isDeleting}
             />
 
             <Snackbar
