@@ -1,0 +1,256 @@
+.loan-details-page {
+  padding: 1.5rem;
+
+  .loading-state,
+  .error-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+  }
+
+  // Status Banner
+  .status-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+
+    svg {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+    }
+
+    &--active {
+      background-color: var(--color-success-bg, #ecfdf5);
+      border: 1px solid var(--color-success-border, #a7f3d0);
+      color: var(--color-success-text, #065f46);
+
+      svg {
+        color: var(--color-success, #10b981);
+      }
+    }
+
+    &--completed {
+      background-color: var(--color-info-bg, #eff6ff);
+      border: 1px solid var(--color-info-border, #bfdbfe);
+      color: var(--color-info-text, #1e40af);
+    }
+
+    &--defaulted {
+      background-color: var(--color-danger-bg, #fef2f2);
+      border: 1px solid var(--color-danger-border, #fecaca);
+      color: var(--color-danger-text, #991b1b);
+
+      svg {
+        color: var(--color-danger, #ef4444);
+      }
+    }
+
+    &--cancelled {
+      background-color: var(--color-surface-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--color-text-secondary);
+    }
+  }
+
+  // Details Grid
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  // Detail Card
+  .detail-card {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+
+    &--full {
+      grid-column: 1 / -1;
+    }
+
+    &__title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 1.25rem;
+      margin: 0;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      background: var(--color-surface-secondary);
+      border-bottom: 1px solid var(--border-color);
+
+      svg {
+        width: 18px;
+        height: 18px;
+        color: var(--color-primary);
+      }
+    }
+
+    &__content {
+      padding: 1rem 1.25rem;
+
+      &--grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+      }
+    }
+  }
+
+  // Detail Row
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--border-color-light);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &--highlight {
+      background: var(--color-surface-secondary);
+      margin: 0.5rem -1.25rem -1rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+    }
+
+    &--vertical {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+  }
+
+  .detail-label {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+  }
+
+  .detail-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  // Section Title
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 1rem 0;
+  }
+
+  // Progress Section
+  .progress-section {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .progress-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .progress-bar-large {
+    height: 12px;
+    background: var(--color-surface-secondary);
+    border-radius: 6px;
+    overflow: hidden;
+
+    &__fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
+      border-radius: 6px;
+      transition: width 0.5s ease;
+    }
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+
+  .progress-percentage {
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+
+  // Installments Section
+  .installments-section {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+
+  // Status Badges
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+
+    &--active,
+    &--paid {
+      background-color: var(--color-success-bg, #ecfdf5);
+      color: var(--color-success, #10b981);
+      border: 1px solid var(--color-success-border, #a7f3d0);
+    }
+
+    &--pending {
+      background-color: var(--color-warning-bg, #fffbeb);
+      color: var(--color-warning, #f59e0b);
+      border: 1px solid var(--color-warning-border, #fcd34d);
+    }
+
+    &--partial {
+      background-color: var(--color-info-bg, #eff6ff);
+      color: var(--color-info, #3b82f6);
+      border: 1px solid var(--color-info-border, #bfdbfe);
+    }
+
+    &--overdue {
+      background-color: var(--color-danger-bg, #fef2f2);
+      color: var(--color-danger, #ef4444);
+      border: 1px solid var(--color-danger-border, #fecaca);
+    }
+
+    &--completed {
+      background-color: var(--color-info-bg, #eff6ff);
+      color: var(--color-info, #3b82f6);
+      border: 1px solid var(--color-info-border, #bfdbfe);
+    }
+
+    &--defaulted,
+    &--cancelled {
+      background-color: var(--color-surface-secondary);
+      color: var(--color-text-secondary);
+      border: 1px solid var(--border-color);
+    }
+  }
+}

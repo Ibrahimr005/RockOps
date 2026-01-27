@@ -79,6 +79,20 @@ public class PaymentRequestResponseDTO {
     private String merchantContactPhone;
     private String merchantContactEmail;
 
+    // Loan info (for loan payment requests)
+    private UUID loanInstallmentId;
+    private Integer loanInstallmentNumber;
+    private UUID companyLoanId;
+    private String companyLoanNumber;
+    private UUID financialInstitutionId;
+    private String institutionName;
+    private String institutionAccountNumber;
+    private String institutionBankName;
+    private String institutionContactPerson;
+    private String institutionContactPhone;
+    private String institutionContactEmail;
+
+
     // Related items and payments
     private List<PaymentRequestItemResponseDTO> items;
     private List<AccountPayablePaymentResponseDTO> payments;

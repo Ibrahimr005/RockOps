@@ -419,7 +419,41 @@ export const FINANCE_ENDPOINTS = {
             BALANCES: '/api/v1/finance/dashboard/balances',
             MERCHANTS: '/api/v1/finance/dashboard/merchants'
         }
-    }
+    },
+
+    // Company Loans submodule endpoints
+    COMPANY_LOANS: {
+        // Financial Institutions
+        INSTITUTIONS: {
+            BASE: '/api/v1/finance/loans/institutions',
+            BY_ID: (id) => `/api/v1/finance/loans/institutions/${id}`,
+            ACTIVE: '/api/v1/finance/loans/institutions/active',
+            BY_TYPE: (type) => `/api/v1/finance/loans/institutions/type/${type}`,
+            SEARCH: '/api/v1/finance/loans/institutions/search',
+            DEACTIVATE: (id) => `/api/v1/finance/loans/institutions/${id}/deactivate`
+        },
+
+        // Company Loans
+        LOANS: {
+            BASE: '/api/v1/finance/loans/company-loans',
+            BY_ID: (id) => `/api/v1/finance/loans/company-loans/${id}`,
+            BY_NUMBER: (loanNumber) => `/api/v1/finance/loans/company-loans/number/${loanNumber}`,
+            ACTIVE: '/api/v1/finance/loans/company-loans/active',
+            BY_STATUS: (status) => `/api/v1/finance/loans/company-loans/status/${status}`,
+            BY_INSTITUTION: (institutionId) => `/api/v1/finance/loans/company-loans/institution/${institutionId}`,
+            INSTALLMENTS: (id) => `/api/v1/finance/loans/company-loans/${id}/installments`,
+            UPDATE_STATUS: (id) => `/api/v1/finance/loans/company-loans/${id}/status`,
+            UPCOMING_INSTALLMENTS: '/api/v1/finance/loans/company-loans/installments/upcoming',
+            OVERDUE_INSTALLMENTS: '/api/v1/finance/loans/company-loans/installments/overdue'
+        },
+
+        // Dashboard
+        DASHBOARD: {
+            SUMMARY: '/api/v1/finance/loans/dashboard/summary',
+            MATURING_SOON: '/api/v1/finance/loans/dashboard/maturing-soon',
+            MONTHLY_INSTALLMENTS: '/api/v1/finance/loans/dashboard/monthly-installments'
+        }
+    },
 };
 
 // Employee module endpoints

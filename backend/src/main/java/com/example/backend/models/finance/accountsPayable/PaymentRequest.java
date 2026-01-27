@@ -1,6 +1,8 @@
 package com.example.backend.models.finance.accountsPayable;
 
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
+import com.example.backend.models.finance.loans.FinancialInstitution;
+import com.example.backend.models.finance.loans.LoanInstallment;
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.example.backend.models.maintenance.MaintenanceStep;
 import com.example.backend.models.merchant.Merchant;
@@ -173,6 +175,34 @@ public class PaymentRequest {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    // Company Loan fields
+    @ManyToOne
+    @JoinColumn(name = "loan_installment_id", nullable = true)
+    private LoanInstallment loanInstallment;
+
+    @ManyToOne
+    @JoinColumn(name = "financial_institution_id", nullable = true)
+    private FinancialInstitution financialInstitution;
+
+    // Financial Institution Information (for Loans)
+    @Column(name = "institution_name", length = 255)
+    private String institutionName;
+
+    @Column(name = "institution_account_number", length = 100)
+    private String institutionAccountNumber;
+
+    @Column(name = "institution_bank_name", length = 255)
+    private String institutionBankName;
+
+    @Column(name = "institution_contact_person", length = 255)
+    private String institutionContactPerson;
+
+    @Column(name = "institution_contact_phone", length = 50)
+    private String institutionContactPhone;
+
+    @Column(name = "institution_contact_email", length = 255)
+    private String institutionContactEmail;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -193,5 +223,17 @@ public class PaymentRequest {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    // Helper Methods
+    public boolean isLoanPayment() {
+        return loanInstallment != null;
+    }
+
+    public String getPayeeName() {
+        if (isLoanPayment() && institutionName != null) {
+            return institutionName;
+        }
+        return merchantName;
     }
 }

@@ -17,6 +17,7 @@ import com.example.backend.repositories.finance.balances.BankAccountRepository;
 import com.example.backend.repositories.finance.balances.CashSafeRepository;
 import com.example.backend.repositories.finance.balances.CashWithPersonRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
+import com.example.backend.services.finance.loans.LoanPaymentRequestService;
 import com.example.backend.services.procurement.PurchaseOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -40,7 +41,9 @@ public class AccountPayablePaymentService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PaymentRequestService paymentRequestService;
     private final FinancialTransactionService financialTransactionService;
+    private final LoanPaymentRequestService loanPaymentRequestService;
     private final PurchaseOrderService purchaseOrderService;
+
 
     @Autowired
     public AccountPayablePaymentService(
@@ -52,7 +55,7 @@ public class AccountPayablePaymentService {
             PurchaseOrderRepository purchaseOrderRepository,
             PaymentRequestService paymentRequestService,
             FinancialTransactionService financialTransactionService,
-            PurchaseOrderService purchaseOrderService) {
+            PurchaseOrderService purchaseOrderService,LoanPaymentRequestService loanPaymentRequestService) {
         this.paymentRepository = paymentRepository;
         this.paymentRequestRepository = paymentRequestRepository;
         this.bankAccountRepository = bankAccountRepository;
@@ -61,6 +64,7 @@ public class AccountPayablePaymentService {
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.paymentRequestService = paymentRequestService;
         this.financialTransactionService = financialTransactionService;
+        this.loanPaymentRequestService = loanPaymentRequestService;
         this.purchaseOrderService = purchaseOrderService;
     }
 
@@ -140,6 +144,10 @@ public class AccountPayablePaymentService {
         // 10. Update Purchase Order payment status (only if PO exists - maintenance requests don't have PO)
         if (paymentRequest.getPurchaseOrder() != null) {
             updatePurchaseOrderPaymentStatus(paymentRequest.getPurchaseOrder().getId());
+        }
+        if(paymentRequest.isLoanPayment())
+        {
+            loanPaymentRequestService.handlePaymentCompletion(paymentRequest.getId(), request.getAmount());
         }
 
         // 11. TODO: Send notification to procurement team

@@ -108,13 +108,29 @@ const PaymentRequestsList = () => {
                         </span>
                     );
                 }
+                else if (row.companyLoanNumber) {
+                    return (
+                        <span style={{
+                            color: 'var(--success-color)',
+                            fontWeight: 500
+                        }}>
+                            {row.companyLoanNumber}
+                        </span>
+                    );
+                }
                 return <span style={{ color: 'var(--text-muted)' }}>N/A</span>;
             }
         },
         {
             header: 'Merchant',
             accessor: 'merchantName',
-            sortable: true
+            sortable: true,
+            render: (row) => {
+                if (row.institutionName) {
+                    return row.institutionName;
+                }
+                return row.merchantName || 'N/A';
+            }
         },
         {
             header: 'Requested Amount',

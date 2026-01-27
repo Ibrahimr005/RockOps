@@ -1068,6 +1068,116 @@ export const financeService = {
                 throw error;
             }
         }
-    }
+    },
+
+    // Company Loans operations
+    companyLoans: {
+        // Financial Institutions
+        institutions: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.INSTITUTIONS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.INSTITUTIONS.BY_ID(id));
+            },
+
+            getActive: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.INSTITUTIONS.ACTIVE);
+            },
+
+            getByType: (type) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.INSTITUTIONS.BY_TYPE(type));
+            },
+
+            search: (name) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.INSTITUTIONS.SEARCH, {
+                    params: { name }
+                });
+            },
+
+            create: (institutionData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.COMPANY_LOANS.INSTITUTIONS.BASE, institutionData);
+            },
+
+            update: (id, institutionData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.COMPANY_LOANS.INSTITUTIONS.BY_ID(id), institutionData);
+            },
+
+            deactivate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.COMPANY_LOANS.INSTITUTIONS.DEACTIVATE(id));
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.COMPANY_LOANS.INSTITUTIONS.BY_ID(id));
+            }
+        },
+
+        // Company Loans
+        loans: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.BY_ID(id));
+            },
+
+            getByLoanNumber: (loanNumber) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.BY_NUMBER(loanNumber));
+            },
+
+            getActive: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.ACTIVE);
+            },
+
+            getByStatus: (status) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.BY_STATUS(status));
+            },
+
+            getByInstitution: (institutionId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.BY_INSTITUTION(institutionId));
+            },
+
+            getInstallments: (loanId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.INSTALLMENTS(loanId));
+            },
+
+            create: (loanData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.BASE, loanData);
+            },
+
+            updateStatus: (id, status) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.UPDATE_STATUS(id), { status });
+            },
+
+            getUpcomingInstallments: (days = 30) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.UPCOMING_INSTALLMENTS, {
+                    params: { days }
+                });
+            },
+
+            getOverdueInstallments: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.OVERDUE_INSTALLMENTS);
+            }
+        },
+
+        // Dashboard
+        dashboard: {
+            getSummary: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.DASHBOARD.SUMMARY);
+            },
+
+            getMaturingSoon: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.DASHBOARD.MATURING_SOON);
+            },
+
+            getMonthlyInstallments: (year, month) => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.DASHBOARD.MONTHLY_INSTALLMENTS, {
+                    params: { year, month }
+                });
+            }
+        }
+    },
 
 };

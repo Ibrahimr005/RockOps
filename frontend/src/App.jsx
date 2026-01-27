@@ -77,6 +77,11 @@ import InventoryValuation from "./pages/finance/InventoryValuation/InventoryValu
 import Balances from "./pages/finance/Balances/Balances.jsx";
 import AccountsPayable from "./pages/finance/AccountsPayable/AccountsPayable.jsx";
 import PaymentRequestDetailsPage from "./pages/finance/AccountsPayable/PaymentRequests/PaymentRequestDetailsPage.jsx";
+import CompanyLoansPage from "./pages/finance/CompanyLoans/CompanyLoansPage.jsx";
+import CreateLoanPage from "./pages/finance/CompanyLoans/CreateLoanPage.jsx";
+import LoanDetailsPage from "./pages/finance/CompanyLoans/LoanDetailsPage.jsx";
+import FinancialInstitutionsPage from "./pages/finance/CompanyLoans/FinancialInstitutionsPage.jsx";
+import CreateInstitutionPage from "./pages/finance/CompanyLoans/CreateInstitutionPage.jsx";
 
 // ===================== HR & Payroll Imports =====================
 import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
@@ -128,6 +133,7 @@ import {
     MAINTENANCE_EMPLOYEE,
     ROLES
 } from './utils/roles';
+
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -297,6 +303,15 @@ function App() {
                                         <Route path="/finance/balances" element={<RoleRoute allowedRoles={allRoles}><Balances/></RoleRoute>} />
                                         <Route path="/finance/accounts-payable" element={<RoleRoute allowedRoles={allRoles}><AccountsPayable/></RoleRoute>} />
                                         <Route path="/finance/accounts-payable/payment-requests/:id" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><PaymentRequestDetailsPage/></RoleRoute>} />
+
+                                        <Route path="/finance/company-loans" element={<CompanyLoansPage />} />
+                                        <Route path="/finance/company-loans/new" element={<CreateLoanPage />} />
+                                        <Route path="/finance/company-loans/institutions" element={<FinancialInstitutionsPage />} />
+                                        <Route path="/finance/company-loans/institutions/new" element={<CreateInstitutionPage />} />
+                                        <Route path="/finance/company-loans/institutions/:id/edit" element={<CreateInstitutionPage />} />
+                                        <Route path="/finance/company-loans/institutions/:id" element={<CreateInstitutionPage />} />
+                                        <Route path="/finance/company-loans/:id/edit" element={<CreateLoanPage />} />
+                                        <Route path="/finance/company-loans/:id" element={<LoanDetailsPage />} />
                                         {/* ===================== Generic Related Documents Route ===================== */}
                                         <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
                                         <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
