@@ -5,6 +5,8 @@ import { Users, Briefcase, Calendar, TrendingUp, AlertCircle, UserPlus } from 'l
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -50,79 +52,20 @@ const HRManagerDashboard = () => {
 
     return (
         <div className="hr-manager-dashboard">
-            <div className="hr-manager-dashboard-header">
-                <h1>HR Manager Dashboard</h1>
-                <p>Comprehensive HR metrics and employee management</p>
-            </div>
+            <PageHeader title="HR Manager Dashboard" subtitle="Comprehensive HR metrics and employee management" />
 
             {/* KPI Cards */}
-            <div className="hr-manager-kpi-grid">
-                <div className="hr-manager-kpi-card">
-                    <div className="hr-manager-kpi-icon">
-                        <Users />
-                    </div>
-                    <div className="hr-manager-kpi-content">
-                        <div className="hr-manager-kpi-value">{dashboardData.totalEmployees}</div>
-                        <div className="hr-manager-kpi-label">Total Employees</div>
-                        <div className="hr-manager-kpi-sub">{dashboardData.activeEmployees} Active</div>
-                    </div>
-                </div>
-
-                <div className="hr-manager-kpi-card">
-                    <div className="hr-manager-kpi-icon">
-                        <UserPlus />
-                    </div>
-                    <div className="hr-manager-kpi-content">
-                        <div className="hr-manager-kpi-value">{dashboardData.newHiresThisMonth}</div>
-                        <div className="hr-manager-kpi-label">New Hires</div>
-                        <div className="hr-manager-kpi-sub">This Month</div>
-                    </div>
-                </div>
-
-                <div className="hr-manager-kpi-card">
-                    <div className="hr-manager-kpi-icon">
-                        <Briefcase />
-                    </div>
-                    <div className="hr-manager-kpi-content">
-                        <div className="hr-manager-kpi-value">{dashboardData.totalVacancies}</div>
-                        <div className="hr-manager-kpi-label">Vacancies</div>
-                        <div className="hr-manager-kpi-sub">{dashboardData.activeVacancies} Active</div>
-                    </div>
-                </div>
-
-                <div className="hr-manager-kpi-card">
-                    <div className="hr-manager-kpi-icon">
-                        <Calendar />
-                    </div>
-                    <div className="hr-manager-kpi-content">
-                        <div className="hr-manager-kpi-value">{dashboardData.pendingLeaveRequests}</div>
-                        <div className="hr-manager-kpi-label">Leave Requests</div>
-                        <div className="hr-manager-kpi-sub">Pending Approval</div>
-                    </div>
-                </div>
-
-                <div className="hr-manager-kpi-card">
-                    <div className="hr-manager-kpi-icon">
-                        <TrendingUp />
-                    </div>
-                    <div className="hr-manager-kpi-content">
-                        <div className="hr-manager-kpi-value">{dashboardData.presentToday}</div>
-                        <div className="hr-manager-kpi-label">Present Today</div>
-                        <div className="hr-manager-kpi-sub">{dashboardData.absentToday} Absent</div>
-                    </div>
-                </div>
-
-                <div className="hr-manager-kpi-card">
-                    <div className="hr-manager-kpi-icon">
-                        <AlertCircle />
-                    </div>
-                    <div className="hr-manager-kpi-content">
-                        <div className="hr-manager-kpi-value">{dashboardData.pendingPromotions}</div>
-                        <div className="hr-manager-kpi-label">Pending Promotions</div>
-                        <div className="hr-manager-kpi-sub">{dashboardData.approvedPromotionsThisYear} Approved</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <Users />, label: "Total Employees", value: dashboardData.totalEmployees, variant: "primary", subtitle: `${dashboardData.activeEmployees} Active` },
+                    { icon: <UserPlus />, label: "New Hires", value: dashboardData.newHiresThisMonth, variant: "success", subtitle: "This Month" },
+                    { icon: <Briefcase />, label: "Vacancies", value: dashboardData.totalVacancies, variant: "info", subtitle: `${dashboardData.activeVacancies} Active` },
+                    { icon: <Calendar />, label: "Leave Requests", value: dashboardData.pendingLeaveRequests, variant: "warning", subtitle: "Pending Approval" },
+                    { icon: <TrendingUp />, label: "Present Today", value: dashboardData.presentToday, variant: "active", subtitle: `${dashboardData.absentToday} Absent` },
+                    { icon: <AlertCircle />, label: "Pending Promotions", value: dashboardData.pendingPromotions, variant: "orange", subtitle: `${dashboardData.approvedPromotionsThisYear} Approved` },
+                ]}
+                columns={3}
+            />
 
             {/* Charts Section */}
             <div className="hr-manager-charts">

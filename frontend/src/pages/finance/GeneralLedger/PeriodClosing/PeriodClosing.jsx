@@ -30,6 +30,18 @@ const PeriodClosing = () => {
     const isFinanceManager = currentUser?.role === "FINANCE_MANAGER" || "ADMIN";
     const { showError, showSuccess } = useSnackbar();
 
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showAddModal || confirmationModal.show) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, confirmationModal.show]);
+
     useEffect(() => {
         fetchAccountingPeriods();
     }, []);

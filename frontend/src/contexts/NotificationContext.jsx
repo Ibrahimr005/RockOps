@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { webSocketService } from '../services/notification/webSocketService';
+import { notificationService } from '../services/notificationService';
 import { useAuth } from './AuthContext';
 import NotificationToast from '../components/common/NotificationToast/NotificationToast';
 
@@ -16,9 +17,21 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
     const [wsConnected, setWsConnected] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const { token, currentUser } = useAuth();
     const wsInitialized = useRef(false);
     const toastIdCounter = useRef(0);
+
+    // Fetch initial unread count
+    const fetchUnreadCount = useCallback(async () => {
+        try {
+            const response = await notificationService.getUnreadCount();
+            const data = response.data;
+            setUnreadCount(data.unreadCount || data.count || 0);
+        } catch (error) {
+            // Silently fail — count will update via WebSocket
+        }
+    }, []);
 
     // Initialize WebSocket connection for real-time notifications
     useEffect(() => {
@@ -42,11 +55,20 @@ export const NotificationProvider = ({ children }) => {
                 handleWebSocketNotifications(notifications);
             });
 
+            // Set up unread count callback
+            webSocketService.onUnreadCount((count) => {
+                setUnreadCount(count);
+            });
+
             // Set up connection status callback
             webSocketService.onConnectionStatus(setWsConnected);
 
             // Connect to WebSocket
             await webSocketService.connect(token);
+
+            // Fetch initial unread count after connection
+            fetchUnreadCount();
+
             console.log('✅ NotificationProvider: WebSocket connected');
         } catch (error) {
             console.error('❌ NotificationProvider: Failed to connect WebSocket:', error);
@@ -82,6 +104,9 @@ export const NotificationProvider = ({ children }) => {
                     duration: 6000 // Slightly longer for notifications from server
                 });
             });
+
+            // Re-fetch unread count after new notifications
+            fetchUnreadCount();
         }
     };
 
@@ -162,7 +187,9 @@ export const NotificationProvider = ({ children }) => {
         showWarning,
         showInfo,
         wsConnected,
-        toasts
+        toasts,
+        unreadCount,
+        refreshUnreadCount: fetchUnreadCount
     };
 
     return (

@@ -15,6 +15,8 @@ import java.util.UUID;
 @Table(name = "employee_payrolls", indexes = {
     @Index(name = "idx_emp_payroll_employee", columnList = "employee_id"),
     @Index(name = "idx_emp_payroll_payroll", columnList = "payroll_id"),
+    @Index(name = "idx_emp_payroll_number", columnList = "employee_payroll_number"),
+    @Index(name = "idx_emp_payroll_batch", columnList = "payroll_batch_id"),
     @Index(name = "idx_emp_payroll_composite", columnList = "payroll_id,employee_id", unique = true)
 })
 @Getter
@@ -22,19 +24,33 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"payroll", "attendanceSnapshots", "deductions"})
-@ToString(exclude = {"payroll", "attendanceSnapshots", "deductions"})
+@EqualsAndHashCode(exclude = {"payroll", "payrollBatch", "attendanceSnapshots", "deductions"})
+@ToString(exclude = {"payroll", "payrollBatch", "attendanceSnapshots", "deductions"})
 public class EmployeePayroll {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
-    
+
+    /**
+     * Human-readable employee payroll number (format: EPRL-YYYY-NNNNNN)
+     */
+    @Column(name = "employee_payroll_number", nullable = false, unique = true, length = 50)
+    private String employeePayrollNumber;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "payroll_id", nullable = false, foreignKey = @ForeignKey(name = "fk_emp_payroll_payroll"))
     @JsonBackReference
     private Payroll payroll;
-    
+
+    /**
+     * The batch this employee payroll belongs to (grouped by payment type)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payroll_batch_id", foreignKey = @ForeignKey(name = "fk_emp_payroll_batch"))
+    @JsonBackReference
+    private PayrollBatch payrollBatch;
+
     @Column(name = "employee_id", nullable = false)
     private UUID employeeId;
     
@@ -50,7 +66,30 @@ public class EmployeePayroll {
     
     @Column(name = "department_name", length = 200)
     private String departmentName;
-    
+
+    // Payment type snapshot (how this employee will be paid)
+    @Column(name = "payment_type_id")
+    private UUID paymentTypeId;
+
+    @Column(name = "payment_type_code", length = 50)
+    private String paymentTypeCode;
+
+    @Column(name = "payment_type_name", length = 100)
+    private String paymentTypeName;
+
+    // Employee bank details snapshot (for bank transfer payments)
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
+    @Column(name = "bank_account_number", length = 50)
+    private String bankAccountNumber;
+
+    @Column(name = "bank_account_holder_name", length = 200)
+    private String bankAccountHolderName;
+
+    @Column(name = "wallet_number", length = 50)
+    private String walletNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "contract_type", nullable = false, length = 20)
     private JobPosition.ContractType contractType;
@@ -125,7 +164,12 @@ public class EmployeePayroll {
     @Column(name = "overtime_pay", precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal overtimePay = BigDecimal.ZERO;
-    
+
+    // Bonus amount
+    @Column(name = "bonus_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal bonusAmount = BigDecimal.ZERO;
+
     // Deduction breakdown
     @Column(name = "absence_deduction_amount", precision = 15, scale = 2)
     @Builder.Default

@@ -25,6 +25,18 @@ const DisposalManagement = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const { showSuccess, showError } = useSnackbar();
 
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showDisposeModal || showDetailsModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showDisposeModal, showDetailsModal]);
+
     useEffect(() => {
         fetchDisposalData();
         fetchAvailableAssets();

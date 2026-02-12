@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave} from 'react-icons/fa';
 import { FiCheckCircle, FiFileText, FiXCircle } from 'react-icons/fi';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [formData, setFormData] = useState({
         paymentRequestId: request.id,
@@ -14,8 +23,11 @@ const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
     });
     const [errors, setErrors] = useState({});
     const { showError, showSuccess } = useSnackbar(); // Add showSuccess
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     const handleChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -120,7 +132,27 @@ const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
         }).format(amount);
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     return (
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
         <div className="modal-overlay">
             <div className="modal-container approve-reject-modal">
                 <div className="modal-header">
@@ -128,7 +160,7 @@ const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
                         <FiCheckCircle />
                         <h2>Review Payment Request</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
+                    <button className="modern-modal-close" onClick={handleCloseAttempt}>
                         <FaTimes />
                     </button>
                 </div>
@@ -252,7 +284,7 @@ const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
                                 </>
                             )}
 
-                            <button className="btn-secondary" onClick={onClose}>
+                            <button className="btn-secondary" onClick={handleCloseAttempt}>
                                 Close
                             </button>
                         </div>
@@ -295,6 +327,7 @@ const ApproveRejectModal = ({ request, onClose, onSubmit }) => {
                 )}
             </div>
         </div>
+        </>
     );
 };
 

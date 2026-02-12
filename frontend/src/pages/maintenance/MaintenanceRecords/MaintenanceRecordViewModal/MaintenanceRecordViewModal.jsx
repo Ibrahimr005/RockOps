@@ -127,7 +127,7 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId, ticketType }) =
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
                 {/* Header */}
                 <div className="modal-header">

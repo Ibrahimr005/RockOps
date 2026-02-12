@@ -47,6 +47,18 @@ const PaymentManagement = () => {
         { value: 'WIRE_TRANSFER', label: 'Wire Transfer' }
     ];
 
+    // Scroll lock for create payment modal
+    useEffect(() => {
+        if (showCreateModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showCreateModal]);
+
     useEffect(() => {
         fetchPayments();
         fetchUnpaidInvoices();

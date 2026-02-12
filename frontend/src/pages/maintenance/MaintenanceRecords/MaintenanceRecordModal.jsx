@@ -6,6 +6,7 @@ import { equipmentService } from '../../../services/equipmentService.js';
 import { siteService } from '../../../services/siteService.js';
 import maintenanceService from '../../../services/maintenanceService.js';
 import { authService } from '../../../services/authService.js';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
 import '../../../styles/cancel-modal-button.scss';
@@ -14,6 +15,8 @@ import './MaintenanceRecordModal.scss';
 
 const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) => {
     const { t } = useTranslation();
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState({
         siteId: '',
         equipmentId: '',
@@ -124,6 +127,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
     }, [editingRecord, isOpen, currentUser, equipmentList]);
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
 
         // If site changes, clear equipment selection
@@ -227,6 +231,14 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
         return Object.keys(newErrors).length === 0;
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -255,17 +267,18 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <div className="modal-title">
-                        <FaTools />
-                        {editingRecord ? 'Edit Maintenance Record' : 'New Maintenance Record'}
+        <>
+            <div className="modal-backdrop">
+                <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <div className="modal-title">
+                            <FaTools />
+                            {editingRecord ? 'Edit Maintenance Record' : 'New Maintenance Record'}
+                        </div>
+                        <button className="btn-close" onClick={handleCloseAttempt}>
+                            <FaTimes />
+                        </button>
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
-                </div>
                 <div className="modal-body">
                     {editingRecord && editingRecord.status === 'REJECTED' && editingRecord.rejectionReason && (
                         <div className="alert alert-danger" style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#fff5f5', border: '1px solid #fc8181', borderRadius: '4px', color: '#c53030' }}>
@@ -503,7 +516,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose}>
+                    <button type="button" className="btn-cancel" onClick={handleCloseAttempt}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" form="maintenance-record-form">
@@ -513,6 +526,18 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 </div>
             </div>
         </div>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

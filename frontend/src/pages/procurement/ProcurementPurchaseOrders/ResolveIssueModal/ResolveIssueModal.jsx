@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ResolveIssueModal.scss';
 
 const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
@@ -11,13 +12,17 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
     const [isFetchingIssues, setIsFetchingIssues] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     useEffect(() => {
         if (isOpen && purchaseOrder) {
             fetchIssues();
             document.body.classList.add('modal-open');
+            document.body.style.overflow = 'hidden';
         } else {
             document.body.classList.remove('modal-open');
+            document.body.style.overflow = 'unset';
             // Reset state when modal closes
             setIssues([]);
             setResolutions({});
@@ -26,6 +31,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
 
         return () => {
             document.body.classList.remove('modal-open');
+            document.body.style.overflow = 'unset';
         };
     }, [isOpen, purchaseOrder]);
 
@@ -66,6 +72,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
     };
 
     const handleResolutionTypeChange = (issueId, resolutionType) => {
+        setIsFormDirty(true);
         setResolutions(prev => ({
             ...prev,
             [issueId]: {
@@ -76,6 +83,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
     };
 
     const handleResolutionNotesChange = (issueId, notes) => {
+        setIsFormDirty(true);
         setResolutions(prev => ({
             ...prev,
             [issueId]: {
@@ -177,10 +185,30 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
         return null;
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     if (!isOpen || !purchaseOrder) return null;
 
     return (
-        <div className="resolve-issue-modal-overlay" onClick={onClose}>
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        <div className="resolve-issue-modal-overlay" onClick={handleCloseAttempt}>
             <div className="resolve-issue-modal-container" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="resolve-issue-modal-header">
@@ -197,7 +225,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
                             </div>
                         </div>
                     </div>
-                    <button className="btn-close" onClick={onClose} disabled={isSubmitting}>
+                    <button className="btn-close" onClick={handleCloseAttempt} disabled={isSubmitting}>
                         ×
                     </button>
                 </div>
@@ -554,7 +582,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
                             <button
                                 type="button"
                                 className="btn-cancel"
-                                onClick={onClose}
+                                onClick={handleCloseAttempt}
                                 disabled={isSubmitting}
                             >
                                 Cancel
@@ -584,6 +612,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
                 )}
             </div>
         </div>
+        </>
     );
 };
 

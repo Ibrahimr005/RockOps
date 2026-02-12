@@ -17,6 +17,7 @@ import {
     FiEdit3,
     FiMail
 } from 'react-icons/fi';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import './PurchaseOrderDetails.scss';
 
 const PurchaseOrderDetails = () => {
@@ -222,55 +223,35 @@ const PurchaseOrderDetails = () => {
             </div>
 
             {/* Quick Stats Cards */}
-            <div className="stats-grid">
-                <div className="stat-card primary">
-                    <div className="stat-icon">
-                        <FiDollarSign />
-                    </div>
-                    <div className="stat-content">
-                        <div className="stat-value">
-                            {formatCurrency(purchaseOrder.totalAmount, purchaseOrder.currency)}
-                        </div>
-                        <div className="stat-label">Total Amount</div>
-                    </div>
-                </div>
-
-                <div className="proc-stat-card">
-                    <div className="stat-icon">
-                        <FiCalendar />
-                    </div>
-                    <div className="stat-content">
-                        <div className="stat-value">
-                            {formatDate(purchaseOrder.expectedDeliveryDate)}
-                        </div>
-                        <div className="stat-label">Expected Delivery</div>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon">
-                        <FiUser />
-                    </div>
-                    <div className="stat-content">
-                        <div className="stat-value">
-                            {purchaseOrder.requestOrder?.requesterName || '-'}
-                        </div>
-                        <div className="stat-label">Requester</div>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon">
-                        <FiPackage />
-                    </div>
-                    <div className="stat-content">
-                        <div className="stat-value">
-                            {purchaseOrder.offer?.offerItems?.length || 0}
-                        </div>
-                        <div className="stat-label">Items</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    {
+                        icon: <FiDollarSign />,
+                        label: "Total Amount",
+                        value: formatCurrency(purchaseOrder.totalAmount, purchaseOrder.currency),
+                        variant: "primary"
+                    },
+                    {
+                        icon: <FiCalendar />,
+                        label: "Expected Delivery",
+                        value: formatDate(purchaseOrder.expectedDeliveryDate),
+                        variant: "info"
+                    },
+                    {
+                        icon: <FiUser />,
+                        label: "Requester",
+                        value: purchaseOrder.requestOrder?.requesterName || '-',
+                        variant: "purple"
+                    },
+                    {
+                        icon: <FiPackage />,
+                        label: "Items",
+                        value: purchaseOrder.offer?.offerItems?.length || 0,
+                        variant: "success"
+                    }
+                ]}
+                columns={4}
+            />
 
             {/* Main Content Grid */}
             <div className="content-grid">

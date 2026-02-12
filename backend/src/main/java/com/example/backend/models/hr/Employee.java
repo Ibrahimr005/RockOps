@@ -84,6 +84,23 @@ public class Employee
     private BigDecimal baseSalaryOverride;
     private BigDecimal salaryMultiplier;
 
+    // Payment details - how this employee receives salary
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "payment_type_id")
+    private com.example.backend.models.payroll.PaymentType paymentType;
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
+    @Column(name = "bank_account_number", length = 50)
+    private String bankAccountNumber;
+
+    @Column(name = "bank_account_holder_name", length = 200)
+    private String bankAccountHolderName;
+
+    @Column(name = "wallet_number", length = 50)
+    private String walletNumber;
+
     // Relationships
     @ManyToOne
     @JoinColumn(name = "site_id", referencedColumnName = "id")
@@ -102,12 +119,14 @@ public class Employee
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonBackReference
-    private List<Attendance> attendances;
+    @Builder.Default
+    private List<Attendance> attendances = new ArrayList<>();
 
     // NEW: Loan relationship
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonBackReference("employee-loans")
-    private List<Loan> loans;
+    @Builder.Default
+    private List<Loan> loans = new ArrayList<>();
 
     // Helper methods
     public String getFullName() {
@@ -140,6 +159,7 @@ public class Employee
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference("employee-vacation-balance")
+    @Builder.Default
     private List<VacationBalance> vacationBalances = new ArrayList<>();
 
 
@@ -345,7 +365,8 @@ public class Employee
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonBackReference("employee-promotion-requests")
-    private List<PromotionRequest> promotionRequests;
+    @Builder.Default
+    private List<PromotionRequest> promotionRequests = new ArrayList<>();
 
     /**
      * Get all promotion requests for this employee

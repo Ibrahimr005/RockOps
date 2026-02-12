@@ -4,6 +4,18 @@ import "./TransactionViewModal.scss";
 const TransactionViewModal = ({ transaction, isOpen, onClose, hideItemQuantities = false, currentWarehouseId }) => {
     const [userRole, setUserRole] = useState(null);
 
+    // Scroll lock
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     // Get user role from localStorage
     useEffect(() => {
         try {

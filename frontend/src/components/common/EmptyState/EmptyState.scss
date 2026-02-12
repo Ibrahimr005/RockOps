@@ -1,0 +1,76 @@
+// ========================================
+// EmptyState.scss - Shared Empty/Placeholder State
+// Reference: DeductionManagement .no-employee-selected pattern
+// ========================================
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--border-color-light);
+  text-align: center;
+
+  .empty-state-icon {
+    font-size: 48px;
+    color: var(--color-text-muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-state-title {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-primary);
+  }
+
+  .empty-state-description {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    max-width: 400px;
+    line-height: 1.5;
+  }
+
+  .empty-state-action {
+    margin-top: 20px;
+  }
+}
+
+// Compact variant
+.empty-state.empty-state--compact {
+  padding: 32px 16px;
+
+  .empty-state-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  .empty-state-title {
+    font-size: 16px;
+  }
+
+  .empty-state-description {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .empty-state {
+    padding: 40px 16px;
+
+    .empty-state-icon {
+      font-size: 40px;
+    }
+
+    .empty-state-title {
+      font-size: 16px;
+    }
+  }
+}

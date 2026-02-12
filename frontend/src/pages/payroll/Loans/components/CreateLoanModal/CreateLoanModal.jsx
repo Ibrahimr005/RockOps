@@ -8,10 +8,19 @@ import { FaTimes, FaSave, FaCalculator, FaSpinner, FaUserTie } from 'react-icons
 import EmployeeSelector from '../../../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 import { loanService } from '../../../../../services/payroll/loanService.js';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext.jsx';
+import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './CreateLoanModal.scss';
 
 const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
     const { showSuccess, showError, showWarning } = useSnackbar();
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     // ========================================
     // STATE
@@ -34,6 +43,8 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
         totalInterest: 0,
         endDate: ''
     });
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     // ========================================
     // CALCULATIONS
@@ -94,6 +105,7 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
     // HANDLERS
     // ========================================
     const handleInputChange = (field, value) => {
+        setIsFormDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
 
         // Clear validation for this field
@@ -103,6 +115,7 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
     };
 
     const handleEmployeeSelect = (employee) => {
+        setIsFormDirty(true);
         setSelectedEmployee(employee);
         setFormData(prev => ({ ...prev, employeeId: employee?.id || '' }));
 
@@ -196,21 +209,29 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
     // ========================================
     // MODAL HANDLERS
     // ========================================
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget && !loading) {
-            onClose();
+            handleCloseAttempt();
         }
     };
 
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape' && !loading) {
-                onClose();
+                handleCloseAttempt();
             }
         };
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, loading]);
+    }, [onClose, loading, isFormDirty]);
 
     // ========================================
     // HELPER FUNCTIONS
@@ -243,7 +264,7 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                     <h2>Create New Loan</h2>
                     <button
                         className="create-loan-modal-close-btn"
-                        onClick={onClose}
+                        onClick={handleCloseAttempt}
                         type="button"
                         aria-label="Close modal"
                         disabled={loading}
@@ -473,7 +494,7 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                             <button
                                 type="button"
                                 className="create-loan-cancel-btn"
-                                onClick={onClose}
+                                onClick={handleCloseAttempt}
                                 disabled={loading}
                             >
                                 Cancel
@@ -499,6 +520,18 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                     </form>
                 </div>
             </div>
+
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
+            />
         </div>
     );
 };

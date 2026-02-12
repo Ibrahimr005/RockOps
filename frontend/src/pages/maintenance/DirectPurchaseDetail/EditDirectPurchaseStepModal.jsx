@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave } from 'react-icons/fa';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
 import '../../../styles/cancel-modal-button.scss';
@@ -7,6 +8,8 @@ import '../../../styles/modal-styles.scss';
 import './EditDirectPurchaseStepModal.scss';
 
 const EditDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) => {
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState({
         status: '',
         responsiblePerson: '',
@@ -58,6 +61,7 @@ const EditDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) => {
     }, [step]);
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -100,6 +104,14 @@ const EditDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -136,16 +148,17 @@ const EditDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-container modal-lg edit-step-modal" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <div className="modal-title">
-                        Edit Step: {step?.stepName}
+        <>
+            <div className="modal-backdrop">
+                <div className="modal-container modal-lg edit-step-modal" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <div className="modal-title">
+                            Edit Step: {step?.stepName}
+                        </div>
+                        <button className="btn-close" onClick={handleCloseAttempt}>
+                            <FaTimes />
+                        </button>
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
-                </div>
                 <div className="modal-body">
                     <form onSubmit={handleSubmit} className="edit-step-form" id="edit-step-form">
                         <div className="form-section">
@@ -326,7 +339,7 @@ const EditDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) => {
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose}>
+                    <button type="button" className="btn-cancel" onClick={handleCloseAttempt}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" form="edit-step-form">
@@ -336,6 +349,18 @@ const EditDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) => {
                 </div>
             </div>
         </div>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

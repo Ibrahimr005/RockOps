@@ -995,6 +995,103 @@ export const LOAN_ENDPOINTS = {
     STATISTICS: '/api/v1/payroll/loans/statistics'
 };
 
+// Bonus module endpoints
+export const BONUS_ENDPOINTS = {
+    BASE: '/api/v1/payroll/bonuses',
+    BY_ID: (id) => `/api/v1/payroll/bonuses/${id}`,
+    BY_EMPLOYEE: (employeeId) => `/api/v1/payroll/bonuses/employee/${employeeId}`,
+    CREATE: '/api/v1/payroll/bonuses',
+    BULK_CREATE: '/api/v1/payroll/bonuses/bulk',
+    APPROVE: (id) => `/api/v1/payroll/bonuses/${id}/approve`,
+    REJECT: (id) => `/api/v1/payroll/bonuses/${id}/reject`,
+    CANCEL: (id) => `/api/v1/payroll/bonuses/${id}/cancel`,
+    STATISTICS: '/api/v1/payroll/bonuses/statistics'
+};
+
+// Bonus Type module endpoints
+export const BONUS_TYPE_ENDPOINTS = {
+    BASE: '/api/v1/payroll/bonus-types',
+    BY_ID: (id) => `/api/v1/payroll/bonus-types/${id}`,
+    ACTIVE: '/api/v1/payroll/bonus-types/active',
+    CREATE: '/api/v1/payroll/bonus-types',
+    UPDATE: (id) => `/api/v1/payroll/bonus-types/${id}`,
+    DEACTIVATE: (id) => `/api/v1/payroll/bonus-types/${id}`
+};
+
+// Payroll module endpoints
+export const PAYROLL_ENDPOINTS = {
+    BASE: '/api/v1/payroll',
+    BY_ID: (id) => `/api/v1/payroll/${id}`,
+    LATEST: '/api/v1/payroll/latest',
+    PERIOD: '/api/v1/payroll/period',
+    CREATE: '/api/v1/payroll',
+    DELETE: (id) => `/api/v1/payroll/${id}`,
+
+    // Workflow endpoints
+    IMPORT_ATTENDANCE: (id) => `/api/v1/payroll/${id}/import-attendance`,
+    FINALIZE_ATTENDANCE: (id) => `/api/v1/payroll/${id}/finalize-attendance`,
+    ATTENDANCE_STATUS: (id) => `/api/v1/payroll/${id}/attendance-status`,
+    NOTIFY_HR: (id) => `/api/v1/payroll/${id}/notify-hr`,
+    RESET_ATTENDANCE: (id) => `/api/v1/payroll/${id}/reset-attendance`,
+    RECALCULATE_TOTALS: (id) => `/api/v1/payroll/${id}/recalculate-totals`,
+
+    // Leave review
+    PROCESS_LEAVE_REVIEW: (id) => `/api/v1/payroll/${id}/process-leave-review`,
+    FINALIZE_LEAVE: (id) => `/api/v1/payroll/${id}/finalize-leave`,
+    LEAVE_STATUS: (id) => `/api/v1/payroll/${id}/leave-status`,
+    LEAVE_REQUESTS: (id) => `/api/v1/payroll/${id}/leave-requests`,
+
+    // Overtime review
+    PROCESS_OVERTIME_REVIEW: (id) => `/api/v1/payroll/${id}/process-overtime-review`,
+    FINALIZE_OVERTIME: (id) => `/api/v1/payroll/${id}/finalize-overtime`,
+    OVERTIME_STATUS: (id) => `/api/v1/payroll/${id}/overtime-status`,
+    OVERTIME_RECORDS: (id) => `/api/v1/payroll/${id}/overtime-records`,
+
+    // Deduction review
+    PROCESS_DEDUCTION_REVIEW: (id) => `/api/v1/payroll/${id}/process-deduction-review`,
+    FINALIZE_DEDUCTION: (id) => `/api/v1/payroll/${id}/finalize-deduction`,
+    DEDUCTION_STATUS: (id) => `/api/v1/payroll/${id}/deduction-status`,
+    DEDUCTION_SUMMARIES: (id) => `/api/v1/payroll/${id}/deduction-summaries`,
+
+    // Bonus review
+    PROCESS_BONUS_REVIEW: (id) => `/api/v1/payroll/${id}/process-bonus-review`,
+    FINALIZE_BONUS: (id) => `/api/v1/payroll/${id}/finalize-bonus`,
+    BONUS_STATUS: (id) => `/api/v1/payroll/${id}/bonus-status`,
+    BONUS_SUMMARIES: (id) => `/api/v1/payroll/${id}/bonus-summaries`,
+
+    // Confirm and lock
+    CONFIRM_LOCK: (id) => `/api/v1/payroll/${id}/confirm-lock`,
+
+    // Send to finance (old way - kept for backward compatibility)
+    SEND_TO_FINANCE: (id) => `/api/v1/payroll/${id}/send-to-finance`,
+
+    // Batch workflow (new way)
+    CREATE_BATCHES: (id) => `/api/v1/payroll/${id}/create-batches`,
+    GET_BATCHES: (id) => `/api/v1/payroll/${id}/batches`,
+    SEND_BATCHES_TO_FINANCE: (id) => `/api/v1/payroll/${id}/send-batches-to-finance`,
+    EMPLOYEES_WITHOUT_PAYMENT_TYPE: (id) => `/api/v1/payroll/${id}/employees-without-payment-type`,
+
+    // Employee payrolls
+    EMPLOYEES: (id) => `/api/v1/payroll/${id}/employees`,
+    EMPLOYEE_PAYROLL: (payrollId, employeeId) => `/api/v1/payroll/${payrollId}/employee/${employeeId}`,
+
+    // Public holidays
+    PUBLIC_HOLIDAYS: (id) => `/api/v1/payroll/${id}/public-holidays`,
+    ADD_PUBLIC_HOLIDAYS: (id) => `/api/v1/payroll/${id}/add-public-holidays`
+};
+
+// Payment Type module endpoints
+export const PAYMENT_TYPE_ENDPOINTS = {
+    BASE: '/api/v1/payment-types',
+    ALL: '/api/v1/payment-types/all',
+    BY_ID: (id) => `/api/v1/payment-types/${id}`,
+    BY_CODE: (code) => `/api/v1/payment-types/code/${code}`,
+    CREATE: '/api/v1/payment-types',
+    UPDATE: (id) => `/api/v1/payment-types/${id}`,
+    DEACTIVATE: (id) => `/api/v1/payment-types/${id}/deactivate`,
+    ACTIVATE: (id) => `/api/v1/payment-types/${id}/activate`
+};
+
 // Finance - Inventory Valuation Endpoints (Asset Values only)
 export const INVENTORY_VALUATION_ENDPOINTS = {
     BASE: '/api/finance/inventory-valuation',

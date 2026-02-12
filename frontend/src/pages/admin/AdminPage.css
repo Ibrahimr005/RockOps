@@ -73,7 +73,6 @@
 }
 
 @media print {
-    .navbar-right,
     .action-buttons,
     .add-user-button {
         display: none !important;

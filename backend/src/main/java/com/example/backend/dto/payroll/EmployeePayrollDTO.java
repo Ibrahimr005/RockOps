@@ -16,12 +16,28 @@ import java.util.UUID;
 @AllArgsConstructor
 public class EmployeePayrollDTO {
     private UUID id;
+    private String employeePayrollNumber;
     private UUID payrollId;
     private UUID employeeId;
     private String employeeName;
     private String jobPositionName;
     private String departmentName;
     private String contractType;
+
+    // Payment type info
+    private UUID paymentTypeId;
+    private String paymentTypeCode;
+    private String paymentTypeName;
+
+    // Bank details (for bank transfers)
+    private String bankName;
+    private String bankAccountNumber;
+    private String bankAccountHolderName;
+    private String walletNumber;
+
+    // Batch info
+    private UUID payrollBatchId;
+    private String payrollBatchNumber;
 
     // Compensation snapshot
     private BigDecimal monthlyBaseSalary;
@@ -51,6 +67,9 @@ public class EmployeePayrollDTO {
     private BigDecimal totalWorkedHours;
     private BigDecimal overtimeHours;
     private BigDecimal overtimePay;
+
+    // Bonus
+    private BigDecimal bonusAmount;
 
     // Deduction breakdown
     private BigDecimal absenceDeductionAmount;

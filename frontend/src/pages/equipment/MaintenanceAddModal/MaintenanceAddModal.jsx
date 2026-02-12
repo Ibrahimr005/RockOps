@@ -61,6 +61,10 @@ const MaintenanceAddModal = ({
         onConfirm: null
     });
 
+    // Dirty state tracking
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
     const { showSuccess, showWarning, showError } = useSnackbar();
 
     const isEditing = !!editingMaintenance;
@@ -198,6 +202,7 @@ const MaintenanceAddModal = ({
     };
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -352,6 +357,7 @@ const MaintenanceAddModal = ({
     };
 
     const handleSiteChange = (e) => {
+        setIsFormDirty(true);
         const siteId = e.target.value;
         setSelectedSite(siteId);
         if (siteId) {
@@ -360,6 +366,7 @@ const MaintenanceAddModal = ({
     };
 
     const handleWarehouseChange = (e) => {
+        setIsFormDirty(true);
         const warehouseId = e.target.value;
         setTransactionFormData(prev => ({ ...prev, senderId: warehouseId }));
         if (warehouseId) {
@@ -368,6 +375,7 @@ const MaintenanceAddModal = ({
     };
 
     const handleItemChange = (index, field, value) => {
+        setIsFormDirty(true);
         const updatedItems = [...transactionFormData.items];
         updatedItems[index] = {
             ...updatedItems[index],
@@ -380,6 +388,7 @@ const MaintenanceAddModal = ({
     };
 
     const addItem = () => {
+        setIsFormDirty(true);
         setTransactionFormData(prev => ({
             ...prev,
             items: [...prev.items, { itemTypeId: '', quantity: 1 }]
@@ -387,6 +396,7 @@ const MaintenanceAddModal = ({
     };
 
     const removeItem = (index) => {
+        setIsFormDirty(true);
         if (transactionFormData.items.length > 1) {
             const updatedItems = transactionFormData.items.filter((_, i) => i !== index);
             setTransactionFormData(prev => ({
@@ -528,6 +538,14 @@ const MaintenanceAddModal = ({
         setNewMaintenanceTypeData({ name: '', description: '', active: true });
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     // Create or update maintenance record and transaction if needed
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -630,7 +648,7 @@ const MaintenanceAddModal = ({
     const handleOverlayClick = (e) => {
         // Only close if clicking on the overlay itself, not on the modal content
         if (e.target === e.currentTarget) {
-            onClose();
+            handleCloseAttempt();
         }
     };
 
@@ -639,7 +657,7 @@ const MaintenanceAddModal = ({
             <div className="maintenance-modal">
                 <div className="maintenance-modal-header">
                     <h2>{isEditing ? 'Edit Maintenance Record' : 'Add Maintenance Record'}</h2>
-                    <button className="btn-close" onClick={onClose} aria-label="Close"></button>
+                    <button className="btn-close" onClick={handleCloseAttempt} aria-label="Close"></button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="maintenance-form">
@@ -822,7 +840,7 @@ const MaintenanceAddModal = ({
                     )}
 
                     <div className="form-actions">
-                        <button type="button" className="cancel-button" onClick={onClose} disabled={isLoading}>
+                        <button type="button" className="cancel-button" onClick={handleCloseAttempt} disabled={isLoading}>
                             Cancel
                         </button>
                         <button type="submit" className="submit-button" disabled={isLoading}>
@@ -895,6 +913,18 @@ const MaintenanceAddModal = ({
                 onCancel={() => setConfirmationState(prev => ({ ...prev, isOpen: false }))}
                 confirmText="Reactivate"
                 type="warning"
+            />
+
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
             />
         </div>
     );

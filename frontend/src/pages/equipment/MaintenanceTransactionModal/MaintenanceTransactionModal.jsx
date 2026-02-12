@@ -5,6 +5,7 @@ import './MaintenanceTransactionModal.scss';
 import { siteService } from '../../../services/siteService';
 import { itemTypeService } from '../../../services/itemTypeService';
 import { transactionService } from '../../../services/transactionService';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const MaintenanceTransactionModal = ({
                                          isOpen,
@@ -37,6 +38,21 @@ const MaintenanceTransactionModal = ({
     const axiosInstance = axios.create({
         headers: { Authorization: `Bearer ${token}` }
     });
+
+    // Dirty state tracking
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     // Initialize
     useEffect(() => {
@@ -105,6 +121,7 @@ const MaintenanceTransactionModal = ({
 
     // Handle batch number input change
     const handleBatchNumberChange = (e) => {
+        setIsFormDirty(true);
         setBatchNumber(e.target.value);
         // Reset verification when batch number changes
         setBatchVerificationResult(null);
@@ -194,11 +211,13 @@ const MaintenanceTransactionModal = ({
 
     // Handle site change for transaction form
     const handleSiteChange = (e) => {
+        setIsFormDirty(true);
         setSelectedSite(e.target.value);
     };
 
     // Handle warehouse change for transaction form
     const handleWarehouseChange = (e) => {
+        setIsFormDirty(true);
         setTransactionFormData({
             ...transactionFormData,
             senderId: e.target.value
@@ -207,6 +226,7 @@ const MaintenanceTransactionModal = ({
 
     // Handle item change in transaction form
     const handleItemChange = (index, field, value) => {
+        setIsFormDirty(true);
         const updatedItems = [...transactionFormData.items];
         updatedItems[index] = {
             ...updatedItems[index],
@@ -221,6 +241,7 @@ const MaintenanceTransactionModal = ({
 
     // Add item in transaction form
     const addItem = () => {
+        setIsFormDirty(true);
         setTransactionFormData({
             ...transactionFormData,
             items: [...transactionFormData.items, { itemTypeId: '', quantity: 1 }]
@@ -229,6 +250,7 @@ const MaintenanceTransactionModal = ({
 
     // Remove item in transaction form
     const removeItem = (index) => {
+        setIsFormDirty(true);
         if (transactionFormData.items.length <= 1) return;
 
         const updatedItems = transactionFormData.items.filter((_, i) => i !== index);
@@ -285,12 +307,20 @@ const MaintenanceTransactionModal = ({
         }
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     if (!isOpen) return null;
 
     const handleOverlayClick = (e) => {
         // Only close if clicking on the overlay itself, not on the modal content
         if (e.target === e.currentTarget) {
-            onClose();
+            handleCloseAttempt();
         }
     };
 
@@ -299,7 +329,7 @@ const MaintenanceTransactionModal = ({
             <div className="maintenance-transaction-modal">
                 <div className="maintenance-transaction-modal-header">
                     <h2>Add Transaction to Maintenance</h2>
-                    <button className="btn-close" onClick={onClose} aria-label="Close"></button>
+                    <button className="btn-close" onClick={handleCloseAttempt} aria-label="Close"></button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="transaction-form">
@@ -477,7 +507,7 @@ const MaintenanceTransactionModal = ({
                         <button
                             type="button"
                             className="btn-primary--outline"
-                            onClick={onClose}
+                            onClick={handleCloseAttempt}
                             disabled={isLoading}
                         >
                             Cancel
@@ -492,6 +522,18 @@ const MaintenanceTransactionModal = ({
                     </div>
                 </form>
             </div>
+
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
+            />
         </div>
     );
 };

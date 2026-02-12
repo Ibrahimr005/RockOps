@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiUsers, FiPlus, FiEye, FiEdit, FiUserCheck, FiUserX, FiRefreshCw } from 'react-icons/fi';
 import DataTable from '../../../../../components/common/DataTable/DataTable';
+import StatisticsCards from '../../../../../components/common/StatisticsCards/StatisticsCards';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext';
 import { jobPositionService } from '../../../../../services/hr/jobPositionService.js';
 
@@ -213,35 +214,14 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
     return (
         <div className="position-employees">
             {/* Statistics Cards */}
-            <div className="employees-stats">
-                <div className="stat-card">
-                    <div className="stat-icon total">
-                        <FiUsers />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats.total}</span>
-                        <span className="stat-label">Total Employees</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon active">
-                        <FiUserCheck />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats.active}</span>
-                        <span className="stat-label">Active</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon inactive">
-                        <FiUserX />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats.inactive}</span>
-                        <span className="stat-label">Inactive</span>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <FiUsers />, label: "Total Employees", value: stats.total, variant: "primary" },
+                    { icon: <FiUserCheck />, label: "Active", value: stats.active, variant: "success" },
+                    { icon: <FiUserX />, label: "Inactive", value: stats.inactive, variant: "danger" },
+                ]}
+                columns={3}
+            />
 
             {/* Position Summary */}
             {/*<div className="position-summary">*/}

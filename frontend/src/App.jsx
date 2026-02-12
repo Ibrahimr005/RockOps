@@ -7,7 +7,6 @@ import {AuthProvider, useAuth} from "./contexts/AuthContext.jsx";
 import Login from "./pages/login/Login.jsx";
 import Sidebar, {SidebarProvider} from "./components/common/Sidebar/Sidebar.jsx";
 import AdminPage from "./pages/admin/AdminPage.jsx";
-import Navbar from "./components/common/Navbar/Navbar.jsx";
 import DashboardPage from "./pages/dashboards/DashboardPage.jsx";
 import AdminDashboard from "./pages/dashboards/AdminDashboard.jsx";
 import SiteAdminDashboard from "./pages/dashboards/SiteAdminDashboard.jsx";
@@ -90,6 +89,8 @@ import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetail
 import PayslipManagement from "./pages/payroll/payslip/PayslipManagement.jsx";
 import PayslipEdit from "./pages/payroll/payslip/PayslipEdit.jsx";
 import DeductionManagement from "./pages/payroll/deduction/DeductionManagement.jsx";
+import BonusManagement from "./pages/payroll/Bonuses/BonusManagement/BonusManagement.jsx";
+import PaymentTypes from "./pages/payroll/PaymentTypes/PaymentTypes.jsx";
 import DepartmentDetails from "./pages/HR/Departments/DepartmentDetails.jsx";
 import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
 import PotentialCandidates from "./pages/HR/PotentialCandidates/PotentialCandidates.jsx";
@@ -153,7 +154,6 @@ const MainLayout = () => (
         <div className="app-container">
             <Sidebar />
             <div className="main-content-wrapper">
-                <Navbar />
                 <main className="main-content">
                     <Outlet />
                 </main>
@@ -274,8 +274,12 @@ function App() {
                                             <Route path="loans" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><LoanManagement/></RoleRoute>}/>
                                             <Route path="loans/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><LoanDetails/></RoleRoute>}/>
 
+                                            {/* Bonus Management */}
+                                            <Route path="bonuses" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><BonusManagement/></RoleRoute>}/>
+
                                             {/* Keep existing deduction and payslip routes */}
                                             <Route path="deductions" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><DeductionManagement/></RoleRoute>}/>
+                                            <Route path="payment-types" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PaymentTypes/></RoleRoute>}/>
                                             <Route path="payslips" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayslipManagement/></RoleRoute>}/>
                                             <Route path="payslips/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayslipEdit/></RoleRoute>}/>
                                             <Route path="reports" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayrollReports/></RoleRoute>}/>

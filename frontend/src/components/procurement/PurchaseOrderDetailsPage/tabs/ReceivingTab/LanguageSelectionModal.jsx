@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FiX, FiDownload } from 'react-icons/fi';
 import './LanguageSelectionModal.scss';
 
 const LanguageSelectionModal = ({ isVisible, onClose, onSelectLanguage, title }) => {
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
+
     if (!isVisible) return null;
 
     const handleLanguageSelect = (language) => {

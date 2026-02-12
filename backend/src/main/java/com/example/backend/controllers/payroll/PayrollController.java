@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,6 +30,7 @@ public class PayrollController {
     private final LeaveReviewService leaveReviewService;
     private final OvertimeReviewService overtimeReviewService;
     private final DeductionReviewService deductionReviewService;
+    private final PayrollBatchService batchService;
 
     // ========================================
     // EXISTING ENDPOINTS (UNCHANGED)
@@ -509,6 +511,21 @@ public class PayrollController {
     }
 
     /**
+     * Move to deduction review
+     */
+    @PostMapping("/{id}/deduction-review")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> moveToDeductionReview(@PathVariable UUID id, @RequestParam String username) {
+        try {
+            payrollService.moveToDeductionReview(id, username);
+            return ResponseEntity.ok().body("Moved to deduction review");
+        } catch (Exception e) {
+            log.error("Error moving to deduction review", e);
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
      * Confirm and lock payroll (triggers calculations)
      */
     @PostMapping("/{id}/confirm-lock")
@@ -610,6 +627,139 @@ public class PayrollController {
             log.error("❌ Error sending payroll to finance: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Failed to send payroll to finance: " + e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    // ========================================
+    // BATCH WORKFLOW ENDPOINTS
+    // ========================================
+
+    /**
+     * Create payment batches for a payroll
+     * Groups employee payrolls by payment type
+     *
+     * POST /api/v1/payroll/{id}/create-batches
+     */
+    @PostMapping("/{id}/create-batches")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> createBatches(@PathVariable UUID id, Principal principal) {
+        log.info("Creating batches for payroll: {} by user: {}", id, principal.getName());
+
+        try {
+            String username = principal != null ? principal.getName() : "SYSTEM";
+
+            List<PayrollBatchDTO> batches = batchService.createBatchesForPayroll(id, username);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Batches created successfully");
+            response.put("batchCount", batches.size());
+            response.put("batches", batches);
+
+            return ResponseEntity.ok(response);
+
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (RuntimeException e) {
+            log.error("Error creating batches: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), System.currentTimeMillis()));
+        } catch (Exception e) {
+            log.error("Error creating batches: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to create batches: " + e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
+     * Get batches for a payroll
+     *
+     * GET /api/v1/payroll/{id}/batches
+     */
+    @GetMapping("/{id}/batches")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE')")
+    public ResponseEntity<?> getBatches(@PathVariable UUID id) {
+        try {
+            List<PayrollBatchDTO> batches = batchService.getBatchesForPayroll(id);
+            return ResponseEntity.ok(batches);
+        } catch (Exception e) {
+            log.error("Error fetching batches: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to fetch batches: " + e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
+     * Send batches to finance (creates payment requests)
+     * Replaces the old send-to-finance for batch-based workflow
+     *
+     * POST /api/v1/payroll/{id}/send-batches-to-finance
+     */
+    @PostMapping("/{id}/send-batches-to-finance")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> sendBatchesToFinance(@PathVariable UUID id, Principal principal) {
+        log.info("Sending batches to finance for payroll: {} by user: {}", id, principal.getName());
+
+        try {
+            String username = principal != null ? principal.getName() : "SYSTEM";
+
+            // Create batches first if not already created
+            List<PayrollBatchDTO> existingBatches = batchService.getBatchesForPayroll(id);
+            if (existingBatches.isEmpty()) {
+                log.info("No batches exist, creating them first...");
+                batchService.createBatchesForPayroll(id, username);
+            }
+
+            // Send batches to finance (creates payment requests)
+            List<PayrollBatchDTO> batches = batchService.sendBatchesToFinance(id, username);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Batches sent to finance successfully");
+            response.put("batchCount", batches.size());
+            response.put("batches", batches);
+
+            return ResponseEntity.ok(response);
+
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (RuntimeException e) {
+            log.error("Error sending batches to finance: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), System.currentTimeMillis()));
+        } catch (Exception e) {
+            log.error("Error sending batches to finance: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to send batches to finance: " + e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
+     * Get employees without payment type for a payroll
+     * Used to warn HR before batching
+     *
+     * GET /api/v1/payroll/{id}/employees-without-payment-type
+     */
+    @GetMapping("/{id}/employees-without-payment-type")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE')")
+    public ResponseEntity<?> getEmployeesWithoutPaymentType(@PathVariable UUID id) {
+        try {
+            List<EmployeePayroll> employeePayrolls = payrollService.getEmployeePayrolls(id);
+
+            List<EmployeePayrollDTO> withoutPaymentType = employeePayrolls.stream()
+                    .filter(ep -> ep.getPaymentTypeId() == null)
+                    .map(this::convertToEmployeePayrollDTO)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("count", withoutPaymentType.size());
+            response.put("employees", withoutPaymentType);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error fetching employees without payment type: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -722,8 +872,19 @@ public class PayrollController {
     // ========================================
 
     private PayrollDTO convertToDTO(Payroll payroll) {
+        // Get batches if available
+        List<PayrollBatchDTO> batchDTOs = null;
+        int employeesWithoutPaymentType = 0;
+
+        if (payroll.getBatches() != null && !payroll.getBatches().isEmpty()) {
+            batchDTOs = payroll.getBatches().stream()
+                    .map(batchService::toDTO)
+                    .collect(Collectors.toList());
+        }
+
         return PayrollDTO.builder()
                 .id(payroll.getId())
+                .payrollNumber(payroll.getPayrollNumber())
                 .startDate(payroll.getStartDate())
                 .endDate(payroll.getEndDate())
                 .status(payroll.getStatus().name())
@@ -763,6 +924,16 @@ public class PayrollController {
                 .overtimeFinalizedBy(payroll.getOvertimeFinalizedBy())
                 .overtimeFinalizedAt(payroll.getOvertimeFinalizedAt())
                 .overtimeHrNotificationSent(payroll.getOvertimeHrNotificationSent())
+                // Bonus workflow fields
+                .bonusProcessed(payroll.getBonusProcessed())
+                .bonusFinalized(payroll.getBonusFinalized())
+                .lastBonusProcessedAt(payroll.getLastBonusProcessedAt())
+                .bonusFinalizedBy(payroll.getBonusFinalizedBy())
+                .bonusFinalizedAt(payroll.getBonusFinalizedAt())
+                .totalBonusAmount(payroll.getEmployeePayrolls() != null ?
+                        payroll.getEmployeePayrolls().stream()
+                                .map(ep -> ep.getBonusAmount() != null ? ep.getBonusAmount() : BigDecimal.ZERO)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add) : BigDecimal.ZERO)
                 // Deduction workflow fields
                 .deductionProcessed(payroll.getDeductionProcessed())
                 .deductionFinalized(payroll.getDeductionFinalized())
@@ -778,18 +949,35 @@ public class PayrollController {
                 .paymentSourceName(payroll.getPaymentSourceName())
                 .financeReviewedAt(payroll.getFinanceReviewedAt())
                 .financeReviewedBy(payroll.getFinanceReviewedBy())
+                // Batch information
+                .batches(batchDTOs)
+                .batchCount(batchDTOs != null ? batchDTOs.size() : 0)
+                .employeesWithoutPaymentType(employeesWithoutPaymentType)
                 .build();
     }
 
     private EmployeePayrollDTO convertToEmployeePayrollDTO(EmployeePayroll ep) {
         return EmployeePayrollDTO.builder()
                 .id(ep.getId())
+                .employeePayrollNumber(ep.getEmployeePayrollNumber())
                 .payrollId(ep.getPayroll().getId())
                 .employeeId(ep.getEmployeeId())
                 .employeeName(ep.getEmployeeName())
                 .jobPositionName(ep.getJobPositionName())
                 .departmentName(ep.getDepartmentName())
                 .contractType(ep.getContractType().name())
+                // Payment type info
+                .paymentTypeId(ep.getPaymentTypeId())
+                .paymentTypeCode(ep.getPaymentTypeCode())
+                .paymentTypeName(ep.getPaymentTypeName())
+                // Bank details
+                .bankName(ep.getBankName())
+                .bankAccountNumber(ep.getBankAccountNumber())
+                .bankAccountHolderName(ep.getBankAccountHolderName())
+                .walletNumber(ep.getWalletNumber())
+                // Batch info
+                .payrollBatchId(ep.getPayrollBatch() != null ? ep.getPayrollBatch().getId() : null)
+                .payrollBatchNumber(ep.getPayrollBatch() != null ? ep.getPayrollBatch().getBatchNumber() : null)
                 .monthlyBaseSalary(ep.getMonthlyBaseSalary())
                 .dailyRate(ep.getDailyRate())
                 .hourlyRate(ep.getHourlyRate())
@@ -811,6 +999,7 @@ public class PayrollController {
                 .totalWorkedHours(ep.getTotalWorkedHours())
                 .overtimeHours(ep.getOvertimeHours())
                 .overtimePay(ep.getOvertimePay())
+                .bonusAmount(ep.getBonusAmount())
                 .absenceDeductionAmount(ep.getAbsenceDeductionAmount())
                 .lateDeductionAmount(ep.getLateDeductionAmount())
                 .leaveDeductionAmount(ep.getLeaveDeductionAmount())
@@ -1268,19 +1457,19 @@ public class PayrollController {
             // Finalize (LOCK)
             payroll.finalizeOvertime(principal.getName());
 
-            // Move to next phase
-            payroll.setStatus(PayrollStatus.CONFIRMED_AND_LOCKED);
+            // Move to next phase (BONUS_REVIEW)
+            payroll.setStatus(PayrollStatus.BONUS_REVIEW);
 
             payrollService.save(payroll);
 
             // Notify HR
             notificationService.notifyHROvertimeFinalized(payroll, principal.getName());
 
-            log.info("Overtime review finalized for payroll {} by {}", id, principal.getName());
+            log.info("Overtime review finalized for payroll {} by {}, moving to BONUS_REVIEW", id, principal.getName());
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Overtime review finalized and locked successfully");
+            response.put("message", "Overtime review finalized. Moving to Bonus Review.");
             response.put("newStatus", payroll.getStatus().toString());
             response.put("finalizedBy", payroll.getOvertimeFinalizedBy());
             response.put("finalizedAt", payroll.getOvertimeFinalizedAt());
@@ -1372,6 +1561,186 @@ public class PayrollController {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             log.error("Error fetching overtime records for payroll: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ========================================
+    // BONUS REVIEW WORKFLOW ENDPOINTS
+    // ========================================
+
+    /**
+     * Process Bonus Review
+     * Fetches eligible bonuses for the payroll period, links them, and updates employee payroll bonus amounts
+     *
+     * POST /api/v1/payroll/{id}/process-bonus-review
+     */
+    @PostMapping("/{id}/process-bonus-review")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> processBonusReview(
+            @PathVariable UUID id,
+            Principal principal) {
+
+        log.info("Processing bonus review for payroll: {}", id);
+
+        try {
+            String username = principal != null ? principal.getName() : "SYSTEM";
+
+            Payroll payroll = payrollService.getPayrollById(id);
+
+            // Validate state
+            Boolean bonusFinalized = payroll.getBonusFinalized();
+            if (Boolean.TRUE.equals(bonusFinalized)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("Bonuses are finalized and locked. Cannot process.", System.currentTimeMillis()));
+            }
+
+            if (payroll.getStatus() != PayrollStatus.BONUS_REVIEW) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("Cannot process bonus review. Payroll must be in BONUS_REVIEW status. Current: " + payroll.getStatus(), System.currentTimeMillis()));
+            }
+
+            // Process bonus review
+            BonusReviewSummaryDTO summary = payrollService.processBonusReview(id);
+
+            // Recalculate totals after bonus processing
+            payrollService.recalculateTotals(id);
+
+            log.info("Bonus review processed successfully: {}", summary.getMessage());
+
+            return ResponseEntity.ok(summary);
+
+        } catch (IllegalStateException e) {
+            log.error("State error processing bonus review: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(e.getMessage(), System.currentTimeMillis()));
+
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception e) {
+            log.error("Error processing bonus review: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to process bonus review: " + e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
+     * Finalize Bonus Review (LOCK IT)
+     * Prevents further processing, moves to Deduction Review phase
+     *
+     * POST /api/v1/payroll/{id}/finalize-bonus
+     */
+    @PostMapping("/{id}/finalize-bonus")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> finalizeBonus(@PathVariable UUID id, Principal principal) {
+        log.info("Finalizing bonus review for payroll: {} by user: {}", id, principal.getName());
+
+        try {
+            Payroll payroll = payrollService.getPayrollById(id);
+
+            // Initialize bonus fields if null
+            if (payroll.getBonusProcessed() == null) {
+                payroll.setBonusProcessed(false);
+            }
+            if (payroll.getBonusFinalized() == null) {
+                payroll.setBonusFinalized(false);
+            }
+
+            // Validate can finalize
+            if (!payroll.canFinalizeBonus()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("Cannot finalize bonus review in current state. Ensure bonuses have been processed first.", System.currentTimeMillis()));
+            }
+
+            // Finalize and transition
+            Payroll updated = payrollService.finalizeBonusReview(id, principal.getName());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Bonus review finalized, moved to deduction review");
+            response.put("newStatus", updated.getStatus().toString());
+            response.put("finalizedBy", updated.getBonusFinalizedBy());
+            response.put("finalizedAt", updated.getBonusFinalizedAt());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalStateException e) {
+            log.error("Cannot finalize bonus review: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(e.getMessage(), System.currentTimeMillis()));
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error finalizing bonus review: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to finalize bonus review: " + e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
+     * Get Bonus Review Status
+     * Returns current state of bonus review workflow
+     *
+     * GET /api/v1/payroll/{id}/bonus-status
+     */
+    @GetMapping("/{id}/bonus-status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER')")
+    public ResponseEntity<?> getBonusStatus(@PathVariable UUID id) {
+        try {
+            Payroll payroll = payrollService.getPayrollById(id);
+
+            Map<String, Object> status = new HashMap<>();
+            status.put("bonusProcessed", payroll.getBonusProcessed() != null ? payroll.getBonusProcessed() : false);
+            status.put("bonusFinalized", payroll.getBonusFinalized() != null ? payroll.getBonusFinalized() : false);
+            status.put("canEdit", payroll.canEditBonus());
+            status.put("canFinalize", payroll.canFinalizeBonus());
+            status.put("lastProcessedAt", payroll.getLastBonusProcessedAt());
+            status.put("finalizedBy", payroll.getBonusFinalizedBy());
+            status.put("finalizedAt", payroll.getBonusFinalizedAt());
+            status.put("summary", payroll.getBonusSummary());
+
+            return ResponseEntity.ok(status);
+
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error getting bonus status: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Get Bonus Summaries for Payroll
+     * Returns bonus breakdown by type and employee
+     *
+     * GET /api/v1/payroll/{id}/bonus-summaries
+     */
+    @GetMapping("/{id}/bonus-summaries")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER')")
+    public ResponseEntity<?> getBonusSummariesForPayroll(@PathVariable UUID id) {
+        try {
+            log.info("Fetching bonus summaries for payroll: {}", id);
+
+            // Process bonus review to get summary (idempotent - won't reprocess if already done)
+            Payroll payroll = payrollService.getPayrollById(id);
+
+            if (payroll.getStatus() == PayrollStatus.BONUS_REVIEW) {
+                BonusReviewSummaryDTO summary = payrollService.processBonusReview(id);
+                return ResponseEntity.ok(summary);
+            }
+
+            // For non-BONUS_REVIEW status, return basic info
+            Map<String, Object> basicSummary = new HashMap<>();
+            basicSummary.put("bonusProcessed", payroll.getBonusProcessed());
+            basicSummary.put("bonusFinalized", payroll.getBonusFinalized());
+
+            return ResponseEntity.ok(basicSummary);
+
+        } catch (PayrollService.PayrollNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error fetching bonus summaries for payroll: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

@@ -11,44 +11,49 @@ import {
     FaLock,
     FaCheckCircle,
     FaMoneyBillWave,
-    FaFileInvoiceDollar
+    FaFileInvoiceDollar,
+    FaGift
 } from 'react-icons/fa';
 import './PayrollTimeline.scss';
 
-const PayrollTimeline = ({ currentStatus, steps }) => {
-    // Icon mapping - 8 phases
+const PayrollTimeline = ({ currentStatus, steps, isFinancePhase = false }) => {
+    // Icon mapping for HR phases
     const iconMap = {
         'PUBLIC_HOLIDAYS_REVIEW': <FaCalendarAlt />,
         'ATTENDANCE_IMPORT': <FaClock />,
         'LEAVE_REVIEW': <FaUsers />,
         'OVERTIME_REVIEW': <FaClock />,
+        'BONUS_REVIEW': <FaGift />,
         'DEDUCTION_REVIEW': <FaMoneyBillWave />,
         'CONFIRMED_AND_LOCKED': <FaLock />,
-        'PENDING_FINANCE_REVIEW': <FaFileInvoiceDollar />,
-        'PAID': <FaCheckCircle />,
     };
 
-    // Description mapping - 8 phases
+    // Description mapping for HR phases
     const descriptionMap = {
         'PUBLIC_HOLIDAYS_REVIEW': 'Identify and mark public holidays',
         'ATTENDANCE_IMPORT': 'Import and snapshot attendance data',
         'LEAVE_REVIEW': 'Review employee leave requests',
         'OVERTIME_REVIEW': 'Review and approve overtime',
+        'BONUS_REVIEW': 'Review and process employee bonuses',
         'DEDUCTION_REVIEW': 'Review all deductions including loans',
         'CONFIRMED_AND_LOCKED': 'Calculations finalized and locked',
-        'PENDING_FINANCE_REVIEW': 'Awaiting finance approval',
-        'PAID': 'Payroll processed and paid',
     };
 
-    // Get current index
-    const currentIndex = steps.findIndex(step => step.key === currentStatus);
+    // Get current index - if in finance phase, all HR steps are completed
+    const currentIndex = isFinancePhase
+        ? steps.length // All HR steps complete
+        : steps.findIndex(step => step.key === currentStatus);
 
     return (
         <div className="payroll-timeline">
+            <div className="timeline-header">
+                <h3>HR Workflow</h3>
+                {isFinancePhase && <span className="completed-badge"><FaCheckCircle /> Completed</span>}
+            </div>
             <div className="lifecycle-timeline">
                 {steps.map((step, index) => {
-                    const isActive = index === currentIndex;
-                    const isCompleted = index < currentIndex;
+                    const isActive = !isFinancePhase && index === currentIndex;
+                    const isCompleted = isFinancePhase || index < currentIndex;
 
                     return (
                         <div

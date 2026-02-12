@@ -27,6 +27,8 @@ import com.example.backend.models.maintenance.StepType;
 import com.example.backend.repositories.StepTypeRepository;
 import com.example.backend.services.notification.NotificationService;
 import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
+import com.example.backend.services.id.EntityIdGeneratorService;
+import com.example.backend.models.id.EntityTypeConfig;
 import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
 import com.example.backend.repositories.finance.accountsPayable.OfferFinancialReviewRepository;
 import com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus;
@@ -67,6 +69,7 @@ public class MaintenanceService {
     private final NotificationService notificationService;
     private final OfferFinancialReviewRepository offerFinancialReviewRepository;
     private final PaymentRequestService paymentRequestService;
+    private final EntityIdGeneratorService entityIdGeneratorService;
 
     // Maintenance Record Operations
 
@@ -97,7 +100,11 @@ public class MaintenanceService {
         // Allow creating maintenance records even if equipment is already in
         // maintenance
 
+        // Generate record number
+        String recordNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.MAINTENANCE_RECORD);
+
         MaintenanceRecord record = MaintenanceRecord.builder()
+                .recordNumber(recordNumber)
                 .equipmentId(dto.getEquipmentId())
                 .equipmentInfo(dto.getEquipmentInfo() != null ? dto.getEquipmentInfo()
                         : equipment.getType().getName() + " - " + equipment.getFullModelName())
@@ -1627,7 +1634,8 @@ public class MaintenanceService {
             isOverBudget = consumedBudget.compareTo(record.getApprovedBudget()) > 0;
         }
 
-        return MaintenanceRecordDto.builder().id(record.getId()).equipmentId(record.getEquipmentId())
+        return MaintenanceRecordDto.builder().id(record.getId()).recordNumber(record.getRecordNumber())
+                .equipmentId(record.getEquipmentId())
                 .equipmentInfo(record.getEquipmentInfo())
                 .initialIssueDescription(record.getInitialIssueDescription())
                 .finalDescription(record.getFinalDescription())

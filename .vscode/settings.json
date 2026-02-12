@@ -1,3 +1,6 @@
 {
-    "java.compile.nullAnalysis.mode": "automatic"
+    "env": {
+        "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    }
 }
+

@@ -10,9 +10,12 @@ import {
     FiPhone,
     FiMail,
     FiClock,
-    FiPackage
+    FiPackage,
+    FiUsers,
+    FiCreditCard,
+    FiBriefcase
 } from 'react-icons/fi';
-import { FaBuilding, FaMoneyBillWave } from 'react-icons/fa';
+import { FaBuilding, FaMoneyBillWave, FaUsersCog } from 'react-icons/fa';
 import IntroCard from '../../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import ContentLoader from '../../../../components/common/ContentLoader/ContentLoader';
@@ -315,9 +318,116 @@ const PaymentRequestDetailsPage = () => {
         );
     }
 
-    // Determine source type
-    const sourceType = request.purchaseOrderNumber ? 'Procurement' :
-        request.maintenanceStepId ? 'Maintenance' : 'Unknown';
+    // Determine source type from polymorphic field or legacy fields
+    const getSourceTypeInfo = () => {
+        // Check new polymorphic sourceType field first
+        if (request.sourceType === 'PAYROLL_BATCH') {
+            return { type: 'Payroll', label: 'Payroll Batch', icon: <FaUsersCog /> };
+        }
+        if (request.sourceType === 'PURCHASE_ORDER' || request.purchaseOrderNumber) {
+            return { type: 'Procurement', label: 'Purchase Order', icon: <FiPackage /> };
+        }
+        if (request.sourceType === 'MAINTENANCE' || request.maintenanceStepId) {
+            return { type: 'Maintenance', label: 'Maintenance', icon: <FiBriefcase /> };
+        }
+        if (request.sourceType === 'LOAN') {
+            return { type: 'Loan', label: 'Employee Loan', icon: <FiCreditCard /> };
+        }
+        return { type: 'Unknown', label: 'Unknown', icon: <FiFileText /> };
+    };
+
+    const sourceTypeInfo = getSourceTypeInfo();
+    const isPayrollBatch = request.sourceType === 'PAYROLL_BATCH' || request.payrollBatchId;
+
+    // Batch employees table columns
+    const batchEmployeesColumns = [
+        {
+            header: 'Emp #',
+            accessor: 'employeeNumber',
+            sortable: true,
+            render: (row) => (
+                <span className="employee-number">{row.employeeNumber || 'N/A'}</span>
+            )
+        },
+        {
+            header: 'Name',
+            accessor: 'employeeName',
+            sortable: true,
+            render: (row) => (
+                <span className="employee-name">{row.employeeName || 'Unknown'}</span>
+            )
+        },
+        {
+            header: 'Job Title',
+            accessor: 'jobTitle',
+            sortable: true
+        },
+        {
+            header: 'Department',
+            accessor: 'department',
+            sortable: true
+        },
+        {
+            header: 'Basic Salary',
+            accessor: 'basicSalary',
+            sortable: true,
+            render: (row) => formatCurrency(row.basicSalary)
+        },
+        {
+            header: 'Allowances',
+            accessor: 'totalAllowances',
+            sortable: true,
+            render: (row) => (
+                <span style={{ color: 'var(--color-success)' }}>
+                    +{formatCurrency(row.totalAllowances)}
+                </span>
+            )
+        },
+        {
+            header: 'Deductions',
+            accessor: 'totalDeductions',
+            sortable: true,
+            render: (row) => (
+                <span style={{ color: 'var(--color-danger)' }}>
+                    -{formatCurrency(row.totalDeductions)}
+                </span>
+            )
+        },
+        {
+            header: 'Net Pay',
+            accessor: 'netPay',
+            sortable: true,
+            render: (row) => (
+                <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>
+                    {formatCurrency(row.netPay)}
+                </span>
+            )
+        },
+        {
+            header: 'Payment Method',
+            accessor: 'paymentTypeName',
+            sortable: true,
+            render: (row) => (
+                <span className="payment-method-badge">
+                    {row.paymentTypeName || 'N/A'}
+                </span>
+            )
+        },
+        {
+            header: 'Bank Account',
+            accessor: 'bankAccountNumber',
+            sortable: false,
+            render: (row) => (
+                <span className="bank-info">
+                    {row.bankName && row.bankAccountNumber ? (
+                        <>{row.bankName} - {row.bankAccountNumber}</>
+                    ) : row.walletNumber ? (
+                        <>Wallet: {row.walletNumber}</>
+                    ) : 'N/A'}
+                </span>
+            )
+        }
+    ];
 
     return (
         <div className="payment-request-details-page">
@@ -370,12 +480,12 @@ const PaymentRequestDetailsPage = () => {
                             <label>Request Number</label>
                             <span>{request.requestNumber}</span>
                         </div>
-                        {/*<div className="detail-item">*/}
-                        {/*    <label>Source Type</label>*/}
-                        {/*    <span className={`source-badge source-${sourceType.toLowerCase()}`}>*/}
-                        {/*        {sourceType}*/}
-                        {/*    </span>*/}
-                        {/*</div>*/}
+                        <div className="detail-item">
+                            <label>Source Type</label>
+                            <span className={`source-badge source-${sourceTypeInfo.type.toLowerCase()}`}>
+                                {sourceTypeInfo.icon} {sourceTypeInfo.label}
+                            </span>
+                        </div>
                         {request.purchaseOrderNumber && (
                             <div className="detail-item">
                                 <label>PO Number</label>
@@ -385,7 +495,7 @@ const PaymentRequestDetailsPage = () => {
                                 >
                                     {request.purchaseOrderNumber}
                                 </span>
-                                                    </div>
+                            </div>
                         )}
                         {request.requestOrderTitle && (
                             <div className="detail-item">
@@ -418,62 +528,173 @@ const PaymentRequestDetailsPage = () => {
                     </div>
                 </div>
 
-                {/* Merchant Information Section */}
-                <div className="details-section">
-                    <div className="section-header">
-                        <FaBuilding className="section-icon" />
-                        <h3>Merchant Information</h3>
-                    </div>
-                    <div className="details-grid">
-                        <div className="detail-item">
-                            <label>Merchant Name</label>
-                            <span>
-                                {request.merchantId ? (
-                                    <span
-                                        className="link-text"
-                                        onClick={() => navigate(`/merchants/${request.merchantId}`)}
-                                    >
-                                        {request.merchantName || 'N/A'}
-                                    </span>
-                                ) : (
-                                    request.merchantName || 'N/A'
-                                )}
+                {/* Payroll Batch Information Section - Only shown for PAYROLL_BATCH source type */}
+                {isPayrollBatch && (
+                    <div className="details-section payroll-batch-section">
+                        <div className="section-header">
+                            <FaUsersCog className="section-icon" />
+                            <h3>Payroll Batch Details</h3>
+                            <span className="batch-badge">
+                                {request.paymentTypeName || 'Unknown Payment Type'}
                             </span>
                         </div>
-                        <div className="detail-item">
-                            <label>Contact Person</label>
-                            <span>{request.merchantContactPerson || 'N/A'}</span>
-                        </div>
-                        <div className="detail-item">
-                            <label>Contact Phone</label>
-                            <span>
-                                {request.merchantContactPhone ? (
-                                    <><FiPhone className="inline-icon" /> {request.merchantContactPhone}</>
-                                ) : 'N/A'}
-                            </span>
-                        </div>
-                        <div className="detail-item">
-                            <label>Contact Email</label>
-                            <span>
-                                {request.merchantContactEmail ? (
-                                    <><FiMail className="inline-icon" /> {request.merchantContactEmail}</>
-                                ) : 'N/A'}
-                            </span>
-                        </div>
-                        {request.merchantBankName && (
+                        <div className="details-grid">
                             <div className="detail-item">
-                                <label>Bank Name</label>
-                                <span>{request.merchantBankName}</span>
+                                <label>Batch Number</label>
+                                <span className="batch-number">{request.batchNumber || 'N/A'}</span>
                             </div>
-                        )}
-                        {request.merchantAccountNumber && (
                             <div className="detail-item">
-                                <label>Account Number</label>
-                                <span>{request.merchantAccountNumber}</span>
+                                <label>Payroll Number</label>
+                                <span
+                                    className="link-text"
+                                    onClick={() => navigate(`/payroll/${request.payrollId}`)}
+                                >
+                                    {request.payrollNumber || 'N/A'}
+                                </span>
                             </div>
-                        )}
+                            <div className="detail-item">
+                                <label>Payroll Period</label>
+                                <span>{request.payrollPeriod || 'N/A'}</span>
+                            </div>
+                            <div className="detail-item">
+                                <label>Payment Method</label>
+                                <span className="payment-type-display">
+                                    <FiCreditCard className="inline-icon" />
+                                    {request.paymentTypeName || 'N/A'}
+                                    {request.paymentTypeCode && (
+                                        <span className="payment-code">({request.paymentTypeCode})</span>
+                                    )}
+                                </span>
+                            </div>
+                            <div className="detail-item">
+                                <label>Employees in Batch</label>
+                                <span className="employee-count">
+                                    <FiUsers className="inline-icon" />
+                                    {request.batchEmployeeCount || 0} employees
+                                </span>
+                            </div>
+                            <div className="detail-item">
+                                <label>Total Amount</label>
+                                <span className="batch-total">
+                                    {formatCurrency(request.requestedAmount)}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {/* Merchant Information Section - Not shown for payroll batches */}
+                {!isPayrollBatch && (
+                    <div className="details-section">
+                        <div className="section-header">
+                            <FaBuilding className="section-icon" />
+                            <h3>Merchant Information</h3>
+                        </div>
+                        <div className="details-grid">
+                            <div className="detail-item">
+                                <label>Merchant Name</label>
+                                <span>
+                                    {request.merchantId ? (
+                                        <span
+                                            className="link-text"
+                                            onClick={() => navigate(`/merchants/${request.merchantId}`)}
+                                        >
+                                            {request.merchantName || 'N/A'}
+                                        </span>
+                                    ) : (
+                                        request.merchantName || 'N/A'
+                                    )}
+                                </span>
+                            </div>
+                            <div className="detail-item">
+                                <label>Contact Person</label>
+                                <span>{request.merchantContactPerson || 'N/A'}</span>
+                            </div>
+                            <div className="detail-item">
+                                <label>Contact Phone</label>
+                                <span>
+                                    {request.merchantContactPhone ? (
+                                        <><FiPhone className="inline-icon" /> {request.merchantContactPhone}</>
+                                    ) : 'N/A'}
+                                </span>
+                            </div>
+                            <div className="detail-item">
+                                <label>Contact Email</label>
+                                <span>
+                                    {request.merchantContactEmail ? (
+                                        <><FiMail className="inline-icon" /> {request.merchantContactEmail}</>
+                                    ) : 'N/A'}
+                                </span>
+                            </div>
+                            {request.merchantBankName && (
+                                <div className="detail-item">
+                                    <label>Bank Name</label>
+                                    <span>{request.merchantBankName}</span>
+                                </div>
+                            )}
+                            {request.merchantAccountNumber && (
+                                <div className="detail-item">
+                                    <label>Account Number</label>
+                                    <span>{request.merchantAccountNumber}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Batch Employees Section - Only shown for payroll batches with employees */}
+                {isPayrollBatch && request.batchEmployees && request.batchEmployees.length > 0 && (
+                    <div className="details-section batch-employees-section">
+                        <div className="section-header">
+                            <FiUsers className="section-icon" />
+                            <h3>Employees in Batch ({request.batchEmployees.length})</h3>
+                        </div>
+                        <DataTable
+                            data={request.batchEmployees}
+                            columns={batchEmployeesColumns}
+                            showSearch={true}
+                            showFilters={false}
+                            emptyMessage="No employees in this batch"
+                            defaultSortField="employeeName"
+                            defaultSortDirection="asc"
+                            searchPlaceholder="Search employees..."
+                        />
+                        <div className="batch-summary">
+                            <div className="summary-item">
+                                <span className="summary-label">Total Basic Salary:</span>
+                                <span className="summary-value">
+                                    {formatCurrency(
+                                        request.batchEmployees.reduce((sum, emp) => sum + (emp.basicSalary || 0), 0)
+                                    )}
+                                </span>
+                            </div>
+                            <div className="summary-item">
+                                <span className="summary-label">Total Allowances:</span>
+                                <span className="summary-value success">
+                                    +{formatCurrency(
+                                        request.batchEmployees.reduce((sum, emp) => sum + (emp.totalAllowances || 0), 0)
+                                    )}
+                                </span>
+                            </div>
+                            <div className="summary-item">
+                                <span className="summary-label">Total Deductions:</span>
+                                <span className="summary-value danger">
+                                    -{formatCurrency(
+                                        request.batchEmployees.reduce((sum, emp) => sum + (emp.totalDeductions || 0), 0)
+                                    )}
+                                </span>
+                            </div>
+                            <div className="summary-item total">
+                                <span className="summary-label">Total Net Pay:</span>
+                                <span className="summary-value primary">
+                                    {formatCurrency(
+                                        request.batchEmployees.reduce((sum, emp) => sum + (emp.netPay || 0), 0)
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Financial Information Section */}
                 <div className="details-section">

@@ -231,6 +231,16 @@
 
   // Review cell styling
   .review-cell {
+
+    line-height: 1.5;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    max-width: 100%;
+    transition: all 0.2s ease-in-out;
     .reviewed-date {
       font-weight: 500;
       color: var(--color-text-primary);
@@ -261,6 +271,16 @@
 
   // Delegation cell styling
   .delegation-cell {
+
+    line-height: 1.5;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    max-width: 100%;
+    transition: all 0.2s ease-in-out;
     .delegated-to {
       font-weight: 500;
       color: var(--color-text-primary);

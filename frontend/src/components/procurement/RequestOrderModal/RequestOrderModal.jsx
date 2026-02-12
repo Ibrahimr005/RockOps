@@ -52,6 +52,17 @@ const RequestOrderModal = ({
     // Loading state
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
 // Update the useEffect to fetch warehouses and set the site properly
     useEffect(() => {
         if (isOpen) {

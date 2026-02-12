@@ -4,10 +4,13 @@ import com.example.backend.dto.payroll.LoanDTO;
 import com.example.backend.dto.payroll.LoanFinanceActionDTO;
 import com.example.backend.dto.payroll.LoanFinanceRequestDTO;
 import com.example.backend.exceptions.ResourceNotFoundException;
+import com.example.backend.models.finance.accountsPayable.PaymentRequest;
+import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.payroll.Loan;
 import com.example.backend.models.payroll.LoanFinanceRequest;
+import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.payroll.LoanFinanceRequestRepository;
 import com.example.backend.repositories.payroll.LoanRepository;
@@ -20,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,6 +39,7 @@ public class LoanService {
     private final LoanFinanceRequestRepository loanFinanceRequestRepository;
     private final EmployeeRepository employeeRepository;
     private final EmployeeDeductionService employeeDeductionService;
+    private final PaymentRequestRepository paymentRequestRepository;
 
     // ===================================================
     // LOAN CRUD OPERATIONS
@@ -429,6 +434,8 @@ public class LoanService {
 
         // Update loan and activate deductions
         Loan loan = request.getLoan();
+        Employee employee = loan.getEmployee();
+
         loan.disburse(
             disburserUserName,
             request.getPaymentSourceType(),
@@ -437,6 +444,9 @@ public class LoanService {
         );
         loan.activate();
         loanRepository.save(loan);
+
+        // Create PaymentRequest for unified Accounts Payable tracking
+        createPaymentRequestForLoan(loan, employee, disburserUserId, disburserUserName);
 
         // Create employee deduction for loan repayment
         LocalDate endDate = request.getFirstDeductionDate()
@@ -454,6 +464,91 @@ public class LoanService {
 
         log.info("Disbursed loan: {} and created payroll deduction", loan.getLoanNumber());
         return LoanFinanceRequestDTO.fromEntity(savedRequest);
+    }
+
+    /**
+     * Create a PaymentRequest for loan disbursement tracking in Accounts Payable
+     */
+    private void createPaymentRequestForLoan(Loan loan, Employee employee, UUID disburserUserId, String disburserUserName) {
+        String requestNumber = generatePaymentRequestNumber();
+
+        String employeeName = employee.getFirstName() + " " + employee.getLastName();
+        String targetDetails = buildEmployeeTargetDetails(
+            employee.getBankName(),
+            employee.getBankAccountNumber(),
+            employee.getWalletNumber()
+        );
+
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+            // Source polymorphism
+            .sourceType("LOAN")
+            .sourceId(loan.getId())
+            .sourceNumber(loan.getLoanNumber())
+            .sourceDescription("Loan Disbursement: " + loan.getLoanNumber() + " - " + loan.getPurpose())
+            // Target polymorphism
+            .targetType("EMPLOYEE")
+            .targetId(employee.getId())
+            .targetName(employeeName)
+            .targetDetails(targetDetails)
+            // Financial details
+            .requestNumber(requestNumber)
+            .requestedAmount(loan.getLoanAmount())
+            .currency("EGP")
+            .description("Loan disbursement to " + employeeName + " - " + loan.getPurpose())
+            .status(PaymentRequestStatus.PAID) // Marked as PAID since disbursement means payment was made
+            // Requestor info
+            .requestedByUserId(disburserUserId)
+            .requestedByUserName(disburserUserName)
+            .requestedByDepartment("Finance")
+            .requestedAt(LocalDateTime.now())
+            // Auto-approve since loan was already approved by Finance
+            .approvedByUserId(disburserUserId)
+            .approvedByUserName(disburserUserName)
+            .approvedAt(LocalDateTime.now())
+            .approvalNotes("Auto-approved: Loan " + loan.getLoanNumber() + " already approved by Finance")
+            // Payment tracking
+            .totalPaidAmount(loan.getLoanAmount()) // Marked as paid since disbursement happened
+            .remainingAmount(BigDecimal.ZERO)
+            .build();
+
+        paymentRequestRepository.save(paymentRequest);
+        log.info("Created PaymentRequest {} for loan disbursement {}", requestNumber, loan.getLoanNumber());
+    }
+
+    /**
+     * Build employee target details JSON for PaymentRequest
+     */
+    private String buildEmployeeTargetDetails(String bankName, String bankAccountNumber, String walletNumber) {
+        StringBuilder details = new StringBuilder("{");
+        boolean hasContent = false;
+
+        if (bankName != null && !bankName.isEmpty()) {
+            details.append("\"bankName\":\"").append(bankName).append("\"");
+            hasContent = true;
+        }
+        if (bankAccountNumber != null && !bankAccountNumber.isEmpty()) {
+            if (hasContent) details.append(",");
+            details.append("\"bankAccountNumber\":\"").append(bankAccountNumber).append("\"");
+            hasContent = true;
+        }
+        if (walletNumber != null && !walletNumber.isEmpty()) {
+            if (hasContent) details.append(",");
+            details.append("\"walletNumber\":\"").append(walletNumber).append("\"");
+        }
+
+        details.append("}");
+        return details.toString();
+    }
+
+    /**
+     * Generate payment request number for loan disbursements
+     */
+    private String generatePaymentRequestNumber() {
+        int year = LocalDate.now().getYear();
+        String prefix = "PR-" + year + "-";
+        Long maxSequence = paymentRequestRepository.getMaxRequestNumberSequence(prefix + "%");
+        long nextSequence = (maxSequence != null ? maxSequence : 0) + 1;
+        return String.format("%s%06d", prefix, nextSequence);
     }
 
     /**

@@ -3,6 +3,7 @@ import { FaTimes } from 'react-icons/fa';
 import contactService from '../../../../../services/contactService';
 import contactTypeService from '../../../../../services/contactTypeService';
 import './ContactModal.scss';
+import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const ContactModal = ({
                           isVisible,
@@ -33,6 +34,20 @@ const ContactModal = ({
     const [contactTypes, setContactTypes] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Scroll lock
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
 
     useEffect(() => {
         if (isVisible) {
@@ -78,6 +93,7 @@ const ContactModal = ({
     };
 
     const handleChange = (e) => {
+        setIsFormDirty(true);
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -147,6 +163,14 @@ const ContactModal = ({
 
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget) {
+            handleCloseAttempt();
+        }
+    };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
             onClose();
         }
     };
@@ -154,13 +178,25 @@ const ContactModal = ({
     if (!isVisible) return null;
 
     return (
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
         <div className="contact-modal-overlay" onClick={handleOverlayClick}>
             <div className="contact-modal-content">
                 <div className="contact-modal-header">
                     <h3>{contactToEdit ? 'Edit Contact' : 'Add New Contact'}</h3>
                     <button
                         className="contact-modal-close"
-                        onClick={onClose}
+                        onClick={handleCloseAttempt}
                         disabled={loading}
                     >
                         <FaTimes />
@@ -407,7 +443,7 @@ const ContactModal = ({
                         <button
                             type="button"
                             className="btn-cancel"
-                            onClick={onClose}
+                            onClick={handleCloseAttempt}
                             disabled={loading}
                         >
                             Cancel
@@ -423,6 +459,7 @@ const ContactModal = ({
                 </form>
             </div>
         </div>
+        </>
     );
 };
 

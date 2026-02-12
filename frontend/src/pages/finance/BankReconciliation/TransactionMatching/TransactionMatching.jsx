@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaExchangeAlt, FaCheck, FaTimes, FaRobot, FaEye, FaFileExcel } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -304,24 +305,36 @@ const TransactionMatching = () => {
             </div>
 
             {selectedAccount && (
-                <div className="bank-reconciliation-stats" style={{ marginBottom: '20px' }}>
-                    <div className="bank-reconciliation-stat-card">
-                        <div className="bank-reconciliation-stat-value">{selectedAccount.accountName}</div>
-                        <div className="bank-reconciliation-stat-label">Selected Account</div>
-                    </div>
-                    <div className="bank-reconciliation-stat-card">
-                        <div className="bank-reconciliation-stat-value">{formatCurrency(selectedAccount.currentBalance)}</div>
-                        <div className="bank-reconciliation-stat-label">Current Balance</div>
-                    </div>
-                    <div className="bank-reconciliation-stat-card">
-                        <div className="bank-reconciliation-stat-value">{matches.length}</div>
-                        <div className="bank-reconciliation-stat-label">Total Matches</div>
-                    </div>
-                    <div className="bank-reconciliation-stat-card">
-                        <div className="bank-reconciliation-stat-value">{matches.filter(m => !m.confirmed).length}</div>
-                        <div className="bank-reconciliation-stat-label">Pending Confirmation</div>
-                    </div>
-                </div>
+                <StatisticsCards
+                    cards={[
+                        {
+                            icon: <FaExchangeAlt />,
+                            label: "Selected Account",
+                            value: selectedAccount.accountName,
+                            variant: "primary"
+                        },
+                        {
+                            icon: <FaExchangeAlt />,
+                            label: "Current Balance",
+                            value: formatCurrency(selectedAccount.currentBalance),
+                            variant: "success"
+                        },
+                        {
+                            icon: <FaExchangeAlt />,
+                            label: "Total Matches",
+                            value: matches.length,
+                            variant: "info"
+                        },
+                        {
+                            icon: <FaExchangeAlt />,
+                            label: "Pending Confirmation",
+                            value: matches.filter(m => !m.confirmed).length,
+                            variant: "warning"
+                        }
+                    ]}
+                    columns={4}
+                    className="transaction-matching-stats"
+                />
             )}
 
             <DataTable

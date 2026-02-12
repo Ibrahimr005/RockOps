@@ -8,8 +8,10 @@ import {
     FaUsers,
     FaMoneyBillWave,
     FaMinusCircle,
-    FaCheckCircle
+    FaCheckCircle,
+    FaGift
 } from 'react-icons/fa';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards';
 import './PayrollSummaryCards.scss';
 
 const PayrollSummaryCards = ({ payroll }) => {
@@ -22,47 +24,16 @@ const PayrollSummaryCards = ({ payroll }) => {
 
     return (
         <div className="payroll-summary-cards">
-            <div className="payroll-summary">
-                <div className="summary-card">
-                    <div className="card-icon employees">
-                        <FaUsers />
-                    </div>
-                    <div className="card-content">
-                        <div className="card-value">{payroll.employeeCount || 0}</div>
-                        <div className="card-label">Employees</div>
-                    </div>
-                </div>
-
-                <div className="summary-card">
-                    <div className="card-icon gross">
-                        <FaMoneyBillWave />
-                    </div>
-                    <div className="card-content">
-                        <div className="card-value">{formatCurrency(payroll.totalGrossAmount)}</div>
-                        <div className="card-label">Total Gross</div>
-                    </div>
-                </div>
-
-                <div className="summary-card">
-                    <div className="card-icon deductions">
-                        <FaMinusCircle />
-                    </div>
-                    <div className="card-content">
-                        <div className="card-value">-{formatCurrency(payroll.totalDeductions)}</div>
-                        <div className="card-label">Deductions</div>
-                    </div>
-                </div>
-
-                <div className="summary-card">
-                    <div className="card-icon net">
-                        <FaCheckCircle />
-                    </div>
-                    <div className="card-content">
-                        <div className="card-value">{formatCurrency(payroll.totalNetAmount)}</div>
-                        <div className="card-label">Total Net</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <FaUsers />, label: "Employees", value: payroll.employeeCount || 0, variant: "primary" },
+                    { icon: <FaMoneyBillWave />, label: "Total Gross", value: formatCurrency(payroll.totalGrossAmount), variant: "success" },
+                    { icon: <FaGift />, label: "Total Bonuses", value: formatCurrency(payroll.totalBonusAmount), variant: "warning" },
+                    { icon: <FaMinusCircle />, label: "Deductions", value: `-${formatCurrency(payroll.totalDeductions)}`, variant: "danger" },
+                    { icon: <FaCheckCircle />, label: "Total Net", value: formatCurrency(payroll.totalNetAmount), variant: "info" },
+                ]}
+                columns={5}
+            />
         </div>
     );
 };

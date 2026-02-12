@@ -1,5 +1,5 @@
 // src/pages/HR/Promotion/components/PromotionDetailsModal.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     User, Building, DollarSign, Calendar, MessageSquare,
     Clock, CheckCircle, XCircle, FileText, TrendingUp,
@@ -8,6 +8,16 @@ import {
 import './PromotionDetailsModal.scss'
 
 const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
 
     const formatCurrency = (amount) => {
         if (!amount) return 'N/A';

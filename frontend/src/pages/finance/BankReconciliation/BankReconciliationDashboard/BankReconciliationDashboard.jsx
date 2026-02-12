@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fa';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 
 const BankReconciliationDashboard = () => {
     const [dashboardData, setDashboardData] = useState({
@@ -141,28 +142,35 @@ const BankReconciliationDashboard = () => {
     return (
         <div className="bank-reconciliation-dashboard">
             {/* Summary Statistics */}
-            <div className="bank-reconciliation-stats">
-                <div className="bank-reconciliation-stat-card">
-                    <FaUniversity className="bank-reconciliation-stat-icon" />
-                    <div className="bank-reconciliation-stat-value">{dashboardData.accounts.length}</div>
-                    <div className="bank-reconciliation-stat-label">Active Bank Accounts</div>
-                </div>
-                <div className="bank-reconciliation-stat-card">
-                    <FaChartLine className="bank-reconciliation-stat-icon" />
-                    <div className="bank-reconciliation-stat-value">{formatCurrency(calculateTotalBalance())}</div>
-                    <div className="bank-reconciliation-stat-label">Total Account Balance</div>
-                </div>
-                <div className="bank-reconciliation-stat-card">
-                    <FaExchangeAlt className="bank-reconciliation-stat-icon" />
-                    <div className="bank-reconciliation-stat-value">{dashboardData.recentMatches.length}</div>
-                    <div className="bank-reconciliation-stat-label">Pending Matches</div>
-                </div>
-                <div className="bank-reconciliation-stat-card">
-                    <FaExclamationTriangle className="bank-reconciliation-stat-icon" />
-                    <div className="bank-reconciliation-stat-value">{getHighPriorityDiscrepancies()}</div>
-                    <div className="bank-reconciliation-stat-label">High Priority Issues</div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    {
+                        icon: <FaUniversity />,
+                        label: "Active Bank Accounts",
+                        value: dashboardData.accounts.length,
+                        variant: "primary"
+                    },
+                    {
+                        icon: <FaChartLine />,
+                        label: "Total Account Balance",
+                        value: formatCurrency(calculateTotalBalance()),
+                        variant: "success"
+                    },
+                    {
+                        icon: <FaExchangeAlt />,
+                        label: "Pending Matches",
+                        value: dashboardData.recentMatches.length,
+                        variant: "warning"
+                    },
+                    {
+                        icon: <FaExclamationTriangle />,
+                        label: "High Priority Issues",
+                        value: getHighPriorityDiscrepancies(),
+                        variant: "danger"
+                    }
+                ]}
+                columns={4}
+            />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 {/* Account Reconciliation Status */}

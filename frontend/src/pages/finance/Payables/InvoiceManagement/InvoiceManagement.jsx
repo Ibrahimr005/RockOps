@@ -39,6 +39,18 @@ const InvoiceManagement = () => {
         description: ''
     });
 
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showCreateModal || showEditModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showCreateModal, showEditModal]);
+
     useEffect(() => {
         fetchInvoices();
     }, []);

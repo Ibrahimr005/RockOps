@@ -42,6 +42,17 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
         }));
     };
 
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     // Initialize the form when the modal opens
     useEffect(() => {
         if (transaction && isOpen) {

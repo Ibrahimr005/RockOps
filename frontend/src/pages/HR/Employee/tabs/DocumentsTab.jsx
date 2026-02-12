@@ -395,6 +395,14 @@ const DocumentUploadModal = ({ onClose, onUpload, uploading }) => {
     const [description, setDescription] = useState('');
     const fileInputRef = useRef(null);
 
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
+
     const handleFileSelect = (e) => {
         const files = Array.from(e.target.files);
         setSelectedFiles(files);

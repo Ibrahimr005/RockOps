@@ -136,10 +136,15 @@
   .source-badge {
     display: inline-flex;
     align-items: center;
+    gap: 0.5rem;
     padding: 0.25rem 0.75rem;
     border-radius: var(--radius-full);
     font-size: 0.75rem;
     font-weight: 600;
+
+    svg {
+      font-size: 0.875rem;
+    }
 
     &.source-procurement {
       background: rgba(var(--color-primary-rgb), 0.1);
@@ -151,9 +156,153 @@
       color: var(--color-success);
     }
 
+    &.source-payroll {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
+    }
+
+    &.source-loan {
+      background: rgba(var(--color-warning-rgb), 0.1);
+      color: var(--color-warning);
+    }
+
     &.source-unknown {
       background: var(--color-surface-secondary);
       color: var(--color-text-secondary);
+    }
+  }
+
+  // Payroll Batch Section
+  .payroll-batch-section {
+    border-left: 4px solid var(--color-info);
+    background: linear-gradient(
+      135deg,
+      rgba(var(--color-info-rgb), 0.02),
+      rgba(var(--color-info-rgb), 0.05)
+    );
+
+    .batch-badge {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .batch-number {
+      font-family: 'Fira Code', 'Monaco', monospace;
+      font-weight: 600;
+      color: var(--color-info);
+    }
+
+    .payment-type-display {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .payment-code {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+      }
+    }
+
+    .employee-count {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+    }
+
+    .batch-total {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+  }
+
+  // Batch Employees Section
+  .batch-employees-section {
+    .employee-number {
+      font-family: 'Fira Code', 'Monaco', monospace;
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+    }
+
+    .employee-name {
+      font-weight: 600;
+    }
+
+    .payment-method-badge {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
+      padding: 0.125rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .bank-info {
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+    }
+
+    .batch-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      padding: 1rem;
+      margin-top: 1rem;
+      background: var(--color-surface-secondary);
+      border-radius: var(--radius-md);
+      border-top: 1px solid var(--border-color);
+
+      .summary-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 150px;
+
+        .summary-label {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--color-text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--color-text-primary);
+
+          &.success {
+            color: var(--color-success);
+          }
+
+          &.danger {
+            color: var(--color-danger);
+          }
+
+          &.primary {
+            color: var(--color-primary);
+          }
+        }
+
+        &.total {
+          padding-left: 1.5rem;
+          border-left: 2px solid var(--color-primary);
+
+          .summary-label {
+            color: var(--color-primary);
+          }
+
+          .summary-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+          }
+        }
+      }
     }
   }
 

@@ -29,6 +29,7 @@ import { employeeService } from '../../../../services/hr/employeeService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import './LoanManagement.scss';
 import PageHeader from "../../../../components/common/PageHeader/index.js";
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 
 const LoanManagement = () => {
     const navigate = useNavigate();
@@ -78,6 +79,18 @@ const LoanManagement = () => {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    // Scroll lock for inline modals
+    useEffect(() => {
+        if (showCreateModal || showRejectModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showCreateModal, showRejectModal]);
 
     // ========================================
     // STATISTICS
@@ -375,57 +388,16 @@ const LoanManagement = () => {
             <PageHeader title={"Loan Management"} subtitle={"Manage employee loans, approvals, and track repayment schedules"} />
 
             {/* Statistics Cards */}
-            <div className="loan-management-stats">
-                <div className="stat-card">
-                    <div className="stat-icon total">
-                        <FaFileInvoice />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{statistics.total}</span>
-                        <span className="stat-label">Total Loans</span>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon active">
-                        <FaCheckCircle />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{statistics.active}</span>
-                        <span className="stat-label">Active Loans</span>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon pending-hr">
-                        <FaClock />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{statistics.pendingHR}</span>
-                        <span className="stat-label">Pending HR</span>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon pending-finance">
-                        <FaUniversity />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{statistics.pendingFinance}</span>
-                        <span className="stat-label">Pending Finance</span>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon outstanding">
-                        <FaDollarSign />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{formatCurrency(statistics.totalOutstanding)}</span>
-                        <span className="stat-label">Outstanding</span>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <FaFileInvoice />, label: "Total Loans", value: statistics.total, variant: "total" },
+                    { icon: <FaCheckCircle />, label: "Active Loans", value: statistics.active, variant: "active" },
+                    { icon: <FaClock />, label: "Pending HR", value: statistics.pendingHR, variant: "warning" },
+                    { icon: <FaUniversity />, label: "Pending Finance", value: statistics.pendingFinance, variant: "warning" },
+                    { icon: <FaDollarSign />, label: "Outstanding", value: formatCurrency(statistics.totalOutstanding), variant: "info" },
+                ]}
+                columns={5}
+            />
 
             {/* Data Table */}
                 <DataTable

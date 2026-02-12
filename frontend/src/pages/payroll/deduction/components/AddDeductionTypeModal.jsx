@@ -1,13 +1,23 @@
 // ==================== ADD DEDUCTION TYPE MODAL ====================
 // frontend/src/pages/payroll/DeductionManagement/components/AddDeductionTypeModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaTimes, FaCog, FaExclamationTriangle, FaPlus, FaSpinner, FaInfoCircle } from 'react-icons/fa';
 import { deductionService } from '../../../../services/payroll/deductionService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './AddDeductionTypeModal.scss';
 
 const AddDeductionTypeModal = ({ deductionType, onClose, onSuccess }) => {
     const { showSuccess, showError } = useSnackbar();
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         typeName: deductionType?.name || deductionType?.typeName || '', // Handle both field names
@@ -21,6 +31,8 @@ const AddDeductionTypeModal = ({ deductionType, onClose, onSuccess }) => {
         isActive: deductionType?.isActive !== false // Default to true
 });
 const [errors, setErrors] = useState({});
+const [isFormDirty, setIsFormDirty] = useState(false);
+const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
 // Deduction categories with descriptions
 const deductionCategories = [
@@ -75,6 +87,7 @@ const deductionCategories = [
  * Handle form input changes
  */
 const handleInputChange = (field, value) => {
+    setIsFormDirty(true);
     setFormData(prev => ({
         ...prev,
         [field]: value
@@ -219,6 +232,17 @@ const handleSubmit = async (e) => {
 };
 
 /**
+ * Handle close attempt
+ */
+const handleCloseAttempt = () => {
+    if (isFormDirty) {
+        setShowDiscardDialog(true);
+    } else {
+        onClose();
+    }
+};
+
+/**
  * Get selected category info
  */
 const getSelectedCategoryInfo = () => {
@@ -228,7 +252,8 @@ const getSelectedCategoryInfo = () => {
 const selectedCategory = getSelectedCategoryInfo();
 
 return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && !loading && onClose()}>
+    <>
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && !loading && handleCloseAttempt()}>
         <div className="modal-container add-deduction-type-modal">
             <div className="modal-header">
                 <h3 className="modal-title">
@@ -238,7 +263,7 @@ return (
                 <button
                     type="button"
                     className="modal-close"
-                    onClick={onClose}
+                    onClick={handleCloseAttempt}
                     disabled={loading}
                 >
                     <FaTimes />
@@ -558,7 +583,7 @@ return (
                 <button
                     type="button"
                     className="btn btn-secondary"
-                    onClick={onClose}
+                    onClick={handleCloseAttempt}
                     disabled={loading}
                 >
                     Cancel
@@ -584,6 +609,19 @@ return (
             </div>
         </div>
     </div>
+
+    <ConfirmationDialog
+        isVisible={showDiscardDialog}
+        type="warning"
+        title="Discard Changes?"
+        message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+        confirmText="Discard Changes"
+        cancelText="Continue Editing"
+        onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+        onCancel={() => setShowDiscardDialog(false)}
+        size="medium"
+    />
+    </>
 );
 };
 

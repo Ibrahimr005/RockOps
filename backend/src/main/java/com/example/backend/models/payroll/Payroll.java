@@ -15,6 +15,7 @@ import java.util.UUID;
 @Table(name = "payrolls", indexes = {
         @Index(name = "idx_payroll_dates", columnList = "start_date,end_date"),
         @Index(name = "idx_payroll_status", columnList = "status"),
+        @Index(name = "idx_payroll_number", columnList = "payroll_number"),
         // ⭐ NEW INDEXES for attendance workflow
         @Index(name = "idx_payroll_attendance_finalized", columnList = "attendance_finalized"),
         @Index(name = "idx_payroll_attendance_imported", columnList = "attendance_imported")
@@ -23,13 +24,19 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"employeePayrolls", "publicHolidays"})
-@ToString(exclude = {"employeePayrolls", "publicHolidays"})
+@EqualsAndHashCode(exclude = {"employeePayrolls", "publicHolidays", "batches"})
+@ToString(exclude = {"employeePayrolls", "publicHolidays", "batches"})
 public class Payroll {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+
+    /**
+     * Human-readable payroll number (format: PRL-YYYY-NNNNNN)
+     */
+    @Column(name = "payroll_number", nullable = false, unique = true, length = 50)
+    private String payrollNumber;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -158,6 +165,13 @@ public class Payroll {
     @OneToMany(mappedBy = "payroll", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PayrollPublicHoliday> publicHolidays = new ArrayList<>();
+
+    /**
+     * Payment batches grouped by payment type
+     */
+    @OneToMany(mappedBy = "payroll", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<PayrollBatch> batches = new ArrayList<>();
 
     @Version
     private Long version;
@@ -429,6 +443,13 @@ public class Payroll {
         if (this.overtimeHrNotificationSent == null) {
             this.overtimeHrNotificationSent = false;
         }
+        // Initialize bonus fields
+        if (this.bonusProcessed == null) {
+            this.bonusProcessed = false;
+        }
+        if (this.bonusFinalized == null) {
+            this.bonusFinalized = false;
+        }
         // Initialize deduction fields
         if (this.deductionProcessed == null) {
             this.deductionProcessed = false;
@@ -594,6 +615,80 @@ public class Payroll {
      */
     public Boolean getOvertimeHrNotificationSent() {
         return overtimeHrNotificationSent != null ? overtimeHrNotificationSent : false;
+    }
+
+    // ========================================
+    // BONUS REVIEW WORKFLOW FIELDS
+    // ========================================
+
+    @Column(name = "bonus_processed")
+    @Builder.Default
+    private Boolean bonusProcessed = false;
+
+    @Column(name = "bonus_finalized")
+    @Builder.Default
+    private Boolean bonusFinalized = false;
+
+    @Column(name = "last_bonus_processed_at")
+    private LocalDateTime lastBonusProcessedAt;
+
+    @Column(name = "bonus_finalized_by")
+    private String bonusFinalizedBy;
+
+    @Column(name = "bonus_finalized_at")
+    private LocalDateTime bonusFinalizedAt;
+
+    @Column(name = "bonus_summary", columnDefinition = "TEXT")
+    private String bonusSummary;
+
+    // ========================================
+    // BONUS REVIEW WORKFLOW METHODS
+    // ========================================
+
+    public void markBonusProcessed() {
+        this.bonusProcessed = true;
+        this.lastBonusProcessedAt = LocalDateTime.now();
+    }
+
+    public void finalizeBonusReview(String username) {
+        if (!Boolean.TRUE.equals(this.bonusProcessed)) {
+            throw new IllegalStateException("Cannot finalize bonus review: Bonuses have not been processed");
+        }
+        if (Boolean.TRUE.equals(this.bonusFinalized)) {
+            throw new IllegalStateException("Cannot finalize bonus review: Already finalized");
+        }
+
+        this.bonusFinalized = true;
+        this.bonusFinalizedBy = username;
+        this.bonusFinalizedAt = LocalDateTime.now();
+    }
+
+    public boolean canEditBonus() {
+        return this.status == PayrollStatus.BONUS_REVIEW &&
+                !Boolean.TRUE.equals(this.bonusFinalized);
+    }
+
+    public boolean canFinalizeBonus() {
+        return this.status == PayrollStatus.BONUS_REVIEW &&
+                Boolean.TRUE.equals(this.bonusProcessed) &&
+                !Boolean.TRUE.equals(this.bonusFinalized);
+    }
+
+    public void resetBonusWorkflow() {
+        this.bonusProcessed = false;
+        this.bonusFinalized = false;
+        this.lastBonusProcessedAt = null;
+        this.bonusFinalizedBy = null;
+        this.bonusFinalizedAt = null;
+        this.bonusSummary = null;
+    }
+
+    public Boolean getBonusProcessed() {
+        return bonusProcessed != null ? bonusProcessed : false;
+    }
+
+    public Boolean getBonusFinalized() {
+        return bonusFinalized != null ? bonusFinalized : false;
     }
 
     // ========================================

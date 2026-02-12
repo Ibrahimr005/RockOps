@@ -302,7 +302,7 @@ const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, 
     };
 
     return (
-        <div className="modal-backdrop consumables-history-modal-backdrop">
+        <div className="modal-backdrop consumables-history-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="modal-container modal-lg consumables-history-modal">
                 <div className="modal-header consumables-history-modal-header">
                     <div className="header-content">

@@ -1,7 +1,6 @@
 import React, {useEffect, useState, createContext, useContext} from 'react';
 import {NavLink, useLocation, useNavigate} from 'react-router-dom';
 import {useAuth} from '../../../contexts/AuthContext.jsx';
-import {useTheme} from '../../../contexts/ThemeContext.jsx';
 import {useTranslation} from 'react-i18next';
 import {
     FaBars,
@@ -11,7 +10,7 @@ import {
     FaChartLine,
     FaChevronDown,
     FaChevronRight,
-    FaChevronLeft,
+    FaColumns,
     FaClipboard,
     FaCog,
     FaFileContract,
@@ -19,12 +18,9 @@ import {
     FaFileInvoiceDollar,
     FaIdCard,
     FaMapMarkerAlt,
-    FaMoon,
     FaShoppingCart,
-    FaSignOutAlt,
     FaSitemap,
     FaStore,
-    FaSun,
     FaTasks,
     FaTimes,
     FaTools,
@@ -34,7 +30,6 @@ import {
     FaWarehouse,
     FaTags,
     FaListAlt,
-    FaArrowLeft,
     FaBook,
     FaBalanceScale,
     FaReceipt,
@@ -42,22 +37,20 @@ import {
     FaPiggyBank,
     FaFileAlt,
     FaMoneyBillWave,
-    FaChartBar,
     FaArrowUp,
     FaMinusCircle,
     FaCalendarCheck,
     FaCalendarTimes,
     FaAddressBook,
-    FaDatabase,
     FaUserClock,
-    FaMoneyCheckAlt
+    FaMoneyCheckAlt,
+    FaGift
 } from 'react-icons/fa';
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE } from '../../../utils/roles';
 
+import AvatarPopupMenu from './AvatarPopupMenu';
 import './Sidebar.css';
-import logoDarkImage from "../../../assets/logos/Logo-dark.png";
-import logoImage from "../../../assets/logos/Logo.png";
 
 // Create Sidebar Context
 const SidebarContext = createContext();
@@ -71,7 +64,6 @@ export const useSidebar = () => {
 };
 
 export const SidebarProvider = ({ children }) => {
-    const { theme } = useTheme(); // Fix: Get theme from context
     const [isExpanded, setIsExpanded] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -128,8 +120,7 @@ export const SidebarProvider = ({ children }) => {
 };
 
 const Sidebar = () => {
-    const {currentUser, logout} = useAuth();
-    const {theme, toggleTheme} = useTheme();
+    const {currentUser} = useAuth();
     const {t} = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
@@ -138,9 +129,6 @@ const Sidebar = () => {
     const [navigationHistory, setNavigationHistory] = useState(['/login']);
 
     const userRole = currentUser?.role || 'USER';
-
-    // Get the appropriate logo based on theme
-    const currentLogo = theme === 'dark' ? logoDarkImage : logoImage;
 
     // Helper function to check if a path is active
     const isPathActive = (itemPath, currentPath) => {
@@ -181,12 +169,6 @@ const Sidebar = () => {
         }
 
         navigate(-1);
-    };
-
-    // Fixed theme toggle handler
-    const handleThemeToggle = (e) => {
-        e.stopPropagation();
-        toggleTheme();
     };
 
     // Auto-expand submenus when on submenu pages
@@ -454,6 +436,18 @@ const Sidebar = () => {
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
+                    title: 'Bonus Management',
+                    icon: <FaGift/>,
+                    path: '/payroll/bonuses',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
+                    title: 'Payment Types',
+                    icon: <FaMoneyCheckAlt/>,
+                    path: '/payroll/payment-types',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
                     title: 'Payslip Management',
                     icon: <FaReceipt/>,
                     path: '/payroll/payslips',
@@ -612,10 +606,6 @@ const Sidebar = () => {
         }
     ];
 
-    const handleLogout = () => {
-        logout();
-    };
-
     return (
         <>
             {/* Mobile toggle button */}
@@ -633,28 +623,15 @@ const Sidebar = () => {
                 className={`sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}
                 data-expanded={isExpanded}
             >
-                {/* Toggle button - Uses icon swap instead of rotation */}
-                {!isMobile && (
+                <div className="sidebar-header">
+                    <span className="sidebar-brand" onClick={handleLogoClick}>Oretech</span>
                     <button
-                        className="sidebar-toggle-btn"
+                        className="sidebar-new-btn"
                         onClick={toggleSidebar}
                         aria-label="Toggle sidebar"
                     >
-                        <span className={`chevron-icon ${isExpanded ? 'expanded' : 'collapsed'}`}>
-                            {isExpanded ? <FaChevronLeft /> : <FaChevronRight />}
-                        </span>
+                        <FaColumns />
                     </button>
-                )}
-
-                <div className="sidebar-header">
-                    <div className="logo-container" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-                        <img
-                            src={currentLogo}
-                            alt="Logo"
-                            className="logo-image"
-                            key={theme}
-                        />
-                    </div>
                 </div>
 
                 <div className="sidebar-menu">
@@ -756,7 +733,7 @@ const Sidebar = () => {
                 </div>
 
                 <div className="sidebar-footer">
-                    {/* Footer content removed - back button and theme toggle removed */}
+                    <AvatarPopupMenu />
                 </div>
             </div>
 

@@ -13,6 +13,14 @@ import './LoanModal.scss';
 
 const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
     const { showSuccess, showError } = useSnackbar();
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
     const [loading, setLoading] = useState(false);
     const [repaymentSchedule, setRepaymentSchedule] = useState([]);
     const [scheduleStats, setScheduleStats] = useState({

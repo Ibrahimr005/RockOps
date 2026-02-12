@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaCalendarAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { payrollService } from '../../../../services/payroll/payrollService'; // Ensure import path is correct
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './CreatePayrollModal.scss';
 
 const CreatePayrollModal = ({ onClose, onSubmit }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     // Helper to format date as YYYY-MM-DD for inputs
     const formatDateForInput = (date) => {
         return date.toISOString().split('T')[0];
@@ -19,6 +28,8 @@ const CreatePayrollModal = ({ onClose, onSubmit }) => {
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [calculatingDates, setCalculatingDates] = useState(true);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     // ⭐ NEW: Effect to fetch latest payroll and calculate dates
     useEffect(() => {
@@ -65,7 +76,16 @@ const CreatePayrollModal = ({ onClose, onSubmit }) => {
         fetchLatestAndSetDates();
     }, []);
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleChange = (e) => {
+        setIsFormDirty(true);
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -112,14 +132,15 @@ const CreatePayrollModal = ({ onClose, onSubmit }) => {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <>
+        <div className="modal-overlay" onClick={handleCloseAttempt}>
             <div className="create-payroll-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2>
                         <FaCalendarAlt />
                         Create New Payroll Cycle
                     </h2>
-                    <button className="close-btn" onClick={onClose}>
+                    <button className="close-btn" onClick={handleCloseAttempt}>
                         <FaTimes />
                     </button>
                 </div>
@@ -194,7 +215,7 @@ const CreatePayrollModal = ({ onClose, onSubmit }) => {
                 </form>
 
                 <div className="modal-footer">
-                    <button type="button" onClick={onClose} className="btn-cancel">
+                    <button type="button" onClick={handleCloseAttempt} className="btn-cancel">
                         Cancel
                     </button>
                     <button
@@ -208,6 +229,19 @@ const CreatePayrollModal = ({ onClose, onSubmit }) => {
                 </div>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

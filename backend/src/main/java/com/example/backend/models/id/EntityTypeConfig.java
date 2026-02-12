@@ -30,6 +30,14 @@ public enum EntityTypeConfig {
 
     // Payroll
     LOAN("LOAN", 6),
+    BONUS("BNS", 6),
+    PAYROLL("PRL", 6),
+    EMPLOYEE_PAYROLL("EPRL", 6),
+    PAYROLL_BATCH("PB", 6),
+    PAYMENT_TYPE("PT", 6),
+
+    // Maintenance
+    MAINTENANCE_RECORD("MR", 6),
 
     // General
     SITE("SITE", 6),

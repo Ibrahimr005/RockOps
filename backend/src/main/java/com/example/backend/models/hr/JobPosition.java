@@ -62,6 +62,11 @@ public class JobPosition {
     private Integer workingHours;
     private String vacations;
 
+    // Numeric vacation days allocation (used by VacationBalance)
+    @Column(name = "vacation_days")
+    @Builder.Default
+    private Integer vacationDays = 21;
+
     // Time fields for MONTHLY contracts
     @Column(name = "start_time")
     private LocalTime startTime;

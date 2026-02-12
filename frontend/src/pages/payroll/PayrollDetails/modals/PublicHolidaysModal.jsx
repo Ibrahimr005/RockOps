@@ -6,10 +6,20 @@ import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaTimes, FaPlus, FaTrash, FaInfoCircle } from 'react-icons/fa';
 import payrollService from '../../../../services/payroll/payrollService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './PublicHolidaysModal.scss';
 
 const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
     const { showSuccess, showError } = useSnackbar();
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [loading, setLoading] = useState(false);
     const [holidays, setHolidays] = useState([]);
     const [newHoliday, setNewHoliday] = useState({
@@ -18,6 +28,8 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
         name: '',
         isPaid: true,
     });
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     // Helper to format date string for input type="date" (YYYY-MM-DD)
     const formatDateForInput = (dateStr) => {
@@ -49,6 +61,7 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
     };
 
     const handleAddToList = () => {
+        setIsFormDirty(true);
         // Validation
         if (!newHoliday.startDate) {
             showError('Please enter a start date');
@@ -100,6 +113,7 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
     };
 
     const handleRemoveFromList = (index) => {
+        setIsFormDirty(true);
         const holiday = holidays[index];
         setHolidays(holidays.filter((_, i) => i !== index));
         showSuccess(`${holiday.name} removed`);
@@ -137,6 +151,14 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
         }
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const formatDateRange = (holiday) => {
         const start = new Date(holiday.startDate).toLocaleDateString('en-US', {
             month: 'short',
@@ -158,14 +180,15 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <>
+        <div className="modal-overlay" onClick={handleCloseAttempt}>
             <div className="modal-content public-holidays-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2>
                         <FaCalendarAlt />
                         Manage Public Holidays
                     </h2>
-                    <button className="close-button" onClick={onClose}>
+                    <button className="close-button" onClick={handleCloseAttempt}>
                         <FaTimes />
                     </button>
                 </div>
@@ -194,7 +217,7 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
                                             value={newHoliday.startDate}
                                             min={minDateStr} // RESTRICTION
                                             max={maxDateStr} // RESTRICTION
-                                            onChange={(e) => setNewHoliday({ ...newHoliday, startDate: e.target.value })}
+                                            onChange={(e) => { setIsFormDirty(true); setNewHoliday({ ...newHoliday, startDate: e.target.value }); }}
                                             className="form-input"
                                         />
                                     </div>
@@ -205,7 +228,7 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
                                             value={newHoliday.endDate}
                                             min={newHoliday.startDate || minDateStr} // RESTRICTION (Cannot be before start)
                                             max={maxDateStr} // RESTRICTION
-                                            onChange={(e) => setNewHoliday({ ...newHoliday, endDate: e.target.value })}
+                                            onChange={(e) => { setIsFormDirty(true); setNewHoliday({ ...newHoliday, endDate: e.target.value }); }}
                                             className="form-input"
                                             placeholder="Leave empty for single day"
                                         />
@@ -216,7 +239,7 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
                                     <input
                                         type="text"
                                         value={newHoliday.name}
-                                        onChange={(e) => setNewHoliday({ ...newHoliday, name: e.target.value })}
+                                        onChange={(e) => { setIsFormDirty(true); setNewHoliday({ ...newHoliday, name: e.target.value }); }}
                                         placeholder="e.g., Christmas, Eid al-Fitr"
                                         className="form-input"
                                     />
@@ -226,7 +249,7 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
                                         <input
                                             type="checkbox"
                                             checked={newHoliday.isPaid}
-                                            onChange={(e) => setNewHoliday({ ...newHoliday, isPaid: e.target.checked })}
+                                            onChange={(e) => { setIsFormDirty(true); setNewHoliday({ ...newHoliday, isPaid: e.target.checked }); }}
                                         />
                                         <span>Paid Holiday</span>
                                     </label>
@@ -301,7 +324,7 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
                 <div className="modal-footer">
                     <button
                         className="btn-cancel"
-                        onClick={onClose}
+                        onClick={handleCloseAttempt}
                         disabled={loading}
                     >
                         Cancel
@@ -316,6 +339,19 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
                 </div>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

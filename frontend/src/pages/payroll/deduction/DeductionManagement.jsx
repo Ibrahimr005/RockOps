@@ -35,6 +35,7 @@ import DataTable from '../../../components/common/DataTable/DataTable';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './DeductionManagement.scss';
 import PageHeader from "../../../components/common/PageHeader/index.js";
+import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards.jsx';
 
 const DeductionManagement = () => {
     const navigate = useNavigate();
@@ -150,6 +151,18 @@ const DeductionManagement = () => {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    // Scroll lock for inline modals
+    useEffect(() => {
+        if (showCreateDeductionModal || showCreateTypeModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showCreateDeductionModal, showCreateTypeModal]);
 
     // Load deductions when employee filter changes
     useEffect(() => {
@@ -704,47 +717,15 @@ const DeductionManagement = () => {
             <PageHeader title={"Deduction Management"} subtitle={"Configure deduction types and manage employee deductions"}/>
 
             {/* Statistics Cards */}
-            <div className="deduction-management-stats">
-                <div className="stat-card">
-                    <div className="stat-icon total">
-                        <FaList />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{statistics.total}</span>
-                        <span className="stat-label">Deduction Types</span>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon active">
-                        <FaCheckCircle />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{statistics.active}</span>
-                        <span className="stat-label">Active Types</span>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon loan">
-                        <FaMoneyBillWave />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{statistics.byCategory['LOAN'] || 0}</span>
-                        <span className="stat-label">Loan Types</span>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon other">
-                        <FaCog />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{Object.keys(statistics.byCategory).length}</span>
-                        <span className="stat-label">Categories</span>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <FaList />, label: "Deduction Types", value: statistics.total, variant: "total" },
+                    { icon: <FaCheckCircle />, label: "Active Types", value: statistics.active, variant: "active" },
+                    { icon: <FaMoneyBillWave />, label: "Loan Types", value: statistics.byCategory['LOAN'] || 0, variant: "loan" },
+                    { icon: <FaCog />, label: "Categories", value: Object.keys(statistics.byCategory).length, variant: "warning" },
+                ]}
+                columns={5}
+            />
 
             {/* Tabs */}
             <div className="tabs">
@@ -760,12 +741,12 @@ const DeductionManagement = () => {
                 >
                     <FaUserMinus /> Employee Deductions
                 </button>
-                <button
-                    className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('categories')}
-                >
-                    <FaChartBar /> Categories Overview
-                </button>
+                {/*<button*/}
+                {/*    className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`}*/}
+                {/*    onClick={() => setActiveTab('categories')}*/}
+                {/*>*/}
+                {/*    <FaChartBar /> Categories Overview*/}
+                {/*</button>*/}
             </div>
 
             {/* Tab Content */}
@@ -878,29 +859,29 @@ const DeductionManagement = () => {
                     </div>
                 )}
 
-                {activeTab === 'categories' && (
-                    <div className="categories-overview">
-                        <div className="categories-grid">
-                            {Object.entries(DEDUCTION_CATEGORY_CONFIG).map(([key, config]) => {
-                                const count = statistics.byCategory[key] || 0;
-                                return (
-                                    <div key={key} className="category-card">
-                                        <div
-                                            className="category-icon"
-                                            style={{ backgroundColor: config.color }}
-                                        >
-                                            <FaDollarSign />
-                                        </div>
-                                        <div className="category-info">
-                                            <span className="category-name">{config.label}</span>
-                                            <span className="category-count">{count} type{count !== 1 ? 's' : ''}</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
+                {/*{activeTab === 'categories' && (*/}
+                {/*    <div className="categories-overview">*/}
+                {/*        <div className="categories-grid">*/}
+                {/*            {Object.entries(DEDUCTION_CATEGORY_CONFIG).map(([key, config]) => {*/}
+                {/*                const count = statistics.byCategory[key] || 0;*/}
+                {/*                return (*/}
+                {/*                    <div key={key} className="category-card">*/}
+                {/*                        <div*/}
+                {/*                            className="category-icon"*/}
+                {/*                            style={{ backgroundColor: config.color }}*/}
+                {/*                        >*/}
+                {/*                            <FaDollarSign />*/}
+                {/*                        </div>*/}
+                {/*                        <div className="category-info">*/}
+                {/*                            <span className="category-name">{config.label}</span>*/}
+                {/*                            <span className="category-count">{count} type{count !== 1 ? 's' : ''}</span>*/}
+                {/*                        </div>*/}
+                {/*                    </div>*/}
+                {/*                );*/}
+                {/*            })}*/}
+                {/*        </div>*/}
+                {/*    </div>*/}
+                {/*)}*/}
             </div>
 
             {/* Create/Edit Type Modal */}

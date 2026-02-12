@@ -39,6 +39,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         shifts: 'Day Shift',
         workingHours: 8,
         vacations: '21 days annual leave',
+        vacationDays: 21,
 
         // Time fields for MONTHLY contracts
         startTime: '09:00',
@@ -79,6 +80,16 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         { value: 'SENIOR_LEVEL', label: 'Senior Level' },
         { value: 'EXPERT_LEVEL', label: 'Expert Level' }
     ];
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
 
     // Fetch dependencies when modal opens
     useEffect(() => {
@@ -135,6 +146,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                 shifts: position.shifts || 'Day Shift',
                 workingHours: position.workingHours || 8,
                 vacations: position.vacations || '21 days annual leave',
+                vacationDays: position.vacationDays != null ? position.vacationDays : 21,
 
                 // Time
                 startTime: formatTimeForInput(position.startTime) || '09:00',
@@ -312,8 +324,22 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
             }
 
             // Negative values check for deductions
-            if (formData.absentDeduction !== '' && Number(formData.absentDeduction) < 0) errors.push('Absent deduction cannot be negative');
-            if (formData.lateDeduction !== '' && Number(formData.lateDeduction) < 0) errors.push('Late deduction cannot be negative');
+            if (formData.absentDeduction === '' || formData.absentDeduction === null || formData.absentDeduction === undefined) {
+                errors.push('Absent penalty is required for monthly contracts');
+            } else if (Number(formData.absentDeduction) < 0) {
+                errors.push('Absent deduction cannot be negative');
+            }
+            if (formData.lateDeduction === '' || formData.lateDeduction === null || formData.lateDeduction === undefined) {
+                errors.push('Late penalty is required for monthly contracts');
+            } else if (Number(formData.lateDeduction) < 0) {
+                errors.push('Late deduction cannot be negative');
+            }
+            if (formData.lateForgivenessMinutes === '' || formData.lateForgivenessMinutes === null || formData.lateForgivenessMinutes === undefined) {
+                errors.push('Late forgiveness minutes is required for monthly contracts');
+            }
+            if (formData.lateForgivenessCountPerQuarter === '' || formData.lateForgivenessCountPerQuarter === null || formData.lateForgivenessCountPerQuarter === undefined) {
+                errors.push('Forgiveness count per quarter is required for monthly contracts');
+            }
             if (formData.leaveDeduction !== '' && Number(formData.leaveDeduction) < 0) errors.push('Leave deduction cannot be negative');
         }
 
@@ -344,6 +370,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
 
                 // Explicitly send null if string is empty to allow removal of parent
                 parentJobPositionId: formData.parentJobPositionId || null,
+                vacationDays: formData.vacationDays ? Number(formData.vacationDays) : 21,
 
                 ...(formData.contractType === 'HOURLY' && {
                     workingDaysPerWeek: formData.workingDaysPerWeek,
@@ -516,7 +543,11 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                         </div>
                         <div className="jp-form-row">
                             <div className="jp-form-group">
-                                <label htmlFor="vacations">Vacation Policy</label>
+                                <label htmlFor="vacationDays">Annual Vacation Days <span className="required">*</span></label>
+                                <input type="number" id="vacationDays" name="vacationDays" value={formData.vacationDays} onChange={handleChange} min="0" placeholder="e.g., 21" />
+                            </div>
+                            <div className="jp-form-group">
+                                <label htmlFor="vacations">Vacation Policy Description</label>
                                 <input type="text" id="vacations" name="vacations" value={formData.vacations} onChange={handleChange} placeholder="e.g., 21 days annual leave" />
                             </div>
                         </div>
@@ -527,26 +558,26 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
 
                             <div className="jp-form-row">
                                 <div className="jp-form-group">
-                                    <label htmlFor="absentDeduction">Absent Deduction Amount ($)</label>
-                                    <input type="number" id="absentDeduction" name="absentDeduction" value={formData.absentDeduction} onChange={handleChange} min="0" step="0.01" placeholder="0.00" />
+                                    <label htmlFor="absentDeduction">Absent Penalty ($) <span className="required">*</span></label>
+                                    <input type="number" id="absentDeduction" name="absentDeduction" value={formData.absentDeduction} onChange={handleChange} min="0" step="0.01" placeholder="0.00" required />
                                     <small className="jp-field-hint">Amount deducted when attendance status is Absent</small>
                                 </div>
                                 <div className="jp-form-group">
-                                    <label htmlFor="lateDeduction">Late Deduction Amount ($)</label>
-                                    <input type="number" id="lateDeduction" name="lateDeduction" value={formData.lateDeduction} onChange={handleChange} min="0" step="0.01" placeholder="0.00" />
+                                    <label htmlFor="lateDeduction">Late Penalty ($) <span className="required">*</span></label>
+                                    <input type="number" id="lateDeduction" name="lateDeduction" value={formData.lateDeduction} onChange={handleChange} min="0" step="0.01" placeholder="0.00" required />
                                     <small className="jp-field-hint">Amount deducted when attendance status is Late</small>
                                 </div>
                             </div>
 
                             <div className="jp-form-row">
                                 <div className="jp-form-group">
-                                    <label htmlFor="lateForgivenessMinutes">Late Forgiveness Minutes</label>
-                                    <input type="number" id="lateForgivenessMinutes" name="lateForgivenessMinutes" value={formData.lateForgivenessMinutes} onChange={handleChange} min="0" max="60" placeholder="0" />
+                                    <label htmlFor="lateForgivenessMinutes">Late Forgiveness (Mins) <span className="required">*</span></label>
+                                    <input type="number" id="lateForgivenessMinutes" name="lateForgivenessMinutes" value={formData.lateForgivenessMinutes} onChange={handleChange} min="0" max="60" placeholder="0" required />
                                     <small className="jp-field-hint">Grace period in minutes before late deduction is applied</small>
                                 </div>
                                 <div className="jp-form-group">
-                                    <label htmlFor="lateForgivenessCountPerQuarter">Late Forgiveness Count per Quarter</label>
-                                    <input type="number" id="lateForgivenessCountPerQuarter" name="lateForgivenessCountPerQuarter" value={formData.lateForgivenessCountPerQuarter} onChange={handleChange} min="0" max="20" placeholder="0" />
+                                    <label htmlFor="lateForgivenessCountPerQuarter">Forgiveness Count (Per Qtr) <span className="required">*</span></label>
+                                    <input type="number" id="lateForgivenessCountPerQuarter" name="lateForgivenessCountPerQuarter" value={formData.lateForgivenessCountPerQuarter} onChange={handleChange} min="0" max="20" placeholder="0" required />
                                     <small className="jp-field-hint">Number of late occurrences forgiven per quarter</small>
                                 </div>
                             </div>

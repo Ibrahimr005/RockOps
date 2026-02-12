@@ -1,0 +1,249 @@
+/* AvatarPopupMenu.css */
+
+.avatar-popup-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* ===== Trigger Button ===== */
+.avatar-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--color-text-primary);
+}
+
+.avatar-trigger:hover {
+    background-color: var(--color-surface-hover);
+}
+
+/* Collapsed: center the circle */
+.avatar-popup-wrapper.collapsed .avatar-trigger {
+    justify-content: center;
+    padding: 8px 4px;
+}
+
+.avatar-trigger-circle {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    background: rgba(var(--color-primary-rgb), 0.15);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    position: relative;
+    transition: box-shadow 0.2s ease;
+}
+
+.avatar-trigger:hover .avatar-trigger-circle {
+    box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+/* Notification dot on avatar */
+.avatar-notification-dot {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-danger);
+    border: 2px solid var(--section-background-color);
+}
+
+.avatar-trigger-name {
+    flex: 1;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.avatar-trigger-chevron {
+    font-size: 0.65rem;
+    color: var(--color-text-secondary);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.avatar-trigger-chevron.open {
+    transform: rotate(180deg);
+}
+
+/* ===== Popup Menu ===== */
+.avatar-popup-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    min-width: 240px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12), 0 -1px 4px rgba(0, 0, 0, 0.08);
+    z-index: 1100;
+    animation: avatarPopupSlideUp 0.15s ease-out;
+    overflow: hidden;
+}
+
+/* Collapsed: popup to the right */
+.avatar-popup-menu.collapsed {
+    left: calc(100% + 8px);
+    right: auto;
+    bottom: 0;
+    animation: avatarPopupSlideRight 0.15s ease-out;
+}
+
+@keyframes avatarPopupSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes avatarPopupSlideRight {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ===== Popup Header ===== */
+.avatar-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+}
+
+.avatar-popup-circle {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 50%;
+    background: rgba(var(--color-primary-rgb), 0.15);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.avatar-popup-user-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.avatar-popup-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.avatar-popup-role {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-transform: capitalize;
+}
+
+/* ===== Divider ===== */
+.avatar-popup-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 4px 0;
+}
+
+/* ===== Menu Items ===== */
+.avatar-popup-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    transition: background-color 0.15s ease;
+    text-align: left;
+}
+
+.avatar-popup-item:hover {
+    background-color: var(--color-surface-hover);
+}
+
+.avatar-popup-item-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+}
+
+.avatar-popup-item-label {
+    flex: 1;
+}
+
+/* Notification badge */
+.avatar-popup-badge {
+    background: rgba(var(--color-danger-rgb, 239, 68, 68), 0.15);
+    color: var(--color-danger);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* Logout item */
+.avatar-popup-logout {
+    color: var(--color-danger);
+}
+
+.avatar-popup-logout .avatar-popup-item-icon {
+    color: var(--color-danger);
+}
+
+.avatar-popup-logout:hover {
+    background-color: rgba(var(--color-danger-rgb, 239, 68, 68), 0.08);
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 768px) {
+    .avatar-popup-menu.collapsed {
+        left: 0;
+        right: 0;
+        bottom: calc(100% + 8px);
+        animation: avatarPopupSlideUp 0.15s ease-out;
+    }
+}

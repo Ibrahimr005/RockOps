@@ -50,6 +50,10 @@ public class JobPositionService {
     @Autowired
     private PromotionRequestRepository promotionRequestRepository;
 
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private VacationBalanceService vacationBalanceService;
+
 
     /**
      * Convert JobPosition entity to JobPositionDTO
@@ -97,6 +101,9 @@ public class JobPositionService {
                 dto.setEndTime(jobPosition.getEndTime());
                 break;
         }
+
+        // Vacation days (applies to all contract types)
+        dto.setVacationDays(jobPosition.getVacationDays());
 
         // Calculate derived fields
         dto.calculateFields();
@@ -289,6 +296,9 @@ public class JobPositionService {
                 jobPosition.setLeaveDeduction(dto.getLeaveDeduction());
                 break;
         }
+
+        // Vacation days (applies to all contract types)
+        jobPosition.setVacationDays(dto.getVacationDays() != null ? dto.getVacationDays() : 21);
     }
 
 
@@ -426,6 +436,22 @@ public class JobPositionService {
             // Save the updated entity
             JobPosition updatedJobPosition = jobPositionRepository.save(existingJobPosition);
 
+            // Sync vacation balances for all employees in this position if vacationDays changed
+            if (jobPositionDTO.getVacationDays() != null) {
+                try {
+                    List<Employee> employees = updatedJobPosition.getEmployees();
+                    if (employees != null) {
+                        for (Employee emp : employees) {
+                            if ("ACTIVE".equalsIgnoreCase(emp.getStatus())) {
+                                vacationBalanceService.updateAllocationForEmployee(emp.getId());
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to sync vacation balances after position update: {}", e.getMessage());
+                }
+            }
+
             // Send notifications about significant changes
             sendJobPositionUpdateNotifications(updatedJobPosition, oldPositionName, oldDepartmentName, oldActiveStatus);
 
@@ -521,6 +547,11 @@ public class JobPositionService {
                 // These can be set to null to clear them, or updated with new values
                 updateMonthlyDeductionFields(existingJobPosition, dto);
                 break;
+        }
+
+        // Vacation days (applies to all contract types)
+        if (dto.getVacationDays() != null) {
+            existingJobPosition.setVacationDays(dto.getVacationDays());
         }
     }
 
@@ -1453,6 +1484,7 @@ public class JobPositionService {
                 .shifts(jobPosition.getShifts())
                 .workingHours(jobPosition.getWorkingHours())
                 .vacations(jobPosition.getVacations())
+                .vacationDays(jobPosition.getVacationDays())
                 .startTime(jobPosition.getStartTime())
                 .endTime(jobPosition.getEndTime());
 

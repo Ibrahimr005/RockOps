@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaEye, FaSpinner, FaExclamationTriangle, FaMoneyBillWave, FaCalendarAlt, FaPercent } from 'react-icons/fa';
 import {loanService} from "../../../../services/payroll/loanService.js";
 import {useSnackbar} from "../../../../contexts/SnackbarContext.jsx";
+import StatisticsCards from "../../../../components/common/StatisticsCards/StatisticsCards.jsx";
 import LoanDetailsModal from "../../../payroll/Loans/components/LoanDetailsModal.jsx";
 import CreateLoanModal from "../../../payroll/Loans/components/CreateLoanModal/CreateLoanModal.jsx";
 
@@ -248,51 +249,15 @@ const LoansTab = ({ employee, formatCurrency }) => {
             </div>
 
             {/* Loan Summary Cards */}
-            <div className="loans-summary">
-                <div className="summary-card summary-card--primary">
-                    <div className="summary-card__icon">
-                        <FaMoneyBillWave />
-                    </div>
-                    <div className="summary-card__content">
-                        <h4>Total Outstanding</h4>
-                        <div className="amount">{formatCurrency(loanSummary.totalOutstanding)}</div>
-                        <div className="period">Current Balance</div>
-                    </div>
-                </div>
-
-                <div className="summary-card summary-card--info">
-                    <div className="summary-card__icon">
-                        <FaCalendarAlt />
-                    </div>
-                    <div className="summary-card__content">
-                        <h4>Monthly Deduction</h4>
-                        <div className="amount">{formatCurrency(loanSummary.monthlyRepayment)}</div>
-                        <div className="period">Per Month</div>
-                    </div>
-                </div>
-
-                <div className="summary-card summary-card--warning">
-                    <div className="summary-card__icon">
-                        <FaPercent />
-                    </div>
-                    <div className="summary-card__content">
-                        <h4>Utilization Ratio</h4>
-                        <div className="amount">{(loanSummary.utilizationRatio || 0).toFixed(1)}%</div>
-                        <div className="period">Of Salary</div>
-                    </div>
-                </div>
-
-                <div className="summary-card summary-card--success">
-                    <div className="summary-card__icon">
-                        <FaMoneyBillWave />
-                    </div>
-                    <div className="summary-card__content">
-                        <h4>Total Borrowed</h4>
-                        <div className="amount">{formatCurrency(loanSummary.totalBorrowed)}</div>
-                        <div className="period">Lifetime</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <FaMoneyBillWave />, label: "Total Outstanding", value: formatCurrency(loanSummary.totalOutstanding), variant: "primary", subtitle: "Current Balance" },
+                    { icon: <FaCalendarAlt />, label: "Monthly Deduction", value: formatCurrency(loanSummary.monthlyRepayment), variant: "info", subtitle: "Per Month" },
+                    { icon: <FaPercent />, label: "Utilization Ratio", value: `${(loanSummary.utilizationRatio || 0).toFixed(1)}%`, variant: "warning", subtitle: "Of Salary" },
+                    { icon: <FaMoneyBillWave />, label: "Total Borrowed", value: formatCurrency(loanSummary.totalBorrowed), variant: "success", subtitle: "Lifetime" },
+                ]}
+                columns={4}
+            />
 
             {/* Eligibility Warning */}
             {!canApplyForNewLoan() && (

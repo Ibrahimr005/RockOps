@@ -19,6 +19,7 @@ import {
 } from 'react-icons/fa';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import './OvertimeReviewPhase.scss';
 
 const OvertimeReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog }) => {
@@ -283,29 +284,15 @@ const OvertimeReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDial
                         <h4>Overtime Review Summary</h4>
                     </div>
 
-                    <div className="summary-stats">
-                        <div className="stat-card">
-                            <div className="stat-value">{overtimeStatus.summary.totalRecords || 0}</div>
-                            <div className="stat-label">Total Records</div>
-                        </div>
-
-                        <div className="stat-card approved">
-                            <div className="stat-value">{overtimeStatus.summary.totalOvertimeHours || 0}</div>
-                            <div className="stat-label">Total Hours</div>
-                        </div>
-
-                        <div className="stat-card pending">
-                            <div className="stat-value">{overtimeStatus.summary.employeesWithOvertime || 0}</div>
-                            <div className="stat-label">Employees</div>
-                        </div>
-
-                        <div className="stat-card success">
-                            <div className="stat-value">
-                                ${overtimeStatus.summary.totalOvertimePay?.toLocaleString() || 0}
-                            </div>
-                            <div className="stat-label">Total Pay</div>
-                        </div>
-                    </div>
+                    <StatisticsCards
+                        cards={[
+                            { icon: <FaChartBar />, label: "Total Records", value: overtimeStatus.summary.totalRecords || 0, variant: "total" },
+                            { icon: <FaBusinessTime />, label: "Total Hours", value: overtimeStatus.summary.totalOvertimeHours || 0, variant: "success" },
+                            { icon: <FaClock />, label: "Employees", value: overtimeStatus.summary.employeesWithOvertime || 0, variant: "warning" },
+                            { icon: <FaDollarSign />, label: "Total Pay", value: `$${overtimeStatus.summary.totalOvertimePay?.toLocaleString() || 0}`, variant: "success" },
+                        ]}
+                        columns={4}
+                    />
 
                     <div className="summary-meta">
                         <span>Processed: {new Date(overtimeStatus.lastProcessedAt).toLocaleString()}</span>

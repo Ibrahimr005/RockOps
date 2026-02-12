@@ -5,6 +5,8 @@ import { Wrench, Package, AlertCircle, TrendingUp, Users, Calendar } from 'lucid
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -52,79 +54,56 @@ const MaintenanceManagerDashboard = () => {
 
     return (
         <div className="maintenance-dashboard">
-            <div className="maintenance-dashboard-header">
-                <h1>Maintenance Dashboard</h1>
-                <p>Maintenance operations and equipment service management</p>
-            </div>
+            <PageHeader title="Maintenance Dashboard" subtitle="Maintenance operations and equipment service management" />
 
             {/* KPI Cards */}
-            <div className="maintenance-kpi-grid">
-                <div className="maintenance-kpi-card">
-                    <div className="maintenance-kpi-icon">
-                        <Wrench />
-                    </div>
-                    <div className="maintenance-kpi-content">
-                        <div className="maintenance-kpi-value">{dashboardData.totalMaintenanceRecords}</div>
-                        <div className="maintenance-kpi-label">Total Maintenance</div>
-                        <div className="maintenance-kpi-sub">{dashboardData.ongoingMaintenance} Ongoing</div>
-                    </div>
-                </div>
-
-                <div className="maintenance-kpi-card">
-                    <div className="maintenance-kpi-icon">
-                        <Calendar />
-                    </div>
-                    <div className="maintenance-kpi-content">
-                        <div className="maintenance-kpi-value">{dashboardData.scheduledMaintenance}</div>
-                        <div className="maintenance-kpi-label">Scheduled</div>
-                        <div className="maintenance-kpi-sub">{dashboardData.upcomingThisWeek} This Week</div>
-                    </div>
-                </div>
-
-                <div className="maintenance-kpi-card">
-                    <div className="maintenance-kpi-icon">
-                        <Package />
-                    </div>
-                    <div className="maintenance-kpi-content">
-                        <div className="maintenance-kpi-value">{dashboardData.totalEquipment}</div>
-                        <div className="maintenance-kpi-label">Total Equipment</div>
-                        <div className="maintenance-kpi-sub">{dashboardData.equipmentInMaintenance} In Maintenance</div>
-                    </div>
-                </div>
-
-                <div className="maintenance-kpi-card">
-                    <div className="maintenance-kpi-icon">
-                        <Users />
-                    </div>
-                    <div className="maintenance-kpi-content">
-                        <div className="maintenance-kpi-value">{dashboardData.totalTechnicians}</div>
-                        <div className="maintenance-kpi-label">Technicians</div>
-                        <div className="maintenance-kpi-sub">{dashboardData.availableTechnicians} Available</div>
-                    </div>
-                </div>
-
-                <div className="maintenance-kpi-card">
-                    <div className="maintenance-kpi-icon">
-                        <TrendingUp />
-                    </div>
-                    <div className="maintenance-kpi-content">
-                        <div className="maintenance-kpi-value">{dashboardData.completedMaintenance}</div>
-                        <div className="maintenance-kpi-label">Completed</div>
-                        <div className="maintenance-kpi-sub">Total</div>
-                    </div>
-                </div>
-
-                <div className="maintenance-kpi-card">
-                    <div className="maintenance-kpi-icon">
-                        <AlertCircle />
-                    </div>
-                    <div className="maintenance-kpi-content">
-                        <div className="maintenance-kpi-value">{dashboardData.overdueMaintenance}</div>
-                        <div className="maintenance-kpi-label">Overdue</div>
-                        <div className="maintenance-kpi-sub">{dashboardData.criticalMaintenanceAlerts} Critical</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                columns={3}
+                cards={[
+                    {
+                        icon: <Wrench />,
+                        label: "Total Maintenance",
+                        value: dashboardData.totalMaintenanceRecords,
+                        variant: "primary",
+                        subtitle: `${dashboardData.ongoingMaintenance} Ongoing`,
+                    },
+                    {
+                        icon: <Calendar />,
+                        label: "Scheduled",
+                        value: dashboardData.scheduledMaintenance,
+                        variant: "info",
+                        subtitle: `${dashboardData.upcomingThisWeek} This Week`,
+                    },
+                    {
+                        icon: <Package />,
+                        label: "Total Equipment",
+                        value: dashboardData.totalEquipment,
+                        variant: "orange",
+                        subtitle: `${dashboardData.equipmentInMaintenance} In Maintenance`,
+                    },
+                    {
+                        icon: <Users />,
+                        label: "Technicians",
+                        value: dashboardData.totalTechnicians,
+                        variant: "purple",
+                        subtitle: `${dashboardData.availableTechnicians} Available`,
+                    },
+                    {
+                        icon: <TrendingUp />,
+                        label: "Completed",
+                        value: dashboardData.completedMaintenance,
+                        variant: "success",
+                        subtitle: "Total",
+                    },
+                    {
+                        icon: <AlertCircle />,
+                        label: "Overdue",
+                        value: dashboardData.overdueMaintenance,
+                        variant: "danger",
+                        subtitle: `${dashboardData.criticalMaintenanceAlerts} Critical`,
+                    },
+                ]}
+            />
 
             {/* Charts Section */}
             <div className="maintenance-charts">

@@ -1,13 +1,17 @@
 package com.example.backend.services.payroll;
 
+import com.example.backend.dto.payroll.BonusReviewSummaryDTO;
+import com.example.backend.dto.payroll.PayrollDTO;
 import com.example.backend.dto.payroll.PublicHolidayDTO;
 import com.example.backend.models.hr.Attendance;
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.payroll.Bonus;
 import com.example.backend.models.payroll.EmployeePayroll;
 import com.example.backend.models.payroll.Payroll;
 import com.example.backend.models.payroll.PayrollPublicHoliday;
 import com.example.backend.models.payroll.PayrollStatus;
 import com.example.backend.repositories.hr.EmployeeRepository;
+import com.example.backend.repositories.payroll.BonusRepository;
 import com.example.backend.repositories.payroll.EmployeePayrollRepository;
 import com.example.backend.repositories.payroll.PayrollRepository;
 import com.example.backend.services.hr.AttendanceService;
@@ -18,10 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +37,7 @@ public class PayrollService {
     private final PayrollStateMachine stateMachine;
     private final PayrollCalculationEngine calculationEngine;
     private final PayrollSnapshotService snapshotService;
+    private final BonusRepository bonusRepository;
 
     public Optional<Payroll> getLastPayroll() {
         return payrollRepository.findFirstByOrderByEndDateDesc();
@@ -291,6 +294,22 @@ public class PayrollService {
     }
 
     /**
+     * Move payroll to deduction review phase
+     */
+    @Transactional
+    public void moveToDeductionReview(UUID payrollId, String username) {
+        Payroll payroll = getPayrollById(payrollId);
+        stateMachine.transitionTo(payroll, PayrollStatus.DEDUCTION_REVIEW, username);
+
+        // Recalculate totals when moving to deduction review
+        calculateAndUpdateTotals(payroll);
+
+        payrollRepository.save(payroll);
+
+        log.info("Payroll {} moved to DEDUCTION_REVIEW", payrollId);
+    }
+
+    /**
      * Confirm and lock payroll - triggers calculations
      */
     @Transactional
@@ -396,6 +415,208 @@ public class PayrollService {
         public PayrollContinuityException(String message) {
             super(message);
         }
+    }
+
+    // ========================================
+    // BONUS REVIEW WORKFLOW
+    // ========================================
+
+    /**
+     * Process bonus review for a payroll period.
+     * Fetches bonuses for the payroll month/year with status HR_APPROVED or PAID,
+     * links them to the payroll, and updates EmployeePayroll.bonusAmount.
+     *
+     * @param payrollId The payroll to process bonuses for
+     * @return Summary of the bonus review processing
+     */
+    @Transactional
+    public BonusReviewSummaryDTO processBonusReview(UUID payrollId) {
+        log.info("Processing bonus review for payroll: {}", payrollId);
+
+        Payroll payroll = getPayrollById(payrollId);
+
+        // Validate status
+        if (payroll.getStatus() != PayrollStatus.BONUS_REVIEW) {
+            throw new IllegalStateException(
+                    "Cannot process bonus review. Payroll must be in BONUS_REVIEW status. Current: " + payroll.getStatus());
+        }
+
+        // Determine month/year from payroll period
+        int month = payroll.getStartDate().getMonthValue();
+        int year = payroll.getStartDate().getYear();
+
+        // Fetch bonuses for the payroll period with eligible statuses
+        List<Bonus.BonusStatus> eligibleStatuses = List.of(
+                Bonus.BonusStatus.HR_APPROVED,
+                Bonus.BonusStatus.PENDING_PAYMENT,
+                Bonus.BonusStatus.PAID
+        );
+
+        // We need to find bonuses across all sites for this month/year
+        // Use the status-based query since payroll is not site-specific
+        List<Bonus> bonuses = bonusRepository.findByStatusIn(eligibleStatuses).stream()
+                .filter(b -> b.getEffectiveMonth() != null && b.getEffectiveYear() != null)
+                .filter(b -> b.getEffectiveMonth() == month && b.getEffectiveYear() == year)
+                .collect(Collectors.toList());
+
+        log.info("Found {} eligible bonuses for period {}/{}", bonuses.size(), month, year);
+
+        // Get employee payrolls
+        List<EmployeePayroll> employeePayrolls = employeePayrollRepository.findByPayrollId(payrollId);
+
+        // Build a map of employeeId -> EmployeePayroll for fast lookup
+        Map<UUID, EmployeePayroll> employeePayrollMap = new HashMap<>();
+        for (EmployeePayroll ep : employeePayrolls) {
+            employeePayrollMap.put(ep.getEmployeeId(), ep);
+        }
+
+        // Summary tracking
+        int totalBonusCount = 0;
+        BigDecimal totalBonusAmount = BigDecimal.ZERO;
+        int paidBonusCount = 0;
+        BigDecimal paidBonusAmount = BigDecimal.ZERO;
+        int pendingBonusCount = 0;
+        BigDecimal pendingBonusAmount = BigDecimal.ZERO;
+
+        Map<String, BonusReviewSummaryDTO.BonusTypeSummary> typeSummaryMap = new HashMap<>();
+        Map<UUID, BonusReviewSummaryDTO.EmployeeBonusSummary> employeeSummaryMap = new HashMap<>();
+        List<String> issues = new ArrayList<>();
+
+        // Process each bonus
+        for (Bonus bonus : bonuses) {
+            try {
+                // Link bonus to payroll
+                bonus.setPayroll(payroll);
+                bonusRepository.save(bonus);
+
+                totalBonusCount++;
+                totalBonusAmount = totalBonusAmount.add(bonus.getAmount());
+
+                if (bonus.getStatus() == Bonus.BonusStatus.PAID) {
+                    paidBonusCount++;
+                    paidBonusAmount = paidBonusAmount.add(bonus.getAmount());
+                } else {
+                    pendingBonusCount++;
+                    pendingBonusAmount = pendingBonusAmount.add(bonus.getAmount());
+                }
+
+                // Update employee payroll bonus amount
+                UUID employeeId = bonus.getEmployee().getId();
+                EmployeePayroll ep = employeePayrollMap.get(employeeId);
+                if (ep != null) {
+                    BigDecimal currentBonus = ep.getBonusAmount() != null ? ep.getBonusAmount() : BigDecimal.ZERO;
+                    ep.setBonusAmount(currentBonus.add(bonus.getAmount()));
+                    employeePayrollRepository.save(ep);
+                } else {
+                    issues.add("No employee payroll found for employee: " +
+                            bonus.getEmployee().getFirstName() + " " + bonus.getEmployee().getLastName() +
+                            " (bonus " + bonus.getBonusNumber() + ")");
+                }
+
+                // Track by type
+                String typeKey = bonus.getBonusType().getCode();
+                typeSummaryMap.compute(typeKey, (k, v) -> {
+                    if (v == null) {
+                        return BonusReviewSummaryDTO.BonusTypeSummary.builder()
+                                .typeName(bonus.getBonusType().getName())
+                                .typeCode(bonus.getBonusType().getCode())
+                                .count(1)
+                                .amount(bonus.getAmount())
+                                .build();
+                    }
+                    v.setCount(v.getCount() + 1);
+                    v.setAmount(v.getAmount().add(bonus.getAmount()));
+                    return v;
+                });
+
+                // Track by employee
+                employeeSummaryMap.compute(employeeId, (k, v) -> {
+                    String empName = bonus.getEmployee().getFirstName() + " " + bonus.getEmployee().getLastName();
+                    if (v == null) {
+                        return BonusReviewSummaryDTO.EmployeeBonusSummary.builder()
+                                .employeeId(employeeId)
+                                .employeeName(empName)
+                                .count(1)
+                                .amount(bonus.getAmount())
+                                .build();
+                    }
+                    v.setCount(v.getCount() + 1);
+                    v.setAmount(v.getAmount().add(bonus.getAmount()));
+                    return v;
+                });
+
+            } catch (Exception e) {
+                log.error("Failed to process bonus {}: {}", bonus.getBonusNumber(), e.getMessage());
+                issues.add("Failed to process bonus " + bonus.getBonusNumber() + ": " + e.getMessage());
+            }
+        }
+
+        // Mark bonus as processed
+        payroll.markBonusProcessed();
+        payrollRepository.save(payroll);
+
+        log.info("Bonus review processed: {} bonuses, total amount: {}", totalBonusCount, totalBonusAmount);
+
+        return BonusReviewSummaryDTO.builder()
+                .message(String.format("Processed %d bonuses totaling %s", totalBonusCount, totalBonusAmount))
+                .totalBonusCount(totalBonusCount)
+                .totalBonusAmount(totalBonusAmount)
+                .paidBonusCount(paidBonusCount)
+                .paidBonusAmount(paidBonusAmount)
+                .pendingBonusCount(pendingBonusCount)
+                .pendingBonusAmount(pendingBonusAmount)
+                .byType(new ArrayList<>(typeSummaryMap.values()))
+                .byEmployee(new ArrayList<>(employeeSummaryMap.values()))
+                .issues(issues)
+                .build();
+    }
+
+    /**
+     * Finalize bonus review and transition to DEDUCTION_REVIEW
+     *
+     * @param payrollId The payroll ID
+     * @param username The user finalizing the review
+     * @return Updated payroll
+     */
+    @Transactional
+    public Payroll finalizeBonusReview(UUID payrollId, String username) {
+        log.info("Finalizing bonus review for payroll: {} by {}", payrollId, username);
+
+        Payroll payroll = getPayrollById(payrollId);
+
+        // Validate can finalize
+        if (!payroll.canFinalizeBonus()) {
+            throw new IllegalStateException(
+                    "Cannot finalize bonus review. Ensure bonuses have been processed and review is not already finalized.");
+        }
+
+        // Finalize
+        payroll.finalizeBonusReview(username);
+
+        // Transition to DEDUCTION_REVIEW
+        payroll.setStatus(PayrollStatus.DEDUCTION_REVIEW);
+
+        Payroll saved = payrollRepository.save(payroll);
+
+        log.info("Bonus review finalized for payroll {}, moved to DEDUCTION_REVIEW", payrollId);
+
+        return saved;
+    }
+
+    /**
+     * Move payroll to bonus review phase
+     */
+    @Transactional
+    public void moveToBonusReview(UUID payrollId, String username) {
+        Payroll payroll = getPayrollById(payrollId);
+        stateMachine.transitionTo(payroll, PayrollStatus.BONUS_REVIEW, username);
+
+        // Recalculate totals when moving to bonus review
+        calculateAndUpdateTotals(payroll);
+
+        payrollRepository.save(payroll);
+
+        log.info("Payroll {} moved to BONUS_REVIEW", payrollId);
     }
 
     // ========================================

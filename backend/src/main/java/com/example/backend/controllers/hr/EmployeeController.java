@@ -1,6 +1,10 @@
 package com.example.backend.controllers.hr;
 
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.payroll.EmployeePayroll;
+import com.example.backend.models.payroll.PaymentType;
+import com.example.backend.repositories.payroll.EmployeePayrollRepository;
+import com.example.backend.repositories.payroll.PaymentTypeRepository;
 import com.example.backend.services.hr.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +22,12 @@ public class EmployeeController {
 
     @Autowired
     private EmployeeService employeeService;
+
+    @Autowired
+    private PaymentTypeRepository paymentTypeRepository;
+
+    @Autowired
+    private EmployeePayrollRepository employeePayrollRepository;
 
     @GetMapping("/warehouse-workers")
     public List<Employee> getWarehouseWorkers() {
@@ -304,4 +314,98 @@ public class EmployeeController {
 //            return ResponseEntity.notFound().build();
 //        }
 //    }
+
+    /**
+     * Update employee payment type and bank details
+     * Also updates any EmployeePayroll records in editable payrolls (not yet locked)
+     * @param employeeId Employee ID
+     * @param request Payment type update request containing paymentTypeId and optional bank details
+     * @return Updated employee data
+     */
+    @PutMapping("/{employeeId}/payment-type")
+    public ResponseEntity<?> updateEmployeePaymentType(
+            @PathVariable UUID employeeId,
+            @RequestBody Map<String, Object> request) {
+        try {
+            Employee employee = employeeService.getEmployeeById(employeeId);
+            if (employee == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            PaymentType paymentType = null;
+
+            // Get payment type
+            String paymentTypeIdStr = (String) request.get("paymentTypeId");
+            if (paymentTypeIdStr != null && !paymentTypeIdStr.isEmpty()) {
+                UUID paymentTypeId = UUID.fromString(paymentTypeIdStr);
+                paymentType = paymentTypeRepository.findById(paymentTypeId)
+                        .orElseThrow(() -> new RuntimeException("Payment type not found"));
+                employee.setPaymentType(paymentType);
+            }
+
+            // Update bank details if provided
+            String bankName = request.containsKey("bankName") ? (String) request.get("bankName") : employee.getBankName();
+            String bankAccountNumber = request.containsKey("bankAccountNumber") ? (String) request.get("bankAccountNumber") : employee.getBankAccountNumber();
+            String bankAccountHolderName = request.containsKey("bankAccountHolderName") ? (String) request.get("bankAccountHolderName") : employee.getBankAccountHolderName();
+            String walletNumber = request.containsKey("walletNumber") ? (String) request.get("walletNumber") : employee.getWalletNumber();
+
+            if (request.containsKey("bankName")) {
+                employee.setBankName(bankName);
+            }
+            if (request.containsKey("bankAccountNumber")) {
+                employee.setBankAccountNumber(bankAccountNumber);
+            }
+            if (request.containsKey("bankAccountHolderName")) {
+                employee.setBankAccountHolderName(bankAccountHolderName);
+            }
+            if (request.containsKey("walletNumber")) {
+                employee.setWalletNumber(walletNumber);
+            }
+
+            Employee updatedEmployee = employeeService.saveEmployee(employee);
+
+            // Also update EmployeePayroll records in editable payrolls (not yet locked)
+            // Using the query that eagerly fetches Payroll to avoid lazy loading issues
+            List<EmployeePayroll> editablePayrolls = employeePayrollRepository.findEditableByEmployeeId(employeeId);
+
+            int updatedPayrollCount = 0;
+            for (EmployeePayroll ep : editablePayrolls) {
+                // Update payment type info
+                if (paymentType != null) {
+                    ep.setPaymentTypeId(paymentType.getId());
+                    ep.setPaymentTypeCode(paymentType.getCode());
+                    ep.setPaymentTypeName(paymentType.getName());
+                }
+                // Update bank/wallet details
+                ep.setBankName(bankName);
+                ep.setBankAccountNumber(bankAccountNumber);
+                ep.setBankAccountHolderName(bankAccountHolderName);
+                ep.setWalletNumber(walletNumber);
+
+                employeePayrollRepository.save(ep);
+                updatedPayrollCount++;
+            }
+
+            // Return response with updated data
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", updatedEmployee.getId());
+            response.put("employeeName", updatedEmployee.getFullName());
+            if (updatedEmployee.getPaymentType() != null) {
+                response.put("paymentTypeId", updatedEmployee.getPaymentType().getId());
+                response.put("paymentTypeName", updatedEmployee.getPaymentType().getName());
+                response.put("paymentTypeCode", updatedEmployee.getPaymentType().getCode());
+            }
+            response.put("bankName", updatedEmployee.getBankName());
+            response.put("bankAccountNumber", updatedEmployee.getBankAccountNumber());
+            response.put("bankAccountHolderName", updatedEmployee.getBankAccountHolderName());
+            response.put("walletNumber", updatedEmployee.getWalletNumber());
+            response.put("updatedPayrollRecords", updatedPayrollCount);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
 }

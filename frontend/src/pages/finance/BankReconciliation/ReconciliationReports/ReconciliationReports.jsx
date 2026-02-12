@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaChartLine, FaDownload, FaCalendarAlt, FaUniversity, FaFileExcel, FaFilePdf } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -257,25 +258,36 @@ const ReconciliationReports = () => {
             ) : selectedAccount && summaryData ? (
                 <>
                     {/* Account Summary */}
-                    <div className="bank-reconciliation-stats" style={{ marginBottom: '20px' }}>
-                        <div className="bank-reconciliation-stat-card">
-                            <FaUniversity className="bank-reconciliation-stat-icon" />
-                            <div className="bank-reconciliation-stat-value">{selectedAccount.accountName}</div>
-                            <div className="bank-reconciliation-stat-label">Selected Account</div>
-                        </div>
-                        <div className="bank-reconciliation-stat-card">
-                            <div className="bank-reconciliation-stat-value">{formatPercentage(summaryData.reconciliationPercentage)}</div>
-                            <div className="bank-reconciliation-stat-label">Reconciliation Rate</div>
-                        </div>
-                        <div className="bank-reconciliation-stat-card">
-                            <div className="bank-reconciliation-stat-value">{summaryData.totalInternalTransactions || 0}</div>
-                            <div className="bank-reconciliation-stat-label">Total Transactions</div>
-                        </div>
-                        <div className="bank-reconciliation-stat-card">
-                            <div className="bank-reconciliation-stat-value">{summaryData.openDiscrepancies || 0}</div>
-                            <div className="bank-reconciliation-stat-label">Open Discrepancies</div>
-                        </div>
-                    </div>
+                    <StatisticsCards
+                        cards={[
+                            {
+                                icon: <FaUniversity />,
+                                label: "Selected Account",
+                                value: selectedAccount.accountName,
+                                variant: "primary"
+                            },
+                            {
+                                icon: <FaChartLine />,
+                                label: "Reconciliation Rate",
+                                value: formatPercentage(summaryData.reconciliationPercentage),
+                                variant: "success"
+                            },
+                            {
+                                icon: <FaCalendarAlt />,
+                                label: "Total Transactions",
+                                value: summaryData.totalInternalTransactions || 0,
+                                variant: "info"
+                            },
+                            {
+                                icon: <FaDownload />,
+                                label: "Open Discrepancies",
+                                value: summaryData.openDiscrepancies || 0,
+                                variant: "danger"
+                            }
+                        ]}
+                        columns={4}
+                        className="reconciliation-reports-stats"
+                    />
 
                     {/* Detailed Summary */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>

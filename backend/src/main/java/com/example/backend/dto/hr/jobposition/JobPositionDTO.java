@@ -45,6 +45,7 @@ public class JobPositionDTO {
     private String shifts;
     private Integer workingHours;
     private String vacations;
+    private Integer vacationDays;
 
     // NEW: Time fields for MONTHLY contracts
     private LocalTime startTime;

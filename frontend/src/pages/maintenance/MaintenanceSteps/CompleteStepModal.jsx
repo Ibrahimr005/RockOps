@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { FaTimes, FaCheck, FaCalendarAlt, FaDollarSign } from 'react-icons/fa';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/modal-styles.scss';
 import './CompleteStepModal.scss';
 
 const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState({
         expectedEndDate: step?.expectedEndDate ? step.expectedEndDate.split('T')[0] : '',
         expectedCost: step?.expectedCost || step?.stepCost || '',
@@ -44,6 +47,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
     if (!isOpen) return null;
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -90,6 +94,14 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -106,17 +118,18 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
     };
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-container" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <div className="modal-title">
-                        <FaCheck />
-                        Complete Maintenance Step
+        <>
+            <div className="modal-backdrop">
+                <div className="modal-container" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <div className="modal-title">
+                            <FaCheck />
+                            Complete Maintenance Step
+                        </div>
+                        <button className="btn-close" onClick={handleCloseAttempt}>
+                            <FaTimes />
+                        </button>
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
-                </div>
 
                 <div className="modal-body">
                     <div className="complete-step-info">
@@ -238,7 +251,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                     <button
                         type="button"
                         className="btn btn-secondary"
-                        onClick={onClose}
+                        onClick={handleCloseAttempt}
                     >
                         <FaTimes /> Cancel
                     </button>
@@ -252,6 +265,18 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                 </div>
             </div>
         </div>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

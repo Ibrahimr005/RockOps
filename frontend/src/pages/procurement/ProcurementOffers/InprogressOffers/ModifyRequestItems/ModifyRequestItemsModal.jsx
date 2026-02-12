@@ -13,6 +13,17 @@ const ModifyRequestItemsModal = ({
                                      itemTypes,
                                      onShowSnackbar
                                  }) => {
+    // Scroll lock
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
     const [requestItems, setRequestItems] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [editingItemId, setEditingItemId] = useState(null);

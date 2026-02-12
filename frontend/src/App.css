@@ -46,7 +46,7 @@ body {
   position: relative;
 }
 
-/* Main content wrapper - Now sits beside sidebar */
+/* Main content wrapper - Sits beside sidebar */
 .main-content-wrapper {
   display: flex;
   flex-direction: column;
@@ -54,14 +54,13 @@ body {
   min-height: 100vh;
   margin-left: 250px; /* Default sidebar width */
   transition: margin-left var(--transition-normal);
-  position: relative; /* Add relative positioning for navbar */
+  position: relative;
 }
 
 /* Main content */
 .main-content {
   flex: 1;
   padding: 2rem 3rem;
-  margin-top: 70px; /* Navbar height */
   transition: all var(--transition-normal);
 }
 

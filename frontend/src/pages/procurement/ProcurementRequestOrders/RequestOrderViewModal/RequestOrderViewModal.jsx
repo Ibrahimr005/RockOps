@@ -4,6 +4,18 @@ import "./RequestOrderViewModal.scss";
 const RequestOrderViewModal = ({ requestOrder, isOpen, onClose }) => {
     const [userRole, setUserRole] = useState(null);
 
+    // Scroll lock
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     // Get user role from localStorage
     useEffect(() => {
         try {

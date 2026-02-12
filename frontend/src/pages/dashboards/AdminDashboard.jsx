@@ -5,6 +5,8 @@ import { Users, Server, Briefcase, Package, AlertCircle, TrendingUp, Database, S
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -61,112 +63,23 @@ const AdminDashboard = () => {
 
     return (
         <div className="admin-dashboard">
-            <div className="admin-dashboard-header">
-                <h1>Admin Dashboard</h1>
-                <p>System-wide overview and comprehensive metrics</p>
-            </div>
+            <PageHeader title="Admin Dashboard" subtitle="System-wide overview and comprehensive metrics" />
 
             {/* KPI Cards */}
-            <div className="admin-dashboard-kpi-grid">
-                <div className="admin-kpi-card">
-                    <div className="admin-kpi-icon">
-                        <Users />
-                    </div>
-                    <div className="admin-kpi-content">
-                        <div className="admin-kpi-value">{dashboardData.totalUsers}</div>
-                        <div className="admin-kpi-label">Total Users</div>
-                        <div className="admin-kpi-sub">{dashboardData.activeUsers} Active</div>
-                    </div>
-                </div>
-
-                <div className="admin-kpi-card">
-                    <div className="admin-kpi-icon">
-                        <Package />
-                    </div>
-                    <div className="admin-kpi-content">
-                        <div className="admin-kpi-value">{dashboardData.totalEquipment}</div>
-                        <div className="admin-kpi-label">Total Equipment</div>
-                        <div className="admin-kpi-sub">{dashboardData.availableEquipment} Available</div>
-                    </div>
-                </div>
-
-                <div className="admin-kpi-card">
-                    <div className="admin-kpi-icon">
-                        <Database />
-                    </div>
-                    <div className="admin-kpi-content">
-                        <div className="admin-kpi-value">{dashboardData.totalWarehouses}</div>
-                        <div className="admin-kpi-label">Warehouses</div>
-                        <div className="admin-kpi-sub">{dashboardData.totalWarehouseItems} Items</div>
-                    </div>
-                </div>
-
-                <div className="admin-kpi-card">
-                    <div className="admin-kpi-icon">
-                        <Briefcase />
-                    </div>
-                    <div className="admin-kpi-content">
-                        <div className="admin-kpi-value">{dashboardData.totalEmployees}</div>
-                        <div className="admin-kpi-label">Employees</div>
-                        <div className="admin-kpi-sub">{dashboardData.activeEmployees} Active</div>
-                    </div>
-                </div>
-
-                <div className="admin-kpi-card">
-                    <div className="admin-kpi-icon">
-                        <Settings />
-                    </div>
-                    <div className="admin-kpi-content">
-                        <div className="admin-kpi-value">{dashboardData.totalMaintenanceRecords}</div>
-                        <div className="admin-kpi-label">Maintenance</div>
-                        <div className="admin-kpi-sub">{dashboardData.ongoingMaintenance} Ongoing</div>
-                    </div>
-                </div>
-
-                <div className="admin-kpi-card">
-                    <div className="admin-kpi-icon">
-                        <AlertCircle />
-                    </div>
-                    <div className="admin-kpi-content">
-                        <div className="admin-kpi-value">{dashboardData.pendingLeaveRequests}</div>
-                        <div className="admin-kpi-label">Leave Requests</div>
-                        <div className="admin-kpi-sub">Pending</div>
-                    </div>
-                </div>
-
-                <div className="admin-kpi-card">
-                    <div className="admin-kpi-icon">
-                        <ShoppingCart />
-                    </div>
-                    <div className="admin-kpi-content">
-                        <div className="admin-kpi-value">{dashboardData.totalPurchaseOrders || 0}</div>
-                        <div className="admin-kpi-label">Purchase Orders</div>
-                        <div className="admin-kpi-sub">{dashboardData.totalMerchants || 0} Merchants</div>
-                    </div>
-                </div>
-
-                <div className="admin-kpi-card">
-                    <div className="admin-kpi-icon">
-                        <Truck />
-                    </div>
-                    <div className="admin-kpi-content">
-                        <div className="admin-kpi-value">{dashboardData.totalTransactions || 0}</div>
-                        <div className="admin-kpi-label">Transactions</div>
-                        <div className="admin-kpi-sub">{dashboardData.pendingTransactions || 0} Pending</div>
-                    </div>
-                </div>
-
-                <div className="admin-kpi-card">
-                    <div className="admin-kpi-icon">
-                        <Percent />
-                    </div>
-                    <div className="admin-kpi-content">
-                        <div className="admin-kpi-value">{dashboardData.equipmentUtilizationRate || 0}%</div>
-                        <div className="admin-kpi-label">Equipment Utilization</div>
-                        <div className="admin-kpi-sub">System-wide</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <Users />, label: "Total Users", value: dashboardData.totalUsers, variant: "primary", subtitle: `${dashboardData.activeUsers} Active` },
+                    { icon: <Package />, label: "Total Equipment", value: dashboardData.totalEquipment, variant: "info", subtitle: `${dashboardData.availableEquipment} Available` },
+                    { icon: <Database />, label: "Warehouses", value: dashboardData.totalWarehouses, variant: "purple", subtitle: `${dashboardData.totalWarehouseItems} Items` },
+                    { icon: <Briefcase />, label: "Employees", value: dashboardData.totalEmployees, variant: "success", subtitle: `${dashboardData.activeEmployees} Active` },
+                    { icon: <Settings />, label: "Maintenance", value: dashboardData.totalMaintenanceRecords, variant: "warning", subtitle: `${dashboardData.ongoingMaintenance} Ongoing` },
+                    { icon: <AlertCircle />, label: "Leave Requests", value: dashboardData.pendingLeaveRequests, variant: "danger", subtitle: "Pending" },
+                    { icon: <ShoppingCart />, label: "Purchase Orders", value: dashboardData.totalPurchaseOrders || 0, variant: "orange", subtitle: `${dashboardData.totalMerchants || 0} Merchants` },
+                    { icon: <Truck />, label: "Transactions", value: dashboardData.totalTransactions || 0, variant: "lime", subtitle: `${dashboardData.pendingTransactions || 0} Pending` },
+                    { icon: <Percent />, label: "Equipment Utilization", value: `${dashboardData.equipmentUtilizationRate || 0}%`, variant: "active", subtitle: "System-wide" },
+                ]}
+                columns={3}
+            />
 
             {/* Charts Section */}
             <div className="admin-dashboard-charts">

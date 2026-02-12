@@ -17,6 +17,7 @@ import {
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
 import EmployeePayrollsTable from './EmployeePayrollsTable';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import './AttendanceImportPhase.scss';
 
 const AttendanceImportPhase = ({ payroll, onTransition, onRefresh, processing, openConfirmDialog }) => {
@@ -286,27 +287,15 @@ const AttendanceImportPhase = ({ payroll, onTransition, onRefresh, processing, o
                         <h4>Last Import Summary</h4>
                     </div>
 
-                    <div className="summary-stats">
-                        <div className="stat-card">
-                            <div className="stat-value">{importSummary.totalEmployees || employeePayrolls.length}</div>
-                            <div className="stat-label">Employees</div>
-                        </div>
-
-                        <div className="stat-card">
-                            <div className="stat-value">{importSummary.employeePayrollsCreated || 0}</div>
-                            <div className="stat-label">Created</div>
-                        </div>
-
-                        <div className="stat-card">
-                            <div className="stat-value">{importSummary.employeePayrollsUpdated || 0}</div>
-                            <div className="stat-label">Updated</div>
-                        </div>
-
-                        <div className="stat-card">
-                            <div className="stat-value">{importSummary.totalWorkingDays || '-'}</div>
-                            <div className="stat-label">Working Days</div>
-                        </div>
-                    </div>
+                    <StatisticsCards
+                        cards={[
+                            { icon: <FaChartBar />, label: "Employees", value: importSummary.totalEmployees || employeePayrolls.length, variant: "total" },
+                            { icon: <FaCheckCircle />, label: "Created", value: importSummary.employeePayrollsCreated || 0, variant: "success" },
+                            { icon: <FaRedo />, label: "Updated", value: importSummary.employeePayrollsUpdated || 0, variant: "info" },
+                            { icon: <FaClock />, label: "Working Days", value: importSummary.totalWorkingDays || '-', variant: "warning" },
+                        ]}
+                        columns={4}
+                    />
 
                     {/* Issues */}
                     {importSummary.issues && importSummary.issues.length > 0 && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUserCheck } from 'react-icons/fa';
 import maintenanceService from '../../../services/maintenanceService.js';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
 import '../../../styles/cancel-modal-button.scss';
@@ -8,10 +9,23 @@ import '../../../styles/modal-styles.scss';
 import './MaintenanceRecordModal.scss';
 
 const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [maintenanceUsers, setMaintenanceUsers] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     useEffect(() => {
         if (isOpen) {
@@ -28,6 +42,14 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
         } catch (error) {
             console.error('Error loading maintenance users:', error);
             setError('Failed to load users');
+        }
+    };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
         }
     };
 
@@ -60,22 +82,23 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-container modal-md" onClick={(e) => e.stopPropagation()}>
-                {/* Header */}
-                <div className="modal-header">
-                    <h2 className="modal-title">
-                        <FaUserCheck /> Delegate Maintenance Record
-                    </h2>
-                    <button
-                        type="button"
-                        className="btn-close"
-                        onClick={onClose}
-                        disabled={loading}
-                    >
-                        <FaTimes />
-                    </button>
-                </div>
+        <>
+            <div className="modal-backdrop">
+                <div className="modal-container modal-md" onClick={(e) => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="modal-header">
+                        <h2 className="modal-title">
+                            <FaUserCheck /> Delegate Maintenance Record
+                        </h2>
+                        <button
+                            type="button"
+                            className="btn-close"
+                            onClick={handleCloseAttempt}
+                            disabled={loading}
+                        >
+                            <FaTimes />
+                        </button>
+                    </div>
 
                 {/* Body */}
                 <div className="modal-body">
@@ -99,6 +122,7 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
                                     id="delegateUserId"
                                     value={selectedUserId}
                                     onChange={(e) => {
+                                        setIsFormDirty(true);
                                         setSelectedUserId(e.target.value);
                                         setError('');
                                     }}
@@ -128,7 +152,7 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
                     <button
                         type="button"
                         className="cancel-modal-button"
-                        onClick={onClose}
+                        onClick={handleCloseAttempt}
                         disabled={loading}
                     >
                         Cancel
@@ -144,6 +168,18 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
                 </div>
             </div>
         </div>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

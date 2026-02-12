@@ -4,6 +4,7 @@ import { User, Calendar, CheckCircle, Bell, MapPin } from 'lucide-react';
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -55,47 +56,35 @@ const UserDashboard = () => {
             </div>
 
             {/* User Info Cards */}
-            <div className="user-info-grid">
-                <div className="user-info-card">
-                    <div className="user-info-icon">
-                        <User />
-                    </div>
-                    <div className="user-info-content">
-                        <div className="user-info-label">Department</div>
-                        <div className="user-info-value">{dashboardData.department}</div>
-                    </div>
-                </div>
-
-                <div className="user-info-card">
-                    <div className="user-info-icon">
-                        <MapPin />
-                    </div>
-                    <div className="user-info-content">
-                        <div className="user-info-label">Site</div>
-                        <div className="user-info-value">{dashboardData.site}</div>
-                    </div>
-                </div>
-
-                <div className="user-info-card">
-                    <div className="user-info-icon">
-                        <Calendar />
-                    </div>
-                    <div className="user-info-content">
-                        <div className="user-info-label">Attendance Status</div>
-                        <div className="user-info-value success">{dashboardData.attendanceStatus}</div>
-                    </div>
-                </div>
-
-                <div className="user-info-card">
-                    <div className="user-info-icon">
-                        <Bell />
-                    </div>
-                    <div className="user-info-content">
-                        <div className="user-info-label">Notifications</div>
-                        <div className="user-info-value">{dashboardData.unreadNotifications} Unread</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                columns={4}
+                cards={[
+                    {
+                        icon: <User />,
+                        label: "Department",
+                        value: dashboardData.department,
+                        variant: "primary",
+                    },
+                    {
+                        icon: <MapPin />,
+                        label: "Site",
+                        value: dashboardData.site,
+                        variant: "info",
+                    },
+                    {
+                        icon: <Calendar />,
+                        label: "Attendance Status",
+                        value: dashboardData.attendanceStatus,
+                        variant: "success",
+                    },
+                    {
+                        icon: <Bell />,
+                        label: "Notifications",
+                        value: `${dashboardData.unreadNotifications} Unread`,
+                        variant: "warning",
+                    },
+                ]}
+            />
 
             {/* Attendance & Leave Section */}
             <div className="user-sections">

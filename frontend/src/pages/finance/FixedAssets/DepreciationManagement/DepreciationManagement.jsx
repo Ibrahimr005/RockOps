@@ -14,6 +14,18 @@ const DepreciationManagement = () => {
     const [selectedAsset, setSelectedAsset] = useState(null);
     const { showSuccess, showError } = useSnackbar();
 
+    // Scroll lock for details modal
+    useEffect(() => {
+        if (showDetailsModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showDetailsModal]);
+
     useEffect(() => {
         fetchDepreciationData();
     }, []);

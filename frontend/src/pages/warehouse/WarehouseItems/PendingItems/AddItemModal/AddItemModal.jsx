@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { itemTypeService } from '../../../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../../../services/warehouse/itemCategoryService';
+import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const AddItemModal = ({
                           isOpen,
@@ -23,6 +24,8 @@ const AddItemModal = ({
     const [allChildCategories, setAllChildCategories] = useState([]);
     const [itemTypes, setItemTypes] = useState([]);
     const [loadingCategories, setLoadingCategories] = useState(false);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     // Fetch data on mount
     useEffect(() => {
@@ -129,6 +132,7 @@ const AddItemModal = ({
     };
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
 
         if (name === 'parentCategoryId') {
@@ -158,10 +162,30 @@ const AddItemModal = ({
         onSubmit(formData);
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) handleCloseAttempt(); }}>
             <div className="modal-container modal-lg" ref={modalRef}>
                 {/* Modal Header */}
                 <div className="modal-header">
@@ -171,7 +195,7 @@ const AddItemModal = ({
                         </svg>
                         Add New Item
                     </h2>
-                    <button className="btn-close" onClick={onClose}>
+                    <button className="btn-close" onClick={handleCloseAttempt}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M18 6L6 18M6 6l12 12" />
                         </svg>
@@ -294,7 +318,7 @@ const AddItemModal = ({
 
                 {/* Modal Footer */}
                 <div className="modal-footer">
-                    <button type="button" className="modal-btn-secondary" onClick={onClose}>
+                    <button type="button" className="modal-btn-secondary" onClick={handleCloseAttempt}>
                         Cancel
                     </button>
                     <button
@@ -322,6 +346,7 @@ const AddItemModal = ({
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

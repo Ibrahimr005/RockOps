@@ -5,6 +5,18 @@ import Snackbar from '../../../../../components/common/Snackbar/Snackbar';
 import { rfqService } from '../../../../../services/procurement/rfqService';
 
 const RFQExportDialog = ({ isVisible, onClose, offer, requestItems }) => {
+    // Scroll lock
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
+
     const [selectedItems, setSelectedItems] = useState([]);
     const [language, setLanguage] = useState('en'); // 'en' or 'ar'
     const [filename, setFilename] = useState('');

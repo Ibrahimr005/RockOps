@@ -82,4 +82,20 @@ public interface EmployeePayrollRepository extends JpaRepository<EmployeePayroll
      * Count employee payrolls in a payroll
      */
     long countByPayrollId(UUID payrollId);
+
+    /**
+     * Find employee payrolls for an employee in editable payrolls (before finance review)
+     * Editable means: HR workflow phases including CONFIRMED_AND_LOCKED
+     * Locked means: PENDING_FINANCE_REVIEW and beyond
+     */
+    @Query("SELECT ep FROM EmployeePayroll ep " +
+           "JOIN FETCH ep.payroll p " +
+           "WHERE ep.employeeId = :employeeId " +
+           "AND p.status IN (com.example.backend.models.payroll.PayrollStatus.PUBLIC_HOLIDAYS_REVIEW, " +
+           "com.example.backend.models.payroll.PayrollStatus.ATTENDANCE_IMPORT, " +
+           "com.example.backend.models.payroll.PayrollStatus.LEAVE_REVIEW, " +
+           "com.example.backend.models.payroll.PayrollStatus.OVERTIME_REVIEW, " +
+           "com.example.backend.models.payroll.PayrollStatus.DEDUCTION_REVIEW, " +
+           "com.example.backend.models.payroll.PayrollStatus.CONFIRMED_AND_LOCKED)")
+    List<EmployeePayroll> findEditableByEmployeeId(@Param("employeeId") UUID employeeId);
 }

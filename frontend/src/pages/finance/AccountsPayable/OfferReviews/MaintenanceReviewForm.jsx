@@ -21,6 +21,14 @@ const MaintenanceReviewForm = ({ offerId, onClose, onSuccess }) => {
 
     const { showSuccess, showError } = useSnackbar();
 
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     useEffect(() => {
         const fetchRecord = async () => {
             try {

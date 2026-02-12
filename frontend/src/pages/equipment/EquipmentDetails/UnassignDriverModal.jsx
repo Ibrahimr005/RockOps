@@ -14,6 +14,21 @@ const UnassignDriverModal = ({ isOpen, onClose, equipmentId, onDriverUnassigned 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState(null);
 
+    // Dirty state tracking
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     useEffect(() => {
         if (isOpen && equipmentId) {
             fetchDrivers();
@@ -35,6 +50,7 @@ const UnassignDriverModal = ({ isOpen, onClose, equipmentId, onDriverUnassigned 
     };
 
     const handleUnassignClick = (driverId, driverType, driverName) => {
+        setIsFormDirty(true);
         setSelectedDriver({ id: driverId, type: driverType, name: driverName });
         setShowConfirmDialog(true);
     };
@@ -71,9 +87,17 @@ const UnassignDriverModal = ({ isOpen, onClose, equipmentId, onDriverUnassigned 
         setSelectedDriver(null);
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget) {
-            onClose();
+            handleCloseAttempt();
         }
     };
 
@@ -85,7 +109,7 @@ const UnassignDriverModal = ({ isOpen, onClose, equipmentId, onDriverUnassigned 
                 <div className="driver-modal-container">
                     <div className="driver-modal-header">
                         <h2>Manage Equipment Drivers</h2>
-                        <button className="driver-modal-close" onClick={onClose}>
+                        <button className="driver-modal-close" onClick={handleCloseAttempt}>
                             <FaTimes />
                         </button>
                     </div>
@@ -146,6 +170,18 @@ const UnassignDriverModal = ({ isOpen, onClose, equipmentId, onDriverUnassigned 
                 onCancel={handleCancelUnassign}
                 size="medium"
                 showIcon={true}
+            />
+
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
             />
         </>
     );

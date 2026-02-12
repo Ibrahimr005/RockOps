@@ -360,11 +360,15 @@
             }
 
             .reason-cell {
-              max-width: 250px;
+              line-height: 1.5;
               overflow: hidden;
+              display: -webkit-box;
+              -webkit-box-orient: vertical;
+              -webkit-line-clamp: 2;
               text-overflow: ellipsis;
-              white-space: nowrap;
-              color: var(--color-text-secondary);
+              word-break: break-word;
+              max-width: 100%;
+              transition: all 0.2s ease-in-out;
             }
 
             strong {

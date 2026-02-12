@@ -22,6 +22,18 @@ const BankAccountManagement = () => {
         description: ''
     });
 
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showAddModal || showEditModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showEditModal]);
+
     useEffect(() => {
         fetchBankAccounts();
     }, []);

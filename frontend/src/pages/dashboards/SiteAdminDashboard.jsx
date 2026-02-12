@@ -5,6 +5,8 @@ import { Users, Package, Database, AlertCircle, TrendingUp, MapPin } from 'lucid
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -50,85 +52,25 @@ const SiteAdminDashboard = () => {
 
     return (
         <div className="site-admin-dashboard">
-            <div className="site-admin-dashboard-header">
-                <div>
-                    <h1>{dashboardData.siteName}</h1>
-                    <p>Site Administration Dashboard</p>
-                </div>
+            <PageHeader title={dashboardData.siteName} subtitle="Site Administration Dashboard">
                 <div className="site-admin-status-badge">
                     <MapPin size={18} />
                     <span>{dashboardData.siteStatus}</span>
                 </div>
-            </div>
+            </PageHeader>
 
             {/* KPI Cards */}
-            <div className="site-admin-kpi-grid">
-                <div className="site-admin-kpi-card">
-                    <div className="site-admin-kpi-icon">
-                        <Users />
-                    </div>
-                    <div className="site-admin-kpi-content">
-                        <div className="site-admin-kpi-value">{dashboardData.totalEmployees}</div>
-                        <div className="site-admin-kpi-label">Total Employees</div>
-                        <div className="site-admin-kpi-sub">{dashboardData.activeEmployees} Active</div>
-                    </div>
-                </div>
-
-                <div className="site-admin-kpi-card">
-                    <div className="site-admin-kpi-icon">
-                        <Package />
-                    </div>
-                    <div className="site-admin-kpi-content">
-                        <div className="site-admin-kpi-value">{dashboardData.totalEquipment}</div>
-                        <div className="site-admin-kpi-label">Equipment</div>
-                        <div className="site-admin-kpi-sub">{dashboardData.availableEquipment} Available</div>
-                    </div>
-                </div>
-
-                <div className="site-admin-kpi-card">
-                    <div className="site-admin-kpi-icon">
-                        <Database />
-                    </div>
-                    <div className="site-admin-kpi-content">
-                        <div className="site-admin-kpi-value">{dashboardData.totalWarehouses}</div>
-                        <div className="site-admin-kpi-label">Warehouses</div>
-                        <div className="site-admin-kpi-sub">{dashboardData.totalInventoryItems} Items</div>
-                    </div>
-                </div>
-
-                <div className="site-admin-kpi-card">
-                    <div className="site-admin-kpi-icon">
-                        <AlertCircle />
-                    </div>
-                    <div className="site-admin-kpi-content">
-                        <div className="site-admin-kpi-value">{dashboardData.criticalAlerts}</div>
-                        <div className="site-admin-kpi-label">Critical Alerts</div>
-                        <div className="site-admin-kpi-sub">{dashboardData.pendingApprovals} Pending</div>
-                    </div>
-                </div>
-
-                <div className="site-admin-kpi-card">
-                    <div className="site-admin-kpi-icon">
-                        <TrendingUp />
-                    </div>
-                    <div className="site-admin-kpi-content">
-                        <div className="site-admin-kpi-value">{dashboardData.siteUtilizationRate}%</div>
-                        <div className="site-admin-kpi-label">Site Utilization</div>
-                        <div className="site-admin-kpi-sub">Overall Rate</div>
-                    </div>
-                </div>
-
-                <div className="site-admin-kpi-card">
-                    <div className="site-admin-kpi-icon">
-                        <TrendingUp />
-                    </div>
-                    <div className="site-admin-kpi-content">
-                        <div className="site-admin-kpi-value">{dashboardData.equipmentUtilizationRate}%</div>
-                        <div className="site-admin-kpi-label">Equipment Utilization</div>
-                        <div className="site-admin-kpi-sub">Active Usage</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <Users />, label: "Total Employees", value: dashboardData.totalEmployees, variant: "primary", subtitle: `${dashboardData.activeEmployees} Active` },
+                    { icon: <Package />, label: "Equipment", value: dashboardData.totalEquipment, variant: "info", subtitle: `${dashboardData.availableEquipment} Available` },
+                    { icon: <Database />, label: "Warehouses", value: dashboardData.totalWarehouses, variant: "purple", subtitle: `${dashboardData.totalInventoryItems} Items` },
+                    { icon: <AlertCircle />, label: "Critical Alerts", value: dashboardData.criticalAlerts, variant: "danger", subtitle: `${dashboardData.pendingApprovals} Pending` },
+                    { icon: <TrendingUp />, label: "Site Utilization", value: `${dashboardData.siteUtilizationRate}%`, variant: "success", subtitle: "Overall Rate" },
+                    { icon: <TrendingUp />, label: "Equipment Utilization", value: `${dashboardData.equipmentUtilizationRate}%`, variant: "active", subtitle: "Active Usage" },
+                ]}
+                columns={3}
+            />
 
             {/* Charts Section */}
             <div className="site-admin-charts">

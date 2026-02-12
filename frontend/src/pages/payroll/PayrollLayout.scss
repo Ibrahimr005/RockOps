@@ -14,7 +14,7 @@
   // Mobile responsiveness
   @media (max-width: 768px) {
     margin-left: 0;
-    padding-top: var(--mobile-navbar-height, 60px);
+    padding-top: 0;
   }
 }
 
@@ -31,8 +31,7 @@
   // Ensure content doesn't interfere with fixed elements
   z-index: 1;
 
-  // Add padding for navbar if needed
-  padding-top: var(--navbar-height, 0);
+  padding-top: 0;
 
   @media (max-width: 768px) {
     padding-top: 0; // Mobile navbar handled by layout margin

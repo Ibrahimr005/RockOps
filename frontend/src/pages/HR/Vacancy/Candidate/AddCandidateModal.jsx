@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './CandidateModals.scss';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const AddCandidateModal = ({ onClose, onSave, vacancyId }) => {
     // State for tracking the current step
     const [currentStep, setCurrentStep] = useState(1);
     const totalSteps = 3;
+
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     // State for form data - ensure all values are strings to prevent controlled/uncontrolled issues
     const [formData, setFormData] = useState({
@@ -26,8 +30,17 @@ const AddCandidateModal = ({ onClose, onSave, vacancyId }) => {
     // State for validation errors - use empty string instead of null
     const [errors, setErrors] = useState({});
 
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
+
     // Handle form input changes
     const handleChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData({
             ...formData,
@@ -45,6 +58,7 @@ const AddCandidateModal = ({ onClose, onSave, vacancyId }) => {
 
     // Handle file input changes
     const handleFileChange = (e) => {
+        setIsFormDirty(true);
         if (e.target.name === 'resume' && e.target.files[0]) {
             setResumeFile(e.target.files[0]);
         }
@@ -124,6 +138,14 @@ const AddCandidateModal = ({ onClose, onSave, vacancyId }) => {
             }
 
             onSave(formDataToSend);
+        }
+    };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
         }
     };
 
@@ -271,11 +293,12 @@ const AddCandidateModal = ({ onClose, onSave, vacancyId }) => {
     };
 
     return (
+        <>
         <div className="modal-overlay">
             <div className="candidate-modal">
                 <div className="modal-header">
                     <h2>Add New Candidate</h2>
-                    <button className="btn-close" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={handleCloseAttempt}>×</button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -319,6 +342,19 @@ const AddCandidateModal = ({ onClose, onSave, vacancyId }) => {
                 </form>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

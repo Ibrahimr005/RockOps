@@ -21,6 +21,18 @@ const ValidatedTransactionsTable = ({
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewTransaction, setViewTransaction] = useState(null);
 
+    // Scroll lock for inline modals
+    useEffect(() => {
+        if (modalInfo || isViewModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [modalInfo, isViewModalOpen]);
+
     // Snackbar state
     const [snackbar, setSnackbar] = useState({
         isOpen: false,

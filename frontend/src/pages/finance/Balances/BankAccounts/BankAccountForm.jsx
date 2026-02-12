@@ -5,6 +5,14 @@ import { financeService } from '../../../../services/financeService.js';
 import './BankAccountForm.css';
 
 const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [formData, setFormData] = useState({
         bankName: '',
         accountNumber: '',

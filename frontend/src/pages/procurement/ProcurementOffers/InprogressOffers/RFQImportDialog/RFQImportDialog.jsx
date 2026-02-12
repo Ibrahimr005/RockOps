@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiX, FiUpload, FiFile, FiCheck, FiAlertCircle, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import './RFQImportDialog.scss';
 import Snackbar from '../../../../../components/common/Snackbar/Snackbar';
@@ -6,6 +6,18 @@ import { rfqService } from '../../../../../services/procurement/rfqService';
 import { offerService } from '../../../../../services/procurement/offerService';
 
 const RFQImportDialog = ({ isVisible, onClose, offer, merchants, onSuccess, onShowSnackbar }) => {
+    // Scroll lock
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
+
     const [selectedFile, setSelectedFile] = useState(null);
     const [merchantId, setMerchantId] = useState('');
     const [previewData, setPreviewData] = useState(null);

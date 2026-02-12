@@ -32,6 +32,12 @@ const PAYROLL_ENDPOINTS = {
     NOTIFY_HR_LEAVE: (id) => `/api/v1/payroll/${id}/notify-hr-leave`,
     LEAVE_REQUESTS_FOR_PAYROLL: (id) => `/api/v1/payroll/${id}/leave-requests`,
 
+    // ⭐ Bonus Review workflow endpoints
+    BONUS_STATUS: (id) => `/api/v1/payroll/${id}/bonus-status`,
+    PROCESS_BONUS_REVIEW: (id) => `/api/v1/payroll/${id}/process-bonus-review`,
+    FINALIZE_BONUS: (id) => `/api/v1/payroll/${id}/finalize-bonus`,
+    BONUS_SUMMARIES: (id) => `/api/v1/payroll/${id}/bonus-summaries`,
+
     // ⭐ Deduction Review workflow endpoints
     DEDUCTION_STATUS: (id) => `/api/v1/payroll/${id}/deduction-status`,
     PROCESS_DEDUCTION_REVIEW: (id) => `/api/v1/payroll/${id}/process-deduction-review`,
@@ -601,6 +607,80 @@ export const payrollService = {
     },
 
     // ========================================
+    // ⭐ BONUS REVIEW WORKFLOW METHODS
+    // ========================================
+
+    getBonusStatus: async (payrollId) => {
+        try {
+            console.log('Fetching bonus status for:', payrollId);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.BONUS_STATUS(payrollId));
+            console.log('Bonus status response:', response);
+            console.log('Bonus status data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching bonus status:', error);
+
+            if (error.response?.status === 404) {
+                throw new Error('Payroll not found');
+            }
+
+            throw error;
+        }
+    },
+
+    processBonusReview: async (payrollId) => {
+        try {
+            console.log('Processing bonus review for payroll:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.PROCESS_BONUS_REVIEW(payrollId));
+            console.log('Process bonus response:', response);
+            console.log('Process bonus data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error processing bonus review:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Bonuses are finalized and locked. Cannot process.');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to process bonus review');
+            }
+
+            throw error;
+        }
+    },
+
+    finalizeBonus: async (payrollId) => {
+        try {
+            console.log('Finalizing bonus review for payroll:', payrollId);
+            const response = await apiClient.post(PAYROLL_ENDPOINTS.FINALIZE_BONUS(payrollId));
+            console.log('Finalize bonus response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error finalizing bonus review:', error);
+
+            if (error.response?.status === 409) {
+                throw new Error('Cannot finalize bonus review in current state');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to finalize bonus review');
+            }
+
+            throw error;
+        }
+    },
+
+    getBonusSummaries: async (payrollId) => {
+        try {
+            console.log('Fetching bonus summaries for payroll:', payrollId);
+            const response = await apiClient.get(PAYROLL_ENDPOINTS.BONUS_SUMMARIES(payrollId));
+            console.log('Bonus summaries response:', response);
+            console.log('Bonus summaries data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching bonus summaries for payroll:', error);
+            throw error;
+        }
+    },
+
+    // ========================================
     // ⭐ DEDUCTION REVIEW WORKFLOW METHODS
     // ========================================
 
@@ -751,6 +831,212 @@ export const payrollService = {
                 throw new Error(error.response.data.message || 'Invalid payment source');
             }
 
+            throw error;
+        }
+    },
+
+    // ========================================
+    // BATCH WORKFLOW METHODS
+    // ========================================
+
+    /**
+     * Create batches for a payroll by grouping employees by payment type
+     */
+    createBatches: async (payrollId) => {
+        try {
+            console.log('🔵 Creating batches for payroll:', payrollId);
+            const response = await apiClient.post(`/api/v1/payroll/${payrollId}/create-batches`);
+            console.log('✅ Create batches response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error creating batches:', error);
+
+            if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to create batches');
+            } else if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Payroll must be in CONFIRMED_AND_LOCKED status');
+            }
+
+            throw error;
+        }
+    },
+
+    /**
+     * Get batches for a payroll
+     */
+    getBatches: async (payrollId) => {
+        try {
+            console.log('Fetching batches for payroll:', payrollId);
+            const response = await apiClient.get(`/api/v1/payroll/${payrollId}/batches`);
+            console.log('Get batches response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching batches:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Send batches to finance (creates payment requests)
+     */
+    sendBatchesToFinance: async (payrollId) => {
+        try {
+            console.log('🔵 Sending batches to finance:', payrollId);
+            const response = await apiClient.post(`/api/v1/payroll/${payrollId}/send-batches-to-finance`);
+            console.log('✅ Send batches to finance response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error sending batches to finance:', error);
+
+            if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Failed to send batches to finance');
+            } else if (error.response?.status === 409) {
+                throw new Error(error.response.data.message || 'Batches must be created first');
+            }
+
+            throw error;
+        }
+    },
+
+    /**
+     * Get employees without payment type assigned
+     */
+    getEmployeesWithoutPaymentType: async (payrollId) => {
+        try {
+            console.log('Fetching employees without payment type:', payrollId);
+            const response = await apiClient.get(`/api/v1/payroll/${payrollId}/employees-without-payment-type`);
+            console.log('Employees without payment type response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching employees without payment type:', error);
+            throw error;
+        }
+    },
+
+    // ========================================
+    // PAYMENT TYPE METHODS
+    // ========================================
+
+    /**
+     * Get all payment types
+     */
+    getAllPaymentTypes: async () => {
+        try {
+            console.log('Fetching all payment types');
+            const response = await apiClient.get('/api/v1/payment-types/all');
+            console.log('Payment types response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching payment types:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get active payment types only
+     */
+    getActivePaymentTypes: async () => {
+        try {
+            console.log('Fetching active payment types');
+            const response = await apiClient.get('/api/v1/payment-types');
+            console.log('Active payment types response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching active payment types:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Create a new payment type
+     */
+    createPaymentType: async (paymentTypeData) => {
+        try {
+            console.log('Creating payment type:', paymentTypeData);
+            const response = await apiClient.post('/api/v1/payment-types', paymentTypeData);
+            console.log('Create payment type response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error creating payment type:', error);
+            if (error.response?.status === 409) {
+                throw new Error('Payment type with this code already exists');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Invalid payment type data');
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Update an existing payment type
+     */
+    updatePaymentType: async (paymentTypeId, paymentTypeData) => {
+        try {
+            console.log('Updating payment type:', paymentTypeId, paymentTypeData);
+            const response = await apiClient.put(`/api/v1/payment-types/${paymentTypeId}`, paymentTypeData);
+            console.log('Update payment type response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating payment type:', error);
+            if (error.response?.status === 404) {
+                throw new Error('Payment type not found');
+            } else if (error.response?.status === 400) {
+                throw new Error(error.response.data.message || 'Invalid payment type data');
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Deactivate a payment type (soft delete)
+     */
+    deactivatePaymentType: async (paymentTypeId) => {
+        try {
+            console.log('Deactivating payment type:', paymentTypeId);
+            const response = await apiClient.post(`/api/v1/payment-types/${paymentTypeId}/deactivate`);
+            console.log('Deactivate payment type response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error deactivating payment type:', error);
+            if (error.response?.status === 404) {
+                throw new Error('Payment type not found');
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Activate a payment type
+     */
+    activatePaymentType: async (paymentTypeId) => {
+        try {
+            console.log('Activating payment type:', paymentTypeId);
+            const response = await apiClient.post(`/api/v1/payment-types/${paymentTypeId}/activate`);
+            console.log('Activate payment type response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error activating payment type:', error);
+            if (error.response?.status === 404) {
+                throw new Error('Payment type not found');
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Update employee payment type
+     */
+    updateEmployeePaymentType: async (employeeId, paymentTypeId, bankDetails = {}) => {
+        try {
+            console.log('Updating employee payment type:', employeeId, paymentTypeId);
+            const response = await apiClient.put(`/api/v1/employees/${employeeId}/payment-type`, {
+                paymentTypeId,
+                ...bankDetails
+            });
+            console.log('Update employee payment type response:', response);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating employee payment type:', error);
             throw error;
         }
     },

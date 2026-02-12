@@ -9,6 +9,15 @@ import './PayslipCreateModal.scss';
 
 const PayslipCreateModal = ({ onClose, onSuccess }) => {
     const { showSuccess, showError, showWarning } = useSnackbar();
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [loading, setLoading] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [loadingEmployees, setLoadingEmployees] = useState(false);

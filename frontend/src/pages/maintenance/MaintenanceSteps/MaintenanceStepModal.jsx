@@ -8,6 +8,7 @@ import { equipmentService } from '../../../services/equipmentService.js';
 import { siteService } from '../../../services/siteService.js';
 import contactTypeService from '../../../services/contactTypeService.js';
 import maintenanceService from '../../../services/maintenanceService.js';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 import apiClient from '../../../utils/apiClient.js';
 import '../../../styles/modal-styles.scss';
@@ -20,6 +21,8 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const location = useLocation();
     const { showError } = useSnackbar();
 
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState({
         stepTypeId: '',
         description: '',
@@ -337,6 +340,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     };
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
 
         // Numeric fields that need thousands separator
@@ -420,6 +424,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     };
 
     const handleResponsibleTypeChange = (e) => {
+        setIsFormDirty(true);
         const type = e.target.value;
         setResponsiblePersonType(type);
         // Clear other fields
@@ -545,6 +550,14 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
+    };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -698,17 +711,18 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <div className="modal-title">
-                        <FaTools />
-                        {editingStep ? 'Edit Maintenance Step' : 'New Maintenance Step'}
+        <>
+            <div className="modal-backdrop">
+                <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <div className="modal-title">
+                            <FaTools />
+                            {editingStep ? 'Edit Maintenance Step' : 'New Maintenance Step'}
+                        </div>
+                        <button className="btn-close" onClick={handleCloseAttempt}>
+                            <FaTimes />
+                        </button>
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
-                </div>
 
                 <div className="modal-body">
                     <form onSubmit={handleSubmit} className="maintenance-step-form" id="maintenance-step-form">
@@ -1161,7 +1175,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose}>
+                    <button type="button" className="btn-cancel" onClick={handleCloseAttempt}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" form="maintenance-step-form">
@@ -1309,7 +1323,19 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
+            />
+        </>
     );
 };
 

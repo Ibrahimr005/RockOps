@@ -201,7 +201,7 @@
         margin-bottom: 1rem;
 
         .stat-card {
-          background: var(--color-surface-light);
+          background: var(--color-surface-secondary);
           border-radius: var(--radius-md);
           padding: 1rem;
           text-align: center;
@@ -284,7 +284,7 @@
         border-collapse: collapse;
 
         thead {
-          background: var(--color-surface-light);
+          background: var(--color-surface-secondary);
 
           th {
             padding: 0.75rem 1rem;
@@ -302,7 +302,7 @@
             transition: var(--transition-fast);
 
             &:hover {
-              background: var(--color-surface-light);
+              background: var(--color-surface-secondary);
             }
 
             &:last-child {
@@ -496,7 +496,7 @@
           font-weight: var(--bold-font-weight);
           color: var(--color-text-secondary);
           font-size: 0.875rem;
-          background: var(--color-surface-light);
+          background: var(--color-surface-secondary);
           border-bottom: 2px solid var(--border-color-medium);
         }
 

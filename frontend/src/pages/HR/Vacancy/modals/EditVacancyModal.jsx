@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaBriefcase, FaTimes } from 'react-icons/fa';
 import './VacancyModals.scss';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
     const [formData, setFormData] = useState({
@@ -18,6 +19,16 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     // Initialize form with vacancy data
     useEffect(() => {
@@ -45,6 +56,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
 
     // Handle form input changes
     const handleChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData({
             ...formData,
@@ -62,6 +74,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
 
     // Handle job position selection
     const handleJobPositionChange = (e) => {
+        setIsFormDirty(true);
         const positionId = e.target.value;
         if (positionId === '') {
             setFormData({
@@ -132,11 +145,20 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
     const handleOverlayClick = (e) => {
         // Only close if clicking on the overlay itself, not on the modal content
         if (e.target === e.currentTarget) {
+            handleCloseAttempt();
+        }
+    };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
             onClose();
         }
     };
 
     return (
+        <>
         <div className="add-vacancy-modal">
             <div className="modal-backdrop" onClick={handleOverlayClick}>
                 <div className="modal-container modal-lg">
@@ -146,7 +168,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                             Edit Vacancy
                         </h2>
 
-                        <button className="btn-close" onClick={onClose} disabled={isSubmitting}>
+                        <button className="btn-close" onClick={handleCloseAttempt} disabled={isSubmitting}>
                             <FaTimes/>
                         </button>
                     </div>
@@ -304,7 +326,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                         <button
                             type="button"
                             className="modal-btn-secondary"
-                            onClick={onClose}
+                            onClick={handleCloseAttempt}
                             disabled={isSubmitting}
                         >
                             Cancel
@@ -331,6 +353,19 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                 </div>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

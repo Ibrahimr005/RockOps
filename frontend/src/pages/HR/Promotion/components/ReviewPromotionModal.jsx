@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, MessageSquare, User, Building, DollarSign, Calendar, AlertTriangle } from 'lucide-react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ReviewPromotionModal.scss'
 
 const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
@@ -17,6 +18,18 @@ const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
 
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
 
     // Reset form when modal opens with new promotion
     useEffect(() => {
@@ -33,6 +46,7 @@ const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
     }, [isOpen, promotion]);
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setReviewData(prev => ({
             ...prev,
@@ -150,6 +164,14 @@ const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
     const handleOverlayClick = (e) => {
         // Only close if clicking on the overlay itself, not on the modal content
         if (e.target === e.currentTarget) {
+            handleCloseAttempt();
+        }
+    };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
             onClose();
         }
     };
@@ -157,6 +179,7 @@ const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
     if (!isOpen || !promotion) return null;
 
     return (
+        <>
         <div className="modal-overlay" onClick={handleOverlayClick}>
             <div className="modal-content modal-xl">
                 <div className="modal-header">
@@ -172,7 +195,7 @@ const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
                     <button
                         type="button"
                         className="modal-close"
-                        onClick={onClose}
+                        onClick={handleCloseAttempt}
                         aria-label="Close modal"
                     >
                         ×
@@ -443,7 +466,7 @@ const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
                 <div className="modal-footer">
                     <button
                         type="button"
-                        onClick={onClose}
+                        onClick={handleCloseAttempt}
                         className="modal-btn-secondary"
                         disabled={loading}
                     >
@@ -490,6 +513,19 @@ const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
                 </div>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './EmployeeModals.scss';
 import {useSnackbar} from "../../../../contexts/SnackbarContext.jsx";
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 // Country data with codes and flags
 const COUNTRIES = [
@@ -85,6 +86,16 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
     const [candidateId, setCandidateId] = useState(null);
     const [departments, setDepartments] = useState([]);
     const [filteredPositions, setFilteredPositions] = useState([]);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     // Check for pre-populated data from a candidate
     useEffect(() => {

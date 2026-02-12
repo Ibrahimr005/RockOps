@@ -1,20 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import { equipmentService } from '../../../../services/equipmentService';
 import BatchValidationWorkflow from '../../../../components/equipment/BatchValidationWorkflow/BatchValidationWorkflow.jsx';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './AddConsumablesModal.scss';
 
-const AddConsumablesModal = ({ 
-    isOpen, 
-    onClose, 
-    equipmentId, 
-    equipmentData, 
-    onTransactionAdded 
+const AddConsumablesModal = ({
+    isOpen,
+    onClose,
+    equipmentId,
+    equipmentData,
+    onTransactionAdded
 }) => {
     const { showSuccess, showError } = useSnackbar();
 
+    // Dirty state tracking (handled by BatchValidationWorkflow)
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     // Handle transaction creation for new batch numbers
     const handleTransactionCreate = async (transactionData) => {
+        setIsFormDirty(true);
         try {
             console.log('🚀 AddConsumablesModal: Creating transaction with data:', transactionData);
             
@@ -69,6 +94,7 @@ const AddConsumablesModal = ({
 
     // Handle transaction validation for incoming transactions
     const handleTransactionValidate = async (validationData) => {
+        setIsFormDirty(true);
         try {
             console.log('🚀 AddConsumablesModal: Starting transaction validation with data:', validationData);
             
@@ -125,16 +151,30 @@ const AddConsumablesModal = ({
     };
 
     return (
-        <BatchValidationWorkflow
-            equipmentId={equipmentId}
-            equipmentData={equipmentData}
-            transactionPurpose="CONSUMABLE"
-            onTransactionCreate={handleTransactionCreate}
-            onTransactionValidate={handleTransactionValidate}
-            isOpen={isOpen}
-            onClose={onClose}
-            title="Add Consumables Transaction"
-        />
+        <>
+            <BatchValidationWorkflow
+                equipmentId={equipmentId}
+                equipmentData={equipmentData}
+                transactionPurpose="CONSUMABLE"
+                onTransactionCreate={handleTransactionCreate}
+                onTransactionValidate={handleTransactionValidate}
+                isOpen={isOpen}
+                onClose={handleCloseAttempt}
+                title="Add Consumables Transaction"
+            />
+
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
+            />
+        </>
     );
 };
 

@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class PayrollDTO {
     // Existing fields
     private UUID id;
+    private String payrollNumber;
     private LocalDate startDate;
     private LocalDate endDate;
     private String status;
@@ -102,6 +104,17 @@ public class PayrollDTO {
     private Boolean overtimeHrNotificationSent;
 
     // ========================================
+    // BONUS REVIEW WORKFLOW FIELDS
+    // ========================================
+
+    private Boolean bonusProcessed;
+    private Boolean bonusFinalized;
+    private LocalDateTime lastBonusProcessedAt;
+    private String bonusFinalizedBy;
+    private LocalDateTime bonusFinalizedAt;
+    private BigDecimal totalBonusAmount;
+
+    // ========================================
     // DEDUCTION REVIEW WORKFLOW FIELDS
     // ========================================
 
@@ -123,4 +136,23 @@ public class PayrollDTO {
     private String paymentSourceName;
     private LocalDateTime financeReviewedAt;
     private String financeReviewedBy;
+
+    // ========================================
+    // BATCH INFORMATION
+    // ========================================
+
+    /**
+     * Payment batches grouped by payment type
+     */
+    private List<PayrollBatchDTO> batches;
+
+    /**
+     * Total number of batches
+     */
+    private Integer batchCount;
+
+    /**
+     * Number of employees without payment type assigned
+     */
+    private Integer employeesWithoutPaymentType;
 }

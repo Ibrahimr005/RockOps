@@ -3,6 +3,7 @@ import { FaTimes, FaSave} from 'react-icons/fa';
 import {FiDollarSign} from 'react-icons/fi';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const ProcessPaymentModal = ({ onClose, onSubmit }) => {
     const [paymentRequests, setPaymentRequests] = useState([]);
@@ -27,6 +28,16 @@ const ProcessPaymentModal = ({ onClose, onSubmit }) => {
     const [errors, setErrors] = useState({});
     const [selectedRequest, setSelectedRequest] = useState(null);
     const { showSuccess, showError } = useSnackbar();
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     useEffect(() => {
         fetchInitialData();
@@ -70,6 +81,7 @@ const ProcessPaymentModal = ({ onClose, onSubmit }) => {
     };
 
     const handleChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -183,6 +195,14 @@ const ProcessPaymentModal = ({ onClose, onSubmit }) => {
         }
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     if (loadingData) {
         return (
             <div className="modal-overlay">
@@ -197,6 +217,18 @@ const ProcessPaymentModal = ({ onClose, onSubmit }) => {
     }
 
     return (
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
         <div className="modal-overlay">
             <div className="modal-container process-payment-modal">
                 <div className="modal-header">
@@ -204,7 +236,7 @@ const ProcessPaymentModal = ({ onClose, onSubmit }) => {
                         <FiDollarSign />
                         <h2>Process Payment</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
+                    <button className="modern-modal-close" onClick={handleCloseAttempt}>
                         <FaTimes />
                     </button>
                 </div>
@@ -362,7 +394,7 @@ const ProcessPaymentModal = ({ onClose, onSubmit }) => {
 
                 </form>
                 <div className="modal-footer">
-                    <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+                    <button type="button" className="btn-secondary" onClick={handleCloseAttempt} disabled={loading}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" onClick={handleSubmit} disabled={loading}>
@@ -378,6 +410,7 @@ const ProcessPaymentModal = ({ onClose, onSubmit }) => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

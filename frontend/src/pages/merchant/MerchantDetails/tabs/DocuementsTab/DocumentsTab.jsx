@@ -33,6 +33,18 @@ const DocumentsTab = ({ merchant }) => {
         message: ''
     });
 
+    // Scroll lock for inline modals
+    useEffect(() => {
+        if (showUploadModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showUploadModal]);
+
     useEffect(() => {
         if (merchant?.id) {
             fetchDocuments();

@@ -1,79 +1,150 @@
-.statistics-section {
+// ========================================
+// StatisticsCards.scss - Shared Statistics Card Grid
+// Reference standard: DeductionManagement.scss stat cards
+// ========================================
+
+.statistics-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
   margin-bottom: 2rem;
 
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
+  .stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
 
-    @media (max-width: 768px) {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
+    &:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
     }
 
-    .stat-card {
-      background: white;
-      border-radius: 12px;
-      padding: 1.5rem;
+    .stat-icon {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e5e7eb;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      font-size: 1.25rem;
+      flex-shrink: 0;
 
-      [data-theme="dark"] & {
-        background: var(--section-background-color);
-        border-color: var(--border-color);
+      // Variant colors using theme RGB variables
+      &.primary,
+      &.total {
+        background: rgba(var(--color-primary-rgb), 0.1);
+        color: var(--color-primary);
       }
 
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      &.success,
+      &.active {
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
       }
 
-      .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #dbeafe;
-        color: #3b82f6;
-        font-size: 1.25rem;
-
-        [data-theme="dark"] & {
-          background: rgba(59, 130, 246, 0.2);
-          color: var(--color-primary);
-        }
+      &.warning {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
       }
 
-      .stat-content {
-        display: flex;
-        flex-direction: column;
+      &.danger {
+        background: rgba(var(--color-danger-rgb), 0.1);
+        color: var(--color-danger);
+      }
 
-        .stat-number {
-          font-size: 1.875rem;
-          font-weight: 700;
-          color: #1f2937;
-          line-height: 1;
+      &.info,
+      &.loan {
+        background: rgba(var(--color-info-rgb), 0.1);
+        color: var(--color-info);
+      }
 
-          [data-theme="dark"] & {
-            color: var(--color-text-primary);
-          }
-        }
+      &.lime,
+      &.other {
+        background: rgba(var(--color-lime-rgb), 0.1);
+        color: var(--color-lime);
+      }
 
-        .stat-label {
-          font-size: 0.875rem;
-          color: #6b7280;
-          margin-top: 0.25rem;
+      &.orange {
+        background: rgba(var(--color-orange-rgb), 0.1);
+        color: var(--color-orange);
+      }
 
-          [data-theme="dark"] & {
-            color: var(--color-text-secondary);
-          }
-        }
+      &.purple {
+        background: rgba(var(--color-purple-rgb), 0.1);
+        color: var(--color-purple);
       }
     }
+
+    .stat-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+        line-height: 1;
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-subtitle {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        margin-top: 0.125rem;
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .statistics-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .statistics-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+
+    .stat-card {
+      padding: 1rem;
+
+      .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+      }
+
+      .stat-content .stat-value {
+        font-size: 1.25rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .statistics-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Dark theme support
+[data-theme="dark"] {
+  .statistics-cards .stat-card {
+    background: var(--color-surface);
   }
 }

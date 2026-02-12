@@ -85,8 +85,20 @@ List<PaymentRequest> findAllByPurchaseOrderId(UUID purchaseOrderId);
 
     // Maintenance-related queries
     Optional<PaymentRequest> findByMaintenanceStepId(UUID maintenanceStepId);
-    
+
     List<PaymentRequest> findByMaintenanceRecordId(UUID maintenanceRecordId);
-    
+
     boolean existsByMaintenanceStepId(UUID maintenanceStepId);
+
+    // Get max sequence number for payment request number generation
+    @Query("SELECT MAX(CAST(SUBSTRING(pr.requestNumber, LENGTH(:prefix) + 1) AS long)) " +
+           "FROM PaymentRequest pr WHERE pr.requestNumber LIKE :prefix")
+    Long getMaxRequestNumberSequence(@Param("prefix") String prefix);
+
+    // Find by payroll batch
+    Optional<PaymentRequest> findByPayrollBatchId(UUID payrollBatchId);
+
+    // Find all payment requests for a payroll (via batches)
+    @Query("SELECT pr FROM PaymentRequest pr WHERE pr.payrollBatch.payroll.id = :payrollId")
+    List<PaymentRequest> findByPayrollId(@Param("payrollId") UUID payrollId);
 }

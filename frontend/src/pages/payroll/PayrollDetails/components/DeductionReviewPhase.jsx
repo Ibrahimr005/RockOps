@@ -21,6 +21,7 @@ import {
 } from 'react-icons/fa';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import './DeductionReviewPhase.scss';
 
 const DeductionReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog }) => {
@@ -319,29 +320,15 @@ const DeductionReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDia
                         <h4>Deduction Review Summary</h4>
                     </div>
 
-                    <div className="summary-stats">
-                        <div className="stat-card">
-                            <div className="stat-value">{deductionStatus.summary.totalEmployees || 0}</div>
-                            <div className="stat-label">Total Employees</div>
-                        </div>
-
-                        <div className="stat-card warning">
-                            <div className="stat-value">{deductionStatus.summary.employeesWithDeductions || 0}</div>
-                            <div className="stat-label">With Deductions</div>
-                        </div>
-
-                        <div className="stat-card danger">
-                            <div className="stat-value">
-                                {formatCurrency(deductionStatus.summary.totalDeductionAmount)}
-                            </div>
-                            <div className="stat-label">Total Deductions</div>
-                        </div>
-
-                        <div className="stat-card info">
-                            <div className="stat-value">{deductionStatus.summary.activeLoansCount || 0}</div>
-                            <div className="stat-label">Active Loans</div>
-                        </div>
-                    </div>
+                    <StatisticsCards
+                        cards={[
+                            { icon: <FaChartBar />, label: "Total Employees", value: deductionStatus.summary.totalEmployees || 0, variant: "total" },
+                            { icon: <FaUserMinus />, label: "With Deductions", value: deductionStatus.summary.employeesWithDeductions || 0, variant: "warning" },
+                            { icon: <FaMoneyBillWave />, label: "Total Deductions", value: formatCurrency(deductionStatus.summary.totalDeductionAmount), variant: "danger" },
+                            { icon: <FaCreditCard />, label: "Active Loans", value: deductionStatus.summary.activeLoansCount || 0, variant: "info" },
+                        ]}
+                        columns={4}
+                    />
 
                     {/* Deduction Breakdown */}
                     <div className="deduction-breakdown">

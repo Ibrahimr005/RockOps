@@ -1,12 +1,56 @@
+.payroll-timeline {
+  background: var(--section-background-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+
+  .timeline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+
+    .completed-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-success);
+      background: rgba(76, 175, 80, 0.1);
+      padding: 0.4rem 0.8rem;
+      border-radius: var(--radius-md);
+
+      svg {
+        font-size: 1rem;
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(72, 128, 255, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(72, 128, 255, 0);
+  }
+}
+
 .lifecycle-timeline {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  background: var(--section-background-color);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: var(--shadow-sm);
   overflow-x: auto;
 
   .timeline-step {
@@ -107,6 +151,121 @@
 
     &:last-child .step-connector {
       display: none;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 1024px) {
+  .payroll-timeline {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .lifecycle-timeline {
+    .timeline-step {
+      min-width: 130px;
+
+      .step-content {
+        .step-icon {
+          font-size: 1.5rem;
+        }
+
+        h3 {
+          font-size: 0.85rem;
+        }
+
+        p {
+          font-size: 0.75rem;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .payroll-timeline {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+
+    .timeline-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+
+      h3 {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  .lifecycle-timeline {
+    flex-wrap: nowrap;
+    padding-bottom: 0.5rem;
+
+    .timeline-step {
+      min-width: 100px;
+
+      .step-number {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .step-content {
+        .step-icon {
+          font-size: 1.25rem;
+          margin-bottom: 0.375rem;
+        }
+
+        h3 {
+          font-size: 0.75rem;
+          margin-bottom: 0.25rem;
+        }
+
+        p {
+          font-size: 0.65rem;
+          display: none; // Hide description on mobile
+        }
+      }
+
+      .step-connector {
+        top: 16px;
+        left: calc(50% + 16px);
+        width: calc(100% - 32px);
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .lifecycle-timeline {
+    .timeline-step {
+      min-width: 80px;
+
+      .step-number {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+      }
+
+      .step-content {
+        .step-icon {
+          font-size: 1rem;
+        }
+
+        h3 {
+          font-size: 0.7rem;
+        }
+      }
+
+      .step-connector {
+        top: 14px;
+        left: calc(50% + 14px);
+        width: calc(100% - 28px);
+      }
     }
   }
 }

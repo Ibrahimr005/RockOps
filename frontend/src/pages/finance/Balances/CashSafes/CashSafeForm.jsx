@@ -5,6 +5,14 @@ import { financeService } from '../../../../services/financeService.js';
 import './CashSafeForm.css';
 
 const CashSafeForm = ({ safe, mode, onClose, onSubmit }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [formData, setFormData] = useState({
         safeName: '',
         location: '',

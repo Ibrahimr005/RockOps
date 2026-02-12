@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FaTimes, FaEdit, FaUserTie } from 'react-icons/fa';
 import './CashWithPersonDetails.css';
 
 const CashWithPersonDetails = ({ person, onClose, onEdit }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const formatCurrency = (amount) => {
         if (!amount || isNaN(amount)) return 'EGP 0.00';
         return new Intl.NumberFormat('en-EG', {

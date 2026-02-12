@@ -37,6 +37,16 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
     const [loadingPromotionTargets, setLoadingPromotionTargets] = useState(false);
     const [errors, setErrors] = useState({});
 
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
+
     useEffect(() => {
         if (isOpen) {
             fetchEmployees();

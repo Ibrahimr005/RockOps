@@ -42,6 +42,18 @@ const DiscrepancyManagement = () => {
         { id: 'all', label: 'All Discrepancies' }
     ];
 
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showAddModal || showAssignModal || showResolveModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showAssignModal, showResolveModal]);
+
     useEffect(() => {
         fetchDiscrepancies();
     }, [activeTab]);

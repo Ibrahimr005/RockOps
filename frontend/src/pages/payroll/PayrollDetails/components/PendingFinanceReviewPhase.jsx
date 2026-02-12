@@ -10,21 +10,33 @@ import {
     FaMoneyCheckAlt,
     FaSpinner,
     FaInfoCircle,
-    FaCalendarAlt
+    FaCalendarAlt,
+    FaLayerGroup,
+    FaUniversity,
+    FaCreditCard,
+    FaWallet,
+    FaUsers,
+    FaClock,
+    FaTimesCircle,
+    FaExclamationTriangle
 } from 'react-icons/fa';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
 import EmployeePayrollsTable from './EmployeePayrollsTable';
+import FinanceSubTimeline from './FinanceSubTimeline';
 import './PendingFinanceReviewPhase.scss';
 
 const PendingFinanceReviewPhase = ({ payroll, onTransition, onRefresh, processing, openConfirmDialog }) => {
     const { showError, showSuccess } = useSnackbar();
     const [employeePayrolls, setEmployeePayrolls] = useState([]);
+    const [batches, setBatches] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingBatches, setLoadingBatches] = useState(true);
     const [markingPaid, setMarkingPaid] = useState(false);
 
     useEffect(() => {
         fetchEmployeePayrolls();
+        fetchBatches();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [payroll.id]);
 
@@ -42,6 +54,20 @@ const PendingFinanceReviewPhase = ({ payroll, onTransition, onRefresh, processin
         }
     };
 
+    const fetchBatches = async () => {
+        try {
+            setLoadingBatches(true);
+            const response = await payrollService.getBatches(payroll.id);
+            const data = response.data || response;
+            setBatches(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Error fetching batches:', error);
+            setBatches([]);
+        } finally {
+            setLoadingBatches(false);
+        }
+    };
+
     const handleMarkAsPaid = async () => {
         try {
             setMarkingPaid(true);
@@ -53,6 +79,32 @@ const PendingFinanceReviewPhase = ({ payroll, onTransition, onRefresh, processin
         } finally {
             setMarkingPaid(false);
         }
+    };
+
+    const getPaymentTypeIcon = (code) => {
+        switch (code?.toUpperCase()) {
+            case 'BANK_TRANSFER':
+                return <FaUniversity />;
+            case 'CASH':
+                return <FaMoneyCheckAlt />;
+            case 'CHEQUE':
+                return <FaCreditCard />;
+            case 'MOBILE_WALLET':
+                return <FaWallet />;
+            default:
+                return <FaMoneyCheckAlt />;
+        }
+    };
+
+    const getBatchStatusInfo = (status) => {
+        const statusMap = {
+            'PENDING_FINANCE_REVIEW': { label: 'Pending Review', class: 'pending', icon: <FaClock /> },
+            'FINANCE_APPROVED': { label: 'Approved', class: 'approved', icon: <FaCheckCircle /> },
+            'FINANCE_REJECTED': { label: 'Rejected', class: 'rejected', icon: <FaTimesCircle /> },
+            'PARTIALLY_PAID': { label: 'Partially Paid', class: 'partial', icon: <FaExclamationTriangle /> },
+            'PAID': { label: 'Paid', class: 'paid', icon: <FaCheckCircle /> }
+        };
+        return statusMap[status] || { label: status?.replace(/_/g, ' ') || 'Unknown', class: 'default', icon: <FaClock /> };
     };
 
     const formatCurrency = (amount) => {
@@ -75,6 +127,9 @@ const PendingFinanceReviewPhase = ({ payroll, onTransition, onRefresh, processin
 
     return (
         <div className="pending-finance-review-phase">
+            {/* Finance Sub-Timeline */}
+            <FinanceSubTimeline currentStatus={payroll.status} />
+
             <div className="phase-action-section">
                 <div className="action-card pending-review">
                     <div className="action-content">
@@ -90,7 +145,7 @@ const PendingFinanceReviewPhase = ({ payroll, onTransition, onRefresh, processin
                     </div>
                 </div>
 
-                {/* Payment Details */}
+                {/* Payment Details - Phase-specific info only */}
                 <div className="payment-details-card">
                     <h4>Payment Details</h4>
                     <div className="details-grid">
@@ -105,64 +160,67 @@ const PendingFinanceReviewPhase = ({ payroll, onTransition, onRefresh, processin
                                 {formatDate(payroll.sentToFinanceAt)}
                             </span>
                         </div>
-                        <div className="detail-item">
-                            <span className="label">Employees</span>
-                            <span className="value">{payroll.employeeCount || 0}</span>
-                        </div>
-                        <div className="detail-item highlight">
-                            <span className="label">Total Net Amount</span>
-                            <span className="value">{formatCurrency(payroll.totalNetAmount)}</span>
-                        </div>
                     </div>
                 </div>
 
-                {/* Payroll Summary */}
-                <div className="payroll-summary-card">
-                    <h4>Payroll Summary</h4>
-                    <div className="summary-grid">
-                        <div className="summary-item">
-                            <span className="label">Gross Amount</span>
-                            <span className="value">{formatCurrency(payroll.totalGrossAmount)}</span>
-                        </div>
-                        <div className="summary-item">
-                            <span className="label">Total Deductions</span>
-                            <span className="value deduction">-{formatCurrency(payroll.totalDeductions)}</span>
-                        </div>
-                        <div className="summary-item">
-                            <span className="label">Overtime Pay</span>
-                            <span className="value overtime">+{formatCurrency(payroll.totalOvertimeAmount)}</span>
-                        </div>
-                        <div className="summary-item highlight">
-                            <span className="label">Net Amount</span>
-                            <span className="value">{formatCurrency(payroll.totalNetAmount)}</span>
-                        </div>
+                {/* Payment Batches Section */}
+                <div className="batches-section">
+                    <div className="section-header">
+                        <h4><FaLayerGroup /> Payment Batches</h4>
+                        <span className="batch-count">{batches.length} batch{batches.length !== 1 ? 'es' : ''}</span>
                     </div>
-                </div>
 
-                {/* Finance Actions */}
-                <div className="action-buttons">
-                    <button
-                        className="btn-mark-paid"
-                        onClick={handleMarkAsPaid}
-                        disabled={markingPaid || processing}
-                    >
-                        {markingPaid ? (
-                            <>
-                                <FaSpinner className="spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <FaMoneyCheckAlt />
-                                Approve & Mark as Paid
-                            </>
-                        )}
-                    </button>
-                </div>
-
-                <div className="info-note">
-                    <FaInfoCircle />
-                    <span>Marking as paid will finalize this payroll cycle. This action cannot be undone.</span>
+                    {loadingBatches ? (
+                        <div className="loading-state">
+                            <FaSpinner className="spin" />
+                            <span>Loading batches...</span>
+                        </div>
+                    ) : batches.length === 0 ? (
+                        <div className="no-batches">
+                            <FaInfoCircle />
+                            <p>No payment batches found for this payroll.</p>
+                        </div>
+                    ) : (
+                        <div className="batch-cards">
+                            {batches.map((batch) => {
+                                const statusInfo = getBatchStatusInfo(batch.status);
+                                return (
+                                    <div key={batch.id} className={`batch-card ${statusInfo.class}`}>
+                                        <div className="batch-header">
+                                            <div className="batch-type">
+                                                {getPaymentTypeIcon(batch.paymentTypeCode)}
+                                                <span>{batch.paymentTypeName || batch.paymentTypeCode}</span>
+                                            </div>
+                                            <div className={`batch-status-badge ${statusInfo.class}`}>
+                                                {statusInfo.icon}
+                                                <span>{statusInfo.label}</span>
+                                            </div>
+                                        </div>
+                                        <div className="batch-details">
+                                            <div className="detail-row">
+                                                <span className="label">Batch #:</span>
+                                                <span className="value">{batch.batchNumber}</span>
+                                            </div>
+                                            <div className="detail-row">
+                                                <span className="label"><FaUsers /> Employees:</span>
+                                                <span className="value">{batch.employeeCount}</span>
+                                            </div>
+                                            <div className="detail-row total">
+                                                <span className="label">Total Amount:</span>
+                                                <span className="value">{formatCurrency(batch.totalAmount)}</span>
+                                            </div>
+                                        </div>
+                                        {batch.paymentRequestNumber && (
+                                            <div className="batch-footer">
+                                                <span className="pr-label">Payment Request:</span>
+                                                <span className="pr-number">{batch.paymentRequestNumber}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -68,6 +68,18 @@ const LoanDetails = () => {
         loadLoanDetails();
     }, [loadLoanDetails]);
 
+    // Scroll lock for inline modals
+    useEffect(() => {
+        if (showRejectModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showRejectModal]);
+
     // ========================================
     // ACTION HANDLERS
     // ========================================

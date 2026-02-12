@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FiX, FiCheckCircle, FiCalendar, FiUser } from 'react-icons/fi';
 import './ViewRefundDetailsModal.scss';
 
 const ViewRefundDetailsModal = ({ refund, onClose }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const formatCurrency = (amount) => {
         if (!amount) return '$0.00';
         return new Intl.NumberFormat('en-US', {

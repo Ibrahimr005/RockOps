@@ -5,6 +5,8 @@ import { Package, Database, TrendingUp, AlertCircle, Users, Activity } from 'luc
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -52,81 +54,20 @@ const WarehouseManagerDashboard = () => {
 
     return (
         <div className="warehouse-dashboard">
-            <div className="warehouse-dashboard-header">
-                <h1>Warehouse Dashboard</h1>
-                <p>Inventory management and warehouse operations</p>
-            </div>
+            <PageHeader title="Warehouse Dashboard" subtitle="Inventory management and warehouse operations" />
 
             {/* KPI Cards */}
-            <div className="warehouse-kpi-grid">
-                <div className="warehouse-kpi-card">
-                    <div className="warehouse-kpi-icon">
-                        <Database />
-                    </div>
-                    <div className="warehouse-kpi-content">
-                        <div className="warehouse-kpi-value">{dashboardData.totalWarehouses}</div>
-                        <div className="warehouse-kpi-label">Total Warehouses</div>
-                        <div className="warehouse-kpi-sub">{dashboardData.activeWarehouses} Active</div>
-                    </div>
-                </div>
-
-                <div className="warehouse-kpi-card">
-                    <div className="warehouse-kpi-icon">
-                        <Package />
-                    </div>
-                    <div className="warehouse-kpi-content">
-                        <div className="warehouse-kpi-value">{dashboardData.totalItems}</div>
-                        <div className="warehouse-kpi-label">Total Items</div>
-                        <div className="warehouse-kpi-sub">{dashboardData.inStockItems} In Stock</div>
-                    </div>
-                </div>
-
-                <div className="warehouse-kpi-card">
-                    <div className="warehouse-kpi-icon">
-                        <Activity />
-                    </div>
-                    <div className="warehouse-kpi-content">
-                        <div className="warehouse-kpi-value">{dashboardData.totalTransactions}</div>
-                        <div className="warehouse-kpi-label">Transactions</div>
-                        <div className="warehouse-kpi-sub">{dashboardData.pendingTransactions} Pending</div>
-                    </div>
-                </div>
-
-                <div className="warehouse-kpi-card">
-                    <div className="warehouse-kpi-icon">
-                        <TrendingUp />
-                    </div>
-                    <div className="warehouse-kpi-content">
-                        <div className="warehouse-kpi-value">{dashboardData.utilizationRate}%</div>
-                        <div className="warehouse-kpi-label">Utilization Rate</div>
-                        <div className="warehouse-kpi-sub">
-                            {dashboardData.usedCapacity}/{dashboardData.totalCapacity}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="warehouse-kpi-card">
-                    <div className="warehouse-kpi-icon">
-                        <AlertCircle />
-                    </div>
-                    <div className="warehouse-kpi-content">
-                        <div className="warehouse-kpi-value">{dashboardData.missingItems}</div>
-                        <div className="warehouse-kpi-label">Missing Items</div>
-                        <div className="warehouse-kpi-sub">{dashboardData.overReceivedItems} Over-received</div>
-                    </div>
-                </div>
-
-                <div className="warehouse-kpi-card">
-                    <div className="warehouse-kpi-icon">
-                        <Users />
-                    </div>
-                    <div className="warehouse-kpi-content">
-                        <div className="warehouse-kpi-value">{dashboardData.totalEmployees}</div>
-                        <div className="warehouse-kpi-label">Team Members</div>
-                        <div className="warehouse-kpi-sub">{dashboardData.activeEmployees} Active</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <Database />, label: "Total Warehouses", value: dashboardData.totalWarehouses, variant: "primary", subtitle: `${dashboardData.activeWarehouses} Active` },
+                    { icon: <Package />, label: "Total Items", value: dashboardData.totalItems, variant: "info", subtitle: `${dashboardData.inStockItems} In Stock` },
+                    { icon: <Activity />, label: "Transactions", value: dashboardData.totalTransactions, variant: "purple", subtitle: `${dashboardData.pendingTransactions} Pending` },
+                    { icon: <TrendingUp />, label: "Utilization Rate", value: `${dashboardData.utilizationRate}%`, variant: "success", subtitle: `${dashboardData.usedCapacity}/${dashboardData.totalCapacity}` },
+                    { icon: <AlertCircle />, label: "Missing Items", value: dashboardData.missingItems, variant: "danger", subtitle: `${dashboardData.overReceivedItems} Over-received` },
+                    { icon: <Users />, label: "Team Members", value: dashboardData.totalEmployees, variant: "active", subtitle: `${dashboardData.activeEmployees} Active` },
+                ]}
+                columns={3}
+            />
 
             {/* Charts Section */}
             <div className="warehouse-charts">

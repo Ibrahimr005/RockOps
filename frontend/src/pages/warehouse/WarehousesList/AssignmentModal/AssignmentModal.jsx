@@ -33,12 +33,15 @@ const AssignmentModal = ({
     useEffect(() => {
         if (isOpen) {
             document.body.classList.add("modal-open");
+            document.body.style.overflow = 'hidden';
         } else {
             document.body.classList.remove("modal-open");
+            document.body.style.overflow = 'unset';
         }
 
         return () => {
             document.body.classList.remove("modal-open");
+            document.body.style.overflow = 'unset';
         };
     }, [isOpen]);
 

@@ -35,6 +35,18 @@ const Partners = () => {
     // Check if user is admin
     const isAdmin = currentUser && currentUser.role === 'ADMIN';
 
+    // Scroll lock for inline modals
+    useEffect(() => {
+        if (showAddModal || showEditModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showEditModal]);
+
     useEffect(() => {
         fetchPartners();
     }, []);

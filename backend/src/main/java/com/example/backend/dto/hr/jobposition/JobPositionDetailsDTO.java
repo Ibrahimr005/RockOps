@@ -51,6 +51,7 @@ public class JobPositionDetailsDTO {
     private String shifts;
     private Integer workingHours;
     private String vacations;
+    private Integer vacationDays;
     private LocalTime startTime;
     private LocalTime endTime;
 

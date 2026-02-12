@@ -27,6 +27,18 @@ const AssetManagement = () => {
     const [formLoading, setFormLoading] = useState(false);
     const { showSuccess, showError } = useSnackbar();
 
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showAddModal || showDetailsModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showDetailsModal]);
+
     useEffect(() => {
         fetchAssets();
     }, []);

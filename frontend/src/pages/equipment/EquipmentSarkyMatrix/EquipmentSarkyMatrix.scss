@@ -2,8 +2,6 @@
 @import '../../../styles/primary-button.scss';
 
 .sarky-matrix-container {
-  // CSS custom property for navbar height - matches Navbar.css
-  --navbar-height: 70px;
   background: var(--main-background-color);
   padding: 0;
   border-radius: var(--radius-md);

@@ -314,32 +314,32 @@ const PositionsList = () => {
                 }
             }
         },
-        {
-            header: 'Reporting To',
-            accessor: 'head',
-            sortable: true,
-            render: (row) => {
-                // Show both manager and parent position info if available
-                const manager = row.head;
-                const parentPosition = row.parentJobPositionName;
-
-                return (
-                    <div className="reporting-info">
-                        {manager && (
-                            <div className="manager-name">
-                                {manager}
-                            </div>
-                        )}
-                        {parentPosition && (
-                            <div className="parent-position">
-                                <FiTrendingUp size={12} /> {parentPosition}
-                            </div>
-                        )}
-                        {!manager && !parentPosition && 'N/A'}
-                    </div>
-                );
-            }
-        },
+        // {
+        //     header: 'Reporting To',
+        //     accessor: 'head',
+        //     sortable: true,
+        //     render: (row) => {
+        //         // Show both manager and parent position info if available
+        //         const manager = row.head;
+        //         const parentPosition = row.parentJobPositionName;
+        //
+        //         return (
+        //             <div className="reporting-info">
+        //                 {manager && (
+        //                     <div className="manager-name">
+        //                         {manager}
+        //                     </div>
+        //                 )}
+        //                 {parentPosition && (
+        //                     <div className="parent-position">
+        //                         <FiTrendingUp size={12} /> {parentPosition}
+        //                     </div>
+        //                 )}
+        //                 {!manager && !parentPosition && 'N/A'}
+        //             </div>
+        //         );
+        //     }
+        // },
         {
             header: 'Status',
             accessor: 'active',

@@ -23,6 +23,21 @@ const DriverManagementModal = ({ isOpen, onClose, equipmentId, equipmentData, on
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [confirmAction, setConfirmAction] = useState(null);
 
+    // Dirty state tracking
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     useEffect(() => {
         if (isOpen && equipmentId) {
             fetchDrivers();
@@ -67,17 +82,19 @@ const DriverManagementModal = ({ isOpen, onClose, equipmentId, equipmentData, on
     };
 
     const handleAssignClick = (driverType) => {
+        setIsFormDirty(true);
         const existingDriver = drivers.find(d => d.type === driverType);
         if (existingDriver) {
             showError(`A ${driverType} driver is already assigned. Please unassign or replace them first.`);
             return;
         }
-        
+
         setSelectedDriverType(driverType);
         setViewMode('assign');
     };
 
     const handleReplaceClick = (driverType) => {
+        setIsFormDirty(true);
         setSelectedDriverType(driverType);
         setViewMode('replace');
     };
@@ -175,9 +192,17 @@ const DriverManagementModal = ({ isOpen, onClose, equipmentId, equipmentData, on
         setSelectedDriver(null);
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget) {
-            onClose();
+            handleCloseAttempt();
         }
     };
 
@@ -234,7 +259,7 @@ const DriverManagementModal = ({ isOpen, onClose, equipmentId, equipmentData, on
                             {viewMode === 'assign' && `Assign ${selectedDriverType === 'main' ? 'Main' : 'Sub'} Driver`}
                             {viewMode === 'replace' && `Replace ${selectedDriverType === 'main' ? 'Main' : 'Sub'} Driver`}
                         </h2>
-                        <button className="btn-close" onClick={onClose}>
+                        <button className="btn-close" onClick={handleCloseAttempt}>
                             <FaTimes />
                         </button>
                     </div>
@@ -373,6 +398,18 @@ const DriverManagementModal = ({ isOpen, onClose, equipmentId, equipmentData, on
                 onCancel={handleCancelAction}
                 size="medium"
                 showIcon={true}
+            />
+
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
             />
         </>
     );

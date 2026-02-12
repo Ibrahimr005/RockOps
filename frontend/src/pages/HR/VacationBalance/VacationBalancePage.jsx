@@ -3,6 +3,7 @@ import {BsCalendar2Week, BsClockHistory, BsExclamationTriangle, BsPersonCheck, B
 import {FaAward} from 'react-icons/fa';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 import ContentLoader from '../../../components/common/ContentLoader/ContentLoader.jsx';
+import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import {useSnackbar} from '../../../contexts/SnackbarContext.jsx';
 import './VacationBalancePage.scss';
 import {vacationBalanceService} from "../../../services/hr/vacationBalanceService.jsx";
@@ -351,52 +352,15 @@ const VacationBalancePage = () => {
             </div>
 
             {/* Summary Statistics Cards */}
-            <div className="vacation-balance-stats-container">
-                <div className="vacation-balance-stat-card vacation-balance-stat-employees">
-                    <div className="vacation-balance-stat-content">
-                        <div className="vacation-balance-stat-icon">
-                            <BsPersonCheck/>
-                        </div>
-                        <div className="vacation-balance-stat-info">
-                            <h3 className="vacation-balance-stat-title">Total Employees</h3>
-                            <div className="vacation-balance-stat-value">{summaryStats.totalEmployees}</div>
-                        </div>
-                    </div>
-                </div>
-                <div className="vacation-balance-stat-card vacation-balance-stat-remaining">
-                    <div className="vacation-balance-stat-content">
-                        <div className="vacation-balance-stat-icon">
-                            <BsCalendar2Week/>
-                        </div>
-                        <div className="vacation-balance-stat-info">
-                            <h3 className="vacation-balance-stat-title">Avg Remaining Days</h3>
-                            <div className="vacation-balance-stat-value">{summaryStats.averageRemaining}</div>
-                        </div>
-                    </div>
-                </div>
-                <div className="vacation-balance-stat-card vacation-balance-stat-alerts">
-                    <div className="vacation-balance-stat-content">
-                        <div className="vacation-balance-stat-icon">
-                            <BsExclamationTriangle/>
-                        </div>
-                        <div className="vacation-balance-stat-info">
-                            <h3 className="vacation-balance-stat-title">Low Balance Alerts</h3>
-                            <div className="vacation-balance-stat-value">{summaryStats.lowBalanceCount}</div>
-                        </div>
-                    </div>
-                </div>
-                <div className="vacation-balance-stat-card vacation-balance-stat-utilization">
-                    <div className="vacation-balance-stat-content">
-                        <div className="vacation-balance-stat-icon">
-                            <BsClockHistory/>
-                        </div>
-                        <div className="vacation-balance-stat-info">
-                            <h3 className="vacation-balance-stat-title">Overall Utilization</h3>
-                            <div className="vacation-balance-stat-value">{summaryStats.utilizationRate}%</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <BsPersonCheck />, label: "Total Employees", value: summaryStats.totalEmployees, variant: "primary" },
+                    { icon: <BsCalendar2Week />, label: "Avg Remaining Days", value: summaryStats.averageRemaining, variant: "success" },
+                    { icon: <BsExclamationTriangle />, label: "Low Balance Alerts", value: summaryStats.lowBalanceCount, variant: "warning" },
+                    { icon: <BsClockHistory />, label: "Overall Utilization", value: `${summaryStats.utilizationRate}%`, variant: "info" },
+                ]}
+                columns={4}
+            />
 
             {/* Search Bar */}
             <div className="vacation-balance-controls">
@@ -474,6 +438,14 @@ const BonusModal = ({employee, currentYear, onSubmit, onClose}) => {
     const [bonusDays, setBonusDays] = useState(0);
     const [reason, setReason] = useState('');
 
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
+
     const handleSubmit = (e) => {
         e.preventDefault();
         onSubmit({year, bonusDays, reason});
@@ -550,6 +522,14 @@ const CarryForwardModal = ({currentYear, onSubmit, onClose}) => {
     const [fromYear, setFromYear] = useState(currentYear - 1);
     const [toYear, setToYear] = useState(currentYear);
     const [maxCarryForward, setMaxCarryForward] = useState(5);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     const handleSubmit = (e) => {
         e.preventDefault();

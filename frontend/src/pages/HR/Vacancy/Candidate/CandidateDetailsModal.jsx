@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     FaUser,
     FaEnvelope,
@@ -26,6 +26,14 @@ const CandidateDetailsModal = ({
                                    onDelete,
                                    vacancyStats
                                }) => {
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     // Format date helper
     const formatDate = (dateString) => {
@@ -62,7 +70,7 @@ const CandidateDetailsModal = ({
     const canHire = !isHired && !(vacancyStats?.isFull && candidate.candidateStatus !== 'POTENTIAL');
 
     return (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="modal-container modal-lg">
                 {/* Modal Header - Using global modal header with primary gradient */}
                 <div className="modal-header ">

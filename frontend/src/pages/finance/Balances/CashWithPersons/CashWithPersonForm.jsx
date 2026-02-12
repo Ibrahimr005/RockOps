@@ -5,6 +5,14 @@ import { financeService } from '../../../../services/financeService.js';
 import './CashWithPersonForm.css';
 
 const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [formData, setFormData] = useState({
         personName: '',
         phoneNumber: '',

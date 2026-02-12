@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fa';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import './LeaveReviewPhase.scss';
 
 const LeaveReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog }) => {
@@ -282,27 +283,15 @@ const LeaveReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
                         <h4>Leave Review Summary</h4>
                     </div>
 
-                    <div className="summary-stats">
-                        <div className="stat-card">
-                            <div className="stat-value">{leaveStatus.summary.totalRequests || 0}</div>
-                            <div className="stat-label">Total Requests</div>
-                        </div>
-
-                        <div className="stat-card approved">
-                            <div className="stat-value">{leaveStatus.summary.approvedRequests || 0}</div>
-                            <div className="stat-label">Approved</div>
-                        </div>
-
-                        <div className="stat-card pending">
-                            <div className="stat-value">{leaveStatus.summary.pendingRequests || 0}</div>
-                            <div className="stat-label">Pending</div>
-                        </div>
-
-                        <div className="stat-card rejected">
-                            <div className="stat-value">{leaveStatus.summary.excessLeaveDays || 0}</div>
-                            <div className="stat-label">Excess Days</div>
-                        </div>
-                    </div>
+                    <StatisticsCards
+                        cards={[
+                            { icon: <FaChartBar />, label: "Total Requests", value: leaveStatus.summary.totalRequests || 0, variant: "total" },
+                            { icon: <FaCheckCircle />, label: "Approved", value: leaveStatus.summary.approvedRequests || 0, variant: "success" },
+                            { icon: <FaClock />, label: "Pending", value: leaveStatus.summary.pendingRequests || 0, variant: "warning" },
+                            { icon: <FaExclamationTriangle />, label: "Excess Days", value: leaveStatus.summary.excessLeaveDays || 0, variant: "danger" },
+                        ]}
+                        columns={4}
+                    />
 
                     <div className="summary-meta">
                         <span>Processed: {new Date(leaveStatus.lastProcessedAt).toLocaleString()}</span>

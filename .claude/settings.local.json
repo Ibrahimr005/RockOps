@@ -1,12 +1,23 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(powershell -Command \"cd D:\\RockOps\\backend; .\\mvnw.cmd clean\")",
       "Bash(powershell -Command:*)",
       "Bash(cmd /c \"mvnw.cmd clean compile\")",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(cd:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx vite build:*)",
+      "Bash(npx sass:*)",
+      "Bash(npx eslint:*)",
+      "Bash(node -c:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "outputStyle": "default"
 }

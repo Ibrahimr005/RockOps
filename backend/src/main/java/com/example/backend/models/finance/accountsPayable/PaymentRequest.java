@@ -51,6 +51,70 @@ PaymentRequest {
     @JoinColumn(name = "offer_financial_review_id")
     private OfferFinancialReview offerFinancialReview;
 
+    // ========================================
+    // SOURCE POLYMORPHISM - Where payment originates from
+    // ========================================
+
+    /**
+     * Type of source: PURCHASE_ORDER, MAINTENANCE, PAYROLL_BATCH, LOAN, etc.
+     */
+    @Column(name = "source_type", length = 50)
+    private String sourceType;
+
+    /**
+     * ID of the source entity
+     */
+    @Column(name = "source_id")
+    private UUID sourceId;
+
+    /**
+     * Human-readable source number (e.g., PO-000001, PB-2026-000001)
+     */
+    @Column(name = "source_number", length = 100)
+    private String sourceNumber;
+
+    /**
+     * Description of the source for display purposes
+     */
+    @Column(name = "source_description", columnDefinition = "TEXT")
+    private String sourceDescription;
+
+    // ========================================
+    // TARGET POLYMORPHISM - Who receives the payment
+    // ========================================
+
+    /**
+     * Type of target: MERCHANT, EMPLOYEE, EXTERNAL
+     */
+    @Column(name = "target_type", length = 50)
+    private String targetType;
+
+    /**
+     * ID of the target entity (merchant_id or employee_id)
+     */
+    @Column(name = "target_id")
+    private UUID targetId;
+
+    /**
+     * Name of the payment recipient
+     */
+    @Column(name = "target_name", length = 255)
+    private String targetName;
+
+    /**
+     * Additional target details as JSON (bank info, wallet, etc.)
+     */
+    @Column(name = "target_details", columnDefinition = "TEXT")
+    private String targetDetails;
+
+    // ========================================
+    // PAYROLL BATCH REFERENCE
+    // ========================================
+
+    @ManyToOne
+    @JoinColumn(name = "payroll_batch_id")
+    private com.example.backend.models.payroll.PayrollBatch payrollBatch;
+
     @Column(name = "requested_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal requestedAmount;
 

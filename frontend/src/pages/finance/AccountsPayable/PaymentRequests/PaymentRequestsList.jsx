@@ -86,35 +86,66 @@ const PaymentRequestsList = () => {
         },
         {
             header: 'Source',
-            accessor: 'sourceReference',
+            accessor: 'sourceNumber',
             sortable: true,
             render: (row) => {
-                if (row.purchaseOrderNumber) {
+                // Use polymorphic sourceType field
+                const sourceType = row.sourceType;
+                const sourceNumber = row.sourceNumber || row.purchaseOrderNumber || row.batchNumber;
+
+                if (sourceType === 'PURCHASE_ORDER' || row.purchaseOrderNumber) {
                     return (
-                        <span style={{
-                            color: 'var(--primary-color)',
-                            fontWeight: 500
-                        }}>
-                            {row.purchaseOrderNumber}
-                </span>
+                        <span className="source-badge source-procurement">
+                            {sourceNumber || 'PO'}
+                        </span>
                     );
-                } else if (row.maintenanceStepId) {
+                } else if (sourceType === 'MAINTENANCE' || row.maintenanceStepId) {
                     return (
-                        <span style={{
-                            color: 'var(--success-color)',
-                            fontWeight: 500
-                        }}>
-                            {row.maintenanceStepId.substring(0, 8)}
+                        <span className="source-badge source-maintenance">
+                            {sourceNumber || row.maintenanceStepId?.substring(0, 8) || 'Maintenance'}
+                        </span>
+                    );
+                } else if (sourceType === 'PAYROLL_BATCH' || row.payrollBatchId) {
+                    return (
+                        <span className="source-badge source-payroll">
+                            {sourceNumber || row.batchNumber || 'Payroll'}
+                        </span>
+                    );
+                } else if (sourceType === 'LOAN') {
+                    return (
+                        <span className="source-badge source-loan">
+                            {sourceNumber || 'Loan'}
                         </span>
                     );
                 }
-                return <span style={{ color: 'var(--text-muted)' }}>N/A</span>;
+                return <span className="source-badge source-unknown">{sourceNumber || 'N/A'}</span>;
             }
         },
         {
-            header: 'Merchant',
-            accessor: 'merchantName',
-            sortable: true
+            header: 'Recipient',
+            accessor: 'targetName',
+            sortable: true,
+            render: (row) => {
+                // Use polymorphic targetType/targetName
+                const targetType = row.targetType;
+                const targetName = row.targetName || row.merchantName;
+
+                if (targetType === 'EMPLOYEE_GROUP') {
+                    return (
+                        <span className="recipient-badge recipient-employees">
+                            {targetName || `${row.batchEmployeeCount || 0} Employees`}
+                        </span>
+                    );
+                } else if (targetType === 'EMPLOYEE') {
+                    return (
+                        <span className="recipient-badge recipient-employee">
+                            {targetName || 'Employee'}
+                        </span>
+                    );
+                }
+                // Default to merchant
+                return <span className="recipient-badge recipient-merchant">{targetName || 'N/A'}</span>;
+            }
         },
         {
             header: 'Requested Amount',

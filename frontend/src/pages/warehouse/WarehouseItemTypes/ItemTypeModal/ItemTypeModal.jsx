@@ -25,6 +25,8 @@ const ItemTypeModal = ({
     const [childCategories, setChildCategories] = useState([]);
     const [allChildCategories, setAllChildCategories] = useState([]);
     const [loadingCategories, setLoadingCategories] = useState(false);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     // Fetch parent categories and all child categories on mount
     useEffect(() => {
@@ -107,6 +109,18 @@ const ItemTypeModal = ({
         }
     }, [selectedItem, isOpen, allChildCategories]);
 
+    // Scroll lock
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     // Close modal when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -124,6 +138,7 @@ const ItemTypeModal = ({
     }, [isOpen, onClose]);
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
 
         if (name === "parentCategory") {
@@ -170,10 +185,30 @@ const ItemTypeModal = ({
         onSubmit(payload, selectedItem);
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) handleCloseAttempt(); }}>
             <div className="modal-container modal-lg" ref={modalRef}>
                 {/* Modal Header */}
                 <div className="modal-header">
@@ -183,7 +218,7 @@ const ItemTypeModal = ({
                         </svg>
                         {selectedItem ? 'Edit Item Type' : 'Add New Item Type'}
                     </h2>
-                    <button className="btn-close" onClick={onClose}>
+                    <button className="btn-close" onClick={handleCloseAttempt}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M18 6L6 18M6 6l12 12" />
                         </svg>
@@ -339,7 +374,7 @@ const ItemTypeModal = ({
 
                 {/* Modal Footer */}
                 <div className="modal-footer">
-                    <button type="button" className="modal-btn-secondary" onClick={onClose}>
+                    <button type="button" className="modal-btn-secondary" onClick={handleCloseAttempt}>
                         Cancel
                     </button>
                     <button type="submit" form="item-type-form" className="btn-success">
@@ -351,6 +386,7 @@ const ItemTypeModal = ({
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

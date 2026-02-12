@@ -44,6 +44,18 @@ const JournalEntries = () => {
     const isFinanceManager = currentUser?.role === "FINANCE_MANAGER" || "ADMIN";
     const isFinanceEmployee = currentUser?.role === "FINANCE_EMPLOYEE" || isFinanceManager;
 
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showAddModal || showDetailModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showDetailModal]);
+
     useEffect(() => {
         fetchJournalEntries();
     }, [statusFilter, dateFilter]);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaGlobeAmericas, FaBriefcase, FaBuilding, FaCalendarAlt, FaStickyNote, FaFilePdf } from 'react-icons/fa';
 import './EditCandidateModal.scss';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
     const [formData, setFormData] = useState({
@@ -16,6 +17,16 @@ const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
     });
     const [resumeFile, setResumeFile] = useState(null);
     const [errors, setErrors] = useState({});
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     // Initialize form data with candidate information
     useEffect(() => {
@@ -37,6 +48,7 @@ const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
 
     // Handle input changes
     const handleChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -54,6 +66,7 @@ const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
 
     // Handle file changes
     const handleFileChange = (e) => {
+        setIsFormDirty(true);
         const file = e.target.files[0];
         if (file) {
             // Validate file type
@@ -136,7 +149,16 @@ const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
         }
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     return (
+        <>
         <div className="modal-overlay edit-candidate-overlay">
             <div className="edit-candidate-modal">
                 {/* Modal Header */}
@@ -145,7 +167,7 @@ const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
                         <FaUser />
                         Edit Candidate
                     </h2>
-                    <button className="btn-close" onClick={onClose} disabled={isLoading}>
+                    <button className="btn-close" onClick={handleCloseAttempt} disabled={isLoading}>
                         <FaTimes />
                     </button>
                 </div>
@@ -359,7 +381,7 @@ const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
                         <button
                             type="button"
                             className="secondary-button"
-                            onClick={onClose}
+                            onClick={handleCloseAttempt}
                             disabled={isLoading}
                         >
                             Cancel
@@ -376,6 +398,19 @@ const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
                 </div>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

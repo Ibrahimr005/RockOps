@@ -36,6 +36,14 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
         return userInfo?.username || userInfo?.name || 'Unknown User';
     };
 
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     // Fetch full offer details from procurement API
     useEffect(() => {
         const fetchOfferDetails = async () => {

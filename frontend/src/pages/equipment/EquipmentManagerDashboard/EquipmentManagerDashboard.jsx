@@ -4,6 +4,7 @@ import { Package, Users, Truck, AlertTriangle, TrendingUp, Search, RefreshCw, Ac
 import { equipmentService } from '../../../services/equipmentService.js';
 import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService.js';
 import { useTranslation } from 'react-i18next';
+import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards';
 import './EquipmentManagerDashboard.scss';
 
 const EquipmentManagerDashboard = () => {
@@ -378,63 +379,15 @@ const EquipmentManagerDashboard = () => {
                         <h2>Key Performance Indicators</h2>
                         <p>Real-time overview of your equipment fleet operations</p>
                     </div>
-                    <div className="eq-kpi-grid">
-                        <div className="eq-kpi-card eq-primary">
-                            <div className="eq-kpi-icon">
-                                <Truck />
-                            </div>
-                            <div className="eq-kpi-content">
-                                <div className="eq-kpi-value">{totalEquipment.toLocaleString()}</div>
-                                <div className="eq-kpi-label">Total Equipment</div>
-                                <div className="eq-kpi-trend eq-positive">
-                                    <ArrowUp size={14} />
-                                    {equipmentTypes.length} types available
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="eq-kpi-card eq-success">
-                            <div className="eq-kpi-icon">
-                                <CheckCircle />
-                            </div>
-                            <div className="eq-kpi-content">
-                                <div className="eq-kpi-value">{totalEquipment > 0 ? Math.round((activeEquipment / totalEquipment) * 100) : 0}%</div>
-                                <div className="eq-kpi-label">Utilization Rate</div>
-                                <div className="eq-kpi-trend eq-positive">
-                                    <ArrowUp size={14} />
-                                    {activeEquipment} active units
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="eq-kpi-card eq-warning">
-                            <div className="eq-kpi-icon">
-                                <Wrench />
-                            </div>
-                            <div className="eq-kpi-content">
-                                <div className="eq-kpi-value">{totalMaintenanceEvents}</div>
-                                <div className="eq-kpi-label">Maintenance Events</div>
-                                <div className="eq-kpi-trend eq-neutral">
-                                    <Activity size={14} />
-                                    {avgMaintenanceCompletionRate}% completion rate
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="eq-kpi-card eq-info">
-                            <div className="eq-kpi-icon">
-                                <Clock />
-                            </div>
-                            <div className="eq-kpi-content">
-                                <div className="eq-kpi-value">{Math.round(totalWorkHours).toLocaleString()}</div>
-                                <div className="eq-kpi-label">Total Work Hours</div>
-                                <div className="eq-kpi-trend eq-positive">
-                                    <TrendingUp size={14} />
-                                    Operational time logged
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <StatisticsCards
+                        cards={[
+                            { icon: <Truck size={24} />, label: "Total Equipment", value: totalEquipment.toLocaleString(), variant: "primary", subtitle: `${equipmentTypes.length} types available` },
+                            { icon: <CheckCircle size={24} />, label: "Utilization Rate", value: `${totalEquipment > 0 ? Math.round((activeEquipment / totalEquipment) * 100) : 0}%`, variant: "success", subtitle: `${activeEquipment} active units` },
+                            { icon: <Wrench size={24} />, label: "Maintenance Events", value: totalMaintenanceEvents, variant: "warning", subtitle: `${avgMaintenanceCompletionRate}% completion rate` },
+                            { icon: <Clock size={24} />, label: "Total Work Hours", value: Math.round(totalWorkHours).toLocaleString(), variant: "info", subtitle: "Operational time logged" },
+                        ]}
+                        columns={4}
+                    />
                 </section>
 
                 {/* Analytics Section */}

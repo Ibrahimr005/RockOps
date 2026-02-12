@@ -4,6 +4,7 @@ import { FileText, Bell, Calendar, Users, CheckCircle, AlertCircle } from 'lucid
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -49,73 +50,53 @@ const SecretaryDashboard = () => {
             </div>
 
             {/* KPI Cards */}
-            <div className="secretary-kpi-grid">
-                <div className="secretary-kpi-card">
-                    <div className="secretary-kpi-icon">
-                        <FileText />
-                    </div>
-                    <div className="secretary-kpi-content">
-                        <div className="secretary-kpi-value">{dashboardData.totalDocuments}</div>
-                        <div className="secretary-kpi-label">Total Documents</div>
-                        <div className="secretary-kpi-sub">{dashboardData.pendingDocuments} Pending</div>
-                    </div>
-                </div>
-
-                <div className="secretary-kpi-card">
-                    <div className="secretary-kpi-icon">
-                        <CheckCircle />
-                    </div>
-                    <div className="secretary-kpi-content">
-                        <div className="secretary-kpi-value">{dashboardData.approvedDocuments}</div>
-                        <div className="secretary-kpi-label">Approved Documents</div>
-                        <div className="secretary-kpi-sub">{dashboardData.recentUploads} Recent</div>
-                    </div>
-                </div>
-
-                <div className="secretary-kpi-card">
-                    <div className="secretary-kpi-icon">
-                        <AlertCircle />
-                    </div>
-                    <div className="secretary-kpi-content">
-                        <div className="secretary-kpi-value">{dashboardData.pendingApprovals}</div>
-                        <div className="secretary-kpi-label">Pending Approvals</div>
-                        <div className="secretary-kpi-sub">{dashboardData.requestsAwaitingReview} Awaiting Review</div>
-                    </div>
-                </div>
-
-                <div className="secretary-kpi-card">
-                    <div className="secretary-kpi-icon">
-                        <Bell />
-                    </div>
-                    <div className="secretary-kpi-content">
-                        <div className="secretary-kpi-value">{dashboardData.pendingNotifications}</div>
-                        <div className="secretary-kpi-label">Notifications</div>
-                        <div className="secretary-kpi-sub">{dashboardData.sentNotificationsToday} Sent Today</div>
-                    </div>
-                </div>
-
-                <div className="secretary-kpi-card">
-                    <div className="secretary-kpi-icon">
-                        <Calendar />
-                    </div>
-                    <div className="secretary-kpi-content">
-                        <div className="secretary-kpi-value">{dashboardData.meetingsToday}</div>
-                        <div className="secretary-kpi-label">Meetings Today</div>
-                        <div className="secretary-kpi-sub">{dashboardData.upcomingMeetings} Upcoming</div>
-                    </div>
-                </div>
-
-                <div className="secretary-kpi-card">
-                    <div className="secretary-kpi-icon">
-                        <Users />
-                    </div>
-                    <div className="secretary-kpi-content">
-                        <div className="secretary-kpi-value">{dashboardData.visitorsToday}</div>
-                        <div className="secretary-kpi-label">Visitors Today</div>
-                        <div className="secretary-kpi-sub">{dashboardData.scheduledVisits} Scheduled</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                columns={3}
+                cards={[
+                    {
+                        icon: <FileText />,
+                        label: "Total Documents",
+                        value: dashboardData.totalDocuments,
+                        variant: "primary",
+                        subtitle: `${dashboardData.pendingDocuments} Pending`,
+                    },
+                    {
+                        icon: <CheckCircle />,
+                        label: "Approved Documents",
+                        value: dashboardData.approvedDocuments,
+                        variant: "success",
+                        subtitle: `${dashboardData.recentUploads} Recent`,
+                    },
+                    {
+                        icon: <AlertCircle />,
+                        label: "Pending Approvals",
+                        value: dashboardData.pendingApprovals,
+                        variant: "warning",
+                        subtitle: `${dashboardData.requestsAwaitingReview} Awaiting Review`,
+                    },
+                    {
+                        icon: <Bell />,
+                        label: "Notifications",
+                        value: dashboardData.pendingNotifications,
+                        variant: "info",
+                        subtitle: `${dashboardData.sentNotificationsToday} Sent Today`,
+                    },
+                    {
+                        icon: <Calendar />,
+                        label: "Meetings Today",
+                        value: dashboardData.meetingsToday,
+                        variant: "purple",
+                        subtitle: `${dashboardData.upcomingMeetings} Upcoming`,
+                    },
+                    {
+                        icon: <Users />,
+                        label: "Visitors Today",
+                        value: dashboardData.visitorsToday,
+                        variant: "orange",
+                        subtitle: `${dashboardData.scheduledVisits} Scheduled`,
+                    },
+                ]}
+            />
 
             {/* Task Overview Section */}
             <div className="secretary-sections">
