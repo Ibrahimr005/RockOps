@@ -2,9 +2,10 @@ package com.example.backend.services.merchant;
 
 import com.example.backend.dto.merchant.MerchantTransactionDTO;
 import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.merchant.MerchantType;
 import com.example.backend.models.procurement.DeliveryItemReceipt;
-import com.example.backend.models.procurement.PurchaseOrderIssue;
-import com.example.backend.models.procurement.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.repositories.procurement.DeliveryItemReceiptRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderItemRepository;
@@ -427,6 +428,25 @@ public class MerchantService {
         double consistencyScore = Math.max(0, 100 - (stdDev / average * 100));
 
         return consistencyScore;
+    }
+
+    public List<Merchant> getMerchantsByType(String merchantType) {
+        try {
+            if (merchantType == null || merchantType.trim().isEmpty()) {
+                return getAllMerchants();
+            }
+
+            MerchantType type = MerchantType.valueOf(merchantType.toUpperCase());
+            List<Merchant> allMerchants = merchantRepository.findAll();
+
+            return allMerchants.stream()
+                    .filter(m -> m.getMerchantTypes() != null && m.getMerchantTypes().contains(type))
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid merchant type: " + merchantType);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch merchants by type: " + e.getMessage(), e);
+        }
     }
 
 

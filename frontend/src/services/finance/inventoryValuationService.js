@@ -1,14 +1,7 @@
 import apiClient from '../../utils/apiClient.js';
 import { INVENTORY_VALUATION_ENDPOINTS } from '../../config/api.config.js';
-
 export const inventoryValuationService = {
-    // ========================================
-    // WAREHOUSE BALANCES
-    // ========================================
-
-    /**
-     * Get balance information for a specific warehouse
-     */
+    // Warehouse Balances
     getWarehouseBalance: async (warehouseId) => {
         const response = await apiClient.get(
             INVENTORY_VALUATION_ENDPOINTS.WAREHOUSE_BALANCE(warehouseId)
@@ -16,23 +9,7 @@ export const inventoryValuationService = {
         return response.data || response;
     },
 
-    /**
-     * Manually trigger warehouse balance recalculation
-     */
-    recalculateWarehouseBalance: async (warehouseId) => {
-        const response = await apiClient.post(
-            INVENTORY_VALUATION_ENDPOINTS.RECALCULATE_WAREHOUSE_BALANCE(warehouseId)
-        );
-        return response.data || response;
-    },
-
-    // ========================================
-    // SITE BALANCES
-    // ========================================
-
-    /**
-     * Get balance for a specific site (includes all warehouses)
-     */
+    // Site Balances (Backward Compatible)
     getSiteBalance: async (siteId) => {
         const response = await apiClient.get(
             INVENTORY_VALUATION_ENDPOINTS.SITE_BALANCE(siteId)
@@ -40,9 +17,6 @@ export const inventoryValuationService = {
         return response.data || response;
     },
 
-    /**
-     * Get all site balances
-     */
     getAllSiteBalances: async () => {
         const response = await apiClient.get(
             INVENTORY_VALUATION_ENDPOINTS.ALL_SITE_BALANCES
@@ -50,23 +24,37 @@ export const inventoryValuationService = {
         return response.data || response;
     },
 
-    /**
-     * Manually trigger site balance recalculation
-     */
-    recalculateSiteBalance: async (siteId) => {
-        const response = await apiClient.post(
-            INVENTORY_VALUATION_ENDPOINTS.RECALCULATE_SITE_BALANCE(siteId)
+    // Site Valuations (With Expenses)
+    getSiteValuation: async (siteId) => {
+        const response = await apiClient.get(
+            INVENTORY_VALUATION_ENDPOINTS.SITE_VALUATION(siteId)
         );
         return response.data || response;
     },
 
-    // ========================================
-    // WAREHOUSE DETAILS
-    // ========================================
+    getAllSiteValuations: async () => {
+        const response = await apiClient.get(
+            INVENTORY_VALUATION_ENDPOINTS.ALL_SITE_VALUATIONS
+        );
+        return response.data || response;
+    },
 
-    /**
-     * Get item breakdown (value composition) for a warehouse
-     */
+    // Equipment Financials
+    getEquipmentFinancials: async (equipmentId) => {
+        const response = await apiClient.get(
+            INVENTORY_VALUATION_ENDPOINTS.EQUIPMENT_FINANCIALS(equipmentId)
+        );
+        return response.data || response;
+    },
+
+    getEquipmentConsumablesBreakdown: async (equipmentId) => {
+        const response = await apiClient.get(
+            INVENTORY_VALUATION_ENDPOINTS.EQUIPMENT_CONSUMABLES_BREAKDOWN(equipmentId)
+        );
+        return response.data || response;
+    },
+
+    // Warehouse Details
     getWarehouseItemBreakdown: async (warehouseId) => {
         const response = await apiClient.get(
             INVENTORY_VALUATION_ENDPOINTS.WAREHOUSE_ITEMS_BREAKDOWN(warehouseId)
@@ -74,19 +62,6 @@ export const inventoryValuationService = {
         return response.data || response;
     },
 
-    /**
-     * Get transaction history for a warehouse (finance view)
-     */
-    getWarehouseTransactionHistory: async (warehouseId) => {
-        const response = await apiClient.get(
-            INVENTORY_VALUATION_ENDPOINTS.WAREHOUSE_TRANSACTIONS(warehouseId)
-        );
-        return response.data || response;
-    },
-
-    /**
-     * Get all item history for a warehouse (all sources)
-     */
     getWarehouseItemHistory: async (warehouseId) => {
         const response = await apiClient.get(
             INVENTORY_VALUATION_ENDPOINTS.WAREHOUSE_ITEM_HISTORY(warehouseId)

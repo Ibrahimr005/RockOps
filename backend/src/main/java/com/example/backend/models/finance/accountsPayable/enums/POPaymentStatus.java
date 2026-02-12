@@ -5,5 +5,6 @@ public enum POPaymentStatus {
     APPROVED,
     PARTIALLY_PAID,
     PAID,
-    PAYMENT_FAILED
+    PAYMENT_FAILED,
+    REJECTED
 }

@@ -1,0 +1,602 @@
+.finance-asset-card {
+  background: var(--color-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+  }
+
+  &.expanded {
+    border-color: var(--color-primary);
+    box-shadow: 0 6px 20px rgba(72, 128, 255, 0.12);
+  }
+
+  &.variant-site {
+    background: var(--color-surface);
+
+    .finance-card-header {
+      padding: 28px 24px;
+      min-height: 110px;
+    }
+
+    .finance-card-icon {
+      width: 76px;
+      height: 76px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .finance-card-title {
+      font-size: 1.45rem;
+      font-weight: 600;
+    }
+
+    .finance-card-subtitle {
+      font-size: 0.95rem;
+      margin-top: 6px;
+    }
+
+    .finance-card-value-container,
+    .finance-card-expenses-container {
+      padding: 12px 18px;
+    }
+
+    .finance-card-value {
+      .value-amount {
+        font-size: 1.6rem;
+      }
+    }
+
+    .finance-card-expenses {
+      .expenses-amount {
+        font-size: 1.6rem;
+      }
+    }
+  }
+
+  &.variant-nested {
+    background: var(--color-surface);
+
+    &:hover {
+      background: var(--color-surface-hover);
+    }
+  }
+
+  &.size-compact {
+    .finance-card-header {
+      padding: 18px 20px;
+      min-height: 85px;
+    }
+
+    .finance-card-icon {
+      width: 48px;
+      height: 48px;
+    }
+
+    .finance-card-title {
+      font-size: 1.05rem;
+    }
+
+    .finance-card-subtitle {
+      font-size: 0.82rem;
+    }
+
+    .finance-card-value-container,
+    .finance-card-expenses-container {
+      padding: 10px 14px;
+    }
+
+    .finance-card-value {
+      .value-amount {
+        font-size: 1.15rem;
+      }
+    }
+
+    .finance-card-expenses {
+      .expenses-amount {
+        font-size: 1.15rem;
+      }
+    }
+  }
+}
+
+.finance-card-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 22px;
+  min-height: 80px;
+  transition: background 0.2s ease;
+}
+
+.finance-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  background: var(--color-primary);
+  border-radius: 10px;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(72, 128, 255, 0.25);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.03);
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  svg {
+    color: white;
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.finance-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.finance-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.finance-card-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.finance-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+
+  &.warning {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fde68a;
+  }
+
+  &.success {
+    background: #d1fae5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+
+  &.danger {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+  }
+
+  [data-theme="dark"] & {
+    &.warning {
+      background: rgba(251, 191, 36, 0.15);
+      color: #fbbf24;
+      border-color: rgba(251, 191, 36, 0.3);
+    }
+
+    &.success {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    &.danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+  }
+}
+
+.finance-card-subtitle {
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+// Card-style containers for value and expenses
+.finance-card-value-container {
+
+  border-radius: 8px;
+  padding: 10px 16px;
+
+  transition: all 0.2s ease;
+  position: relative;
+
+  // Add separator line on the right
+  &::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 60%;
+    background: var(--border-color);
+  }
+
+  &:hover {
+    background: rgba(72, 128, 255, 0.1);
+    border-color: rgba(72, 128, 255, 0.2);
+  }
+}
+
+.finance-card-value {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  .value-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .value-amount {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    line-height: 1;
+  }
+
+  .value-currency {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--color-primary);
+    opacity: 0.75;
+  }
+}
+
+.finance-card-expenses-container {
+  border-radius: 8px;
+  padding: 10px 16px;
+  transition: all 0.2s ease;
+  margin-left: 10px;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+}
+
+.finance-card-expenses {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  .expenses-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #ef4444;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .expenses-amount {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #ef4444;
+    line-height: 1;
+  }
+
+  .expenses-currency {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #ef4444;
+    opacity: 0.75;
+  }
+}
+
+.finance-card-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 10px;
+
+  svg {
+    color: var(--color-text-secondary);
+  }
+
+  &:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    transform: scale(1.05);
+
+    svg {
+      color: white;
+    }
+  }
+}
+
+// Category Breakdown Section with card style
+.finance-card-breakdown {
+  background: var(--color-surface-secondary);
+  padding: 16px 12px;
+}
+
+.breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: var(--color-surface);
+  border: 1px solid var(--border-color);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover:not(.active) {
+    background: var(--color-surface-hover);
+    border-color: var(--color-primary);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &.active {
+    background: rgba(72, 128, 255, 0.08);
+    border-color: var(--color-primary);
+    border-width: 2px;
+    box-shadow: 0 3px 10px rgba(72, 128, 255, 0.15);
+  }
+}
+
+.breakdown-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.breakdown-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--color-surface-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+
+  svg {
+    color: var(--color-primary);
+    width: 16px;
+    height: 16px;
+  }
+
+  .breakdown-row.active & {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+
+    svg {
+      color: white;
+    }
+  }
+
+  .breakdown-row:hover:not(.active) & {
+    background: var(--color-surface-hover);
+    border-color: var(--color-primary);
+  }
+}
+
+.breakdown-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.breakdown-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 4px 10px;
+  background: var(--color-surface-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.breakdown-value-container {
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-right: 8px;
+  position: relative;
+
+  // Add separator line on the right
+  &::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 60%;
+    background: var(--border-color);
+  }
+}
+
+.breakdown-value {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .breakdown-value-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .breakdown-amount {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    line-height: 1;
+  }
+
+  .breakdown-currency {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-primary);
+    opacity: 0.75;
+  }
+}
+
+.breakdown-expenses-container {
+
+  border-radius: 6px;
+  padding: 8px 12px;
+
+  margin-right: 8px;
+}
+
+.breakdown-expenses {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .breakdown-expenses-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #ef4444;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .breakdown-expenses-amount {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ef4444;
+    line-height: 1;
+  }
+
+  .breakdown-expenses-currency {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #ef4444;
+    opacity: 0.75;
+  }
+}
+
+.breakdown-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  svg {
+    color: var(--color-text-secondary);
+    width: 15px;
+    height: 15px;
+  }
+
+  &:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+
+    svg {
+      color: white;
+    }
+  }
+}
+
+.breakdown-disabled-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 6px 12px;
+  background: var(--color-surface-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .finance-card-header {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .finance-card-value-container,
+  .finance-card-expenses-container {
+    margin-left: 0;
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .breakdown-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .breakdown-value-container,
+  .breakdown-expenses-container {
+    margin-right: 0;
+    margin-top: 6px;
+  }
+}
+
+.finance-card-values-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.breakdown-values-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

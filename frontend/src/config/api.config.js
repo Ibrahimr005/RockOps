@@ -1029,22 +1029,26 @@ export const LOAN_ENDPOINTS = {
     STATISTICS: '/api/v1/payroll/loans/statistics'
 };
 
-// Finance - Inventory Valuation Endpoints (Asset Values only)
 export const INVENTORY_VALUATION_ENDPOINTS = {
     BASE: '/api/finance/inventory-valuation',
 
     // Warehouse Balances
     WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/balance`,
-    RECALCULATE_WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/recalculate-balance`,
 
-    // Site Balances
+    // Site Balances (Backward Compatible)
     SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/balance`,
     ALL_SITE_BALANCES: '/api/finance/inventory-valuation/sites/balances',
-    RECALCULATE_SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/recalculate-balance`,
+
+    // Site Valuations (With Expenses)
+    SITE_VALUATION: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/valuation`,
+    ALL_SITE_VALUATIONS: '/api/finance/inventory-valuation/sites/valuations',
+
+    // Equipment Financials
+    EQUIPMENT_FINANCIALS: (equipmentId) => `/api/finance/inventory-valuation/equipment/${equipmentId}/financials`,
+    EQUIPMENT_CONSUMABLES_BREAKDOWN: (equipmentId) => `/api/finance/inventory-valuation/equipment/${equipmentId}/consumables-breakdown`,
 
     // Warehouse Details
     WAREHOUSE_ITEMS_BREAKDOWN: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/items-breakdown`,
-    WAREHOUSE_TRANSACTIONS: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/transactions`,
     WAREHOUSE_ITEM_HISTORY: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/item-history`,
 };
 
@@ -1075,19 +1079,16 @@ export const EQUIPMENT_FINANCE_ENDPOINTS = {
 
 export const LOGISTICS_ENDPOINTS = {
     BASE: '/api/procurement/logistics',
-
-    // Get all logistics for a purchase order
+    GET_ALL: '/api/procurement/logistics',
+    GET_BY_ID: (id) => `/api/procurement/logistics/${id}`,
+    PENDING_APPROVAL: '/api/procurement/logistics/pending-approval',
+    HISTORY: '/api/procurement/logistics/history',
     BY_PURCHASE_ORDER: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}`,
-
-    // Get total logistics cost
-    TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total`,
-
-    // Create new logistics
+    TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total-cost`,
     CREATE: '/api/procurement/logistics',
-
-    // Update logistics
-    UPDATE: (id) => `/api/procurement/logistics/${id}`,
-
-    // Delete logistics
-    DELETE: (id) => `/api/procurement/logistics/${id}`
+    UPDATE: (id) => `/api/procurement/logistics/${id}`,  // ← ADD THIS
+    DELETE: (id) => `/api/procurement/logistics/${id}`,  // ← ADD THIS
+    PAYMENT_APPROVED: (paymentRequestId) => `/api/procurement/logistics/payment-approved/${paymentRequestId}`,
+    PAYMENT_REJECTED: (paymentRequestId) => `/api/procurement/logistics/payment-rejected/${paymentRequestId}`,
+    PAYMENT_COMPLETED: (paymentRequestId) => `/api/procurement/logistics/payment-completed/${paymentRequestId}`
 };

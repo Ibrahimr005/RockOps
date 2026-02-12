@@ -7,8 +7,8 @@ import com.example.backend.dto.warehouse.ItemTypeWarehouseDistributionDTO;
 import com.example.backend.models.finance.inventoryValuation.ApprovalStatus;
 import com.example.backend.models.finance.inventoryValuation.ItemPriceApproval;
 import com.example.backend.models.notification.NotificationType;
-import com.example.backend.models.procurement.PurchaseOrder;
-import com.example.backend.models.procurement.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.*;
 import com.example.backend.repositories.finance.inventoryValuation.ItemPriceApprovalRepository;
@@ -19,6 +19,7 @@ import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -390,62 +391,96 @@ public class ItemTypeService {
      * Update base price for a specific item type using weighted average of last 3 completed POs
      * Called automatically when a PO is marked as COMPLETED
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateItemTypeBasePriceFromCompletedPOs(UUID itemTypeId, String updatedBy) {
-        ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                .orElseThrow(() -> new RuntimeException("ItemType not found"));
+        try {
+            ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                    .orElseThrow(() -> new RuntimeException("ItemType not found"));
 
-        System.out.println("📊 Calculating base price for: " + itemType.getName());
+            System.out.println("📊 Calculating base price for: " + itemType.getName());
 
-        // Find last 3 COMPLETED POs that contain this ItemType
-        List<PurchaseOrder> last3CompletedPOs = findLast3CompletedPOsWithItemType(itemTypeId);
+            // Find last 3 COMPLETED POs that contain this ItemType
+            List<PurchaseOrder> last3CompletedPOs = findLast3CompletedPOsWithItemType(itemTypeId);
 
-        if (last3CompletedPOs.isEmpty()) {
-            System.out.println("  ⚠️ No completed POs found for " + itemType.getName());
-            return;
-        }
+            if (last3CompletedPOs.isEmpty()) {
+                System.out.println("  ⚠️ No completed POs found for " + itemType.getName());
+                return;
+            }
 
-        // Calculate weighted average across ALL items from these POs
-        double totalCost = 0.0;
-        double totalQuantity = 0.0;
+            System.out.println("  📦 Found " + last3CompletedPOs.size() + " completed POs");
 
-        for (PurchaseOrder po : last3CompletedPOs) {
-            for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
-                if (item.getItemType() != null && item.getItemType().getId().equals(itemTypeId)) {
-                    double itemCost = item.getUnitPrice() * item.getQuantity();
-                    totalCost += itemCost;
-                    totalQuantity += item.getQuantity();
+            // Calculate weighted average across ALL items from these POs
+            double totalCost = 0.0;
+            double totalQuantity = 0.0;
 
-                    System.out.println("    • PO: " + po.getPoNumber() +
-                            " | Merchant: " + (item.getMerchant() != null ? item.getMerchant().getName() : "N/A") +
-                            " | Qty: " + item.getQuantity() +
-                            " | Unit Price: " + String.format("%.2f", item.getUnitPrice()));
+            for (PurchaseOrder po : last3CompletedPOs) {
+                System.out.println("    Processing PO: " + po.getPoNumber());
+
+                for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
+                    if (item.getItemType() != null && item.getItemType().getId().equals(itemTypeId)) {
+                        double itemCost = item.getUnitPrice() * item.getQuantity();
+                        totalCost += itemCost;
+                        totalQuantity += item.getQuantity();
+
+                        String merchantName = "N/A";
+                        try {
+                            if (item.getMerchant() != null) {
+                                merchantName = item.getMerchant().getName();
+                            }
+                        } catch (Exception e) {
+                            System.err.println("      ⚠️ Could not load merchant name: " + e.getMessage());
+                        }
+
+                        System.out.println("      • PO: " + po.getPoNumber() +
+                                " | Merchant: " + merchantName +
+                                " | Qty: " + item.getQuantity() +
+                                " | Unit Price: " + String.format("%.2f", item.getUnitPrice()));
+                    }
                 }
             }
-        }
 
-        if (totalQuantity > 0) {
-            double oldPrice = itemType.getBasePrice() != null ? itemType.getBasePrice() : 0.0;
-            double newPrice = totalCost / totalQuantity;
+            if (totalQuantity > 0) {
+                double oldPrice = itemType.getBasePrice() != null ? itemType.getBasePrice() : 0.0;
+                double newPrice = totalCost / totalQuantity;
 
-            itemType.setBasePrice(newPrice);
-            itemType.setBasePriceUpdatedAt(LocalDateTime.now());
-            itemType.setBasePriceUpdatedBy(updatedBy);
-            itemTypeRepository.save(itemType);
+                itemType.setBasePrice(newPrice);
+                itemType.setBasePriceUpdatedAt(LocalDateTime.now());
+                itemType.setBasePriceUpdatedBy(updatedBy);
+                itemTypeRepository.save(itemType);
 
-            System.out.println("  ✅ Base price updated: " +
-                    String.format("%.2f", oldPrice) + " → " + String.format("%.2f", newPrice));
+                System.out.println("  ✅ Base price updated: " +
+                        String.format("%.2f", oldPrice) + " → " + String.format("%.2f", newPrice));
+            } else {
+                System.out.println("  ⚠️ No quantity found for calculation");
+            }
+
+        } catch (Exception e) {
+            System.err.println("  ❌ Error updating base price: " + e.getClass().getName());
+            System.err.println("  ❌ Message: " + e.getMessage());
+            e.printStackTrace();
+            System.err.println("  ⚠️ Could not update base price, but continuing anyway");
         }
     }
-
     private List<PurchaseOrder> findLast3CompletedPOsWithItemType(UUID itemTypeId) {
-        List<PurchaseOrder> allCompletedPOs = purchaseOrderRepository
-                .findByStatusOrderByUpdatedAtDesc("COMPLETED");
+        System.out.println("  🔍 Fetching completed POs from repository...");
+        List<PurchaseOrder> allCompletedPOs = purchaseOrderRepository.findCompletedPOsWithItems();
+        System.out.println("  📋 Total completed POs fetched: " + allCompletedPOs.size());
 
         return allCompletedPOs.stream()
-                .filter(po -> po.getPurchaseOrderItems().stream()
-                        .anyMatch(item -> item.getItemType() != null &&
-                                item.getItemType().getId().equals(itemTypeId)))
+                .filter(po -> {
+                    System.out.println("  🔎 Checking PO: " + po.getPoNumber());
+                    try {
+                        boolean hasItemType = po.getPurchaseOrderItems().stream()
+                                .anyMatch(item -> item.getItemType() != null &&
+                                        item.getItemType().getId().equals(itemTypeId));
+                        System.out.println("    Result: " + hasItemType);
+                        return hasItemType;
+                    } catch (Exception e) {
+                        System.err.println("    ❌ Error checking PO: " + e.getMessage());
+                        e.printStackTrace();
+                        return false;
+                    }
+                })
                 .limit(3)
                 .collect(Collectors.toList());
     }

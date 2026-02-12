@@ -2,13 +2,21 @@ package com.example.backend.services.procurement;
 
 import com.example.backend.dto.merchant.MerchantDTO;
 import com.example.backend.dto.procurement.*;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderDTO;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderIssueDTO;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderItemDTO;
 import com.example.backend.dto.warehouse.ItemTypeDTO;
 import com.example.backend.mappers.procurement.PurchaseOrderMapper;
+import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.*;
 import com.example.backend.models.procurement.Offer.Offer;
 import com.example.backend.models.procurement.Offer.OfferItem;
 import com.example.backend.models.procurement.Offer.TimelineEventType;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderResolutionType;
 import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.warehouse.ItemRepository;
@@ -20,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,10 +50,8 @@ public class PurchaseOrderService {
     private final ItemTypeService itemTypeService;
 
 
-
     @Autowired
     private EntityManager entityManager;
-
 
 
     @Autowired
@@ -137,6 +144,9 @@ public class PurchaseOrderService {
 
         String currency = finalizedItems.get(0).getCurrency();
         purchaseOrder.setCurrency(currency);
+
+        purchaseOrder.setPaymentStatus(POPaymentStatus.REQUESTED);  // ← ADD THIS
+        purchaseOrder.setTotalPaidAmount(BigDecimal.ZERO);
 
         double totalAmount = 0.0;
 
@@ -265,27 +275,27 @@ public class PurchaseOrderService {
 //                    savedPurchaseOrder.getCurrency() + " " + String.format("%.2f", totalAmount),
 //            "COMPLETED", "COMPLETED");
 //
-////    System.err.println("🔵🔵🔵 PO SAVED, FLUSHING TO DATABASE");
-////    entityManager.flush(); // Force write to database
-////    System.err.println("🔵🔵🔵 FLUSH COMPLETE, NOW CREATING PAYMENT REQUEST");
-////
-////    // NOW create payment request - this will use REQUIRES_NEW and happen in a separate transaction
-////    try {
-////        paymentRequestService.createPaymentRequestFromPO(
-////                savedPurchaseOrder.getId(),
-////                offerId,
-////                username
-////        );
-////        System.err.println("✅✅✅ Payment request created successfully");
-////    } catch (Exception e) {
-////        System.err.println("❌❌❌ Payment request creation failed: " + e.getMessage());
-////        e.printStackTrace();
-////        // Don't throw - let the PO creation succeed even if payment request fails
-////    }
+
+    /// /    System.err.println("🔵🔵🔵 PO SAVED, FLUSHING TO DATABASE");
+    /// /    entityManager.flush(); // Force write to database
+    /// /    System.err.println("🔵🔵🔵 FLUSH COMPLETE, NOW CREATING PAYMENT REQUEST");
+    /// /
+    /// /    // NOW create payment request - this will use REQUIRES_NEW and happen in a separate transaction
+    /// /    try {
+    /// /        paymentRequestService.createPaymentRequestFromPO(
+    /// /                savedPurchaseOrder.getId(),
+    /// /                offerId,
+    /// /                username
+    /// /        );
+    /// /        System.err.println("✅✅✅ Payment request created successfully");
+    /// /    } catch (Exception e) {
+    /// /        System.err.println("❌❌❌ Payment request creation failed: " + e.getMessage());
+    /// /        e.printStackTrace();
+    /// /        // Don't throw - let the PO creation succeed even if payment request fails
+    /// /    }
 //
 //    return savedPurchaseOrder;
 //}
-
     private String generatePoNumber() {
         String datePart = LocalDateTime.now().toString().substring(0, 10).replace("-", "");
         int randomNum = new Random().nextInt(10000);
@@ -321,7 +331,7 @@ public class PurchaseOrderService {
     }
 
     public PurchaseOrder getPurchaseOrderById(UUID id) {
-        return purchaseOrderRepository.findById(id)
+        return purchaseOrderRepository.findByIdWithDetails(id) // CHANGED
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
     }
 
@@ -585,11 +595,18 @@ public class PurchaseOrderService {
                 .estimatedDeliveryDays(item.getEstimatedDeliveryDays())
                 .deliveryNotes(item.getDeliveryNotes())
                 .comment(item.getComment())
+                .paymentStatus(item.getPaymentStatus())              // ← ADD THIS
+                .paymentRequestItemId(item.getPaymentRequestItemId()) // ← ADD THIS
                 .purchaseOrderId(item.getPurchaseOrder().getId())
                 .build();
 
+        // ✅ ADD THESE DIRECT FIELDS
         if (item.getItemType() != null) {
             dto.setItemTypeId(item.getItemType().getId());
+            dto.setItemTypeName(item.getItemType().getName());  // ADD THIS
+            dto.setMeasuringUnit(item.getItemType().getMeasuringUnit());  // ADD THIS
+
+            // ✅ CREATE AND SET THE FULL itemType OBJECT
             ItemTypeDTO itemTypeDTO = new ItemTypeDTO();
             itemTypeDTO.setId(item.getItemType().getId());
             itemTypeDTO.setName(item.getItemType().getName());
@@ -601,10 +618,13 @@ public class PurchaseOrderService {
                 itemTypeDTO.setItemCategoryName(item.getItemType().getItemCategory().getName());
             }
 
-            dto.setItemType(itemTypeDTO);
+            dto.setItemType(itemTypeDTO);  // ✅ SET THE itemType OBJECT
         }
+
         if (item.getMerchant() != null) {
             dto.setMerchantId(item.getMerchant().getId());
+            dto.setMerchantName(item.getMerchant().getName());  // ADD THIS
+
             MerchantDTO merchantDTO = new MerchantDTO();
             merchantDTO.setId(item.getMerchant().getId());
             merchantDTO.setName(item.getMerchant().getName());
@@ -617,12 +637,16 @@ public class PurchaseOrderService {
             dto.setMerchant(merchantDTO);
         }
 
+        // ✅ ADD CURRENCY
+        dto.setCurrency(item.getPurchaseOrder().getCurrency());
+
         return dto;
     }
+
     public List<PurchaseOrderDTO> getAllPurchaseOrderDTOs() {
-        List<PurchaseOrder> purchaseOrders = getAllPurchaseOrders();
+        List<PurchaseOrder> purchaseOrders = purchaseOrderRepository.findAllWithDetails(); // CHANGED
         return purchaseOrders.stream()
-                .map(this::convertToBasicDTO)  // We'll create this method next
+                .map(this::convertToBasicDTO)
                 .collect(Collectors.toList());
     }
 
@@ -635,7 +659,12 @@ public class PurchaseOrderService {
         dto.setStatus(po.getStatus());
         dto.setTotalAmount(po.getTotalAmount());
         dto.setCurrency(po.getCurrency());
+        dto.setPaymentStatus(po.getPaymentStatus());
+        dto.setPaymentRequestId(po.getPaymentRequestId());
         dto.setExpectedDeliveryDate(po.getExpectedDeliveryDate());
+
+        System.out.println("Payment Status set in DTO: " + dto.getPaymentStatus());
+        System.out.println("========================");
 
         if (po.getRequestOrder() != null) {
             dto.setRequestOrderId(po.getRequestOrder().getId());
@@ -646,9 +675,8 @@ public class PurchaseOrderService {
             requestOrderDTO.setDescription(po.getRequestOrder().getDescription());
             requestOrderDTO.setRequesterName(po.getRequestOrder().getRequesterName());
             requestOrderDTO.setDeadline(po.getRequestOrder().getDeadline());
-            requestOrderDTO.setRequesterId(po.getRequestOrder().getRequesterId()); // ADD THIS LINE
-            requestOrderDTO.setPartyType(po.getRequestOrder().getPartyType());     // ADD THIS LINE TOO
-            // Add any other fields your RequestOrderDTO needs
+            requestOrderDTO.setRequesterId(po.getRequestOrder().getRequesterId());
+            requestOrderDTO.setPartyType(po.getRequestOrder().getPartyType());
             dto.setRequestOrder(requestOrderDTO);
         }
 
@@ -661,8 +689,15 @@ public class PurchaseOrderService {
             offerDTO.setDescription(po.getOffer().getDescription());
             offerDTO.setCreatedBy(po.getOffer().getCreatedBy());
             offerDTO.setCreatedAt(po.getOffer().getCreatedAt());
-            // Add any other fields your OfferDTO needs
             dto.setOffer(offerDTO);
+        }
+
+        // ✅ ADD THIS: Include purchase order items
+        if (po.getPurchaseOrderItems() != null && !po.getPurchaseOrderItems().isEmpty()) {
+            List<PurchaseOrderItemDTO> itemDTOs = po.getPurchaseOrderItems().stream()
+                    .map(this::convertItemToDTO)
+                    .collect(Collectors.toList());
+            dto.setPurchaseOrderItems(itemDTOs);
         }
 
         return dto;
@@ -728,5 +763,73 @@ public class PurchaseOrderService {
         savedPO.setExpectedDeliveryDate(LocalDateTime.now().plusDays(maxDeliveryDays > 0 ? maxDeliveryDays : 30));
 
         return purchaseOrderRepository.save(savedPO);
+    }
+
+    /**
+     * Unified PO status update logic - checks BOTH delivery completion AND payment status
+     * Call this from delivery processing, issue resolution, AND payment processing
+     */
+    @Transactional
+    public void updatePurchaseOrderStatusComplete(UUID purchaseOrderId) {
+        PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
+                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
+
+        boolean hasItemsToArrive = false;
+        boolean hasDisputedItems = false;
+
+        // Check delivery status of all items
+        for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
+            if ("DISPUTED".equals(item.getStatus())) {
+                hasDisputedItems = true;
+            }
+            if (!"COMPLETED".equals(item.getStatus())) {
+                hasItemsToArrive = true;
+            }
+        }
+
+        String oldStatus = po.getStatus();
+
+        // Check if fully paid
+        boolean isFullyPaid = po.getPaymentStatus() == POPaymentStatus.PAID;
+
+        // Determine PO status based on BOTH delivery AND payment
+        if (hasDisputedItems && hasItemsToArrive) {
+            po.setStatus("PARTIAL_DISPUTED");
+        } else if (hasDisputedItems) {
+            po.setStatus("DISPUTED");
+        } else if (hasItemsToArrive) {
+            po.setStatus("PARTIAL");
+        } else if (!isFullyPaid) {
+            // All items delivered but NOT paid yet
+            po.setStatus("AWAITING_PAYMENT");
+        } else {
+            // All items delivered AND fully paid
+            po.setStatus("COMPLETED");
+        }
+
+        purchaseOrderRepository.save(po);
+
+        // Update ItemType base prices ONLY when FULLY COMPLETED (items + payment)
+// Update ItemType base prices ONLY when FULLY COMPLETED (items + payment)
+        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
+            System.out.println("🎯 PO fully completed (delivery + payment), updating base prices...");
+
+            try {
+                Set<UUID> itemTypeIds = po.getPurchaseOrderItems().stream()
+                        .filter(item -> item.getItemType() != null)  // ← FIXED
+                        .map(item -> item.getItemType().getId())
+                        .collect(Collectors.toSet());
+
+                for (UUID itemTypeId : itemTypeIds) {
+                    try {
+                        itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, "SYSTEM");
+                    } catch (Exception e) {
+                        System.err.println("⚠️ Failed to update base price for item type: " + e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to collect item types: " + e.getMessage());
+            }
+        }
     }
 }

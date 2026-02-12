@@ -2,7 +2,7 @@ package com.example.backend.models.finance.refunds;
 
 import com.example.backend.models.finance.balances.AccountType;
 import com.example.backend.models.merchant.Merchant;
-import com.example.backend.models.procurement.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

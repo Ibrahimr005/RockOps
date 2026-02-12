@@ -11,6 +11,7 @@ import com.example.backend.repositories.warehouse.ItemCategoryRepository;
 import com.example.backend.services.id.EntityIdGeneratorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -28,6 +29,8 @@ public class ProcurementTeamService {
 
     @Autowired
     private ItemCategoryRepository itemCategoryRepository;
+
+    @Transactional  // ADD THIS
     public Merchant addMerchant(Map<String, Object> merchantData) {
         try {
             System.out.println("Step 1: Extracting required fields...");
@@ -64,36 +67,16 @@ public class ProcurementTeamService {
 
             String notes = (String) merchantData.get("notes");
 
-            // CHANGED: Resolve multiple sites instead of single site
-            List<Site> sites = new ArrayList<>();
-            if (merchantData.containsKey("siteIds")) {
-                System.out.println("Step 2: Resolving sites...");
-                List<String> siteIds = (List<String>) merchantData.get("siteIds");
-                for (String siteId : siteIds) {
-                    siteRepository.findById(UUID.fromString(siteId)).ifPresent(sites::add);
-                }
-            }
-
-            // Resolve item categories
-            List<ItemCategory> categories = new ArrayList<>();
-            if (merchantData.containsKey("itemCategoryIds")) {
-                System.out.println("Step 3: Resolving item categories...");
-                String[] categoryIds = ((String) merchantData.get("itemCategoryIds")).split(",");
-                for (String id : categoryIds) {
-                    UUID uuid = UUID.fromString(id.trim());
-                    itemCategoryRepository.findById(uuid).ifPresent(categories::add);
-                }
-            }
-
-            // Build and save merchant
-            System.out.println("Step 4: Building and saving merchant...");
-
+            // Build and save merchant FIRST without sites/categories
+            System.out.println("Step 2: Building and saving merchant...");
 
             String merchantId = idGeneratorService.generateNextId(EntityTypeConfig.MERCHANT);
+            System.out.println("✅ Generated merchant ID: " + merchantId);
+
             Merchant merchant = Merchant.builder()
                     .merchantId(merchantId)
                     .name(name)
-                    .merchantTypes(merchantTypes)
+                    .merchantTypes(merchantTypes != null && !merchantTypes.isEmpty() ? merchantTypes : new ArrayList<>())
                     .contactEmail(contactEmail)
                     .contactPhone(contactPhone)
                     .contactSecondPhone(contactSecondPhone)
@@ -106,16 +89,50 @@ public class ProcurementTeamService {
                     .averageDeliveryTime(averageDeliveryTime)
                     .lastOrderDate(lastOrderDate)
                     .notes(notes)
-                    .sites(sites)  // CHANGED: from site to sites
-                    .itemCategories(categories)
+                    .sites(new ArrayList<>())  // Empty initially
+                    .itemCategories(new ArrayList<>())  // Empty initially
+                    .contacts(new ArrayList<>())
+                    .documents(new ArrayList<>())
                     .build();
 
+            System.out.println("🔵 Saving merchant...");
             Merchant saved = merchantRepository.save(merchant);
-            System.out.println("Merchant saved with ID: " + saved.getId());
-            return saved;
+            System.out.println("✅ Merchant saved with UUID: " + saved.getId());
+
+            // NOW add sites if provided
+            if (merchantData.containsKey("siteIds")) {
+                System.out.println("Step 3: Adding sites to merchant...");
+                List<String> siteIds = (List<String>) merchantData.get("siteIds");
+                for (String siteId : siteIds) {
+                    Site site = siteRepository.findById(UUID.fromString(siteId))
+                            .orElseThrow(() -> new RuntimeException("Site not found: " + siteId));
+                    saved.getSites().add(site);
+                }
+                System.out.println("✅ Added " + saved.getSites().size() + " sites");
+            }
+
+            // Add item categories if provided
+            if (merchantData.containsKey("itemCategoryIds")) {
+                System.out.println("Step 4: Adding item categories to merchant...");
+                String[] categoryIds = ((String) merchantData.get("itemCategoryIds")).split(",");
+                for (String id : categoryIds) {
+                    UUID uuid = UUID.fromString(id.trim());
+                    ItemCategory category = itemCategoryRepository.findById(uuid)
+                            .orElseThrow(() -> new RuntimeException("Category not found: " + id));
+                    saved.getItemCategories().add(category);
+                }
+                System.out.println("✅ Added " + saved.getItemCategories().size() + " categories");
+            }
+
+            // Save again with relationships
+            Merchant finalMerchant = merchantRepository.save(saved);
+            System.out.println("✅ Final save complete with all relationships");
+
+            return finalMerchant;
 
         } catch (Exception e) {
-            System.err.println("ERROR: " + e.getMessage());
+            System.err.println("❌ ERROR: " + e.getMessage());
+            System.err.println("❌ Error type: " + e.getClass().getName());
             e.printStackTrace();
             throw new RuntimeException("Failed to create merchant: " + e.getMessage(), e);
         }

@@ -193,6 +193,14 @@ public class EquipmentService {
         equipment.setRelatedDocuments(createDTO.getRelatedDocuments());
         equipment.setWorkedHours(createDTO.getWorkedHours());
 
+        // Set depreciation fields
+        equipment.setUsefulLifeYears(createDTO.getUsefulLifeYears());
+        equipment.setSalvageValue(createDTO.getSalvageValue());
+// Use purchased date as depreciation start date by default
+        equipment.setDepreciationStartDate(createDTO.getDepreciationStartDate() != null
+                ? createDTO.getDepreciationStartDate()
+                : createDTO.getPurchasedDate());
+
         // Set relationships
         if (createDTO.getSiteId() != null) {
             Site site = siteRepository.findById(createDTO.getSiteId())
@@ -363,6 +371,14 @@ public class EquipmentService {
         if (requestBody.get("workedHours") != null)
             createDTO.setWorkedHours(Integer.parseInt(requestBody.get("workedHours").toString()));
 
+
+        if (requestBody.get("usefulLifeYears") != null)
+            createDTO.setUsefulLifeYears(Integer.parseInt(requestBody.get("usefulLifeYears").toString()));
+        if (requestBody.get("salvageValue") != null)
+            createDTO.setSalvageValue(Double.parseDouble(requestBody.get("salvageValue").toString()));
+        if (requestBody.get("depreciationStartDate") != null && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
+            createDTO.setDepreciationStartDate(LocalDate.parse(requestBody.get("depreciationStartDate").toString()));
+
         // FIX: Parse relationships - handle both naming conventions
         if (requestBody.get("siteId") != null) {
             createDTO.setSiteId(UUID.fromString(requestBody.get("siteId").toString()));
@@ -455,6 +471,13 @@ public class EquipmentService {
             equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
         if (updateDTO.getWorkedHours() != null)
             equipment.setWorkedHours(updateDTO.getWorkedHours());
+
+        if (updateDTO.getUsefulLifeYears() != null)
+            equipment.setUsefulLifeYears(updateDTO.getUsefulLifeYears());
+        if (updateDTO.getSalvageValue() != null)
+            equipment.setSalvageValue(updateDTO.getSalvageValue());
+        if (updateDTO.getDepreciationStartDate() != null)
+            equipment.setDepreciationStartDate(updateDTO.getDepreciationStartDate());
 
         // Update relationships if provided
         if (updateDTO.getSiteId() != null) {
@@ -640,6 +663,14 @@ public class EquipmentService {
             updateDTO.setRelatedDocuments(requestBody.get("relatedDocuments").toString());
         if (requestBody.get("workedHours") != null && !requestBody.get("workedHours").toString().isEmpty())
             updateDTO.setWorkedHours(Integer.parseInt(requestBody.get("workedHours").toString()));
+
+
+        if (requestBody.get("usefulLifeYears") != null && !requestBody.get("usefulLifeYears").toString().isEmpty())
+            updateDTO.setUsefulLifeYears(Integer.parseInt(requestBody.get("usefulLifeYears").toString()));
+        if (requestBody.get("salvageValue") != null && !requestBody.get("salvageValue").toString().isEmpty())
+            updateDTO.setSalvageValue(Double.parseDouble(requestBody.get("salvageValue").toString()));
+        if (requestBody.get("depreciationStartDate") != null && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
+            updateDTO.setDepreciationStartDate(LocalDate.parse(requestBody.get("depreciationStartDate").toString()));
 
         // FIX: Parse relationships - handle both naming conventions
         if (requestBody.get("siteId") != null && !requestBody.get("siteId").toString().isEmpty()

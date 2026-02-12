@@ -6,7 +6,7 @@ import com.example.backend.models.finance.loans.LoanInstallment;
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.example.backend.models.maintenance.MaintenanceStep;
 import com.example.backend.models.merchant.Merchant;
-import com.example.backend.models.procurement.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

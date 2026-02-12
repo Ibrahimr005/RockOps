@@ -397,6 +397,7 @@ const MerchantModal = ({
                                         min="0"
                                         max="5"
                                         step="0.1"
+                                        onWheel={(e) => e.target.blur()}  // ADD THIS LINE
                                     />
                                 </div>
 
@@ -410,6 +411,7 @@ const MerchantModal = ({
                                         placeholder="Enter average delivery days"
                                         min="0"
                                         step="0.1"
+                                        onWheel={(e) => e.target.blur()}  // ADD THIS LINE
                                     />
                                 </div>
 

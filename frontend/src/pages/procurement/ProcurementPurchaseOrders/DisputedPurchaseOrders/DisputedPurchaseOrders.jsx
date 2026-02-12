@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiAlertCircle, FiCheckCircle, FiX } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle, FiX, FiClock } from 'react-icons/fi';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
-import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal.jsx';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 import "./DisputedPurchaseOrders.scss";
 
@@ -105,10 +104,9 @@ const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCha
             accessor: 'poNumber',
             sortable: true,
             filterable: true,
-            minWidth: '150px',
+            minWidth: '130px',
             render: (row) => (
                 <span className="po-number-cell">
-
                     {row.poNumber || '-'}
                 </span>
             )
@@ -119,7 +117,7 @@ const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCha
             accessor: 'requestOrder.title',
             sortable: true,
             filterable: true,
-            minWidth: '250px',
+            minWidth: '220px',
             render: (row) => row.requestOrder?.title || '-'
         },
         {
@@ -128,7 +126,7 @@ const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCha
             accessor: 'requestOrder.requesterName',
             sortable: true,
             filterable: true,
-            minWidth: '200px',
+            minWidth: '160px',
             render: (row) => row.requestOrder?.requesterName || '-'
         },
         {
@@ -136,15 +134,47 @@ const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCha
             header: 'TOTAL AMOUNT',
             accessor: 'totalAmount',
             sortable: true,
-            minWidth: '150px',
+            minWidth: '140px',
             render: (row) => `${row.currency || 'EGP'} ${parseFloat(row.totalAmount || 0).toFixed(2)}`
+        },
+        {
+            id: 'deadline',
+            header: 'DEADLINE',
+            accessor: 'requestOrder.deadline',
+            sortable: true,
+            minWidth: '140px',
+            render: (row) => {
+                const deadline = row.requestOrder?.deadline;
+                const formattedDate = purchaseOrderService.utils.formatDate(deadline);
+                const isOverdue = deadline && new Date(deadline) < new Date();
+
+                return (
+                    <span style={{
+                        color: isOverdue ? '#dc3545' : 'inherit',
+                        fontWeight: isOverdue ? '600' : 'normal',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}>
+                        {isOverdue && (
+                            <FiClock
+                                style={{
+                                    fontSize: '16px',
+                                    color: '#dc3545'
+                                }}
+                            />
+                        )}
+                        {formattedDate}
+                    </span>
+                );
+            }
         },
         {
             id: 'daysDisputed',
             header: 'DAYS DISPUTED',
             accessor: 'updatedAt',
             sortable: true,
-            minWidth: '150px',
+            minWidth: '130px',
             render: (row) => {
                 const days = getDaysDisputed(row.updatedAt);
                 if (days === null) return '-';
@@ -158,7 +188,7 @@ const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCha
             header: 'DISPUTED AT',
             accessor: 'updatedAt',
             sortable: true,
-            minWidth: '150px',
+            minWidth: '130px',
             render: (row) => purchaseOrderService.utils.formatDate(row.updatedAt)
         }
     ];
@@ -198,6 +228,11 @@ const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCha
             header: 'Total Amount',
             accessor: 'totalAmount',
             filterType: 'range'
+        },
+        {
+            header: 'Deadline',
+            accessor: 'requestOrder.deadline',
+            filterType: 'date'
         }
     ];
 
@@ -224,12 +259,7 @@ const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCha
                 />
             </div>
 
-            {/* Purchase Order View Modal */}
-            <PurchaseOrderViewModal
-                purchaseOrder={selectedPurchaseOrder}
-                isOpen={showViewModal}
-                onClose={handleCloseModal}
-            />
+
 
             {/* Cancel Confirmation Dialog */}
             <ConfirmationDialog

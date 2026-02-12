@@ -1,0 +1,79 @@
+// ProcurementLogistics.scss
+
+.procurement-logistics-page {
+  background-color: var(--main-background-color);
+  min-height: 100vh;
+
+  .logistics-content {
+    margin-top: 24px;
+
+    overflow: hidden;
+  }
+
+  .logistics-table {
+    .logistics-number {
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+      font-family: 'Courier New', monospace;
+    }
+
+    .logistics-cost {
+      font-weight: var(--bold-font-weight);
+      color: var(--color-success);
+    }
+
+
+
+    .logistics-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: var(--bold-font-weight);
+      text-transform: capitalize;
+      transition: all var(--transition-fast);
+
+      &.status-pending_approval {
+        background-color: rgba(var(--color-warning-rgb), 0.15);
+        color: var(--color-warning);
+        border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+      }
+
+      &.status-approved {
+        background-color: rgba(76, 175, 80, 0.15);
+        color: var(--color-success);
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+
+      &.status-rejected {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: var(--color-danger);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+
+      &.status-paid {
+        background-color: rgba(33, 150, 243, 0.15);
+        color: var(--color-info);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+      }
+    }
+
+    .logistics-date {
+      color: var(--color-text-secondary);
+      font-size: 14px;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .procurement-logistics-page {
+    padding: 16px;
+
+    .logistics-content {
+      margin-top: 16px;
+    }
+  }
+}

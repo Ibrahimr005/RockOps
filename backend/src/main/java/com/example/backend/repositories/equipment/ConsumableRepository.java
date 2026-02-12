@@ -85,4 +85,7 @@ public interface ConsumableRepository extends JpaRepository<Consumable, UUID> {
            "AND ti.itemType.id = (SELECT c.itemType.id FROM Consumable c WHERE c.id = :consumableId)) " +
            "ORDER BY t.createdAt DESC NULLS LAST")
     List<Transaction> findTransactionHistoryForConsumable(@Param("consumableId") UUID consumableId);
+
+    @Query("SELECT COALESCE(SUM(c.totalValue), 0.0) FROM Consumable c WHERE c.equipment.id = :equipmentId AND c.status = :status")
+    Double calculateTotalValueByEquipmentAndStatus(@Param("equipmentId") UUID equipmentId, @Param("status") ItemStatus status);
 }

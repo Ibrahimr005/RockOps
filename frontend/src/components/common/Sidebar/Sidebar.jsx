@@ -484,7 +484,7 @@ const Sidebar = () => {
                 //     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 // },
                 {
-                    title: 'Inventory Valuation',
+                    title: 'Sites Valuation',
                     icon: <FaBuilding/>,
                     path: '/finance/inventory-valuation',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
@@ -550,6 +550,12 @@ const Sidebar = () => {
                     title: 'Price Approvals',
                     icon: <FaMoneyCheckAlt />,
                     path: '/procurement/price-approvals',
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
+                },
+                {
+                    title: 'Logistics',
+                    icon: <FaMoneyCheckAlt />,
+                    path: '/procurement/logistics',
                     roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 }
             ]
