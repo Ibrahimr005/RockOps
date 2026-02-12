@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiTruck, FiPackage, FiDollarSign, FiUser, FiPhone, FiFileText } from 'react-icons/fi';
+import { FiTruck, FiPackage, FiDollarSign, FiUser, FiPhone, FiFileText, FiCheckCircle } from 'react-icons/fi';
 import { logisticsService } from '../../../../../services/procurement/logisticsService';
 import './LogisticsTab.scss';
 
@@ -17,6 +17,7 @@ const LogisticsTab = ({ purchaseOrder, onError }) => {
         setIsLoading(true);
         try {
             const logisticsData = await logisticsService.getByPurchaseOrder(purchaseOrder.id);
+            console.log('📦 FULL LOGISTICS RESPONSE:', JSON.stringify(logisticsData, null, 2));
             setLogistics(logisticsData);
         } catch (error) {
             console.error('Error fetching logistics:', error);
@@ -96,6 +97,25 @@ const LogisticsTab = ({ purchaseOrder, onError }) => {
 
 // Simplified Logistics Card Component (read-only)
 const LogisticsCard = ({ logistics }) => {
+    const getStatusDisplay = (status) => {
+        const displayMap = {
+            'PENDING_APPROVAL': 'Pending Approval',
+            'PENDING_PAYMENT': 'Pending Payment',
+            'COMPLETED': 'Completed'
+        };
+        return displayMap[status] || status;
+    };
+
+    const getPaymentStatusDisplay = (paymentStatus) => {
+        const displayMap = {
+            'PENDING': 'Pending',
+            'APPROVED': 'Approved',
+            'PAID': 'Paid',
+            'REJECTED': 'Rejected'
+        };
+        return displayMap[paymentStatus] || paymentStatus;
+    };
+
     return (
         <div className="logistics-card standalone">
             <div className="logistics-card-header">
@@ -118,30 +138,62 @@ const LogisticsCard = ({ logistics }) => {
             </div>
 
             <div className="logistics-card-body">
-                <div className="logistics-detail">
-                    <FiTruck />
-                    <span className="detail-label">Carrier:</span>
-                    <span className="detail-value">{logistics.carrierCompany}</span>
-                </div>
-
-                <div className="logistics-detail">
-                    <FiUser />
-                    <span className="detail-label">Driver:</span>
-                    <span className="detail-value">{logistics.driverName}</span>
-                </div>
-
-                {logistics.driverPhone && (
+                <div className="logistics-details-container">
                     <div className="logistics-detail">
-                        <FiPhone />
-                        <span className="detail-label">Phone:</span>
-                        <span className="detail-value">{logistics.driverPhone}</span>
+                        <FiTruck />
+                        <div className="detail-content">
+                            <span className="detail-label">Carrier</span>
+                            <span className="detail-value">{logistics.carrierCompany}</span>
+                        </div>
                     </div>
-                )}
+
+                    <div className="logistics-detail">
+                        <FiUser />
+                        <div className="detail-content">
+                            <span className="detail-label">Driver</span>
+                            <span className="detail-value">{logistics.driverName}</span>
+                        </div>
+                    </div>
+
+                    {logistics.driverPhone && (
+                        <div className="logistics-detail">
+                            <FiPhone />
+                            <div className="detail-content">
+                                <span className="detail-label">Phone</span>
+                                <span className="detail-value">{logistics.driverPhone}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {logistics.status && (
+                        <div className="logistics-detail">
+                            <FiCheckCircle />
+                            <div className="detail-content">
+                                <span className="detail-label">Status</span>
+                                <span className={`detail-value detail-value--status-${logistics.status?.toLowerCase()}`}>
+                                    {getStatusDisplay(logistics.status).toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {logistics.paymentStatus && (
+                        <div className="logistics-detail">
+                            <FiDollarSign />
+                            <div className="detail-content">
+                                <span className="detail-label">Payment Status</span>
+                                <span className={`detail-value detail-value--payment-${logistics.paymentStatus?.toLowerCase()}`}>
+                                    {getPaymentStatusDisplay(logistics.paymentStatus).toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {logistics.notes && (
                     <div className="logistics-detail notes">
                         <FiFileText />
-                        <span className="detail-label">Notes:</span>
+                        <span className="detail-label">Notes</span>
                         <span className="detail-value">{logistics.notes}</span>
                     </div>
                 )}
@@ -154,17 +206,17 @@ const LogisticsCard = ({ logistics }) => {
                             {logistics.items.map(item => (
                                 <div key={item.purchaseOrderItemId} className="item-tag">
                                     <div className="item-tag-main">
-                                        <FiPackage size={12} />
+                                        <FiPackage size={14} />
                                         <span className="item-tag-name">{item.itemTypeName}</span>
                                     </div>
                                     <div className="item-tag-details">
-                        <span className="item-qty">
-                            {item.quantity} {item.measuringUnit}
-                        </span>
+                                        <span className="item-qty">
+                                            {item.quantity} {item.measuringUnit}
+                                        </span>
                                         <span className="item-separator">•</span>
                                         <span className="item-price">
-                            {logistics.currency} {parseFloat(item.unitPrice).toFixed(2)}/unit
-                        </span>
+                                            {logistics.currency} {parseFloat(item.unitPrice).toFixed(2)}/unit
+                                        </span>
                                     </div>
                                 </div>
                             ))}

@@ -76,16 +76,7 @@ public class LogisticsController {
         }
     }
 
-    @GetMapping("/history")
-    public ResponseEntity<?> getHistoryLogistics() {
-        try {
-            List<LogisticsListDTO> response = logisticsService.getHistoryLogistics();
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
+
 
     @GetMapping("/purchase-order/{purchaseOrderId}")
     public ResponseEntity<?> getLogisticsByPurchaseOrder(@PathVariable UUID purchaseOrderId) {
@@ -112,43 +103,10 @@ public class LogisticsController {
         }
     }
 
-    // Webhook/callback endpoints for payment request status changes
-    @PostMapping("/payment-approved/{paymentRequestId}")
-    public ResponseEntity<?> handlePaymentApproval(@PathVariable UUID paymentRequestId) {
-        try {
-            logisticsService.handlePaymentRequestApproval(paymentRequestId);
-            return ResponseEntity.ok(Map.of("message", "Logistics status updated to APPROVED"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
 
-    @PostMapping("/payment-rejected/{paymentRequestId}")
-    public ResponseEntity<?> handlePaymentRejection(
-            @PathVariable UUID paymentRequestId,
-            @RequestBody Map<String, String> request) {
-        try {
-            String rejectionReason = request.get("rejectionReason");
-            String rejectedBy = request.get("rejectedBy");
-            logisticsService.handlePaymentRequestRejection(paymentRequestId, rejectionReason, rejectedBy);
-            return ResponseEntity.ok(Map.of("message", "Logistics status updated to REJECTED"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
 
-    @PostMapping("/payment-completed/{paymentRequestId}")
-    public ResponseEntity<?> handlePaymentCompletion(@PathVariable UUID paymentRequestId) {
-        try {
-            logisticsService.handlePaymentCompletion(paymentRequestId);
-            return ResponseEntity.ok(Map.of("message", "Logistics status updated to PAID"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
+
+
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateLogistics(
@@ -175,5 +133,17 @@ public class LogisticsController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @GetMapping("/pending-payment")
+    public ResponseEntity<List<LogisticsListDTO>> getPendingPaymentLogistics() {
+        List<LogisticsListDTO> logistics = logisticsService.getPendingPaymentLogistics();
+        return ResponseEntity.ok(logistics);
+    }
+
+    @GetMapping("/completed")
+    public ResponseEntity<List<LogisticsListDTO>> getCompletedLogistics() {
+        List<LogisticsListDTO> logistics = logisticsService.getCompletedLogistics();
+        return ResponseEntity.ok(logistics);
     }
 }

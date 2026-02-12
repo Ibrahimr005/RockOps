@@ -200,18 +200,25 @@ public class LogisticsService {
                 .collect(Collectors.toList());
     }
 
+
+
     @Transactional(readOnly = true)
-    public List<LogisticsListDTO> getHistoryLogistics() {
-        List<LogisticsStatus> historyStatuses = List.of(
-                LogisticsStatus.APPROVED,
-                LogisticsStatus.REJECTED,
-                LogisticsStatus.PAID
-        );
-        List<Logistics> logistics = logisticsRepository.findByStatusIn(historyStatuses);
+    public List<LogisticsListDTO> getPendingPaymentLogistics() {
+        List<Logistics> logistics = logisticsRepository.findByStatus(LogisticsStatus.PENDING_PAYMENT);
         return logistics.stream()
                 .map(this::convertToListDTO)
                 .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public List<LogisticsListDTO> getCompletedLogistics() {
+        List<Logistics> logistics = logisticsRepository.findByStatus(LogisticsStatus.COMPLETED);
+        return logistics.stream()
+                .map(this::convertToListDTO)
+                .collect(Collectors.toList());
+    }
+
+// ❌ DELETE getHistoryLogistics() - replaced by getCompletedLogistics()
 
     @Transactional(readOnly = true)
     public List<POLogisticsDTO> getLogisticsByPurchaseOrder(UUID purchaseOrderId) {
@@ -233,47 +240,33 @@ public class LogisticsService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    @Transactional
-    public void handlePaymentRequestApproval(UUID paymentRequestId) {
-        Logistics logistics = logisticsRepository.findByPaymentRequestId(paymentRequestId)
-                .orElseThrow(() -> new RuntimeException("Logistics not found for payment request"));
 
-        PaymentRequest paymentRequest = paymentRequestRepository.findById(paymentRequestId)
-                .orElseThrow(() -> new RuntimeException("Payment request not found"));
 
-        logistics.setStatus(LogisticsStatus.APPROVED);
-        logistics.setApprovedAt(LocalDateTime.now());
-        logistics.setApprovedBy(paymentRequest.getApprovedByUserName());
 
-        logisticsRepository.save(logistics);
-    }
 
-    @Transactional
-    public void handlePaymentRequestRejection(UUID paymentRequestId, String rejectionReason, String rejectedBy) {
-        Logistics logistics = logisticsRepository.findByPaymentRequestId(paymentRequestId)
-                .orElseThrow(() -> new RuntimeException("Logistics not found for payment request"));
 
-        logistics.setStatus(LogisticsStatus.REJECTED);
-        logistics.setRejectedAt(LocalDateTime.now());
-        logistics.setRejectedBy(rejectedBy);
-        logistics.setRejectionReason(rejectionReason);
 
-        logisticsRepository.save(logistics);
-    }
 
-    @Transactional
-    public void handlePaymentCompletion(UUID paymentRequestId) {
-        Logistics logistics = logisticsRepository.findByPaymentRequestId(paymentRequestId)
-                .orElseThrow(() -> new RuntimeException("Logistics not found for payment request"));
 
-        logistics.setStatus(LogisticsStatus.PAID);
-        logisticsRepository.save(logistics);
-    }
 
     private String generateLogisticsNumber() {
-        String prefix = "LOG-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM")) + "-";
-        long count = logisticsRepository.countByLogisticsNumberStartingWith(prefix);
-        return prefix + String.format("%04d", count + 1);
+        String yearMonth = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
+        String logisticsNumber;
+        int maxRetries = 10;
+        int attempt = 0;
+
+        do {
+            // Generate random 4-digit number
+            int randomNumber = (int) (Math.random() * 10000);
+            logisticsNumber = String.format("LOG-%s-%04d", yearMonth, randomNumber);
+            attempt++;
+
+            if (attempt >= maxRetries) {
+                throw new RuntimeException("Failed to generate unique logistics number after " + maxRetries + " attempts");
+            }
+        } while (logisticsRepository.existsByLogisticsNumber(logisticsNumber));
+
+        return logisticsNumber;
     }
 
     private String generatePaymentRequestNumber() {
@@ -293,9 +286,11 @@ public class LogisticsService {
                                         .itemTypeName(item.getItemTypeName())
                                         .itemCategoryName(poItem.getItemType().getItemCategory().getName())
                                         .quantity(item.getQuantity())
-                                        .measuringUnit(poItem.getItemType().getMeasuringUnit())
+                                        .measuringUnit(poItem.getItemType().getMeasuringUnit() != null ?
+                                                poItem.getItemType().getMeasuringUnit().getName() : null)
                                         .unitPrice(item.getUnitPrice())
                                         .totalValue(item.getTotalValue())
+
                                         .build();
                             })
                             .collect(Collectors.toList());
@@ -323,6 +318,7 @@ public class LogisticsService {
                 .driverPhone(logistics.getDriverPhone())
                 .notes(logistics.getNotes())
                 .status(logistics.getStatus())
+                .paymentStatus(logistics.getPaymentStatus())  // ✅ ADD THIS
                 .paymentRequestId(logistics.getPaymentRequestId())
                 .paymentRequestNumber(logistics.getPaymentRequest() != null ?
                         logistics.getPaymentRequest().getRequestNumber() : null)
@@ -351,6 +347,7 @@ public class LogisticsService {
                 .totalCost(logistics.getTotalCost())
                 .currency(logistics.getCurrency())
                 .status(logistics.getStatus())
+                .paymentStatus(logistics.getPaymentStatus())  // ✅ ADD THIS
                 .paymentRequestId(logistics.getPaymentRequestId())
                 .paymentRequestNumber(logistics.getPaymentRequest() != null ?
                         logistics.getPaymentRequest().getRequestNumber() : null)
@@ -358,10 +355,15 @@ public class LogisticsService {
                 .createdBy(logistics.getCreatedBy())
                 .createdAt(logistics.getCreatedAt())
                 .approvedAt(logistics.getApprovedAt())
-                .approvedBy(logistics.getApprovedBy())  // ADD THIS
+                .approvedBy(logistics.getApprovedBy())
                 .rejectedAt(logistics.getRejectedAt())
-                .rejectedBy(logistics.getRejectedBy())  // ADD THIS
+                .rejectedBy(logistics.getRejectedBy())
                 .build();
+    }
+
+    @Transactional
+    public Logistics save(Logistics logistics) {
+        return logisticsRepository.save(logistics);
     }
 
     private POLogisticsDTO convertToPOLogisticsDTO(LogisticsPurchaseOrder lpo) {
@@ -373,7 +375,8 @@ public class LogisticsService {
                             .itemTypeName(item.getItemTypeName())
                             .itemCategoryName(poItem.getItemType().getItemCategory().getName())
                             .quantity(item.getQuantity())
-                            .measuringUnit(poItem.getItemType().getMeasuringUnit())
+                            .measuringUnit(poItem.getItemType().getMeasuringUnit() != null ?
+                                    poItem.getItemType().getMeasuringUnit().getName() : null)
                             .unitPrice(item.getUnitPrice())
                             .totalValue(item.getTotalValue())
                             .build();
@@ -393,6 +396,7 @@ public class LogisticsService {
                 .currency(logistics.getCurrency())
                 .totalLogisticsCost(logistics.getTotalCost())
                 .status(logistics.getStatus())
+                .paymentStatus(logistics.getPaymentStatus())  // ✅ ADD THIS
                 .paymentRequestId(logistics.getPaymentRequestId())
                 .items(items)
                 .notes(logistics.getNotes())

@@ -19,7 +19,8 @@ public class OfferRequestItemMapper {
                 .offerId(entity.getOffer() != null ? entity.getOffer().getId() : null)
                 .itemTypeId(entity.getItemType() != null ? entity.getItemType().getId() : null)
                 .itemTypeName(entity.getItemType() != null ? entity.getItemType().getName() : null)
-                .itemTypeMeasuringUnit(entity.getItemType() != null ? entity.getItemType().getMeasuringUnit() : null)
+                .itemTypeMeasuringUnit(entity.getItemType() != null && entity.getItemType().getMeasuringUnit() != null ?
+                        entity.getItemType().getMeasuringUnit().getName() : null)
                 .quantity(entity.getQuantity())
                 .comment(entity.getComment())
                 .originalRequestOrderItemId(entity.getOriginalRequestOrderItemId())

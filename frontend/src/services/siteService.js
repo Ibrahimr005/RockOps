@@ -67,6 +67,14 @@ export const siteService = {
             throw error;
         }
     },
+    getSiteEquipmentDTO: async (siteId) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.EQUIPMENT_DTO(siteId));
+        } catch (error) {
+            console.error(`Error fetching equipment DTO for site ${siteId}:`, error);
+            throw error;
+        }
+    },
 
     getSiteWarehouses: async (siteId) => {
         try {

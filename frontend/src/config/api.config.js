@@ -498,6 +498,7 @@ export const SITE_ENDPOINTS = {
     UNASSIGNED_PARTNERS: (siteId) => `/api/v1/site/${siteId}/unassigned-partners`,
     EMPLOYEES: (siteId) => `/api/v1/site/${siteId}/employees`,
     EQUIPMENT: (siteId) => `/api/v1/site/${siteId}/equipment`,
+    EQUIPMENT_DTO: (siteId) => `/api/v1/site/${siteId}/equipments-dto`,
     UNASSIGNED_EQUIPMENT: `/api/v1/site/unassigned-equipment`,
     WAREHOUSES: (siteId) => `/api/v1/site/${siteId}/warehouses`,
     MERCHANTS: (siteId) => `/api/v1/site/${siteId}/merchants`,
@@ -815,6 +816,15 @@ export const ITEM_TYPE_ENDPOINTS = {
     ALL_TYPES: '/api/v1/item-types'
 };
 
+export const MEASURING_UNIT_ENDPOINTS = {
+    BASE: '/api/v1/measuring-units',
+    BY_ID: (id) => `/api/v1/measuring-units/${id}`,
+    CREATE: '/api/v1/measuring-units',
+    UPDATE: (id) => `/api/v1/measuring-units/${id}`,
+    DELETE: (id) => `/api/v1/measuring-units/${id}`,
+    ACTIVE: '/api/v1/measuring-units/active'
+};
+
 // Warehouse module endpoints
 export const WAREHOUSE_ENDPOINTS = {
     BASE: '/api/v1/warehouses',
@@ -1082,13 +1092,11 @@ export const LOGISTICS_ENDPOINTS = {
     GET_ALL: '/api/procurement/logistics',
     GET_BY_ID: (id) => `/api/procurement/logistics/${id}`,
     PENDING_APPROVAL: '/api/procurement/logistics/pending-approval',
-    HISTORY: '/api/procurement/logistics/history',
+    PENDING_PAYMENT: '/api/procurement/logistics/pending-payment',  // ✅ ADD THIS
+    COMPLETED: '/api/procurement/logistics/completed',  // ✅ ADD THIS
     BY_PURCHASE_ORDER: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}`,
     TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total-cost`,
     CREATE: '/api/procurement/logistics',
-    UPDATE: (id) => `/api/procurement/logistics/${id}`,  // ← ADD THIS
-    DELETE: (id) => `/api/procurement/logistics/${id}`,  // ← ADD THIS
-    PAYMENT_APPROVED: (paymentRequestId) => `/api/procurement/logistics/payment-approved/${paymentRequestId}`,
-    PAYMENT_REJECTED: (paymentRequestId) => `/api/procurement/logistics/payment-rejected/${paymentRequestId}`,
-    PAYMENT_COMPLETED: (paymentRequestId) => `/api/procurement/logistics/payment-completed/${paymentRequestId}`
+    UPDATE: (id) => `/api/procurement/logistics/${id}`,
+    DELETE: (id) => `/api/procurement/logistics/${id}`,
 };

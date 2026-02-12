@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi';
 import DataTable from '../../../../components/common/DataTable/DataTable';
-import Snackbar from '../../../../components/common/Snackbar2/Snackbar2';
+import Snackbar from '../../../../components/common/Snackbar/Snackbar';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import CreateLogisticsModal from '../CreateLogisticsModal/CreateLogisticsModal';
 import { logisticsService } from '../../../../services/procurement/logisticsService';
@@ -217,16 +217,8 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
             )
         },
         {
-            id: 'createdBy',
-            header: 'CREATED BY',
-            accessor: 'createdBy',
-            sortable: true,
-            filterable: true,
-            minWidth: '150px'
-        },
-        {
             id: 'createdAt',
-            header: 'DATE',
+            header: 'CREATED AT',
             accessor: 'createdAt',
             sortable: true,
             minWidth: '150px',
@@ -235,6 +227,14 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
                     {new Date(row.createdAt).toLocaleDateString('en-GB')}
                 </span>
             )
+        },
+        {
+            id: 'createdBy',
+            header: 'CREATED BY',
+            accessor: 'createdBy',
+            sortable: true,
+            filterable: true,
+            minWidth: '150px'
         }
     ];
 
@@ -338,8 +338,8 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
 
             <Snackbar
                 type={notificationType}
-                text={notificationMessage}
-                isVisible={showNotification}
+                message={notificationMessage}
+                show={showNotification}
                 onClose={() => setShowNotification(false)}
                 duration={3000}
             />

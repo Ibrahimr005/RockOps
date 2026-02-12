@@ -1,5 +1,6 @@
 package com.example.backend.dto.procurement.Logistics;
 
+import com.example.backend.models.procurement.Logistics.LogisticsPaymentStatus;
 import com.example.backend.models.procurement.Logistics.LogisticsStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,4 +34,6 @@ public class LogisticsListDTO {
     private String approvedBy;      // ADD THIS
     private LocalDateTime rejectedAt;
     private String rejectedBy;      // ADD THIS
+
+    private LogisticsPaymentStatus paymentStatus;
 }

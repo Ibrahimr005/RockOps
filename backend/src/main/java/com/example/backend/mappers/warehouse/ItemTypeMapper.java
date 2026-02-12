@@ -17,7 +17,9 @@ public class ItemTypeMapper {
                 .id(itemType.getId())
                 .name(itemType.getName())
                 .comment(itemType.getComment())
-                .measuringUnit(itemType.getMeasuringUnit())
+                .measuringUnit(itemType.getMeasuringUnit() != null ?
+                        itemType.getMeasuringUnit().getName() : null)
+
                 .status(itemType.getStatus())
                 .minQuantity(itemType.getMinQuantity())
                 .serialNumber(itemType.getSerialNumber())

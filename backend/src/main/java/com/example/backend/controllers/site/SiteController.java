@@ -1,5 +1,6 @@
 package com.example.backend.controllers.site;
 
+import com.example.backend.dto.equipment.EquipmentDTO;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.finance.fixedAssets.FixedAssets;
 import com.example.backend.models.hr.Employee;
@@ -173,6 +174,12 @@ public class SiteController
     public ResponseEntity<?> getUnassignedEquipment() {
         List<Equipment> unassignedEquipment = siteService.getUnassignedEquipment();
         return ResponseEntity.ok(unassignedEquipment != null ? unassignedEquipment : Collections.emptyList());
+    }
+
+    @GetMapping("/{id}/equipments-dto")
+    public ResponseEntity<List<EquipmentDTO>> getSiteEquipmentsDTO(@PathVariable UUID id) {
+        List<EquipmentDTO> equipments = siteService.getSiteEquipmentsDTO(id);
+        return ResponseEntity.ok(equipments);
     }
 
 }

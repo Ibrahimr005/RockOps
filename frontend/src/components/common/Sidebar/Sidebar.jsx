@@ -49,7 +49,7 @@ import {
     FaAddressBook,
     FaDatabase,
     FaUserClock,
-    FaMoneyCheckAlt
+    FaMoneyCheckAlt,FaRulerCombined
 } from 'react-icons/fa';
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE } from '../../../utils/roles';
@@ -339,6 +339,12 @@ const Sidebar = () => {
                     icon: <FaTags/>,
                     path: '/warehouses/item-types',
                     roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                },
+                {
+                    title: 'Measuring Units',
+                    icon: <FaRulerCombined/>,
+                    path: '/warehouses/measuring-units',
+                    roles: ['ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE']
                 }
             ]
         },

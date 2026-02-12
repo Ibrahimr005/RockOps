@@ -1,5 +1,6 @@
 package com.example.backend.dto.procurement.Logistics;
 
+import com.example.backend.models.procurement.Logistics.LogisticsPaymentStatus;
 import com.example.backend.models.procurement.Logistics.LogisticsStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,6 +34,8 @@ public class LogisticsResponseDTO {
     private String driverName;
     private String driverPhone;
     private String notes;
+
+    private LogisticsPaymentStatus paymentStatus;
 
     // Status info
     private LogisticsStatus status;

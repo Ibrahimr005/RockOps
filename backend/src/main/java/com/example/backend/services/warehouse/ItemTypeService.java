@@ -16,6 +16,7 @@ import com.example.backend.repositories.procurement.PurchaseOrderRepository;
 import com.example.backend.repositories.warehouse.ItemCategoryRepository;
 import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
+import com.example.backend.repositories.warehouse.MeasuringUnitRepository;
 import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,9 @@ public class ItemTypeService {
     @Autowired
     private PurchaseOrderRepository purchaseOrderRepository;
 
+    @Autowired
+    private MeasuringUnitRepository measuringUnitRepository;
+
     public ItemType addItemType(Map<String, Object> requestBody) {
         ItemType itemType = new ItemType();
 
@@ -56,9 +60,23 @@ public class ItemTypeService {
         if (requestBody.containsKey("comment")) {
             itemType.setComment((String) requestBody.get("comment"));
         }
+
         if (requestBody.containsKey("measuringUnit")) {
-            itemType.setMeasuringUnit((String) requestBody.get("measuringUnit"));
+            String unitName = (String) requestBody.get("measuringUnit");
+            MeasuringUnit unit = measuringUnitRepository.findByName(unitName)
+                    .orElseGet(() -> {
+                        // Auto-create if doesn't exist (backward compatibility)
+                        MeasuringUnit newUnit = MeasuringUnit.builder()
+                                .name(unitName)
+                                .displayName(unitName)
+                                .abbreviation(unitName)
+                                .isActive(true)
+                                .build();
+                        return measuringUnitRepository.save(newUnit);
+                    });
+            itemType.setMeasuringUnit(unit);
         }
+
         if (requestBody.containsKey("status")) {
             itemType.setStatus((String) requestBody.get("status"));
         }
@@ -143,8 +161,21 @@ public class ItemTypeService {
         if (requestBody.containsKey("name")) {
             existingItemType.setName((String) requestBody.get("name"));
         }
+
         if (requestBody.containsKey("measuringUnit")) {
-            existingItemType.setMeasuringUnit((String) requestBody.get("measuringUnit"));
+            String unitName = (String) requestBody.get("measuringUnit");
+            MeasuringUnit unit = measuringUnitRepository.findByName(unitName)
+                    .orElseGet(() -> {
+                        // Auto-create if doesn't exist (backward compatibility)
+                        MeasuringUnit newUnit = MeasuringUnit.builder()
+                                .name(unitName)
+                                .displayName(unitName)
+                                .abbreviation(unitName)
+                                .isActive(true)
+                                .build();
+                        return measuringUnitRepository.save(newUnit);
+                    });
+            existingItemType.setMeasuringUnit(unit);
         }
         if (requestBody.containsKey("status")) {
             existingItemType.setStatus((String) requestBody.get("status"));
@@ -373,7 +404,7 @@ public class ItemTypeService {
                 .categoryName(itemType.getItemCategory() != null ? itemType.getItemCategory().getName() : null)
                 .parentCategoryName(itemType.getItemCategory() != null && itemType.getItemCategory().getParentCategory() != null
                         ? itemType.getItemCategory().getParentCategory().getName() : null)
-                .measuringUnit(itemType.getMeasuringUnit())
+                .measuringUnit(itemType.getMeasuringUnitName())
                 .basePrice(itemType.getBasePrice())
                 .minQuantity(itemType.getMinQuantity())
                 .serialNumber(itemType.getSerialNumber())
