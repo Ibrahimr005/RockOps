@@ -130,6 +130,7 @@ import {
     MAINTENANCE_EMPLOYEE,
     ROLES
 } from './utils/roles';
+import ProcessPaymentPage from "./pages/finance/AccountsPayable/Payments/ProcessPaymentPage.jsx";
 
 
 const AuthRedirect = () => {
@@ -297,6 +298,7 @@ function App() {
                                         <Route path="/finance/balances" element={<RoleRoute allowedRoles={allRoles}><Balances/></RoleRoute>} />
                                         <Route path="/finance/accounts-payable" element={<RoleRoute allowedRoles={allRoles}><AccountsPayable/></RoleRoute>} />
                                         <Route path="/finance/accounts-payable/payment-requests/:id" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><PaymentRequestDetailsPage/></RoleRoute>} />
+                                        <Route path="/finance/accounts-payable/process-payment" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><ProcessPaymentPage/></RoleRoute>}/>
 
                                         <Route path="/finance/company-loans" element={<CompanyLoansPage />} />
                                         <Route path="/finance/company-loans/new" element={<CreateLoanPage />} />

@@ -122,7 +122,7 @@ const PaymentRequestsList = () => {
             }
         },
         {
-            header: 'Merchant',
+            header: 'Recipient',
             accessor: 'merchantName',
             sortable: true,
             render: (row) => {

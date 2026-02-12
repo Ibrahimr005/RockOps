@@ -107,6 +107,8 @@ public class CashWithPersonService {
         CashWithPerson cashWithPerson = cashWithPersonRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Cash with person not found with ID: " + id));
         cashWithPerson.setCurrentBalance(newBalance);
+        cashWithPerson.setAvailableBalance(newBalance);   // ← ADD THIS LINE
+        cashWithPerson.setTotalBalance(newBalance);
         cashWithPersonRepository.save(cashWithPerson);
     }
 

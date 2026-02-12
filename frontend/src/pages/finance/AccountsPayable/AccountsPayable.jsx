@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {FiDollarSign, FiFileText, FiCreditCard, FiGrid, FiRefreshCw} from 'react-icons/fi';
-import IntroCard from '../../../components/common/IntroCard/IntroCard';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
+import Tabs from '../../../components/common/Tabs/Tabs';
 import Dashboard from './Dashboard/Dashboard';
 import OfferReviewsList from './OfferReviews/OfferReviewsList';
 import PaymentRequestsList from './PaymentRequests/PaymentRequestsList';
@@ -30,55 +31,23 @@ const AccountsPayable = () => {
 
     return (
         <div className="accounts-payable-container">
-            <IntroCard
+            <PageHeader
                 title="Accounts Payable"
-                label="FINANCE MODULE"
-                icon={<FiDollarSign size={48} />}
+                subtitle="Manage payments, offers, and merchant finances"
             />
 
             <div className="accounts-payable-content-container">
-                <div className="tabs-header">
-                    <button
-                        className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('dashboard')}
-                    >
-                        <FiGrid />
-                        <span>Dashboard</span>
-                    </button>
-
-                    <button
-                        className={`tab-button ${activeTab === 'offer-reviews' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('offer-reviews')}
-                    >
-                        <FiFileText />
-                        <span>Offer Reviews</span>
-                    </button>
-
-                    <button
-                        className={`tab-button ${activeTab === 'payment-requests' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('payment-requests')}
-                    >
-                        <FiFileText />
-                        <span>Payment Requests</span>
-                    </button>
-
-                    <button
-                        className={`tab-button ${activeTab === 'payments' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('payments')}
-                    >
-                        <FiCreditCard />
-                        <span>Payments</span>
-                    </button>
-
-                    <button
-                        className={`tab-button ${activeTab === 'refund-tracking' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('refund-tracking')}
-                    >
-                        <FiRefreshCw />
-                        <span>Refund Tracking</span>
-                    </button>
-                </div>
-
+                <Tabs
+                    tabs={[
+                        { id: 'dashboard', label: 'Dashboard', icon: <FiGrid /> },
+                        { id: 'offer-reviews', label: 'Offer Reviews', icon: <FiFileText /> },
+                        { id: 'payment-requests', label: 'Payment Requests', icon: <FiFileText /> },
+                        { id: 'payments', label: 'Payments', icon: <FiCreditCard /> },
+                        { id: 'refund-tracking', label: 'Refund Tracking', icon: <FiRefreshCw /> },
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                />
                 <div className="accounts-payable-content">
                     {renderContent()}
                 </div>

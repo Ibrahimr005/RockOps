@@ -124,6 +124,17 @@ const PaymentRequestDetailsPage = () => {
         return statusMap[status] || 'status-default';
     };
 
+    // Check if this is a loan payment request
+    const isLoanPayment = request?.loanInstallmentId != null;
+
+    // Get the appropriate name (merchant or institution)
+    const getPayeeName = () => {
+        if (isLoanPayment) {
+            return request.institutionName || 'N/A';
+        }
+        return request.merchantName || 'N/A';
+    };
+
     // Form handlers
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -317,7 +328,8 @@ const PaymentRequestDetailsPage = () => {
 
     // Determine source type
     const sourceType = request.purchaseOrderNumber ? 'Procurement' :
-        request.maintenanceStepId ? 'Maintenance' : 'Unknown';
+        request.maintenanceStepId ? 'Maintenance' :
+            request.loanInstallmentId ? 'Loan' : 'Unknown';
 
     return (
         <div className="payment-request-details-page">
@@ -370,12 +382,6 @@ const PaymentRequestDetailsPage = () => {
                             <label>Request Number</label>
                             <span>{request.requestNumber}</span>
                         </div>
-                        {/*<div className="detail-item">*/}
-                        {/*    <label>Source Type</label>*/}
-                        {/*    <span className={`source-badge source-${sourceType.toLowerCase()}`}>*/}
-                        {/*        {sourceType}*/}
-                        {/*    </span>*/}
-                        {/*</div>*/}
                         {request.purchaseOrderNumber && (
                             <div className="detail-item">
                                 <label>PO Number</label>
@@ -385,7 +391,7 @@ const PaymentRequestDetailsPage = () => {
                                 >
                                     {request.purchaseOrderNumber}
                                 </span>
-                                                    </div>
+                            </div>
                         )}
                         {request.requestOrderTitle && (
                             <div className="detail-item">
@@ -418,59 +424,99 @@ const PaymentRequestDetailsPage = () => {
                     </div>
                 </div>
 
-                {/* Merchant Information Section */}
+                {/* Merchant/Institution Information Section */}
                 <div className="details-section">
                     <div className="section-header">
                         <FaBuilding className="section-icon" />
-                        <h3>Merchant Information</h3>
+                        <h3>{isLoanPayment ? 'Financial Institution' : 'Merchant Information'}</h3>
                     </div>
                     <div className="details-grid">
                         <div className="detail-item">
-                            <label>Merchant Name</label>
+                            <label>{isLoanPayment ? 'Institution Name' : 'Merchant Name'}</label>
                             <span>
-                                {request.merchantId ? (
-                                    <span
-                                        className="link-text"
-                                        onClick={() => navigate(`/merchants/${request.merchantId}`)}
-                                    >
-                                        {request.merchantName || 'N/A'}
-                                    </span>
+                                {isLoanPayment ? (
+                                    // Loan payment - show institution info
+                                    request.financialInstitutionId ? (
+                                        <span
+                                            className="link-text"
+                                            onClick={() => navigate(`/finance/loans/institutions/${request.financialInstitutionId}`)}
+                                        >
+                                            {request.institutionName || 'N/A'}
+                                        </span>
+                                    ) : (
+                                        request.institutionName || 'N/A'
+                                    )
                                 ) : (
-                                    request.merchantName || 'N/A'
+                                    // Regular payment - show merchant info
+                                    request.merchantId ? (
+                                        <span
+                                            className="link-text"
+                                            onClick={() => navigate(`/merchants/${request.merchantId}`)}
+                                        >
+                                            {request.merchantName || 'N/A'}
+                                        </span>
+                                    ) : (
+                                        request.merchantName || 'N/A'
+                                    )
                                 )}
                             </span>
                         </div>
                         <div className="detail-item">
                             <label>Contact Person</label>
-                            <span>{request.merchantContactPerson || 'N/A'}</span>
+                            <span>{isLoanPayment
+                                ? (request.institutionContactPerson || 'N/A')
+                                : (request.merchantContactPerson || 'N/A')
+                            }</span>
                         </div>
                         <div className="detail-item">
                             <label>Contact Phone</label>
                             <span>
-                                {request.merchantContactPhone ? (
-                                    <><FiPhone className="inline-icon" /> {request.merchantContactPhone}</>
+                                {(isLoanPayment ? request.institutionContactPhone : request.merchantContactPhone) ? (
+                                    <><FiPhone className="inline-icon" /> {isLoanPayment ? request.institutionContactPhone : request.merchantContactPhone}</>
                                 ) : 'N/A'}
                             </span>
                         </div>
                         <div className="detail-item">
                             <label>Contact Email</label>
                             <span>
-                                {request.merchantContactEmail ? (
-                                    <><FiMail className="inline-icon" /> {request.merchantContactEmail}</>
+                                {(isLoanPayment ? request.institutionContactEmail : request.merchantContactEmail) ? (
+                                    <><FiMail className="inline-icon" /> {isLoanPayment ? request.institutionContactEmail : request.merchantContactEmail}</>
                                 ) : 'N/A'}
                             </span>
                         </div>
-                        {request.merchantBankName && (
+                        {(isLoanPayment ? request.institutionBankName : request.merchantBankName) && (
                             <div className="detail-item">
                                 <label>Bank Name</label>
-                                <span>{request.merchantBankName}</span>
+                                <span>{isLoanPayment ? request.institutionBankName : request.merchantBankName}</span>
                             </div>
                         )}
-                        {request.merchantAccountNumber && (
+                        {(isLoanPayment ? request.institutionAccountNumber : request.merchantAccountNumber) && (
                             <div className="detail-item">
                                 <label>Account Number</label>
-                                <span>{request.merchantAccountNumber}</span>
+                                <span>{isLoanPayment ? request.institutionAccountNumber : request.merchantAccountNumber}</span>
                             </div>
+                        )}
+                        {/* Loan-specific info */}
+                        {isLoanPayment && (
+                            <>
+                                {request.companyLoanNumber && (
+                                    <div className="detail-item">
+                                        <label>Loan Number</label>
+                                        <span
+                                            className="link-text"
+                                            onClick={() => navigate(`/finance/loans/company-loans/${request.companyLoanId}`)}
+                                        >
+                                            {request.companyLoanNumber}
+                                        </span>
+                                    </div>
+                                )}
+                                {request.loanInstallmentNumber && (
+                                    <div className="detail-item">
+                                        <label>Installment Number</label>
+                                        <span>#{request.loanInstallmentNumber}</span>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiDollarSign, FiPlus, FiEye, FiEdit2, FiTrendingUp, FiAlertCircle, FiCalendar } from 'react-icons/fi';
+import {FaUniversity} from 'react-icons/fa';
 import { financeService } from '../../../services/financeService';
-import IntroCard from '../../../components/common/IntroCard/IntroCard';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
+import Tabs from '../../../components/common/Tabs/Tabs';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import Snackbar from '../../../components/common/Snackbar/Snackbar';
 import './CompanyLoansPage.scss';
@@ -262,12 +264,9 @@ const CompanyLoansPage = () => {
 
     return (
         <div className="company-loans-page">
-            <IntroCard
+            <PageHeader
                 title="Company Loans"
-                label="FINANCE CENTER"
-                icon={<FiDollarSign />}
-                stats={stats}
-                actionButtons={actionButtons}
+                subtitle="Manage company loans and financial institutions"
             />
 
             {/* Dashboard Summary Cards */}
@@ -333,30 +332,27 @@ const CompanyLoansPage = () => {
             )}
 
             {/* Tabs */}
-            <div className="tabs">
-                <button
-                    className={`tab ${activeTab === 'loans' ? 'tab--active' : ''}`}
-                    onClick={() => setActiveTab('loans')}
-                >
-                    <FiDollarSign /> All Loans ({loans.length})
-                </button>
-                <button
-                    className={`tab ${activeTab === 'upcoming' ? 'tab--active' : ''}`}
-                    onClick={() => setActiveTab('upcoming')}
-                >
-                    <FiCalendar /> Upcoming ({upcomingInstallments.length})
-                </button>
-                <button
-                    className={`tab ${activeTab === 'overdue' ? 'tab--active' : ''}`}
-                    onClick={() => setActiveTab('overdue')}
-                >
-                    <FiAlertCircle /> Overdue ({overdueInstallments.length})
-                </button>
-            </div>
+            <Tabs
+                tabs={[
+                    { id: 'loans', label: 'All Loans', icon: <FiDollarSign /> },
+                    { id: 'upcoming', label:`Upcoming`,icon: <FiCalendar /> },
+                    { id:'overdue', label: `Overdue`,icon: <FiAlertCircle /> },
+                ]}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+            />
 
             {/* Content based on active tab */}
             {activeTab === 'loans' && (
-                <div className="tab-content">
+                <div className="tab-content tab-content--with-actions">
+                    <div className="tab-content__extra-actions">
+                        <button
+                            className="btn-primary"
+                            onClick={() => navigate('/finance/company-loans/institutions')}
+                        >
+                            <FaUniversity /> Institutions
+                        </button>
+                    </div>
                     <DataTable
                         data={loans}
                         columns={loanColumns}
@@ -368,6 +364,10 @@ const CompanyLoansPage = () => {
                         defaultSortDirection="asc"
                         onRowClick={(row) => navigate(`/finance/company-loans/${row.id}`)}
                         exportFileName="company_loans"
+                        showAddButton={true}
+                        addButtonText="New Loan"
+                        addButtonIcon={<FiPlus />}
+                        onAddClick={() => navigate('/finance/company-loans/new')}
                     />
                 </div>
             )}
