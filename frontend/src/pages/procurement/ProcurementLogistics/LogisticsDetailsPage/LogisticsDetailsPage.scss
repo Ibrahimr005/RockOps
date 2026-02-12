@@ -30,6 +30,76 @@
       color: var(--color-text-secondary);
     }
   }
+
+  .logistics-details-value {
+    &--status-pending_approval {
+      color: #d97706;
+      font-weight: 600;
+    }
+
+    &--status-pending_payment {
+      color: #2563eb;
+      font-weight: 600;
+    }
+
+    &--status-completed {
+      color: #059669;
+      font-weight: 600;
+    }
+
+    // Payment status colors
+    &--payment-pending {
+      color: #d97706;
+      font-weight: 600;
+    }
+
+    &--payment-approved {
+      color: #2563eb;
+      font-weight: 600;
+    }
+
+    &--payment-paid {
+      color: #059669;
+      font-weight: 600;
+    }
+
+    &--payment-rejected {
+      color: #dc2626;
+      font-weight: 600;
+    }
+  }
+
+  [data-theme="dark"] & {
+    .logistics-details-value {
+      &--status-pending_approval {
+        color: #fbbf24;
+      }
+
+      &--status-pending_payment {
+        color: #60a5fa;
+      }
+
+      &--status-completed {
+        color: #34d399;
+      }
+
+      &--payment-pending {
+        color: #fbbf24;
+      }
+
+      &--payment-approved {
+        color: #60a5fa;
+      }
+
+      &--payment-paid {
+        color: #34d399;
+      }
+
+      &--payment-rejected {
+        color: #f87171;
+      }
+    }
+  }
 }
 
 .logistics-details-overview-tab {
@@ -119,7 +189,7 @@
         .logistics-details-value {
           font-size: 14px;
           font-weight: 600;
-          color: var(--color-text-primary);
+
           word-break: break-word;
         }
       }

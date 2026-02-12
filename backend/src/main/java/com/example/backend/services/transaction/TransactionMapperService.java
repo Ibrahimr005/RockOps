@@ -137,7 +137,8 @@ public class TransactionMapperService {
                 .itemTypeName(item.getItemType() != null ? item.getItemType().getName() : null)
                 .itemCategory(item.getItemType() != null && item.getItemType().getItemCategory() != null
                         ? item.getItemType().getItemCategory().getName() : null)
-                .itemUnit(item.getItemType() != null ? item.getItemType().getMeasuringUnit() : null)
+                .itemUnit(item.getItemType() != null && item.getItemType().getMeasuringUnit() != null ?
+                        item.getItemType().getMeasuringUnit().getName() : null)
                 .quantity(item.getQuantity())
                 .receivedQuantity(item.getReceivedQuantity())
                 .equipmentReceivedQuantity(item.getEquipmentReceivedQuantity())

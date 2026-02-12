@@ -200,9 +200,14 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         },
         {
             header: 'UNIT',
-            accessor: 'measuringUnit',
+            accessor: 'measuringUnit.name',
             sortable: true,
-            width: '120px'
+            width: '120px',
+            render: (row) => (
+                <span className="unit-tag">
+                    {row.measuringUnit?.name || row.measuringUnit || '—'}
+                </span>
+            )
         },
         {
             header: 'SERIAL NUMBER',

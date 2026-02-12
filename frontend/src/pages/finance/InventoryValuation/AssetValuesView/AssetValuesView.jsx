@@ -94,6 +94,10 @@ const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
             setLoading(true);
             try {
                 const data = await inventoryValuationService.getSiteBalance(siteId);
+                console.log('📦 WAREHOUSE DATA:', data.warehouses);
+                data.warehouses.forEach((warehouse, index) => {
+                    console.log(`Warehouse ${index}:`, warehouse);
+                });
                 setWarehousesData(data.warehouses || []);
             } catch (error) {
                 console.error('Failed to fetch warehouse balances:', error);
@@ -105,14 +109,21 @@ const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
             await handleViewEquipmentCategory(siteId);
         }
     };
-
     const handleViewEquipmentCategory = async (siteId) => {
         setLoading(true);
         try {
-            const response = await siteService.getSiteEquipment(siteId);
-            const data = response.data || response || [];
+            const response = await siteService.getSiteEquipmentDTO(siteId);
+            const data = response.data || response || []; // ✅ Handle response wrapping
+
+            console.log('🔧 EQUIPMENT RESPONSE:', response);
+            console.log('🔧 EQUIPMENT DATA:', data);
 
             if (Array.isArray(data)) {
+                data.forEach((equipment, index) => {
+                    console.log(`Equipment ${index}:`, equipment);
+                    console.log('  - imageUrl:', equipment.imageUrl);
+                });
+
                 setEquipmentData(data);
 
                 // Fetch financials for all equipment immediately
@@ -406,6 +417,7 @@ const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
                                                                 subtitle={`${warehouse.totalItems || 0} items`}
                                                                 value={formatCurrency(warehouse.totalValue)}
                                                                 expenses={formatCurrency(0)}
+                                                                imageUrl={warehouse.photoUrl}
                                                                 icon={FiPackage}
                                                                 variant="nested"
                                                                 size="compact"
@@ -519,6 +531,7 @@ const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
                                                                 value={equipmentFinancials[equipment.id] ? formatCurrency(equipmentFinancials[equipment.id].currentValue) : formatCurrency(equipment.egpPrice)}
                                                                 expenses={equipmentFinancials[equipment.id] ? formatCurrency(equipmentFinancials[equipment.id].totalExpenses) : formatCurrency(0)}
                                                                 icon={FiTool}
+                                                                imageUrl={equipment.imageUrl}
                                                                 variant="nested"
                                                                 size="compact"
                                                                 showValueLabel={true}

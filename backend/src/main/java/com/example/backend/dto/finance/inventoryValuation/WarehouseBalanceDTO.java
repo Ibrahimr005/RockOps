@@ -13,6 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class WarehouseBalanceDTO {
     private UUID warehouseId;
+    private String photoUrl;
     private String warehouseName;
     private UUID siteId;
     private String siteName;

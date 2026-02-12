@@ -220,6 +220,7 @@ public class InventoryValuationService {
                 .totalValue(valuation.getCurrentValue())
                 .totalItems(valuation.getTotalItems())
                 .pendingApprovalCount(pendingCount.intValue())
+                 .photoUrl(warehouse.getPhotoUrl())
                 .build();
     }
 
@@ -347,7 +348,8 @@ public class InventoryValuationService {
                         .itemId(item.getId())
                         .itemName(item.getItemType().getName())
                         .quantity(item.getQuantity())
-                        .measuringUnit(item.getItemType().getMeasuringUnit())
+                        .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                                item.getItemType().getMeasuringUnit().getName() : null)
                         .unitPrice(item.getUnitPrice())
                         .totalValue(item.getTotalValue())
                         .build())
@@ -383,7 +385,8 @@ public class InventoryValuationService {
                         .receiverType("WAREHOUSE")
                         .itemName(item.getItemType().getName())
                         .quantity(item.getQuantity())
-                        .measuringUnit(item.getItemType().getMeasuringUnit())
+                        .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                                item.getItemType().getMeasuringUnit().getName() : null)
                         .unitPrice(item.getUnitPrice())
                         .totalValue(item.getTotalValue())
                         .createdBy(item.getCreatedBy())
@@ -407,7 +410,8 @@ public class InventoryValuationService {
                         .receiverType("WAREHOUSE")
                         .itemName(item.getItemType().getName())
                         .quantity(item.getQuantity())
-                        .measuringUnit(item.getItemType().getMeasuringUnit())
+                        .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                                item.getItemType().getMeasuringUnit().getName() : null)
                         .unitPrice(item.getUnitPrice())
                         .totalValue(item.getTotalValue())
                         .createdBy(item.getCreatedBy())
@@ -458,7 +462,8 @@ public class InventoryValuationService {
                 .itemTypeId(item.getItemType().getId())
                 .itemTypeName(item.getItemType().getName())
                 .itemTypeCategory(item.getItemType().getItemCategory().getName())
-                .measuringUnit(item.getItemType().getMeasuringUnit())
+                .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                        item.getItemType().getMeasuringUnit().getName() : null)
                 .quantity(item.getQuantity())
                 .suggestedPrice(approval.getSuggestedPrice())
                 .createdBy(approval.getRequestedBy())
@@ -477,7 +482,8 @@ public class InventoryValuationService {
                 .siteName(approval.getWarehouse().getSite().getName())
                 .itemTypeName(item.getItemType().getName())
                 .itemTypeCategory(item.getItemType().getItemCategory().getName())
-                .measuringUnit(item.getItemType().getMeasuringUnit())
+                .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                        item.getItemType().getMeasuringUnit().getName() : null)
                 .quantity(item.getQuantity())
                 .approvedPrice(approval.getApprovedPrice())
                 .totalValue(approval.getApprovedPrice() * item.getQuantity())
@@ -496,7 +502,8 @@ public class InventoryValuationService {
                 .map(c -> ConsumableBreakdownDTO.builder()
                         .itemName(c.getItemType().getName())
                         .quantity(c.getQuantity())
-                        .measuringUnit(c.getItemType().getMeasuringUnit())
+                        .measuringUnit(c.getItemType().getMeasuringUnit() != null ?
+                                c.getItemType().getMeasuringUnit().getName() : null)
                         .unitPrice(c.getUnitPrice())
                         .totalValue(c.getTotalValue())
                         .build())

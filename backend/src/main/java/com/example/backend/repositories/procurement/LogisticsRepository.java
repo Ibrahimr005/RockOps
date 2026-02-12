@@ -41,4 +41,9 @@ public interface LogisticsRepository extends JpaRepository<Logistics, UUID> {
             @Param("status") LogisticsStatus status,
             @Param("searchTerm") String searchTerm
     );
+
+    @Query(value = "SELECT nextval('logistics_number_seq')", nativeQuery = true)
+    Long getNextLogisticsSequenceValue();
+
+    boolean existsByLogisticsNumber(String logisticsNumber);
 }

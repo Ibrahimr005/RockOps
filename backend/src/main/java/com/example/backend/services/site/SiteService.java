@@ -1,5 +1,6 @@
 package com.example.backend.services.site;
 
+import com.example.backend.dto.equipment.EquipmentDTO;
 import com.example.backend.models.Partner;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.finance.fixedAssets.AssetStatus;
@@ -14,10 +15,12 @@ import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.finance.fixedAssets.FixedAssetsRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.services.MinioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class SiteService
@@ -27,15 +30,17 @@ public class SiteService
     private final EmployeeRepository employeeRepository;
     private final EquipmentRepository equipmentRepository;
     private final FixedAssetsRepository fixedAssetsRepository;
+    private final MinioService minioService;
 
     @Autowired
-    public SiteService(SiteRepository siteRepository, PartnerRepository partnerRepository, EmployeeRepository employeeRepository, EquipmentRepository equipmentRepository, FixedAssetsRepository fixedAssetsRepository)
+    public SiteService(SiteRepository siteRepository, PartnerRepository partnerRepository, EmployeeRepository employeeRepository, EquipmentRepository equipmentRepository, FixedAssetsRepository fixedAssetsRepository, MinioService minioService)
     {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.employeeRepository = employeeRepository;
         this.equipmentRepository = equipmentRepository;
         this.fixedAssetsRepository = fixedAssetsRepository;
+        this.minioService = minioService;
     }
 
     public Site getSiteById(UUID id)
@@ -182,5 +187,27 @@ public class SiteService
         List<Equipment> availableEquipment = equipmentRepository.findBySiteIsNull();
         return availableEquipment;
     }
+    public List<EquipmentDTO> getSiteEquipmentsDTO(UUID siteId) {
+        Site site = siteRepository.findById(siteId).orElse(null);
+        if (site == null) {
+            return new ArrayList<>();
+        }
 
+        return site.getEquipment().stream()
+                .map(equipment -> {
+                    EquipmentDTO dto = EquipmentDTO.fromEntity(equipment);
+                    // Use the same logic as EquipmentService
+                    try {
+                        if (equipment.getImageStorageKey() != null && !equipment.getImageStorageKey().isEmpty()) {
+                            dto.setImageUrl(minioService.generateUrlFromKey(equipment.getImageStorageKey()));
+                        } else {
+                            dto.setImageUrl(minioService.getEquipmentMainPhoto(equipment.getId()));
+                        }
+                    } catch (Exception e) {
+                        dto.setImageUrl(null);
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
 }

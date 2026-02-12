@@ -49,6 +49,7 @@ import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/Wa
 import ItemDetailsPage from "./pages/warehouse/WarehouseItems/ItemDetailsPage/ItemDetailsPage.jsx";
 import TransactionDetailsPage from "./components/common/TransactionDetailsPage/TransactionDetailsPage.jsx";
 import ItemTypeDetailsPage from "./pages/warehouse/WarehouseItemTypes/ItemTypeDetailsPage/ItemTypeDetailsPage.jsx";
+import MeasuringUnits from "./pages/warehouse/WarehouseMeasuringUnits/MeasuringUnits.jsx";
 
 // ===================== Merchant & Procurement Components =====================
 import ProcurementOffers from "./pages/procurement/ProcurementOffers/ProcurementOffers.jsx";
@@ -212,6 +213,7 @@ function App() {
                                             <Route index element={<RoleRoute allowedRoles={allRoles}><WarehousesList/></RoleRoute>}/>
                                             <Route path="item-categories" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemCategoriesTable/></RoleRoute>}/>
                                             <Route path="item-types" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemTypesTable/></RoleRoute>}/>
+                                            <Route path="measuring-units" element={<RoleRoute allowedRoles={['ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE']}><MeasuringUnits/></RoleRoute>}/>
                                             <Route path=":id" element={<WarehouseDetails/>}/>
                                             <Route path="warehouse-details/:id" element={<WarehouseInformation/>}/>
                                             <Route path=":id/items/:itemTypeId" element={<ItemDetailsPage/>}/>

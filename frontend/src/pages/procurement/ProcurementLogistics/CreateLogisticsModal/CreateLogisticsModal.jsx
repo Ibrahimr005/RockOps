@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiTruck, FiPackage, FiPlus, FiTrash2, FiCheck } from 'react-icons/fi';
+import { FiX, FiTruck, FiPackage, FiPlus, FiTrash2, FiCheck, FiBox } from 'react-icons/fi';
 import './CreateLogisticsModal.scss';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog'; // Update the path
 import {merchantService} from "../../../../services/merchant/merchantService.js";
@@ -72,6 +72,13 @@ const CreateLogisticsModal = ({
             document.body.classList.remove("modal-open");
         };
     }, [isOpen]);
+
+    useEffect(() => {
+        if (availablePurchaseOrders.length > 0) {
+            console.log('Available Purchase Orders:', availablePurchaseOrders);
+            console.log('First PO structure:', availablePurchaseOrders[0]);
+        }
+    }, [availablePurchaseOrders]);
 
     const fetchServiceMerchants = async () => {
         try {
@@ -550,7 +557,7 @@ const CreateLogisticsModal = ({
                                                     <span className="item-number">Purchase Order #{poIndex + 1}</span>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                                         {selectedPO && (
-                                                            <span className={`status-badge status-${selectedPO.status.toLowerCase()}`}>
+                                                            <span className={`status-badge-logistics-create status-${selectedPO.status.toLowerCase()}`}>
                                                                 {selectedPO.status}
                                                             </span>
                                                         )}
@@ -568,10 +575,13 @@ const CreateLogisticsModal = ({
                                                 </div>
 
                                                 <div className="item-body">
+                                                    <div className="form-section-header">
+                                                        <h4 className="form-section-title">
+                                                            <FiPackage />
+                                                            Purchase Order Selection
+                                                        </h4>
+                                                    </div>
                                                     <div className="form-group">
-                                                        <label className="form-label">
-                                                            Select Purchase Order <span className="required">*</span>
-                                                        </label>
                                                         <select
                                                             value={po.purchaseOrderId}
                                                             onChange={(e) => handlePOChange(poIndex, 'purchaseOrderId', e.target.value)}
@@ -581,9 +591,6 @@ const CreateLogisticsModal = ({
                                                             <option value="">Choose a purchase order...</option>
                                                             {availablePurchaseOrders
                                                                 .filter(availablePO => {
-                                                                    // Show this PO if:
-                                                                    // 1. It's not selected in any OTHER PO entry, OR
-                                                                    // 2. It's the currently selected PO for THIS entry
                                                                     const isSelectedElsewhere = formData.purchaseOrders.some(
                                                                         (p, idx) => idx !== poIndex && p.purchaseOrderId === availablePO.id
                                                                     );
@@ -591,69 +598,89 @@ const CreateLogisticsModal = ({
                                                                 })
                                                                 .map(availablePO => (
                                                                     <option key={availablePO.id} value={availablePO.id}>
-                                                                        {availablePO.poNumber} - {availablePO.merchantName}
+                                                                        {availablePO.poNumber} - {availablePO.requestOrder?.title || 'No Title'} - {availablePO.merchantName}
                                                                     </option>
                                                                 ))
                                                             }
                                                         </select>
                                                     </div>
 
-                                                    {selectedPO && selectedPO.items && selectedPO.items.length > 0 && (
-                                                        <div className="form-group">
-                                                            <label className="form-label">
-                                                                Select Items <span className="required">*</span>
-                                                            </label>
-                                                            <div className="logistics-checkbox-list">
-                                                                {selectedPO.items.map(item => {
-                                                                    // ADD THESE CONSOLE LOGS
-                                                                    console.log('Full Item Object:', item);
-                                                                    console.log('Item Type:', item.itemType);
-                                                                    console.log('Item Category Name:', item.itemType?.itemCategoryName);
-                                                                    console.log('---');
 
-                                                                    return (
-                                                                        <div
-                                                                            key={item.id}
-                                                                            className={`logistics-checkbox-card ${po.selectedItemIds.includes(item.id) ? 'checked' : ''}`}
-                                                                            onClick={() => handleItemToggle(poIndex, item.id)}
-                                                                        >
-                                                                            <div className="logistics-checkbox-wrapper">
-                                                                                <input
-                                                                                    type="checkbox"
-                                                                                    checked={po.selectedItemIds.includes(item.id)}
-                                                                                    readOnly
-                                                                                    className="logistics-checkbox-input"
-                                                                                />
-                                                                                <div className="logistics-checkbox-custom"></div>
-                                                                            </div>
-                                                                            <div className="logistics-checkbox-body">
-                                                                                <div className="logistics-checkbox-title">
-                                                                                    <span className="logistics-item-name">{item.itemTypeName}</span>
-                                                                                    {item.itemType?.itemCategoryName && (
-                                                                                        <span className="logistics-item-badge">
-                                        {item.itemType.itemCategoryName}
-                                    </span>
-                                                                                    )}
-                                                                                </div>
-                                                                                <div className="logistics-item-meta">
-                                                                                    <span>Qty: <strong>{item.quantity} {item.measuringUnit}</strong></span>
-                                                                                    <span>•</span>
-                                                                                    <span>Price: <strong>{item.currency} {item.unitPrice}</strong></span>
-                                                                                    <span>•</span>
-                                                                                    <span>Total: <strong>{item.currency} {item.totalPrice}</strong></span>
-                                                                                    {item.merchantName && (
-                                                                                        <>
-                                                                                            <span>•</span>
-                                                                                            <span>Merchant: <strong>{item.merchantName}</strong></span>
-                                                                                        </>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
+                                                    {selectedPO && selectedPO.requestOrder && (
+                                                        <div className="request-order-info-logistics-po">
+                                                            <div className="info-group">
+                                                                <span className="info-label-logistics-po">Title:</span>
+                                                                <span className="info-value-logistics-po">{selectedPO.requestOrder.title}</span>
+                                                            </div>
+                                                            <div className="info-group">
+                                                                <span className="info-label-logistics-po">Requester:</span>
+                                                                <span className="info-value-logistics-po">{selectedPO.requestOrder.requesterName}</span>
                                                             </div>
                                                         </div>
+                                                    )}
+
+
+                                                    {selectedPO && selectedPO.items && selectedPO.items.length > 0 && (
+                                                        <>
+                                                            <div className="form-section-header">
+                                                                <h4 className="form-section-title">
+                                                                    <FiBox />
+                                                                    Items Selection
+                                                                </h4>
+                                                            </div>
+                                                            <div className="form-group">
+                                                                <div className="logistics-checkbox-list">
+                                                                    {selectedPO.items.map(item => {
+                                                                        // ADD THESE CONSOLE LOGS
+                                                                        console.log('Full Item Object:', item);
+                                                                        console.log('Item Type:', item.itemType);
+                                                                        console.log('Item Category Name:', item.itemType?.itemCategoryName);
+                                                                        console.log('---');
+
+                                                                        return (
+                                                                            <div
+                                                                                key={item.id}
+                                                                                className={`logistics-checkbox-card ${po.selectedItemIds.includes(item.id) ? 'checked' : ''}`}
+                                                                                onClick={() => handleItemToggle(poIndex, item.id)}
+                                                                            >
+                                                                                <div className="logistics-checkbox-wrapper">
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={po.selectedItemIds.includes(item.id)}
+                                                                                        readOnly
+                                                                                        className="logistics-checkbox-input"
+                                                                                    />
+                                                                                    <div className="logistics-checkbox-custom"></div>
+                                                                                </div>
+                                                                                <div className="logistics-checkbox-body">
+                                                                                    <div className="logistics-checkbox-title">
+                                                                                        <span className="logistics-item-name">{item.itemTypeName}</span>
+                                                                                        {item.itemType?.itemCategoryName && (
+                                                                                            <span className="logistics-item-badge">
+                                        {item.itemType.itemCategoryName}
+                                    </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="logistics-item-meta">
+                                                                                        <span>Qty: <strong>{item.quantity} {item.measuringUnit}</strong></span>
+                                                                                        <span>•</span>
+                                                                                        <span>Price: <strong>{item.currency} {item.unitPrice}</strong></span>
+                                                                                        <span>•</span>
+                                                                                        <span>Total: <strong>{item.currency} {item.totalPrice}</strong></span>
+                                                                                        {item.merchantName && (
+                                                                                            <>
+                                                                                                <span>•</span>
+                                                                                                <span>Merchant: <strong>{item.merchantName}</strong></span>
+                                                                                            </>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        </>
                                                     )}
                                                 </div>
                                             </div>

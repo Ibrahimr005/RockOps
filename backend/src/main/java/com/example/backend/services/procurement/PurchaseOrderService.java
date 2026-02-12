@@ -434,7 +434,8 @@ public class PurchaseOrderService {
                 .deliverySessionId(receipt.getDeliverySession().getId())
                 .purchaseOrderItemId(receipt.getPurchaseOrderItem().getId())
                 .itemTypeName(receipt.getPurchaseOrderItem().getItemType().getName())
-                .measuringUnit(receipt.getPurchaseOrderItem().getItemType().getMeasuringUnit())
+                .measuringUnit(receipt.getPurchaseOrderItem().getItemType().getMeasuringUnit() != null ?
+                        receipt.getPurchaseOrderItem().getItemType().getMeasuringUnit().getName() : null)
                 .goodQuantity(receipt.getGoodQuantity())
                 .isRedelivery(receipt.getIsRedelivery())
                 .processedBy(receipt.getDeliverySession().getProcessedBy())
@@ -469,7 +470,8 @@ public class PurchaseOrderService {
                 .resolvedAt(issue.getResolvedAt())
                 .resolutionNotes(issue.getResolutionNotes())
                 .itemTypeName(issue.getPurchaseOrderItem().getItemType().getName())
-                .measuringUnit(issue.getPurchaseOrderItem().getItemType().getMeasuringUnit())
+                .measuringUnit(issue.getPurchaseOrderItem().getItemType().getMeasuringUnit() != null ?
+                        issue.getPurchaseOrderItem().getItemType().getMeasuringUnit().getName() : null)
                 .itemTypeCategoryName(issue.getPurchaseOrderItem().getItemType().getItemCategory() != null
                         ? issue.getPurchaseOrderItem().getItemType().getItemCategory().getName()
                         : null)
@@ -604,13 +606,15 @@ public class PurchaseOrderService {
         if (item.getItemType() != null) {
             dto.setItemTypeId(item.getItemType().getId());
             dto.setItemTypeName(item.getItemType().getName());  // ADD THIS
-            dto.setMeasuringUnit(item.getItemType().getMeasuringUnit());  // ADD THIS
+            dto.setMeasuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                    item.getItemType().getMeasuringUnit().getName() : null);
 
             // ✅ CREATE AND SET THE FULL itemType OBJECT
             ItemTypeDTO itemTypeDTO = new ItemTypeDTO();
             itemTypeDTO.setId(item.getItemType().getId());
             itemTypeDTO.setName(item.getItemType().getName());
-            itemTypeDTO.setMeasuringUnit(item.getItemType().getMeasuringUnit());
+            itemTypeDTO.setMeasuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                    item.getItemType().getMeasuringUnit().getName() : null);
 
             // Add category info
             if (item.getItemType().getItemCategory() != null) {
@@ -789,8 +793,10 @@ public class PurchaseOrderService {
 
         String oldStatus = po.getStatus();
 
-        // Check if fully paid
+        // Check if fully paid OR payment is in a terminal failed/rejected state
         boolean isFullyPaid = po.getPaymentStatus() == POPaymentStatus.PAID;
+        boolean isPaymentTerminated = po.getPaymentStatus() == POPaymentStatus.PAYMENT_FAILED
+                || po.getPaymentStatus() == POPaymentStatus.REJECTED;
 
         // Determine PO status based on BOTH delivery AND payment
         if (hasDisputedItems && hasItemsToArrive) {
@@ -799,24 +805,24 @@ public class PurchaseOrderService {
             po.setStatus("DISPUTED");
         } else if (hasItemsToArrive) {
             po.setStatus("PARTIAL");
-        } else if (!isFullyPaid) {
-            // All items delivered but NOT paid yet
+        } else if (!isFullyPaid && !isPaymentTerminated) {
+            // All items delivered but payment is still pending (not paid, failed, or rejected)
             po.setStatus("AWAITING_PAYMENT");
         } else {
-            // All items delivered AND fully paid
+            // All items delivered AND (fully paid OR payment failed/rejected)
             po.setStatus("COMPLETED");
         }
 
         purchaseOrderRepository.save(po);
 
         // Update ItemType base prices ONLY when FULLY COMPLETED (items + payment)
-// Update ItemType base prices ONLY when FULLY COMPLETED (items + payment)
-        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
+        // Note: We only update prices if payment was successful (PAID), not if it failed/rejected
+        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus) && isFullyPaid) {
             System.out.println("🎯 PO fully completed (delivery + payment), updating base prices...");
 
             try {
                 Set<UUID> itemTypeIds = po.getPurchaseOrderItems().stream()
-                        .filter(item -> item.getItemType() != null)  // ← FIXED
+                        .filter(item -> item.getItemType() != null)
                         .map(item -> item.getItemType().getId())
                         .collect(Collectors.toSet());
 

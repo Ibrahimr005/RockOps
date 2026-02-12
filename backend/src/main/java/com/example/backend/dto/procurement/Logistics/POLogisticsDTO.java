@@ -1,5 +1,6 @@
 package com.example.backend.dto.procurement.Logistics;
 
+import com.example.backend.models.procurement.Logistics.LogisticsPaymentStatus;
 import com.example.backend.models.procurement.Logistics.LogisticsStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,6 +34,7 @@ public class POLogisticsDTO {
     private BigDecimal totalLogisticsCost;
 
     private LogisticsStatus status;
+    private LogisticsPaymentStatus paymentStatus;  // ✅ ADD THIS
     private UUID paymentRequestId;
 
     // Items from this PO included in the logistics

@@ -98,6 +98,10 @@ public class Logistics {
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", length = 50)
+    private LogisticsPaymentStatus paymentStatus;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -105,6 +109,9 @@ public class Logistics {
         }
         if (status == null) {
             status = LogisticsStatus.PENDING_APPROVAL;
+        }
+        if (paymentStatus == null) {
+            paymentStatus = LogisticsPaymentStatus.PENDING;  // ✅ ADD THIS
         }
         if (requestedAt == null) {
             requestedAt = LocalDateTime.now();

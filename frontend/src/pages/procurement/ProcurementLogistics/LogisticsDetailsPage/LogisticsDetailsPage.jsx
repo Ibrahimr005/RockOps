@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiTruck, FiAlertCircle, FiPackage, FiDollarSign } from 'react-icons/fi';
+import { FiTruck, FiAlertCircle, FiPackage, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
 import { logisticsService } from '../../../../services/procurement/logisticsService';
 import IntroCard from '../../../../components/common/IntroCard/IntroCard';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2';
@@ -78,11 +78,20 @@ const LogisticsDetailsPage = () => {
     const getStatusDisplay = (status) => {
         const displayMap = {
             'PENDING_APPROVAL': 'Pending Approval',
-            'APPROVED': 'Approved',
-            'REJECTED': 'Rejected',
-            'PAID': 'Paid'
+            'PENDING_PAYMENT': 'Pending Payment',
+            'COMPLETED': 'Completed'
         };
         return displayMap[status] || status;
+    };
+
+    const getPaymentStatusDisplay = (paymentStatus) => {
+        const displayMap = {
+            'PENDING': 'Pending',
+            'APPROVED': 'Approved',
+            'PAID': 'Paid',
+            'REJECTED': 'Rejected'
+        };
+        return displayMap[paymentStatus] || paymentStatus;
     };
 
     const breadcrumbs = [
@@ -176,6 +185,30 @@ const LogisticsDetailsPage = () => {
                                 <div className="logistics-details-label">Total Cost</div>
                                 <div className="logistics-details-value">
                                     {logistics.currency} {parseFloat(logistics.totalCost).toFixed(2)}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="logistics-details-item">
+                            <div className="logistics-details-icon">
+                                <FiCheckCircle />
+                            </div>
+                            <div className="logistics-details-content">
+                                <div className="logistics-details-label">Status</div>
+                                <div className={`logistics-details-value logistics-details-value--status-${logistics.status?.toLowerCase()}`}>
+                                    {getStatusDisplay(logistics.status).toUpperCase()}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="logistics-details-item">
+                            <div className="logistics-details-icon">
+                                <FiDollarSign />
+                            </div>
+                            <div className="logistics-details-content">
+                                <div className="logistics-details-label">Payment Status</div>
+                                <div className={`logistics-details-value logistics-details-value--payment-${logistics.paymentStatus?.toLowerCase()}`}>
+                                    {getPaymentStatusDisplay(logistics.paymentStatus).toUpperCase()}
                                 </div>
                             </div>
                         </div>
@@ -295,24 +328,25 @@ const LogisticsDetailsPage = () => {
                                                                 <span className="logistics-details-item-name">{item.itemTypeName}</span>
                                                             </div>
                                                             <div className="logistics-details-item-details">
-                            <span className="logistics-details-item-qty">
-                                {item.quantity} {item.measuringUnit}
-                            </span>
+                                                                <span className="logistics-details-item-qty">
+                                                                    {item.quantity} {item.measuringUnit}
+                                                                </span>
                                                                 <span className="logistics-details-item-separator">•</span>
                                                                 <span className="logistics-details-item-price">
-                                {logistics.currency} {parseFloat(item.unitPrice).toFixed(2)}/unit
-                            </span>
+                                                                    {logistics.currency} {parseFloat(item.unitPrice).toFixed(2)}/unit
+                                                                </span>
                                                                 <span className="logistics-details-item-separator">•</span>
                                                                 <span className="logistics-details-item-total">
-                                Total: {logistics.currency} {parseFloat(item.totalValue).toFixed(2)}
-                            </span>
+                                                                    Total: {logistics.currency} {parseFloat(item.totalValue).toFixed(2)}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             </div>
                                         </div>
-                                    )}                                </div>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     </div>

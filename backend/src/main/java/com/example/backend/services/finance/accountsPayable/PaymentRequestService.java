@@ -13,6 +13,9 @@ import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestSt
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.example.backend.models.maintenance.MaintenanceStep;
 import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.procurement.Logistics.Logistics;
+import com.example.backend.models.procurement.Logistics.LogisticsPaymentStatus;
+import com.example.backend.models.procurement.Logistics.LogisticsStatus;
 import com.example.backend.models.procurement.PurchaseOrder.POItemPaymentStatus;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
@@ -43,6 +46,8 @@ public class PaymentRequestService {
     private final OfferFinancialReviewRepository offerFinancialReviewRepository;
     private final PaymentRequestItemRepository paymentRequestItemRepository;
     private final LogisticsService logisticsService;
+
+
 
     @Autowired
     public PaymentRequestService(
@@ -293,7 +298,7 @@ public class PaymentRequestService {
                     String itemName = itemType != null ? itemType.getName() : "Unknown Item";
                     String itemDescription = itemType != null && itemType.getComment() != null ? itemType.getComment() : "";
                     String unit = itemType != null && itemType.getMeasuringUnit() != null ?
-                            itemType.getMeasuringUnit() : "units";
+                            itemType.getMeasuringUnit().getName() : "units";
 
                     PaymentRequestItem prItem = PaymentRequestItem.builder()
                             .paymentRequest(savedPaymentRequest)
@@ -378,7 +383,7 @@ public class PaymentRequestService {
      * Create a payment request from a completed maintenance step.
      * This is called when a maintenance record is completed to generate payment requests
      * for Finance reconciliation.
-     * 
+     *
      * @param step The maintenance step to create a payment request for
      * @param record The parent maintenance record
      * @param financialReview The approved financial review (budget approval)
@@ -391,37 +396,37 @@ public class PaymentRequestService {
             MaintenanceRecord record,
             OfferFinancialReview financialReview,
             String createdByUsername) {
-        
+
         // 1. Idempotency check - skip if payment request already exists for this step
         if (paymentRequestRepository.existsByMaintenanceStepId(step.getId())) {
             System.out.println("[MaintenancePayment] Payment request already exists for step: " + step.getId());
             return paymentRequestRepository.findByMaintenanceStepId(step.getId()).orElse(null);
         }
-        
+
         // 2. Skip steps without a merchant (internal employee work - no vendor to pay)
         Merchant merchant = step.getSelectedMerchant();
         if (merchant == null) {
             System.out.println("[MaintenancePayment] Skipping step without merchant: " + step.getId());
             return null;
         }
-        
+
         // 3. Get payment amount - actualCost is preferred (final paid amount), fallback to stepCost
         BigDecimal amount = step.getActualCost() != null ? step.getActualCost() : step.getStepCost();
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             System.out.println("[MaintenancePayment] Skipping step with zero/null cost: " + step.getId());
             return null;
         }
-        
+
         // 4. Generate unique request number
         String requestNumber = generatePaymentRequestNumber();
-        
+
         // 5. Build description with step details
         String stepTypeName = step.getStepType() != null ? step.getStepType().getName() : "Maintenance";
         String description = String.format(stepTypeName, step.getDescription());
         if (description.length() > 500) {
             description = description.substring(0, 497) + "...";
         }
-        
+
         // 6. Create PaymentRequest with APPROVED status (money already paid in real life)
         PaymentRequest paymentRequest = PaymentRequest.builder()
                 .requestNumber(requestNumber)
@@ -449,9 +454,9 @@ public class PaymentRequestService {
                 .merchantContactPhone(merchant.getContactPhone())
                 .merchantContactEmail(merchant.getContactEmail())
                 .build();
-        
+
         PaymentRequest savedRequest = paymentRequestRepository.save(paymentRequest);
-        
+
         // 7. Create status history for audit trail
         createStatusHistory(
                 savedRequest,
@@ -460,10 +465,10 @@ public class PaymentRequestService {
                 null,
                 "Payment request created from maintenance record completion. Step: " + stepTypeName
         );
-        
-        System.out.println("[MaintenancePayment] Created payment request " + requestNumber + 
+
+        System.out.println("[MaintenancePayment] Created payment request " + requestNumber +
                 " for step " + step.getId() + " amount: " + amount + " EGP");
-        
+
         return savedRequest;
     }
 
@@ -564,76 +569,98 @@ public class PaymentRequestService {
         createStatusHistory(savedRequest, oldStatus, newStatus, reviewerUserId,
                 isApproval ? request.getNotes() : request.getRejectionReason());
 
-        // Update PurchaseOrder and PurchaseOrderItem payment statuses
+        // ✅ Update PurchaseOrder if exists
         if (savedRequest.getPurchaseOrder() != null) {
-            PurchaseOrder po = savedRequest.getPurchaseOrder();
-
-            // Update each PO item linked to this payment request
-            for (PaymentRequestItem prItem : savedRequest.getPaymentRequestItems()) {
-                UUID poItemId = prItem.getPurchaseOrderItemId();
-                if (poItemId != null) {
-                    PurchaseOrderItem poItem = po.getPurchaseOrderItems().stream()
-                            .filter(item -> item.getId().equals(poItemId))
-                            .findFirst()
-                            .orElse(null);
-
-                    if (poItem != null) {
-                        if (isApproval) {
-                            poItem.setPaymentStatus(POItemPaymentStatus.APPROVED);
-                        } else {
-                            poItem.setPaymentStatus(POItemPaymentStatus.REJECTED);
-                        }
-                    }
-                }
-            }
-
-            // Update overall PO payment status based on ALL items
-            List<PurchaseOrderItem> allItems = po.getPurchaseOrderItems();
-            long approvedCount = allItems.stream()
-                    .filter(item -> item.getPaymentStatus() == POItemPaymentStatus.APPROVED)
-                    .count();
-            long paidCount = allItems.stream()
-                    .filter(item -> item.getPaymentStatus() == POItemPaymentStatus.PAID)
-                    .count();
-            long rejectedCount = allItems.stream()
-                    .filter(item -> item.getPaymentStatus() == POItemPaymentStatus.REJECTED)
-                    .count();
-
-            if (paidCount == allItems.size()) {
-                // All items paid
-                po.setPaymentStatus(POPaymentStatus.PAID);
-            } else if (rejectedCount == allItems.size()) {
-                // All items rejected
-                po.setPaymentStatus(POPaymentStatus.REJECTED);
-            } else if (approvedCount > 0 || paidCount > 0) {
-                // Some items approved or paid
-                po.setPaymentStatus(POPaymentStatus.APPROVED);
-            }
-
-            purchaseOrderRepository.save(po);
-            System.out.println("✅ Updated PO " + po.getPoNumber() + " and " +
-                    savedRequest.getPaymentRequestItems().size() + " items payment status");
+            updatePOPaymentStatus(savedRequest, isApproval);
         }
 
-        // Payment request approval is independent of logistics
-        // Logistics has its own separate approval workflow
-
-        // TODO: Send notification to procurement team
+        // ✅ Update Logistics if exists
+        if (savedRequest.getLogistics() != null) {
+            updateLogisticsPaymentStatus(savedRequest, isApproval);
+        }
 
         return convertToDTO(savedRequest);
     }
+
+    private void updatePOPaymentStatus(PaymentRequest savedRequest, boolean isApproval) {
+        PurchaseOrder po = savedRequest.getPurchaseOrder();
+
+        // Update each PO item linked to this payment request
+        for (PaymentRequestItem prItem : savedRequest.getPaymentRequestItems()) {
+            UUID poItemId = prItem.getPurchaseOrderItemId();
+            if (poItemId != null) {
+                PurchaseOrderItem poItem = po.getPurchaseOrderItems().stream()
+                        .filter(item -> item.getId().equals(poItemId))
+                        .findFirst()
+                        .orElse(null);
+
+                if (poItem != null) {
+                    if (isApproval) {
+                        poItem.setPaymentStatus(POItemPaymentStatus.APPROVED);
+                    } else {
+                        poItem.setPaymentStatus(POItemPaymentStatus.REJECTED);
+                    }
+                }
+            }
+        }
+
+        // Update overall PO payment status based on ALL items
+        List<PurchaseOrderItem> allItems = po.getPurchaseOrderItems();
+        long approvedCount = allItems.stream()
+                .filter(item -> item.getPaymentStatus() == POItemPaymentStatus.APPROVED)
+                .count();
+        long paidCount = allItems.stream()
+                .filter(item -> item.getPaymentStatus() == POItemPaymentStatus.PAID)
+                .count();
+        long rejectedCount = allItems.stream()
+                .filter(item -> item.getPaymentStatus() == POItemPaymentStatus.REJECTED)
+                .count();
+
+        if (paidCount == allItems.size()) {
+            po.setPaymentStatus(POPaymentStatus.PAID);
+        } else if (rejectedCount == allItems.size()) {
+            po.setPaymentStatus(POPaymentStatus.REJECTED);
+        } else if (approvedCount > 0 || paidCount > 0) {
+            po.setPaymentStatus(POPaymentStatus.APPROVED);
+        }
+
+        purchaseOrderRepository.save(po);
+        System.out.println("✅ Updated PO " + po.getPoNumber() + " and " +
+                savedRequest.getPaymentRequestItems().size() + " items payment status");
+    }
+
+
+    private void updateLogisticsPaymentStatus(PaymentRequest paymentRequest, boolean isApproval) {
+        Logistics logistics = paymentRequest.getLogistics();
+
+        if (isApproval) {
+            // Approved - move to PENDING_PAYMENT
+            logistics.setStatus(LogisticsStatus.PENDING_PAYMENT);
+            logistics.setPaymentStatus(LogisticsPaymentStatus.APPROVED);
+            logistics.setApprovedAt(LocalDateTime.now());
+            logistics.setApprovedBy(paymentRequest.getApprovedByUserName());
+            System.out.println("✅ Logistics " + logistics.getLogisticsNumber() +
+                    " approved - status: PENDING_PAYMENT");
+        } else {
+            // Rejected - move to COMPLETED
+            logistics.setStatus(LogisticsStatus.COMPLETED);
+            logistics.setPaymentStatus(LogisticsPaymentStatus.REJECTED);
+            logistics.setRejectedAt(LocalDateTime.now());
+            logistics.setRejectedBy(paymentRequest.getRejectedByUserName());
+            logistics.setRejectionReason(paymentRequest.getRejectionReason());
+            System.out.println("✅ Logistics " + logistics.getLogisticsNumber() +
+                    " rejected - status: COMPLETED");
+        }
+
+        logisticsService.save(logistics);
+    }
+
     /**
      * Update payment request amounts after payment (called by PaymentService)
      */
-    /**
-     * Update payment request amounts after payment (called by PaymentService)
-     */
-    /**
-     * Update payment request amounts after payment (called by PaymentService)
-     */
-    /**
-     * Update payment request amounts after payment (called by PaymentService)
-     */
+
+
+
     @Transactional
     public void updatePaymentRequestAfterPayment(UUID paymentRequestId, BigDecimal paymentAmount) {
         PaymentRequest paymentRequest = paymentRequestRepository.findById(paymentRequestId)
@@ -647,53 +674,66 @@ public class PaymentRequestService {
         paymentRequest.setRemainingAmount(newRemaining);
 
         PaymentRequestStatus oldStatus = paymentRequest.getStatus();
-        PaymentRequestStatus newStatus;
-
-        if (newRemaining.compareTo(BigDecimal.ZERO) <= 0) {
-            newStatus = PaymentRequestStatus.PAID;
-        } else if (newTotalPaid.compareTo(BigDecimal.ZERO) > 0) {
-            newStatus = PaymentRequestStatus.PARTIALLY_PAID;
-        } else {
-            newStatus = oldStatus;
-        }
+        PaymentRequestStatus newStatus = PaymentRequestStatus.PAID;  // Always PAID (no partial)
 
         if (newStatus != oldStatus) {
             paymentRequest.setStatus(newStatus);
             createStatusHistory(paymentRequest, oldStatus, newStatus, null, "Status updated after payment");
 
-            // Update PO items to PAID when payment request is fully paid
-            if (newStatus == PaymentRequestStatus.PAID && paymentRequest.getPurchaseOrder() != null) {
-                PurchaseOrder po = paymentRequest.getPurchaseOrder();
+            // ✅ Update PO items to PAID when payment request is fully paid
+            if (paymentRequest.getPurchaseOrder() != null) {
+                updatePOAfterPayment(paymentRequest);
+            }
 
-                // Mark all items linked to this payment request as PAID
-                for (PaymentRequestItem prItem : paymentRequest.getPaymentRequestItems()) {
-                    UUID poItemId = prItem.getPurchaseOrderItemId();
-                    if (poItemId != null) {
-                        PurchaseOrderItem poItem = po.getPurchaseOrderItems().stream()
-                                .filter(item -> item.getId().equals(poItemId))
-                                .findFirst()
-                                .orElse(null);
-
-                        if (poItem != null) {
-                            poItem.setPaymentStatus(POItemPaymentStatus.PAID);
-                        }
-                    }
-                }
-
-                // Check if all PO items are paid
-                boolean allItemsPaid = po.getPurchaseOrderItems().stream()
-                        .allMatch(item -> item.getPaymentStatus() == POItemPaymentStatus.PAID);
-
-                if (allItemsPaid) {
-                    po.setPaymentStatus(POPaymentStatus.PAID);
-                }
-
-                purchaseOrderRepository.save(po);
-                System.out.println("✅ Updated PO items and PO payment status after payment");
+            // ✅ Update Logistics to COMPLETED/PAID
+            if (paymentRequest.getLogistics() != null) {
+                updateLogisticsAfterPayment(paymentRequest);
             }
         }
 
         paymentRequestRepository.save(paymentRequest);
+    }
+
+    private void updatePOAfterPayment(PaymentRequest paymentRequest) {
+        PurchaseOrder po = paymentRequest.getPurchaseOrder();
+
+        // Mark all items linked to this payment request as PAID
+        for (PaymentRequestItem prItem : paymentRequest.getPaymentRequestItems()) {
+            UUID poItemId = prItem.getPurchaseOrderItemId();
+            if (poItemId != null) {
+                PurchaseOrderItem poItem = po.getPurchaseOrderItems().stream()
+                        .filter(item -> item.getId().equals(poItemId))
+                        .findFirst()
+                        .orElse(null);
+
+                if (poItem != null) {
+                    poItem.setPaymentStatus(POItemPaymentStatus.PAID);
+                }
+            }
+        }
+
+        // Check if all PO items are paid
+        boolean allItemsPaid = po.getPurchaseOrderItems().stream()
+                .allMatch(item -> item.getPaymentStatus() == POItemPaymentStatus.PAID);
+
+        if (allItemsPaid) {
+            po.setPaymentStatus(POPaymentStatus.PAID);
+        }
+
+        purchaseOrderRepository.save(po);
+        System.out.println("✅ Updated PO items and PO payment status after payment");
+    }
+
+    private void updateLogisticsAfterPayment(PaymentRequest paymentRequest) {
+        Logistics logistics = paymentRequest.getLogistics();
+
+        // Fully paid - move to COMPLETED
+        logistics.setStatus(LogisticsStatus.COMPLETED);
+        logistics.setPaymentStatus(LogisticsPaymentStatus.PAID);
+
+        logisticsService.save(logistics);
+        System.out.println("✅ Logistics " + logistics.getLogisticsNumber() +
+                " paid - status: COMPLETED, payment status: PAID");
     }
 
     // ================== Helper Methods ==================
@@ -737,7 +777,7 @@ public class PaymentRequestService {
                 requestOrderTitle = request.getPurchaseOrder().getRequestOrder().getTitle();
             }
         }
-        
+
         // Handle maintenance-sourced fields
         UUID maintenanceStepId = null;
         UUID maintenanceRecordId = null;
@@ -776,7 +816,7 @@ public class PaymentRequestService {
         if (request.getFinancialInstitution() != null) {
             financialInstitutionId = request.getFinancialInstitution().getId();
         }
-        
+
         return PaymentRequestResponseDTO.builder()
                 .id(request.getId())
                 .requestNumber(request.getRequestNumber())
@@ -821,10 +861,10 @@ public class PaymentRequestService {
                 .merchantContactPerson(request.getMerchantContactPerson())
                 .merchantContactPhone(request.getMerchantContactPhone())
                 .merchantContactEmail(request.getMerchantContactEmail())
-                .items(request.getPaymentRequestItems() != null ? 
+                .items(request.getPaymentRequestItems() != null ?
                         request.getPaymentRequestItems().stream()
                                 .map(this::convertItemToDTO)
-                                .collect(Collectors.toList()) 
+                                .collect(Collectors.toList())
                         : new ArrayList<>())
                 .metadata(request.getMetadata())
                 .createdAt(request.getCreatedAt())
