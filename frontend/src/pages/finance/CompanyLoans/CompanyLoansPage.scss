@@ -283,4 +283,14 @@
       font-weight: 600;
     }
   }
+  .tab-content--with-actions {
+    position: relative;
+
+    .tab-content__extra-actions {
+      position: absolute;
+      top: 12px;
+      right: 140px;
+      z-index: 20;
+    }
+  }
 }

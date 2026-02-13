@@ -26,6 +26,14 @@ public class CompanyLoanController {
     /**
      * Create a new company loan
      */
+//    @PostMapping
+//    public ResponseEntity<CompanyLoanResponseDTO> createLoan(
+//            @Valid @RequestBody CreateCompanyLoanRequestDTO requestDTO,
+//            @AuthenticationPrincipal UserDetails userDetails) {
+//        String username = userDetails != null ? userDetails.getUsername() : "system";
+//        CompanyLoanResponseDTO response = loanService.createLoan(requestDTO, username);
+//        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+//    }
     @PostMapping
     public ResponseEntity<CompanyLoanResponseDTO> createLoan(
             @Valid @RequestBody CreateCompanyLoanRequestDTO requestDTO,

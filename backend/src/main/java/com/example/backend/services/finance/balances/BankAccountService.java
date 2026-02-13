@@ -94,6 +94,7 @@ public class BankAccountService {
         return BankAccountResponseDTO.fromEntity(updated);
     }
 
+
     public void delete(UUID id) {
         BankAccount bankAccount = bankAccountRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Bank account not found with ID: " + id));
@@ -116,12 +117,28 @@ public class BankAccountService {
         return BankAccountResponseDTO.fromEntity(updated);
     }
 
-    // Internal method for balance updates (used by transaction service)
     public void updateBalance(UUID id, BigDecimal newBalance) {
         BankAccount bankAccount = bankAccountRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Bank account not found with ID: " + id));
+
+        System.err.println("=== BEFORE UPDATE ===");
+        System.err.println("ID: " + id);
+        System.err.println("newBalance: " + newBalance);
+        System.err.println("currentBalance: " + bankAccount.getCurrentBalance());
+        System.err.println("availableBalance: " + bankAccount.getAvailableBalance());
+        System.err.println("totalBalance: " + bankAccount.getTotalBalance());
+
         bankAccount.setCurrentBalance(newBalance);
+        bankAccount.setAvailableBalance(newBalance);
+        bankAccount.setTotalBalance(newBalance);
+
+        System.err.println("=== AFTER SET ===");
+        System.err.println("currentBalance: " + bankAccount.getCurrentBalance());
+        System.err.println("availableBalance: " + bankAccount.getAvailableBalance());
+        System.err.println("totalBalance: " + bankAccount.getTotalBalance());
+
         bankAccountRepository.save(bankAccount);
+        System.err.println("=== SAVED SUCCESSFULLY ===");
     }
 
     @Transactional(readOnly = true)

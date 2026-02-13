@@ -9,7 +9,8 @@ import {
 } from 'react-icons/fa';
 import './Balances.css';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
-import IntroCard from '../../../components/common/IntroCard/IntroCard';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
+import Tabs from '../../../components/common/Tabs/Tabs'
 import { financeService } from '../../../services/financeService.js';
 
 // Import tab components
@@ -133,27 +134,22 @@ const Balances = () => {
 
     return (
         <div className="balances-container">
-            <IntroCard
-                icon={<FaMoneyBillWave />}
-                label="FINANCE MANAGEMENT"
-                title="Balances & Accounts"
-                stats={loading ? [] : stats}
-                onInfoClick={handleInfoClick}
+            <PageHeader
+                title="Balances"
+                subtitle="Bank accounts, cash safes, and cash with persons"
             />
 
             <div className="balances-content-container">
-                <div className="tabs-header">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-                            onClick={() => setActiveTab(tab.id)}
-                        >
-                            {tab.icon}
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
-                </div>
+                <Tabs
+                    tabs={[
+                        { id: 'bank-accounts', label: 'Bank Accounts', icon: <FaUniversity /> },
+                        { id: 'cash-safes', label: 'Cash Safes', icon: < FaPiggyBank/> },
+                        { id: 'cash-with-persons', label: 'Cash With Persons', icon: <FaUserTie /> },
+                        { id: 'transactions', label: 'All Transactions', icon: <FaExchangeAlt /> }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                />
 
                 <div className="balances-content">
                     {renderTabContent()}

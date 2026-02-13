@@ -201,14 +201,14 @@ const FinancialInstitutionsPage = () => {
                 icon={<FiHome />}
                 stats={stats}
                 breadcrumbs={breadcrumbs}
-                actionButtons={[
-                    {
-                        text: 'Add Institution',
-                        icon: <FiPlus />,
-                        onClick: () => navigate('/finance/company-loans/institutions/new'),
-                        className: 'primary'
-                    }
-                ]}
+                // actionButtons={[
+                //     {
+                //         text: 'Add Institution',
+                //         icon: <FiPlus />,
+                //         onClick: () => navigate('/finance/company-loans/institutions/new'),
+                //         className: 'primary'
+                //     }
+                // ]}
             />
 
             <DataTable
@@ -222,6 +222,11 @@ const FinancialInstitutionsPage = () => {
                 defaultSortDirection="asc"
                 onRowClick={(row) => navigate(`/finance/company-loans/institutions/${row.id}`)}
                 exportFileName="financial_institutions"
+                showAddButton={true}
+                addButtonText='Add Institution'
+                addButtonIcon={<FiPlus />}
+                onAddClick={()=> navigate('/finance/company-loans/institutions/new')}
+
             />
 
             {/* Snackbar */}

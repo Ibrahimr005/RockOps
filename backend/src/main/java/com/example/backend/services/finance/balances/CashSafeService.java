@@ -99,6 +99,8 @@ public class CashSafeService {
         CashSafe cashSafe = cashSafeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Cash safe not found with ID: " + id));
         cashSafe.setCurrentBalance(newBalance);
+        cashSafe.setAvailableBalance(newBalance);   // ← ADD THIS LINE
+        cashSafe.setTotalBalance(newBalance);
         cashSafeRepository.save(cashSafe);
     }
 
