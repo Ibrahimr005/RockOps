@@ -184,7 +184,7 @@ const CreateInstitutionPage = () => {
                     <h3 className="form-section__title">Basic Information</h3>
                     <div className="form-grid">
                         <div className={`form-group ${errors.name ? 'has-error' : ''}`}>
-                            <label>Institution Name *</label>
+                            <label>Institution Name <span className="required">*</span></label>
                             <input
                                 type="text"
                                 name="name"
@@ -196,7 +196,7 @@ const CreateInstitutionPage = () => {
                         </div>
 
                         <div className={`form-group ${errors.institutionType ? 'has-error' : ''}`}>
-                            <label>Institution Type *</label>
+                            <label>Institution Type <span className="required">*</span></label>
                             <select
                                 name="institutionType"
                                 value={formData.institutionType}

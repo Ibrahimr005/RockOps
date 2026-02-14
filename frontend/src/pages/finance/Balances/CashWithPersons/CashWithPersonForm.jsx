@@ -102,7 +102,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
     };
 
     return (
-        <div className="modal-overlay">
+        <div className="modal-backdrop">
             <div className="modal-container cash-with-person-form-modal">
                 <div className="modal-header">
                     <div className="modal-title">
@@ -126,7 +126,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                                 name="personName"
                                 value={formData.personName}
                                 onChange={handleChange}
-                                className={errors.personName ? 'error' : ''}
+                                className={`modern-form-input ${errors.personName ? 'error' : ''}`}
                                 placeholder="e.g., Ahmed Mohamed"
                             />
                             {errors.personName && <span className="error-text">{errors.personName}</span>}
@@ -142,7 +142,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                                 name="currentBalance"
                                 value={formData.currentBalance}
                                 onChange={handleChange}
-                                className={errors.currentBalance ? 'error' : ''}
+                                className={`modern-form-input ${errors.currentBalance ? 'error' : ''}`}
                                 step="0.01"
                                 min="0"
                             />
@@ -159,6 +159,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                                 name="phoneNumber"
                                 value={formData.phoneNumber}
                                 onChange={handleChange}
+                                className={`modern-form-input ${errors.phoneNumber ? 'error' : ''}`}
                                 placeholder="e.g., +20 100 123 4567"
                             />
                         </div>
@@ -173,7 +174,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                className={errors.email ? 'error' : ''}
+                                className={`modern-form-input ${errors.email ? 'error' : ''}`}
                                 placeholder="e.g., ahmed@example.com"
                             />
                             {errors.email && <span className="error-text">{errors.email}</span>}
@@ -189,6 +190,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                                 name="personalBankName"
                                 value={formData.personalBankName}
                                 onChange={handleChange}
+                                className={`modern-form-input ${errors.personalBankAccountNumber ? 'error' : ''}`}
                                 placeholder="e.g., CIB Egypt"
                             />
                         </div>
@@ -203,6 +205,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                                 name="personalBankAccountNumber"
                                 value={formData.personalBankAccountNumber}
                                 onChange={handleChange}
+                                className={`modern-form-input ${errors.personalBankAccountNumber ? 'error' : ''}`}
                                 placeholder="e.g., 1234567890"
                             />
                         </div>
@@ -216,12 +219,13 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
+                                className={`modern-form-input ${errors.address ? 'error' : ''}`}
                                 rows="2"
                                 placeholder="Full address..."
                             />
                         </div>
 
-                        <div className="form-group checkbox-group">
+                        <div className="modern-form-field checkbox-group">
                             <label>
                                 <input
                                     type="checkbox"
@@ -243,6 +247,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                             name="notes"
                             value={formData.notes}
                             onChange={handleChange}
+                            className="modern-form-textarea"
                             rows="3"
                             placeholder="Additional notes..."
                         />
@@ -250,7 +255,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
 
                 </form>
                 <div className="modal-footer">
-                    <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+                    <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>

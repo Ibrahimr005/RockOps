@@ -444,7 +444,8 @@ export const FINANCE_ENDPOINTS = {
             INSTALLMENTS: (id) => `/api/v1/finance/loans/company-loans/${id}/installments`,
             UPDATE_STATUS: (id) => `/api/v1/finance/loans/company-loans/${id}/status`,
             UPCOMING_INSTALLMENTS: '/api/v1/finance/loans/company-loans/installments/upcoming',
-            OVERDUE_INSTALLMENTS: '/api/v1/finance/loans/company-loans/installments/overdue'
+            OVERDUE_INSTALLMENTS: '/api/v1/finance/loans/company-loans/installments/overdue',
+            MERCHANTS: '/api/v1/finance/loans/company-loans/merchants'
         },
 
         // Dashboard

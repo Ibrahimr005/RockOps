@@ -112,7 +112,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
     };
 
     return (
-        <div className="modal-overlay">
+        <div className="modal-backdrop">
             <div className="modal-container bank-account-form-modal">
                 <div className="modal-header">
                     <div className="modal-title">
@@ -136,7 +136,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                                 name="bankName"
                                 value={formData.bankName}
                                 onChange={handleChange}
-                                className={errors.bankName ? 'error' : ''}
+                                className={`modern-form-input ${errors.bankName ? 'error' : ''}`}
                                 placeholder="e.g., National Bank of Egypt"
                             />
                             {errors.bankName && <span className="error-text">{errors.bankName}</span>}
@@ -152,7 +152,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                                 name="accountNumber"
                                 value={formData.accountNumber}
                                 onChange={handleChange}
-                                className={errors.accountNumber ? 'error' : ''}
+                                className={`modern-form-input ${errors.accountNumber ? 'error' : ''}`}
                                 placeholder="e.g., 1234567890"
                             />
                             {errors.accountNumber && <span className="error-text">{errors.accountNumber}</span>}
@@ -168,7 +168,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                                 name="accountHolderName"
                                 value={formData.accountHolderName}
                                 onChange={handleChange}
-                                className={errors.accountHolderName ? 'error' : ''}
+                                className={`modern-form-input ${errors.accountHolderName ? 'error' : ''}`}
                                 placeholder="e.g., Company Name LLC"
                             />
                             {errors.accountHolderName && <span className="error-text">{errors.accountHolderName}</span>}
@@ -184,7 +184,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                                 name="currentBalance"
                                 value={formData.currentBalance}
                                 onChange={handleChange}
-                                className={errors.currentBalance ? 'error' : ''}
+                                className={`modern-form-input ${errors.currentBalance ? 'error' : ''}`}
                                 step="0.01"
                                 min="0"
                             />
@@ -201,6 +201,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                                 name="iban"
                                 value={formData.iban}
                                 onChange={handleChange}
+                                className={`modern-form-input ${errors.iban ? 'error' : ''}`}
                                 placeholder="e.g., EG380019000500000000263180002"
                             />
                         </div>
@@ -215,6 +216,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                                 name="swiftCode"
                                 value={formData.swiftCode}
                                 onChange={handleChange}
+                                className={`modern-form-input ${errors.swiftCode ? 'error' : ''}`}
                                 placeholder="e.g., NBEGEGCX"
                             />
                         </div>
@@ -229,6 +231,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                                 name="branchName"
                                 value={formData.branchName}
                                 onChange={handleChange}
+                                className={`modern-form-input ${errors.branchName ? 'error' : ''}`}
                                 placeholder="e.g., Cairo Main Branch"
                             />
                         </div>
@@ -243,6 +246,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                                 name="branchCode"
                                 value={formData.branchCode}
                                 onChange={handleChange}
+                                className={`modern-form-input ${errors.branchCode ? 'error' : ''}`}
                                 placeholder="e.g., 001"
                             />
                         </div>
@@ -256,11 +260,12 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                                 id="openingDate"
                                 name="openingDate"
                                 value={formData.openingDate}
+                                className={`modern-form-input ${errors.openingDate ? 'error' : ''}`}
                                 onChange={handleChange}
                             />
                         </div>
 
-                        <div className="form-group checkbox-group">
+                        <div className="modern-form-field checkbox-group">
                             <label>
                                 <input
                                     type="checkbox"
@@ -282,6 +287,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                             name="notes"
                             value={formData.notes}
                             onChange={handleChange}
+                            className="modern-form-textarea"
                             rows="3"
                             placeholder="Additional notes about this account..."
                         />
@@ -290,7 +296,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                 </form>
 
                 <div className="modal-footer">
-                    <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+                    <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>

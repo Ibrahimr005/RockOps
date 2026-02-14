@@ -6,6 +6,7 @@ import com.example.backend.models.finance.loans.CompanyLoan;
 import com.example.backend.models.finance.loans.FinancialInstitution;
 import com.example.backend.models.finance.loans.LoanInstallment;
 import com.example.backend.models.finance.loans.enums.LoanInstallmentStatus;
+import com.example.backend.models.merchant.Merchant;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.finance.loans.LoanInstallmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,11 +45,13 @@ public class LoanPaymentRequestService {
     public void createPaymentRequestsForLoan(CompanyLoan loan, String createdBy) {
         log.info("Creating payment requests for loan: {}", loan.getLoanNumber());
 
+//        FinancialInstitution institution = loan.getFinancialInstitution();
         FinancialInstitution institution = loan.getFinancialInstitution();
+        Merchant merchant = loan.getMerchant();
 
         for (LoanInstallment installment : loan.getInstallments()) {
             PaymentRequest paymentRequest = createPaymentRequestForInstallment(
-                    loan, installment, institution, createdBy);
+                    loan, installment, institution, createdBy, merchant);
 
             // Link payment request to installment
             installment.setPaymentRequestId(paymentRequest.getId());
@@ -66,7 +69,8 @@ public class LoanPaymentRequestService {
             CompanyLoan loan,
             LoanInstallment installment,
             FinancialInstitution institution,
-            String createdBy) {
+            String createdBy,
+            Merchant merchant) {
 
         // Generate PR number using the same format as other payment requests
         String requestNumber = generatePaymentRequestNumber();
@@ -95,12 +99,22 @@ public class LoanPaymentRequestService {
                 .totalPaidAmount(BigDecimal.ZERO)
                 .remainingAmount(installment.getTotalAmount())
                 // Institution info (denormalized for display)
-                .institutionName(institution.getName())
-                .institutionAccountNumber(institution.getPaymentAccountNumber())
-                .institutionBankName(institution.getPaymentBankName())
-                .institutionContactPerson(institution.getContactPersonName())
-                .institutionContactPhone(institution.getContactPersonPhone())
-                .institutionContactEmail(institution.getContactPersonEmail())
+//                .institutionName(institution.getName())
+//                .institutionAccountNumber(institution.getPaymentAccountNumber())
+//                .institutionBankName(institution.getPaymentBankName())
+//                .institutionContactPerson(institution.getContactPersonName())
+//                .institutionContactPhone(institution.getContactPersonPhone())
+//                .institutionContactEmail(institution.getContactPersonEmail())
+                .institutionName(institution != null ? institution.getName() : null)
+                .institutionAccountNumber(institution != null ? institution.getPaymentAccountNumber() : null)
+                .institutionBankName(institution != null ? institution.getPaymentBankName() : null)
+                .institutionContactPerson(institution != null ? institution.getContactPersonName() : null)
+                .institutionContactPhone(institution != null ? institution.getContactPersonPhone() : null)
+                .institutionContactEmail(institution != null ? institution.getContactPersonEmail() : null)
+                .merchantName(merchant != null ? merchant.getName() : null)
+                .merchantContactPerson(merchant != null ? merchant.getContactPersonName() : null)
+                .merchantContactPhone(merchant != null ? merchant.getContactPhone() : null)
+                .merchantContactEmail(merchant != null ? merchant.getContactEmail() : null)
                 .build();
 
         PaymentRequest saved = paymentRequestRepository.save(paymentRequest);
