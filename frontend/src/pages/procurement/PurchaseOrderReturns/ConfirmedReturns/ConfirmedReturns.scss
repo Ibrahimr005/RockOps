@@ -1,0 +1,65 @@
+.confirmed-returns-container {
+  width: 100%;
+
+  .po-number-link {
+    color: var(--primary-color);
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .amount-cell {
+    font-weight: 600;
+
+    &.confirmed {
+      color: var(--success-color);
+    }
+  }
+
+  .items-count-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--success-color-light);
+    color: var(--success-color);
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .date-cell {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+
+    &.confirmed {
+      color: var(--success-color);
+      font-weight: 500;
+    }
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: capitalize;
+
+    &.status-pending {
+      background: #FFF3CD;
+      color: #856404;
+    }
+
+    &.status-confirmed {
+      background: #D4EDDA;
+      color: #155724;
+    }
+
+    &.status-rejected {
+      background: #F8D7DA;
+      color: #721C24;
+    }
+  }
+}

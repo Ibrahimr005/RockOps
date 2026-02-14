@@ -553,6 +553,12 @@ const Sidebar = () => {
                     roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 },
                 {
+                    title: 'Purchase Order Returns',
+                    icon: <FaFileInvoice/>,
+                    path: '/procurement/purchase-order-returns',
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
+                },
+                {
                     title: 'Price Approvals',
                     icon: <FaMoneyCheckAlt />,
                     path: '/procurement/price-approvals',

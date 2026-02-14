@@ -1100,3 +1100,22 @@ export const LOGISTICS_ENDPOINTS = {
     UPDATE: (id) => `/api/procurement/logistics/${id}`,
     DELETE: (id) => `/api/procurement/logistics/${id}`,
 };
+
+// ==================== INCOMING PAYMENTS (Finance) ====================
+export const INCOMING_PAYMENT_ENDPOINTS = {
+    BASE: '/api/v1/finance/incoming-payments',
+    GET_ALL: '/api/v1/finance/incoming-payments',
+    GET_BY_ID: (id) => `/api/v1/finance/incoming-payments/${id}`,
+    BY_STATUS: (status) => `/api/v1/finance/incoming-payments/status/${status}`,
+    BY_SOURCE: (source) => `/api/v1/finance/incoming-payments/source/${source}`,
+    CONFIRM: (id) => `/api/v1/finance/incoming-payments/${id}/confirm`,
+};
+
+// ==================== PURCHASE ORDER RETURNS ====================
+export const PO_RETURN_ENDPOINTS = {
+    BASE: '/api/v1/purchase-order-returns',
+    GET_ALL: '/api/v1/purchase-order-returns',
+    GET_BY_ID: (id) => `/api/v1/purchase-order-returns/${id}`,
+    BY_STATUS: (status) => `/api/v1/purchase-order-returns/status/${status}`,
+    CREATE: (purchaseOrderId) => `/api/v1/purchase-order-returns/purchase-orders/${purchaseOrderId}`,
+};

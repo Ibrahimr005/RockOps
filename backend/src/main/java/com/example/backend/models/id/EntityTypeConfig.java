@@ -13,6 +13,7 @@ public enum EntityTypeConfig {
     REQUEST_ORDER_ITEM("ROI", 6),
     PURCHASE_ORDER("PO", 6),
     PURCHASE_ORDER_ITEM("POI", 6),
+    PURCHASE_ORDER_RETURN("RET", 6),  // ADD THIS LINE
     OFFER("OFF", 6),
     OFFER_ITEM("OFFI", 6),
 
@@ -52,7 +53,6 @@ public enum EntityTypeConfig {
         return paddingLength;
     }
 
-    // Entity type is now the enum name itself
     public String getEntityType() {
         return this.name();
     }

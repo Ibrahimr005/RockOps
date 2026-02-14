@@ -36,7 +36,7 @@ public class PurchaseOrderReturnItem {
     private String itemTypeName;
 
     @Column(name = "return_quantity", nullable = false, precision = 15, scale = 3)
-    private Double returnQuantity;
+    private BigDecimal returnQuantity;  // Changed from Double to BigDecimal
 
     @Column(name = "unit_price", nullable = false, precision = 15, scale = 2)
     private BigDecimal unitPrice;

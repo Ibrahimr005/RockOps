@@ -2,6 +2,7 @@ package com.example.backend.dto.procurement.PurchaseOrderReturn;
 
 import com.example.backend.models.procurement.PurchaseOrderReturn.PurchaseOrderReturnStatus;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,16 +14,16 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PurchaseOrderReturnResponseDTO {
-
     private UUID id;
-    private String returnNumber;
+    private String returnId;
     private UUID purchaseOrderId;
     private String purchaseOrderNumber;
     private UUID merchantId;
     private String merchantName;
     private BigDecimal totalReturnAmount;
-    private PurchaseOrderReturnStatus status;
+    private PurchaseOrderReturnStatus status;  // Changed from String to Enum
     private String reason;
     private String requestedBy;
     private LocalDateTime requestedAt;

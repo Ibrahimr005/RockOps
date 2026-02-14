@@ -28,6 +28,9 @@ public class PurchaseOrderReturn {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(name = "return_id", unique = true, nullable = false, length = 50)
+    private String returnId;  // ADD THIS - Display ID like RET000001
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchase_order_id", nullable = false)
     private PurchaseOrder purchaseOrder;
@@ -36,8 +39,7 @@ public class PurchaseOrderReturn {
     @JoinColumn(name = "merchant_id", nullable = false)
     private Merchant merchant;
 
-    @Column(name = "return_number", unique = true, nullable = false, length = 100)
-    private String returnNumber;
+
 
     @Column(name = "total_return_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalReturnAmount = BigDecimal.ZERO;

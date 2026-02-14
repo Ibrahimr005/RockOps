@@ -50,4 +50,5 @@ public class IncomingPaymentRequestItem {
 
     @Column(name = "issue_description", columnDefinition = "TEXT")
     private String issueDescription;
+
 }
