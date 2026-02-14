@@ -35,7 +35,7 @@ public class PurchaseOrderReturnItem {
     @Column(name = "item_type_name", nullable = false)
     private String itemTypeName;
 
-    @Column(name = "return_quantity", nullable = false, precision = 15, scale = 3)
+    @Column(name = "return_quantity", nullable = false)
     private Double returnQuantity;
 
     @Column(name = "unit_price", nullable = false, precision = 15, scale = 2)
