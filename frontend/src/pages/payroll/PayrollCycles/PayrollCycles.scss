@@ -2,10 +2,7 @@
   padding: 2rem;
 
   .payroll-content {
-    background: var(--section-background-color);
-    border-radius: var(--radius-md);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
+
   }
 
   // Period cell styling
@@ -28,13 +25,8 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
 
     svg {
-      font-size: 0.9rem;
     }
 
     &.info {
@@ -53,8 +45,7 @@
     }
 
     &.paid {
-      background: rgba(156, 39, 176, 0.1);
-      color: #9C27B0;
+
     }
 
     &.secondary {
