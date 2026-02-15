@@ -62,4 +62,6 @@ public interface PayrollRepository extends JpaRepository<Payroll, UUID> {
             "FROM Payroll p WHERE p.payrollNumber LIKE CONCAT(:prefix, '%')")
     Integer getMaxPayrollSequenceForYear(@Param("prefix") String prefix);
 
+
+
 }

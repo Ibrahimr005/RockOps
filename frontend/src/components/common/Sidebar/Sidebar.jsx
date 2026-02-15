@@ -424,12 +424,12 @@ const Sidebar = () => {
                     path: '/payroll/cycles',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
-                {
-                    title: 'Employee Payrolls',  // NEW - View all employee payrolls
-                    icon: <FaUsers/>,
-                    path: '/payroll/employee-payrolls',
-                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
-                },
+                // {
+                //     title: 'Employee Payrolls',  // NEW - View all employee payrolls
+                //     icon: <FaUsers/>,
+                //     path: '/payroll/employee-payrolls',
+                //     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                // },
                 {
                     title: 'Loan Management',
                     icon: <FaPiggyBank/>,
@@ -454,18 +454,18 @@ const Sidebar = () => {
                     path: '/payroll/payment-types',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
-                {
-                    title: 'Payslip Management',
-                    icon: <FaReceipt/>,
-                    path: '/payroll/payslips',
-                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
-                },
-                {
-                    title: 'Reports & History',
-                    icon: <FaFileAlt/>,
-                    path: '/payroll/reports',
-                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
-                },
+                // {
+                //     title: 'Payslip Management',
+                //     icon: <FaReceipt/>,
+                //     path: '/payroll/payslips',
+                //     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                // },
+                // {
+                //     title: 'Reports & History',
+                //     icon: <FaFileAlt/>,
+                //     path: '/payroll/reports',
+                //     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                // },
             ]
         },
 

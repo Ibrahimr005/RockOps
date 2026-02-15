@@ -311,7 +311,11 @@ public class PayrollSnapshotService {
         // ⭐ FIX: Create entity manually instead of using Lombok builder
         log.info("     📸 Creating EmployeePayroll entity manually...");
         EmployeePayroll employeePayroll = new EmployeePayroll();
-
+        // Generate employee payroll number
+        employeePayroll.setEmployeePayrollNumber(generateEmployeePayrollNumber(payroll.getStartDate()));
+employeePayroll.setPaymentTypeCode(employee.getPaymentType().getCode());
+employeePayroll.setPaymentTypeName(employee.getPaymentType().getName());
+employeePayroll.setPaymentTypeId(employee.getPaymentType().getId());
         // Set required fields
         employeePayroll.setPayroll(payroll);
         employeePayroll.setEmployeeId(employee.getId());
@@ -525,4 +529,13 @@ public class PayrollSnapshotService {
 
         return totalDays;
     }
+
+    private String generateEmployeePayrollNumber(LocalDate startDate) {
+        String year = String.valueOf(startDate.getYear());
+        String prefix = "EPRL-" + year + "-";
+        Integer maxSeq = employeePayrollRepository.getMaxEmployeePayrollSequenceForYear(prefix);
+        int nextSeq = (maxSeq != null ? maxSeq : 0) + 1;
+        return String.format("EPRL-%s-%06d", year, nextSeq);
+    }
+
 }

@@ -98,4 +98,13 @@ public interface EmployeePayrollRepository extends JpaRepository<EmployeePayroll
            "com.example.backend.models.payroll.PayrollStatus.DEDUCTION_REVIEW, " +
            "com.example.backend.models.payroll.PayrollStatus.CONFIRMED_AND_LOCKED)")
     List<EmployeePayroll> findEditableByEmployeeId(@Param("employeeId") UUID employeeId);
+
+
+    /**
+     * Get the max employee payroll number sequence for a given year (format: EPRL-YYYY-NNNNNN)
+     */
+    @Query("SELECT MAX(CAST(SUBSTRING(ep.employeePayrollNumber, LENGTH(:prefix) + 1) AS int)) " +
+            "FROM EmployeePayroll ep WHERE ep.employeePayrollNumber LIKE CONCAT(:prefix, '%')")
+    Integer getMaxEmployeePayrollSequenceForYear(@Param("prefix") String prefix);
+
 }
