@@ -80,6 +80,16 @@ public class LoanPaymentRequestService {
                 .requestNumber(requestNumber)
                 .loanInstallment(installment)
                 .financialInstitution(institution)
+                // ADD: Source polymorphism
+                .sourceType("COMPANY_LOANS")
+                .sourceId(loan.getId())
+                .sourceNumber(loan.getLoanNumber())
+                .sourceDescription(description)
+                // ADD: Target polymorphism
+                .targetType("FINANCIAL_INSTITUTION")
+                .targetId(institution.getId())
+                .targetName(institution.getName())
+                .targetDetails(buildInstitutionTargetDetails(institution))
                 .requestedAmount(installment.getTotalAmount())
                 .currency(loan.getCurrency())
                 .description(description)
@@ -107,6 +117,30 @@ public class LoanPaymentRequestService {
         log.debug("Created payment request {} for installment {}", requestNumber, installment.getInstallmentNumber());
 
         return saved;
+    }
+
+    private String buildInstitutionTargetDetails(FinancialInstitution institution) {
+        if (institution == null) return null;
+        StringBuilder details = new StringBuilder();
+        details.append("{");
+        details.append("\"type\":\"FINANCIAL_INSTITUTION\"");
+        if (institution.getPaymentAccountNumber() != null) {
+            details.append(",\"accountNumber\":\"").append(institution.getPaymentAccountNumber()).append("\"");
+        }
+        if (institution.getPaymentBankName() != null) {
+            details.append(",\"bankName\":\"").append(institution.getPaymentBankName()).append("\"");
+        }
+        if (institution.getContactPersonName() != null) {
+            details.append(",\"contactPerson\":\"").append(institution.getContactPersonName()).append("\"");
+        }
+        if (institution.getContactPersonPhone() != null) {
+            details.append(",\"phone\":\"").append(institution.getContactPersonPhone()).append("\"");
+        }
+        if (institution.getContactPersonEmail() != null) {
+            details.append(",\"email\":\"").append(institution.getContactPersonEmail()).append("\"");
+        }
+        details.append("}");
+        return details.toString();
     }
 
     /**
