@@ -1,5 +1,6 @@
 package com.example.backend.models.procurement.RequestOrder;
 
+import com.example.backend.models.procurement.EquipmentPurchaseSpec;
 import com.example.backend.models.warehouse.ItemType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -33,4 +34,8 @@ public class RequestOrderItem {
     @JoinColumn(name = "item_type_id")
     // ✅ REMOVED @JsonManagedReference - it doesn't belong on @ManyToOne
     private ItemType itemType;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "equipment_purchase_spec_id")
+    private EquipmentPurchaseSpec equipmentSpec;
 }

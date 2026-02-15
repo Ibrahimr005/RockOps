@@ -132,6 +132,10 @@ public class Equipment {
     @Column(name = "finance_balance_updated_at")
     private LocalDateTime financeBalanceUpdatedAt;
 
+    // Traceability: links to the PO that created this equipment (if auto-created via procurement)
+    @Column(name = "purchase_order_id", unique = true)
+    private UUID purchaseOrderId;
+
 
     public Equipment() {
         this.status = EquipmentStatus.AVAILABLE;

@@ -4,6 +4,7 @@ import com.example.backend.dto.procurement.*;
 import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderDTO;
 import com.example.backend.models.procurement.Offer.Offer;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.services.equipment.EquipmentService;
 import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import com.example.backend.services.procurement.PurchaseOrderService;
 import com.example.backend.services.procurement.DeliveryProcessingService;
@@ -30,6 +31,9 @@ public class PurchaseOrderController {
     private final DeliveryProcessingService deliveryProcessingService;
     private final IssueResolutionService issueResolutionService;
     private PaymentRequestService paymentRequestService;
+
+    @Autowired
+    private EquipmentService equipmentService;
 
     @Autowired
     public PurchaseOrderController(
@@ -338,6 +342,24 @@ public class PurchaseOrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "success", false,
                     "message", "Error resolving issues: " + e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/{id}/retry-equipment-creation")
+    public ResponseEntity<?> retryEquipmentCreation(@PathVariable UUID id) {
+        try {
+            PurchaseOrder po = purchaseOrderService.getPurchaseOrderById(id);
+            var created = equipmentService.createFromPurchaseOrder(po);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", created.size() + " equipment item(s) created",
+                    "count", created.size()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Error retrying equipment creation: " + e.getMessage()
             ));
         }
     }

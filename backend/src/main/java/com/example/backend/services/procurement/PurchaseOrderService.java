@@ -49,6 +49,8 @@ public class PurchaseOrderService {
     private final PurchaseOrderMapper purchaseOrderMapper;
     private final ItemTypeService itemTypeService;
 
+    @Autowired
+    private com.example.backend.services.equipment.EquipmentService equipmentService;
 
     @Autowired
     private EntityManager entityManager;
@@ -163,6 +165,11 @@ public class PurchaseOrderService {
             poItem.setOfferItem(offerItem);
             poItem.setItemType(offerItem.getRequestOrderItem().getItemType());
             poItem.setItemReceipts(new ArrayList<>());
+
+            // Copy equipment spec from request order item to PO item
+            if (offerItem.getRequestOrderItem().getEquipmentSpec() != null) {
+                poItem.setEquipmentSpec(offerItem.getRequestOrderItem().getEquipmentSpec());
+            }
 
             if (offerItem.getMerchant() != null) {
                 poItem.setMerchant(offerItem.getMerchant());
@@ -756,6 +763,11 @@ public class PurchaseOrderService {
             poItem.setOfferItem(offerItem);
             poItem.setItemType(offerItem.getRequestOrderItem().getItemType());
             poItem.setMerchant(merchant);
+
+            // Copy equipment spec from request order item to PO item
+            if (offerItem.getRequestOrderItem().getEquipmentSpec() != null) {
+                poItem.setEquipmentSpec(offerItem.getRequestOrderItem().getEquipmentSpec());
+            }
             poItem.setItemReceipts(new ArrayList<>());
 
             savedPO.getPurchaseOrderItems().add(poItem);
@@ -835,6 +847,21 @@ public class PurchaseOrderService {
                 }
             } catch (Exception e) {
                 System.err.println("⚠️ Failed to collect item types: " + e.getMessage());
+            }
+        }
+
+        // Auto-create equipment if this is an equipment purchase order
+        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
+            RequestOrder ro = po.getRequestOrder();
+            if (ro != null && "EQUIPMENT".equals(ro.getPartyType())) {
+                try {
+                    System.out.println("🔧 Equipment PO completed, triggering auto-creation...");
+                    equipmentService.createFromPurchaseOrder(po);
+                } catch (Exception e) {
+                    System.err.println("⚠️ Equipment auto-creation failed for PO "
+                            + po.getPoNumber() + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         }
     }

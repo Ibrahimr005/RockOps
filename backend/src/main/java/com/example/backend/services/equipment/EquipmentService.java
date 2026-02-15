@@ -15,6 +15,9 @@ import com.example.backend.models.equipment.*;
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.procurement.EquipmentPurchaseSpec;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.models.user.Role;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.services.MinioService;
@@ -794,6 +797,132 @@ public class EquipmentService {
         }
 
         equipmentRepository.delete(equipment);
+    }
+
+    /**
+     * Auto-create Equipment records from a completed purchase order.
+     * Called by PurchaseOrderService when an equipment PO reaches COMPLETED status.
+     *
+     * - Iterates PO items that have an EquipmentPurchaseSpec attached
+     * - Maps spec fields to new Equipment entities
+     * - Idempotent: checks existsByPurchaseOrderId before creating
+     * - Per-item error handling: one failure won't block other items
+     *
+     * @param po The completed PurchaseOrder
+     * @return List of created Equipment entities (may be empty if idempotency guard fires)
+     */
+    @Transactional
+    public List<Equipment> createFromPurchaseOrder(PurchaseOrder po) {
+        List<Equipment> createdEquipment = new ArrayList<>();
+
+        // Idempotency guard: skip if equipment already created for this PO
+        if (equipmentRepository.existsByPurchaseOrderId(po.getId())) {
+            System.out.println("⚠️ Equipment already exists for PO " + po.getPoNumber() + ", skipping auto-creation");
+            return createdEquipment;
+        }
+
+        for (PurchaseOrderItem poItem : po.getPurchaseOrderItems()) {
+            EquipmentPurchaseSpec spec = poItem.getEquipmentSpec();
+            if (spec == null) {
+                continue; // Skip non-equipment items
+            }
+
+            try {
+                Equipment equipment = new Equipment();
+
+                // Map from spec — look up or create EquipmentType entity by name
+                if (spec.getEquipmentType() != null) {
+                    EquipmentType equipmentType = equipmentTypeRepository.findByName(spec.getEquipmentType())
+                            .orElseGet(() -> {
+                                EquipmentType newType = new EquipmentType();
+                                newType.setName(spec.getEquipmentType());
+                                return equipmentTypeRepository.save(newType);
+                            });
+                    equipment.setType(equipmentType);
+                }
+                equipment.setName(spec.getName());
+                equipment.setModel(spec.getModel() != null ? spec.getModel() : "N/A");
+                // Look up or create EquipmentBrand entity by name
+                if (spec.getBrand() != null) {
+                    EquipmentBrand equipmentBrand = equipmentBrandRepository.findByName(spec.getBrand())
+                            .orElseGet(() -> {
+                                EquipmentBrand newBrand = new EquipmentBrand();
+                                newBrand.setName(spec.getBrand());
+                                return equipmentBrandRepository.save(newBrand);
+                            });
+                    equipment.setBrand(equipmentBrand);
+                }
+                equipment.setManufactureYear(spec.getManufactureYear() != null
+                        ? Year.of(spec.getManufactureYear())
+                        : Year.now());
+                equipment.setCountryOfOrigin(spec.getCountryOfOrigin() != null
+                        ? spec.getCountryOfOrigin()
+                        : "N/A");
+
+                // Map from PO data
+                equipment.setEgpPrice(poItem.getTotalPrice());
+                equipment.setDollarPrice(0);
+                equipment.setPurchasedDate(LocalDate.now());
+                equipment.setDeliveredDate(LocalDate.now());
+                equipment.setDepreciationStartDate(LocalDate.now());
+
+                // Set merchant from PO item if available
+                if (poItem.getMerchant() != null) {
+                    equipment.setPurchasedFrom(poItem.getMerchant());
+                }
+
+                // Auto-generate unique serial number
+                String serialNumber = "EQ-PO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                equipment.setSerialNumber(serialNumber);
+
+                // Set traceability
+                equipment.setPurchaseOrderId(po.getId());
+
+                // Default values for required fields
+                equipment.setStatus(EquipmentStatus.AVAILABLE);
+                equipment.setWorkedHours(0);
+                equipment.setShipping(0);
+                equipment.setCustoms(0);
+                equipment.setTaxes(0);
+
+                // Store spec description as equipment complaints/notes for reference
+                if (spec.getSpecifications() != null) {
+                    equipment.setEquipmentComplaints("Purchase Spec: " + spec.getSpecifications());
+                }
+
+                Equipment saved = equipmentRepository.save(equipment);
+                createdEquipment.add(saved);
+
+                System.out.println("✅ Auto-created equipment '" + saved.getName()
+                        + "' (SN: " + saved.getSerialNumber() + ") from PO " + po.getPoNumber());
+
+            } catch (Exception e) {
+                System.err.println("❌ Failed to create equipment from spec "
+                        + spec.getId() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        // Send notification if any equipment was created
+        if (!createdEquipment.isEmpty()) {
+            try {
+                String title = "Equipment Auto-Created from Purchase Order";
+                String message = createdEquipment.size() + " equipment item(s) created from PO "
+                        + po.getPoNumber() + ". Please review and complete equipment details.";
+                String actionUrl = "/equipment";
+
+                notificationService.sendNotificationToUsersByRoles(
+                        Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN),
+                        title, message,
+                        NotificationType.SUCCESS,
+                        actionUrl,
+                        po.getId().toString());
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to send equipment creation notification: " + e.getMessage());
+            }
+        }
+
+        return createdEquipment;
     }
 
     /**
