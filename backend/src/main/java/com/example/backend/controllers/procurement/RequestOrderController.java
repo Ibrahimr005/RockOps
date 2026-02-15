@@ -97,7 +97,8 @@ public class RequestOrderController {
                         .itemType(ItemTypeDTO.builder()
                                 .id(item.getItemType().getId())
                                 .name(item.getItemType().getName())
-                                .measuringUnit(item.getItemType().getMeasuringUnit())
+                                .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                                        item.getItemType().getMeasuringUnit().getName() : null)
                                 .itemCategoryName(item.getItemType().getItemCategory() != null
                                         ? item.getItemType().getItemCategory().getName()
                                         : null)

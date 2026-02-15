@@ -1,7 +1,7 @@
 package com.example.backend.models.procurement.Offer;
 
 import com.example.backend.models.merchant.Merchant;
-import com.example.backend.models.procurement.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
 import com.example.backend.models.warehouse.ItemType;
 import com.fasterxml.jackson.annotation.JsonBackReference;

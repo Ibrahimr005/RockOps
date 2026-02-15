@@ -54,4 +54,12 @@ public interface PayrollRepository extends JpaRepository<Payroll, UUID> {
      * Find payroll by exact date range
      */
     Optional<Payroll> findByStartDateAndEndDate(java.time.LocalDate startDate, java.time.LocalDate endDate);
+
+    /**
+     * Get the max payroll number sequence for a given year (format: PRL-YYYY-NNNNNN)
+     */
+    @Query("SELECT MAX(CAST(SUBSTRING(p.payrollNumber, LENGTH(:prefix) + 1) AS int)) " +
+            "FROM Payroll p WHERE p.payrollNumber LIKE CONCAT(:prefix, '%')")
+    Integer getMaxPayrollSequenceForYear(@Param("prefix") String prefix);
+
 }

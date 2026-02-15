@@ -67,6 +67,7 @@ public class PayrollService {
         Payroll payroll = Payroll.builder()
                 .startDate(startDate)
                 .endDate(endDate)
+                .payrollNumber(generatePayrollNumber(startDate))
                 .status(PayrollStatus.PUBLIC_HOLIDAYS_REVIEW)
                 .totalGrossAmount(BigDecimal.ZERO)
                 .totalDeductions(BigDecimal.ZERO)
@@ -107,6 +108,7 @@ public class PayrollService {
         Payroll payroll = Payroll.builder()
                 .startDate(startDate)
                 .endDate(endDate)
+                .payrollNumber(generatePayrollNumber(startDate))
                 .status(PayrollStatus.PUBLIC_HOLIDAYS_REVIEW)
                 .totalGrossAmount(BigDecimal.ZERO)
                 .totalDeductions(BigDecimal.ZERO)
@@ -118,6 +120,14 @@ public class PayrollService {
                 .build();
 
         return payrollRepository.save(payroll);
+    }
+
+    private String generatePayrollNumber(LocalDate startDate) {
+        String year = String.valueOf(startDate.getYear());
+        String prefix = "PRL-" + year + "-";
+        Integer maxSeq = payrollRepository.getMaxPayrollSequenceForYear(prefix);
+        int nextSeq = (maxSeq != null ? maxSeq : 0) + 1;
+        return String.format("PRL-%s-%06d", year, nextSeq);
     }
 
     /**

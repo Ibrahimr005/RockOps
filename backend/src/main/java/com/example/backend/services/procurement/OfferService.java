@@ -1,12 +1,14 @@
 package com.example.backend.services.procurement;
 
 import com.example.backend.dto.procurement.*;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderDTO;
 import com.example.backend.mappers.procurement.*;
 import com.example.backend.models.merchant.Merchant;
-import com.example.backend.models.procurement.*;
 import com.example.backend.models.procurement.Offer.Offer;
 import com.example.backend.models.procurement.Offer.OfferItem;
 import com.example.backend.models.procurement.Offer.OfferTimelineEvent;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
 import com.example.backend.models.warehouse.ItemType;
@@ -20,10 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
 import com.example.backend.models.procurement.Offer.TimelineEventType;
+import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+
 
 @Service
 public class OfferService {
@@ -1162,6 +1167,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
                     .createdBy(username)
                     .purchaseOrderItems(new ArrayList<>()) // Initialize the list
                     .paymentTerms("Net 30")
+                    .paymentStatus(POPaymentStatus.REQUESTED)      // ← ADD THIS
+                    .totalPaidAmount(BigDecimal.ZERO)
                     .currency("EGP")
                     .build();
 

@@ -68,7 +68,8 @@ public class OfferRequestItemService {
                             .offerId(offerId)
                             .itemTypeId(item.getItemType().getId())
                             .itemTypeName(item.getItemType().getName())
-                            .itemTypeMeasuringUnit(item.getItemType().getMeasuringUnit())
+                            .itemTypeMeasuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                                    item.getItemType().getMeasuringUnit().getName() : null)
                             .quantity(item.getQuantity())
                             .comment(item.getComment())
                             .originalRequestOrderItemId(item.getId())
@@ -274,7 +275,8 @@ public class OfferRequestItemService {
                 .action(action)
                 .itemTypeId(itemType.getId())
                 .itemTypeName(itemType.getName())
-                .itemTypeMeasuringUnit(itemType.getMeasuringUnit())
+                .itemTypeMeasuringUnit(itemType.getMeasuringUnit() != null ?
+                        itemType.getMeasuringUnit().getName() : null)
                 .oldQuantity(oldQuantity)
                 .newQuantity(newQuantity)
                 .oldComment(oldComment)

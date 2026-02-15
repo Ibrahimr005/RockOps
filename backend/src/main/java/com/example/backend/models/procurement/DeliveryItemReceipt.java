@@ -1,5 +1,7 @@
 package com.example.backend.models.procurement;
 
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;

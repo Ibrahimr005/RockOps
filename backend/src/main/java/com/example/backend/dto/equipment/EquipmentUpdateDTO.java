@@ -32,6 +32,11 @@ public class EquipmentUpdateDTO {
     private EquipmentStatus status;
     private String relatedDocuments;
     private Integer workedHours;
+
+    private Integer usefulLifeYears;
+    private Double salvageValue;
+    private LocalDate depreciationStartDate;
+
     private UUID siteId;
     private UUID mainDriverId;
     private UUID subDriverId;

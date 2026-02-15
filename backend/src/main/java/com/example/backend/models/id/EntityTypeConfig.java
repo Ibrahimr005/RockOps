@@ -41,7 +41,11 @@ public enum EntityTypeConfig {
 
     // General
     SITE("SITE", 6),
-    TRANSACTION("TXN", 6);
+    TRANSACTION("TXN", 6),
+
+    // Finance - Company Loans
+    FINANCIAL_INSTITUTION("FI", 6),
+    COMPANY_LOAN("LOAN", 6);
 
     private final String prefix;
     private final int paddingLength;

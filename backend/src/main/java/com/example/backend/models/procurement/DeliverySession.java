@@ -1,6 +1,8 @@
 package com.example.backend.models.procurement;
 
 import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.procurement.Logistics.Logistics;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -49,9 +51,6 @@ public class DeliverySession {
     @JsonManagedReference
     private List<DeliveryItemReceipt> itemReceipts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "deliverySession", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<Logistics> logistics = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

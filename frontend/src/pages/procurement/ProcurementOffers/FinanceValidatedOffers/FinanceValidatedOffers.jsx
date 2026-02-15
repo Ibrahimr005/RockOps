@@ -1090,7 +1090,6 @@ const FinanceValidatedOffers = ({
                         }}
                         disabled={loading || isContinuing}
                         title="Requested quantities met or exceeded - proceed to finalization"
-                        style={{ marginRight: '10px' }}
                     >
                         <FiCheckCircle />
                         {isContinuing ? 'Processing...' : 'Finalize Offer'}
@@ -1100,7 +1099,6 @@ const FinanceValidatedOffers = ({
                         onClick={handleRetryClick}
                         disabled={loading || isRetrying}
                         title="Start over with entire quantity"
-                        style={{ marginRight: '10px' }}
                     >
                         <FiRefreshCw />
                         {isRetrying ? 'Creating...' : 'Retry Offer'}
@@ -1128,7 +1126,7 @@ const FinanceValidatedOffers = ({
                         }}
                         disabled={loading || isContinuing}
                         title="Continue with accepted items and create new offer for remaining quantities"
-                        style={{ marginRight: '10px' }}
+
                     >
                         <FiArrowRight />
                         {isContinuing ? 'Processing...' : 'Continue & Return'}
@@ -1138,7 +1136,7 @@ const FinanceValidatedOffers = ({
                         onClick={handleRetryClick}
                         disabled={loading || isRetrying}
                         title="Start over with entire quantity"
-                        style={{ marginRight: '10px' }}
+
                     >
                         <FiRefreshCw />
                         {isRetrying ? 'Creating...' : 'Retry Entire Offer'}
@@ -1163,7 +1161,7 @@ const FinanceValidatedOffers = ({
                         onClick={handleRetryClick}
                         disabled={loading || isRetrying}
                         title="Create a new offer"
-                        style={{ marginRight: '10px' }}
+
                     >
                         <FiRefreshCw />
                         {isRetrying ? 'Creating...' : 'Retry Offer'}
@@ -1342,7 +1340,7 @@ const FinanceValidatedOffers = ({
                         {/* Header */}
                         <div className="procurement-details-header">
                             <div className="procurement-details-title">
-                                <h2>{activeOffer.title}</h2>
+                                <h2 className='procurement-main-title'>{activeOffer.title}</h2>
                                 <span className={`procurement-status-badge ${
                                     activeOffer.financeStatus === 'FINANCE_ACCEPTED' ? 'status-accepted' :
                                         activeOffer.financeStatus === 'FINANCE_PARTIALLY_ACCEPTED' ? 'status-partial' :

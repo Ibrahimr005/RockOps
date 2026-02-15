@@ -29,7 +29,8 @@ public class ConsumableDetailDTO {
             if(consumable.getItemType().getItemCategory() != null) {
                 dto.setItemTypeCategory(consumable.getItemType().getItemCategory().getName());
             }
-            dto.setUnit(consumable.getItemType().getMeasuringUnit());
+            dto.setUnit(consumable.getItemType().getMeasuringUnit() != null ?
+                    consumable.getItemType().getMeasuringUnit().getName() : null);
         }
 
         dto.setQuantity(consumable.getQuantity());

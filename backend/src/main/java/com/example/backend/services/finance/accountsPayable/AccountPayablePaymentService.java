@@ -4,17 +4,21 @@ import com.example.backend.dto.finance.accountsPayable.AccountPayablePaymentResp
 import com.example.backend.dto.finance.accountsPayable.ProcessPaymentRequestDTO;
 import com.example.backend.models.finance.accountsPayable.AccountPayablePayment;
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
+import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
+import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentStatus;
 import com.example.backend.models.finance.balances.BankAccount;
 import com.example.backend.models.finance.balances.CashSafe;
 import com.example.backend.models.finance.balances.CashWithPerson;
-import com.example.backend.models.procurement.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.example.backend.repositories.finance.accountsPayable.AccountPayablePaymentRepository;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.finance.balances.BankAccountRepository;
 import com.example.backend.repositories.finance.balances.CashSafeRepository;
 import com.example.backend.repositories.finance.balances.CashWithPersonRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
+import com.example.backend.services.finance.loans.LoanPaymentRequestService;
+import com.example.backend.services.procurement.PurchaseOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +41,9 @@ public class AccountPayablePaymentService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PaymentRequestService paymentRequestService;
     private final FinancialTransactionService financialTransactionService;
+    private final LoanPaymentRequestService loanPaymentRequestService;
+    private final PurchaseOrderService purchaseOrderService;
+
 
     @Autowired
     public AccountPayablePaymentService(
@@ -47,7 +54,8 @@ public class AccountPayablePaymentService {
             CashWithPersonRepository cashWithPersonRepository,
             PurchaseOrderRepository purchaseOrderRepository,
             PaymentRequestService paymentRequestService,
-            FinancialTransactionService financialTransactionService) {
+            FinancialTransactionService financialTransactionService,
+            PurchaseOrderService purchaseOrderService,LoanPaymentRequestService loanPaymentRequestService) {
         this.paymentRepository = paymentRepository;
         this.paymentRequestRepository = paymentRequestRepository;
         this.bankAccountRepository = bankAccountRepository;
@@ -56,6 +64,8 @@ public class AccountPayablePaymentService {
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.paymentRequestService = paymentRequestService;
         this.financialTransactionService = financialTransactionService;
+        this.loanPaymentRequestService = loanPaymentRequestService;
+        this.purchaseOrderService = purchaseOrderService;
     }
 
     /**
@@ -134,6 +144,10 @@ public class AccountPayablePaymentService {
         // 10. Update Purchase Order payment status (only if PO exists - maintenance requests don't have PO)
         if (paymentRequest.getPurchaseOrder() != null) {
             updatePurchaseOrderPaymentStatus(paymentRequest.getPurchaseOrder().getId());
+        }
+        if(paymentRequest.isLoanPayment())
+        {
+            loanPaymentRequestService.handlePaymentCompletion(paymentRequest.getId(), request.getAmount());
         }
 
         // 11. TODO: Send notification to procurement team
@@ -352,14 +366,14 @@ public class AccountPayablePaymentService {
         PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
 
-        // ✅ FIXED: Get ALL payment requests for this PO (not just one)
+        // Get ALL payment requests for this PO
         List<PaymentRequest> paymentRequests = paymentRequestRepository.findAllByPurchaseOrderId(purchaseOrderId);
 
         if (paymentRequests == null || paymentRequests.isEmpty()) {
             return;
         }
 
-        // ✅ Calculate overall payment status based on ALL payment requests
+        // Calculate overall payment status based on ALL payment requests
         boolean allPaid = true;
         boolean anyPaid = false;
         boolean anyApproved = false;
@@ -387,30 +401,40 @@ public class AccountPayablePaymentService {
             }
         }
 
-        // ✅ Determine PO payment status based on all payment requests
-        com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus newStatus;
+        // Determine PO payment status based on all payment requests
+        POPaymentStatus newStatus;
 
-        if (allPaid && paymentRequests.stream().allMatch(pr -> pr.getStatus() ==
-                com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus.PAID)) {
-            // All payment requests are fully paid
-            newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PAID;
+        if (allPaid && paymentRequests.stream().allMatch(pr -> pr.getStatus() == PaymentRequestStatus.PAID)) {
+            newStatus = POPaymentStatus.PAID;
         } else if (anyPaid) {
-            // At least one payment request has been paid (fully or partially)
-            newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.PARTIALLY_PAID;
+            newStatus = POPaymentStatus.PARTIALLY_PAID;
         } else if (anyApproved) {
-            // At least one payment request is approved but not paid yet
-            newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.APPROVED;
+            newStatus = POPaymentStatus.APPROVED;
         } else {
-            // No payments made yet
-            newStatus = com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus.REQUESTED;
+            newStatus = POPaymentStatus.REQUESTED;
         }
 
         po.setPaymentStatus(newStatus);
         po.setTotalPaidAmount(totalPaidAmount);
         purchaseOrderRepository.save(po);
 
-        // TODO: Check if PO should be marked as completed (if both received and paid)
+        System.out.println("✅ Updated PO " + po.getPoNumber() + " payment status to: " + newStatus +
+                ", Total paid: " + totalPaidAmount);
+
+
+        updatePODeliveryStatusIfFullyPaid(purchaseOrderId);
     }
+
+    private void updatePODeliveryStatusIfFullyPaid(UUID purchaseOrderId) {
+        // Delegate to PurchaseOrderService for unified logic
+        purchaseOrderService.updatePurchaseOrderStatusComplete(purchaseOrderId);
+    }
+
+    /**
+     * Update PO delivery status to COMPLETED if all items received and payment is now PAID
+     */
+
+
 
     private String generatePaymentNumber() {
         // Generate format: PAY-YYYYMMDD-XXXX

@@ -107,6 +107,10 @@ public class EquipmentDTO {
             dto.setSubDriverName(equipment.getSubDriver().getFullName());
         }
 
+        if (equipment.getImageStorageKey() != null && !equipment.getImageStorageKey().isEmpty()) {
+            dto.setImageUrl("/api/files/" + equipment.getImageStorageKey());
+        }
+
         return dto;
     }
 }

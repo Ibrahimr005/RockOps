@@ -1,0 +1,296 @@
+.company-loans-page {
+  padding: 1.5rem;
+
+  // Alerts Banner
+  .alerts-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+
+    svg {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+    }
+
+    strong {
+      font-weight: 600;
+    }
+
+    &--warning {
+      background-color: var(--color-warning-bg, #fffbeb);
+      border: 1px solid var(--color-warning-border, #fcd34d);
+      color: var(--color-warning-text, #92400e);
+
+      svg {
+        color: var(--color-warning, #f59e0b);
+      }
+    }
+
+    &--error {
+      background-color: var(--color-danger-bg, #fef2f2);
+      border: 1px solid var(--color-danger-border, #fecaca);
+      color: var(--color-danger-text, #991b1b);
+
+      svg {
+        color: var(--color-danger, #ef4444);
+      }
+    }
+  }
+
+  // Loan Type Badge
+  .loan-type-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--color-surface-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    color: var(--color-text-secondary);
+  }
+
+  // Progress Cell
+  .progress-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background-color: var(--color-surface-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 60px;
+    max-width: 100px;
+
+    &__fill {
+      height: 100%;
+      background-color: var(--color-primary);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+  }
+
+  .progress-text {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    min-width: 40px;
+  }
+
+  // Status Badges
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+
+    &--active {
+      background-color: var(--color-success-bg, #ecfdf5);
+      color: var(--color-success, #10b981);
+      border: 1px solid var(--color-success-border, #a7f3d0);
+    }
+
+    &--completed {
+      background-color: var(--color-info-bg, #eff6ff);
+      color: var(--color-info, #3b82f6);
+      border: 1px solid var(--color-info-border, #bfdbfe);
+    }
+
+    &--defaulted {
+      background-color: var(--color-danger-bg, #fef2f2);
+      color: var(--color-danger, #ef4444);
+      border: 1px solid var(--color-danger-border, #fecaca);
+    }
+
+    &--cancelled {
+      background-color: var(--color-surface-secondary);
+      color: var(--color-text-secondary);
+      border: 1px solid var(--border-color);
+    }
+  }
+
+  // Dashboard Cards
+  .dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .dashboard-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: var(--color-primary);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    &__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-sm);
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      &--primary {
+        background: var(--color-primary-bg, #eff6ff);
+        color: var(--color-primary, #3b82f6);
+      }
+
+      &--success {
+        background: var(--color-success-bg, #ecfdf5);
+        color: var(--color-success, #10b981);
+      }
+
+      &--warning {
+        background: var(--color-warning-bg, #fffbeb);
+        color: var(--color-warning, #f59e0b);
+      }
+
+      &--danger {
+        background: var(--color-danger-bg, #fef2f2);
+        color: var(--color-danger, #ef4444);
+      }
+    }
+
+    &__content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    &__value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+
+    &__label {
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  // Alerts Banner
+  .alerts-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+
+    svg {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+    }
+
+    strong {
+      font-weight: 600;
+    }
+
+    &__action {
+      margin-left: auto;
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: 1px solid currentColor;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+    }
+
+    &--warning {
+      background-color: var(--color-warning-bg, #fffbeb);
+      border: 1px solid var(--color-warning-border, #fcd34d);
+      color: var(--color-warning-text, #92400e);
+
+      svg {
+        color: var(--color-warning, #f59e0b);
+      }
+    }
+  }
+
+  // Tabs
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      background: var(--color-surface-secondary);
+      color: var(--color-text-primary);
+    }
+
+    &--active {
+      background: var(--color-primary-bg, #eff6ff);
+      color: var(--color-primary, #3b82f6);
+      font-weight: 600;
+    }
+  }
+  .tab-content--with-actions {
+    position: relative;
+
+    .tab-content__extra-actions {
+      position: absolute;
+      top: 12px;
+      right: 140px;
+      z-index: 20;
+    }
+  }
+}

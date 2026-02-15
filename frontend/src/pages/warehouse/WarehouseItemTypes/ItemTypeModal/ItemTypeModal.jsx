@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { itemCategoryService } from "../../../../services/warehouse/itemCategoryService.js";
+import { measuringUnitService } from "../../../../services/warehouse/measuringUnitService.js";
+import MeasuringUnitModal from "../../WarehouseMeasuringUnits/MeasuringUnitModal/MeasuringUnitModal.jsx";
 import "./ItemTypeModal.scss"
 
 const ItemTypeModal = ({
@@ -25,14 +27,16 @@ const ItemTypeModal = ({
     const [childCategories, setChildCategories] = useState([]);
     const [allChildCategories, setAllChildCategories] = useState([]);
     const [loadingCategories, setLoadingCategories] = useState(false);
-    const [isFormDirty, setIsFormDirty] = useState(false);
-    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+    const [measuringUnits, setMeasuringUnits] = useState([]);
+    const [loadingUnits, setLoadingUnits] = useState(false);
+    const [isMeasuringUnitModalOpen, setIsMeasuringUnitModalOpen] = useState(false);
 
-    // Fetch parent categories and all child categories on mount
+    // Fetch parent categories, child categories, and measuring units on mount
     useEffect(() => {
         if (isOpen) {
             fetchParentCategories();
             fetchAllChildCategories();
+            fetchMeasuringUnits();
         }
     }, [isOpen]);
 
@@ -59,6 +63,19 @@ const ItemTypeModal = ({
             setChildCategories([]);
         } finally {
             setLoadingCategories(false);
+        }
+    };
+
+    const fetchMeasuringUnits = async () => {
+        setLoadingUnits(true);
+        try {
+            const data = await measuringUnitService.getActive();
+            setMeasuringUnits(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Error fetching measuring units:', error);
+            setMeasuringUnits([]);
+        } finally {
+            setLoadingUnits(false);
         }
     };
 
@@ -109,21 +126,11 @@ const ItemTypeModal = ({
         }
     }, [selectedItem, isOpen, allChildCategories]);
 
-    // Scroll lock
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isOpen]);
-
-    // Close modal when clicking outside
+    // Close modal when clicking outside - but NOT when measuring unit modal is open
     useEffect(() => {
         const handleClickOutside = (event) => {
+            if (isMeasuringUnitModalOpen) return; // Don't close if child modal is open
+
             if (modalRef.current && !modalRef.current.contains(event.target)) {
                 onClose();
             }
@@ -135,10 +142,9 @@ const ItemTypeModal = ({
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [isOpen, onClose]);
+    }, [isOpen, isMeasuringUnitModalOpen, onClose]);
 
     const handleInputChange = (e) => {
-        setIsFormDirty(true);
         const { name, value } = e.target;
 
         if (name === "parentCategory") {
@@ -148,6 +154,15 @@ const ItemTypeModal = ({
                 itemCategory: "" // Reset child category when parent changes
             }));
             filterChildCategories(value);
+        } else if (name === "measuringUnit") {
+            if (value === "ADD_NEW") {
+                setIsMeasuringUnitModalOpen(true);
+            } else {
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: value
+                }));
+            }
         } else if (name === "minQuantity") {
             const numValue = value === '' ? '' : Math.max(1, parseInt(value, 10) || 1);
             setFormData(prev => ({
@@ -168,6 +183,21 @@ const ItemTypeModal = ({
         }
     };
 
+    const handleMeasuringUnitSubmit = async (payload) => {
+        try {
+            const newUnit = await measuringUnitService.create(payload);
+            setMeasuringUnits(prev => [...prev, newUnit]);
+            setFormData(prev => ({
+                ...prev,
+                measuringUnit: newUnit.name
+            }));
+            setIsMeasuringUnitModalOpen(false);
+        } catch (error) {
+            console.error('Error creating measuring unit:', error);
+            // You might want to show an error message here
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -185,165 +215,160 @@ const ItemTypeModal = ({
         onSubmit(payload, selectedItem);
     };
 
-    const handleCloseAttempt = () => {
-        if (isFormDirty) {
-            setShowDiscardDialog(true);
-        } else {
-            onClose();
-        }
-    };
-
     if (!isOpen) return null;
 
     return (
         <>
-        <ConfirmationDialog
-            isVisible={showDiscardDialog}
-            type="warning"
-            title="Discard Changes?"
-            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
-            confirmText="Discard Changes"
-            cancelText="Continue Editing"
-            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
-            onCancel={() => setShowDiscardDialog(false)}
-            size="medium"
-        />
-        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) handleCloseAttempt(); }}>
-            <div className="modal-container modal-lg" ref={modalRef}>
-                {/* Modal Header */}
-                <div className="modal-header">
-                    <h2 className="modal-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="24" height="24">
-                            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                        {selectedItem ? 'Edit Item Type' : 'Add New Item Type'}
-                    </h2>
-                    <button className="btn-close" onClick={handleCloseAttempt}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                {/* Modal Body */}
-                <div className="modal-body">
-                    {/* Category Info Card */}
-                    <div className="modal-info">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="8" x2="12" y2="12" />
-                            <line x1="12" y1="16" x2="12.01" y2="16" />
-                        </svg>
-                        <div>
-                            <strong>Categories</strong>
-                            <p style={{ margin: 0, marginTop: '0.25rem' }}>
-                                Select a parent category first to filter the available child categories.
-                                If you need to create a new category, please go to the Categories section first.
-                            </p>
-                        </div>
+            <div className="modal-backdrop" style={{ zIndex: isMeasuringUnitModalOpen ? 1040 : 1050 }}>
+                <div className="modal-container modal-lg" ref={modalRef}>
+                    {/* Modal Header */}
+                    <div className="modal-header">
+                        <h2 className="modal-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="24" height="24">
+                                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                            {selectedItem ? 'Edit Item Type' : 'Add New Item Type'}
+                        </h2>
+                        <button className="btn-close" onClick={onClose}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M18 6L6 18M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
 
-                    <form id="item-type-form" onSubmit={handleSubmit}>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="name">Item Name <span className="required">*</span></label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter item name"
-                                    required
-                                />
+                    {/* Modal Body */}
+                    <div className="modal-body">
+                        {/* Category Info Card */}
+                        <div className="modal-info">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            <div>
+                                <strong>Categories</strong>
+                                <p style={{ margin: 0, marginTop: '0.25rem' }}>
+                                    Select a parent category first to filter the available child categories.
+                                    If you need to create a new category, please go to the Categories section first.
+                                </p>
+                            </div>
+                        </div>
+
+                        <form id="item-type-form" onSubmit={handleSubmit}>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="name">Item Name <span className="required">*</span></label>
+                                    <input
+                                        type="text"
+                                        id="name"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                        placeholder="Enter item name"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="parentCategory">Parent Category</label>
+                                    <select
+                                        id="parentCategory"
+                                        name="parentCategory"
+                                        value={formData.parentCategory}
+                                        onChange={handleInputChange}
+                                    >
+                                        <option value="">All Categories</option>
+                                        {parentCategories.map(category => (
+                                            <option key={category.id} value={category.id}>
+                                                {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
-                            <div className="form-group">
-                                <label htmlFor="parentCategory">Parent Category</label>
-                                <select
-                                    id="parentCategory"
-                                    name="parentCategory"
-                                    value={formData.parentCategory}
-                                    onChange={handleInputChange}
-                                >
-                                    <option value="">All Categories</option>
-                                    {parentCategories.map(category => (
-                                        <option key={category.id} value={category.id}>
-                                            {category.name}
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="itemCategory">Child Category <span className="required">*</span></label>
+                                    <select
+                                        id="itemCategory"
+                                        name="itemCategory"
+                                        value={formData.itemCategory}
+                                        onChange={handleInputChange}
+                                        required
+                                        disabled={loadingCategories}
+                                    >
+                                        <option value="" disabled>
+                                            {loadingCategories
+                                                ? 'Loading...'
+                                                : 'Select child category'}
                                         </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
+                                        {childCategories.map(category => (
+                                            <option key={category.id} value={category.id}>
+                                                {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="itemCategory">Child Category <span className="required">*</span></label>
-                                <select
-                                    id="itemCategory"
-                                    name="itemCategory"
-                                    value={formData.itemCategory}
-                                    onChange={handleInputChange}
-                                    required
-                                    disabled={loadingCategories}
-                                >
-                                    <option value="" disabled>
-                                        {loadingCategories
-                                            ? 'Loading...'
-                                            : 'Select child category'}
-                                    </option>
-                                    {childCategories.map(category => (
-                                        <option key={category.id} value={category.id}>
-                                            {category.name}
+                                <div className="form-group">
+                                    <label htmlFor="measuringUnit">Unit <span className="required">*</span></label>
+                                    <select
+                                        id="measuringUnit"
+                                        name="measuringUnit"
+                                        value={formData.measuringUnit}
+                                        onChange={handleInputChange}
+                                        required
+                                        disabled={loadingUnits}
+                                    >
+                                        <option value="" disabled>
+                                            {loadingUnits ? 'Loading...' : 'Select measuring unit'}
                                         </option>
-                                    ))}
-                                </select>
+                                        {measuringUnits.map(unit => (
+                                            <option key={unit.id} value={unit.name}>
+                                                {unit.displayName || unit.name}
+                                            </option>
+                                        ))}
+                                        <option value="ADD_NEW" style={{
+                                            borderTop: '1px solid #e5e7eb',
+                                            fontWeight: 'bold',
+                                            color: 'var(--color-primary)'
+                                        }}>
+                                            + Add New Measuring Unit
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
 
-                            <div className="form-group">
-                                <label htmlFor="measuringUnit">Unit <span className="required">*</span></label>
-                                <input
-                                    type="text"
-                                    id="measuringUnit"
-                                    name="measuringUnit"
-                                    value={formData.measuringUnit}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g. pieces, kg, litres"
-                                    required
-                                />
-                            </div>
-                        </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="minQuantity">Minimum Quantity <span className="required">*</span></label>
+                                    <input
+                                        type="number"
+                                        id="minQuantity"
+                                        name="minQuantity"
+                                        value={formData.minQuantity === 0 ? '' : formData.minQuantity}
+                                        onChange={handleInputChange}
+                                        min="1"
+                                        placeholder="Enter minimum quantity"
+                                        required
+                                    />
+                                </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="minQuantity">Minimum Quantity <span className="required">*</span></label>
-                                <input
-                                    type="number"
-                                    id="minQuantity"
-                                    name="minQuantity"
-                                    value={formData.minQuantity === 0 ? '' : formData.minQuantity}
-                                    onChange={handleInputChange}
-                                    min="1"
-                                    placeholder="Enter minimum quantity"
-                                    required
-                                />
+                                <div className="form-group">
+                                    <label htmlFor="basePrice">Base Price (EGP)</label>
+                                    <input
+                                        type="number"
+                                        id="basePrice"
+                                        name="basePrice"
+                                        value={formData.basePrice === 0 ? '' : formData.basePrice}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="Enter base price"
+                                    />
+                                </div>
                             </div>
-
-                            <div className="form-group">
-                                <label htmlFor="basePrice">Base Price (EGP)</label>
-                                <input
-                                    type="number"
-                                    id="basePrice"
-                                    name="basePrice"
-                                    value={formData.basePrice === 0 ? '' : formData.basePrice}
-                                    onChange={handleInputChange}
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="Enter base price"
-                                />
-                            </div>
-                        </div>
-
 
                             <div className="form-group">
                                 <label htmlFor="serialNumber">Serial Number</label>
@@ -357,35 +382,43 @@ const ItemTypeModal = ({
                                 />
                             </div>
 
+                            <div className="form-group">
+                                <label htmlFor="comment">Comment</label>
+                                <textarea
+                                    id="comment"
+                                    name="comment"
+                                    value={formData.comment}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter comment (optional)"
+                                    rows="3"
+                                ></textarea>
+                            </div>
+                        </form>
+                    </div>
 
-                        <div className="form-group">
-                            <label htmlFor="comment">Comment</label>
-                            <textarea
-                                id="comment"
-                                name="comment"
-                                value={formData.comment}
-                                onChange={handleInputChange}
-                                placeholder="Enter comment (optional)"
-                                rows="3"
-                            ></textarea>
-                        </div>
-                    </form>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="modal-footer">
-                    <button type="button" className="modal-btn-secondary" onClick={handleCloseAttempt}>
-                        Cancel
-                    </button>
-                    <button type="submit" form="item-type-form" className="btn-success">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        {selectedItem ? 'Update Item Type' : 'Add Item Type'}
-                    </button>
+                    {/* Modal Footer */}
+                    <div className="modal-footer">
+                        <button type="button" className="modal-btn-secondary" onClick={onClose}>
+                            Cancel
+                        </button>
+                        <button type="submit" form="item-type-form" className="btn-success">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            {selectedItem ? 'Update Item Type' : 'Add Item Type'}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+
+            {isMeasuringUnitModalOpen && (
+                <MeasuringUnitModal
+                    isOpen={isMeasuringUnitModalOpen}
+                    onClose={() => setIsMeasuringUnitModalOpen(false)}
+                    selectedUnit={null}
+                    onSubmit={handleMeasuringUnitSubmit}
+                />
+            )}
         </>
     );
 };

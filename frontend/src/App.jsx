@@ -48,6 +48,7 @@ import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/Wa
 import ItemDetailsPage from "./pages/warehouse/WarehouseItems/ItemDetailsPage/ItemDetailsPage.jsx";
 import TransactionDetailsPage from "./components/common/TransactionDetailsPage/TransactionDetailsPage.jsx";
 import ItemTypeDetailsPage from "./pages/warehouse/WarehouseItemTypes/ItemTypeDetailsPage/ItemTypeDetailsPage.jsx";
+import MeasuringUnits from "./pages/warehouse/WarehouseMeasuringUnits/MeasuringUnits.jsx";
 
 // ===================== Merchant & Procurement Components =====================
 import ProcurementOffers from "./pages/procurement/ProcurementOffers/ProcurementOffers.jsx";
@@ -63,6 +64,9 @@ import ResolveIssuesPage from "./pages/procurement/ProcurementPurchaseOrders/Res
 import PurchaseOrderDetailsPage from "./components/procurement/PurchaseOrderDetailsPage/PurchaseOrderDetailsPage.jsx";
 import RequestOrderDetailsPage from "./components/procurement/RequestOrderDetailsPage/RequestOrderDetailsPage.jsx";
 import PriceApprovals from "./pages/procurement/ProcurementPriceApprovals/PriceApprovals.jsx";
+import ProcurementLogistics from "./pages/procurement/ProcurementLogistics/ProcurementLogistics.jsx";
+import LogisticsDetailsPage
+    from "./pages/procurement/ProcurementLogistics/LogisticsDetailsPage/LogisticsDetailsPage.jsx";
 
 // ===================== Finance Imports =====================
 import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
@@ -73,6 +77,11 @@ import InventoryValuation from "./pages/finance/InventoryValuation/InventoryValu
 import Balances from "./pages/finance/Balances/Balances.jsx";
 import AccountsPayable from "./pages/finance/AccountsPayable/AccountsPayable.jsx";
 import PaymentRequestDetailsPage from "./pages/finance/AccountsPayable/PaymentRequests/PaymentRequestDetailsPage.jsx";
+import CompanyLoansPage from "./pages/finance/CompanyLoans/CompanyLoansPage.jsx";
+import CreateLoanPage from "./pages/finance/CompanyLoans/CreateLoanPage.jsx";
+import LoanDetailsPage from "./pages/finance/CompanyLoans/LoanDetailsPage.jsx";
+import FinancialInstitutionsPage from "./pages/finance/CompanyLoans/FinancialInstitutionsPage.jsx";
+import CreateInstitutionPage from "./pages/finance/CompanyLoans/CreateInstitutionPage.jsx";
 
 // ===================== HR & Payroll Imports =====================
 import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
@@ -130,6 +139,8 @@ import {
     MAINTENANCE_EMPLOYEE,
     ROLES
 } from './utils/roles';
+import ProcessPaymentPage from "./pages/finance/AccountsPayable/Payments/ProcessPaymentPage.jsx";
+
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -207,6 +218,7 @@ function App() {
                                             <Route index element={<RoleRoute allowedRoles={allRoles}><WarehousesList/></RoleRoute>}/>
                                             <Route path="item-categories" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemCategoriesTable/></RoleRoute>}/>
                                             <Route path="item-types" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemTypesTable/></RoleRoute>}/>
+                                            <Route path="measuring-units" element={<RoleRoute allowedRoles={['ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE']}><MeasuringUnits/></RoleRoute>}/>
                                             <Route path=":id" element={<WarehouseDetails/>}/>
                                             <Route path="warehouse-details/:id" element={<WarehouseInformation/>}/>
                                             <Route path=":id/items/:itemTypeId" element={<ItemDetailsPage/>}/>
@@ -230,6 +242,10 @@ function App() {
                                             <Route path="purchase-orders/:id/resolve-issues" element={<ResolveIssuesPage/>}/>
                                             <Route path="purchase-orders/details/:id/" element={<PurchaseOrderDetailsPage/>}/>
                                             <Route path="price-approvals" element={<PriceApprovals/>}/>
+                                            <Route path="logistics" element={<ProcurementLogistics/>}/>
+                                            <Route path="logistics/:id" element={<LogisticsDetailsPage/>}/>
+
+
                                         </Route>
 
                                         {/* ===================== HR Management Routes ===================== */}
@@ -316,6 +332,16 @@ function App() {
                                         <Route path="/finance/balances" element={<RoleRoute allowedRoles={allRoles}><Balances/></RoleRoute>} />
                                         <Route path="/finance/accounts-payable" element={<RoleRoute allowedRoles={allRoles}><AccountsPayable/></RoleRoute>} />
                                         <Route path="/finance/accounts-payable/payment-requests/:id" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><PaymentRequestDetailsPage/></RoleRoute>} />
+                                        <Route path="/finance/accounts-payable/process-payment" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><ProcessPaymentPage/></RoleRoute>}/>
+
+                                        <Route path="/finance/company-loans" element={<CompanyLoansPage />} />
+                                        <Route path="/finance/company-loans/new" element={<CreateLoanPage />} />
+                                        <Route path="/finance/company-loans/institutions" element={<FinancialInstitutionsPage />} />
+                                        <Route path="/finance/company-loans/institutions/new" element={<CreateInstitutionPage />} />
+                                        <Route path="/finance/company-loans/institutions/:id/edit" element={<CreateInstitutionPage />} />
+                                        <Route path="/finance/company-loans/institutions/:id" element={<CreateInstitutionPage />} />
+                                        <Route path="/finance/company-loans/:id/edit" element={<CreateLoanPage />} />
+                                        <Route path="/finance/company-loans/:id" element={<LoanDetailsPage />} />
                                         {/* ===================== Generic Related Documents Route ===================== */}
                                         <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
                                         <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>

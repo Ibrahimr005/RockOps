@@ -44,7 +44,8 @@ import {
     FaAddressBook,
     FaUserClock,
     FaMoneyCheckAlt,
-    FaGift
+    FaGift,
+    FaRulerCombined, FaDollarSign
 } from 'react-icons/fa';
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE } from '../../../utils/roles';
@@ -321,6 +322,12 @@ const Sidebar = () => {
                     icon: <FaTags/>,
                     path: '/warehouses/item-types',
                     roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                },
+                {
+                    title: 'Measuring Units',
+                    icon: <FaRulerCombined/>,
+                    path: '/warehouses/measuring-units',
+                    roles: ['ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE']
                 }
             ]
         },
@@ -475,30 +482,30 @@ const Sidebar = () => {
                     path: '/dashboards/finance-manager',
                     roles: [ADMIN]
                 },
+                // {
+                //     title: 'General Ledger',
+                //     icon: <FaBook/>,
+                //     path: '/finance/general-ledger',
+                //     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                // },
+                // {
+                //     title: 'Payables',
+                //     icon: <FaFileInvoiceDollar/>,
+                //     path: '/finance/payables',
+                //     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                // },
                 {
-                    title: 'General Ledger',
-                    icon: <FaBook/>,
-                    path: '/finance/general-ledger',
-                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
-                },
-                {
-                    title: 'Payables',
-                    icon: <FaFileInvoiceDollar/>,
-                    path: '/finance/payables',
-                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
-                },
-                {
-                    title: 'Inventory Valuation',
+                    title: 'Sites Valuation',
                     icon: <FaBuilding/>,
                     path: '/finance/inventory-valuation',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
-                {
-                    title: 'Bank Reconciliation',
-                    icon: <FaBalanceScale/>,
-                    path: '/finance/bank-reconciliation',
-                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
-                },
+                // {
+                //     title: 'Bank Reconciliation',
+                //     icon: <FaBalanceScale/>,
+                //     path: '/finance/bank-reconciliation',
+                //     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
+                // },
                 {
                     title: 'Balances',
                     icon: <FaPiggyBank/>,
@@ -510,7 +517,13 @@ const Sidebar = () => {
                     icon: <FaFileInvoiceDollar/>,
                     path: '/finance/accounts-payable',
                     roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],
-                }
+                },
+                // Under Finance menu items, add:
+                {
+                    title: 'Company Loans',
+                    path: '/finance/company-loans',
+                    icon: <FaDollarSign />,
+                    roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],}
             ]
         },
         {
@@ -548,6 +561,12 @@ const Sidebar = () => {
                     title: 'Price Approvals',
                     icon: <FaMoneyCheckAlt />,
                     path: '/procurement/price-approvals',
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
+                },
+                {
+                    title: 'Logistics',
+                    icon: <FaMoneyCheckAlt />,
+                    path: '/procurement/logistics',
                     roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 }
             ]

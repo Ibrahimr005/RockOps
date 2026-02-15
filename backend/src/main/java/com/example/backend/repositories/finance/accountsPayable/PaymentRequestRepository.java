@@ -101,4 +101,31 @@ List<PaymentRequest> findAllByPurchaseOrderId(UUID purchaseOrderId);
     // Find all payment requests for a payroll (via batches)
     @Query("SELECT pr FROM PaymentRequest pr WHERE pr.payrollBatch.payroll.id = :payrollId")
     List<PaymentRequest> findByPayrollId(@Param("payrollId") UUID payrollId);
+
+
+
+    // ==================== Loan Payment Request Methods ====================
+
+    // Find by loan installment
+    Optional<PaymentRequest> findByLoanInstallmentId(UUID loanInstallmentId);
+
+    // Find by financial institution
+    @Query("SELECT pr FROM PaymentRequest pr WHERE pr.financialInstitution.id = :institutionId")
+    List<PaymentRequest> findByFinancialInstitutionId(@Param("institutionId") UUID institutionId);
+
+    // Find loan payment requests by status
+    @Query("SELECT pr FROM PaymentRequest pr WHERE pr.loanInstallment IS NOT NULL AND pr.status = :status")
+    List<PaymentRequest> findLoanPaymentRequestsByStatus(@Param("status") PaymentRequestStatus status);
+
+    // Find all loan payment requests
+    @Query("SELECT pr FROM PaymentRequest pr WHERE pr.loanInstallment IS NOT NULL ORDER BY pr.paymentDueDate ASC")
+    List<PaymentRequest> findAllLoanPaymentRequests();
+
+    // Find overdue loan payments
+    @Query("SELECT pr FROM PaymentRequest pr " +
+            "WHERE pr.loanInstallment IS NOT NULL " +
+            "AND pr.status IN ('APPROVED', 'PARTIALLY_PAID') " +
+            "AND pr.paymentDueDate < :today " +
+            "AND pr.deletedAt IS NULL")
+    List<PaymentRequest> findOverdueLoanPayments(@Param("today") LocalDate today);
 }

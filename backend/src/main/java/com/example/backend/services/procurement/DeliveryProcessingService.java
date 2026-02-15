@@ -1,7 +1,12 @@
 package com.example.backend.services.procurement;
 
 import com.example.backend.dto.procurement.*;
+import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import com.example.backend.models.procurement.*;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderResolutionType;
 import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.models.warehouse.*;
 import com.example.backend.models.warehouse.Warehouse;
@@ -30,6 +35,7 @@ public class DeliveryProcessingService {
     private final ItemRepository itemRepository;
     private final WarehouseRepository warehouseRepository;
     private final ItemTypeService itemTypeService;
+    private final PurchaseOrderService purchaseOrderService;
 
 
     @Transactional
@@ -214,52 +220,10 @@ public class DeliveryProcessingService {
             }
         }
     }
+
     private void updatePOStatus(PurchaseOrder po) {
-        boolean hasItemsToArrive = false;
-        boolean hasDisputedItems = false;
-
-        for (PurchaseOrderItem item : po.getPurchaseOrderItems()) {
-            if ("DISPUTED".equals(item.getStatus())) {
-                hasDisputedItems = true;
-            }
-            if (!"COMPLETED".equals(item.getStatus())) {
-                hasItemsToArrive = true;
-            }
-        }
-
-        String oldStatus = po.getStatus();
-
-        if (hasDisputedItems && hasItemsToArrive) {
-            po.setStatus("PARTIAL_DISPUTED");
-        } else if (hasDisputedItems) {
-            po.setStatus("DISPUTED");
-        } else if (hasItemsToArrive) {
-            po.setStatus("PARTIAL");
-        } else {
-            po.setStatus("COMPLETED");
-        }
-
-        // Update ItemType base prices when PO becomes COMPLETED
-        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
-            System.out.println("🎯 PO status changed to COMPLETED, updating base prices...");
-
-            try {
-                Set<UUID> itemTypeIds = po.getPurchaseOrderItems().stream()
-                        .filter(item -> item.getItemType() != null)
-                        .map(item -> item.getItemType().getId())
-                        .collect(java.util.stream.Collectors.toSet());
-
-                for (UUID itemTypeId : itemTypeIds) {
-                    try {
-                        itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, "SYSTEM");
-                    } catch (Exception e) {
-                        System.err.println("⚠️ Failed to update base price for item type: " + e.getMessage());
-                    }
-                }
-            } catch (Exception e) {
-                System.err.println("⚠️ Failed to collect item types: " + e.getMessage());
-            }
-        }
+        // Delegate to PurchaseOrderService for unified logic
+        purchaseOrderService.updatePurchaseOrderStatusComplete(po.getId());
     }
 
     private DeliverySessionDTO convertToDTO(DeliverySession session) {

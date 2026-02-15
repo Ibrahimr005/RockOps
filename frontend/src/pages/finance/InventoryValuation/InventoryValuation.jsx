@@ -25,9 +25,10 @@ const InventoryValuation = () => {
     const fetchSites = async () => {
         setLoadingSites(true);
         try {
-            const response = await inventoryValuationService.getAllSiteBalances();
+            // ✅ CHANGED: Use new endpoint with expenses data
+            const response = await inventoryValuationService.getAllSiteValuations();
             const data = response.data || response;
-            console.log('Sites data:', data);
+            console.log('Sites with expenses data:', data);
             const siteList = Array.isArray(data) ? data : [];
             setSites(siteList);
             setSelectedSiteIds(siteList.map(site => site.siteId));
@@ -50,7 +51,6 @@ const InventoryValuation = () => {
     };
 
     // Prepare filter items for PageHeader
-// Prepare filter items for PageHeader
     const filterItems = sites.map(site => ({
         id: site.siteId,
         name: site.siteName
@@ -60,7 +60,7 @@ const InventoryValuation = () => {
         <div className="inventory-valuation-page">
             {/* Main Page Header */}
             <PageHeader
-                title="Inventory Valuation"
+                title="Sites Valuation"
                 subtitle="Monitor short-term and long-term assets' values"
                 filterConfig={{
                     label: 'Filter by Sites',

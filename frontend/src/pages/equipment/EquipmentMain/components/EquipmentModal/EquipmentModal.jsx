@@ -87,7 +87,10 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         customs: "",
         taxes: "",
         relatedDocuments: "",
-        workedHours: "0"
+        workedHours: "0",
+        usefulLifeYears: "",
+        salvageValue: "",
+        depreciationStartDate: ""
     };
 
     const [loading, setLoading] = useState(false);
@@ -105,6 +108,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         customs: "",
         taxes: "",
         workedHours: "0",
+        salvageValue: "",  // ADD THIS
         purchasedDate: "",
         deliveredDate: ""
     });
@@ -454,7 +458,10 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             customs: equipmentToEdit.customs ?? "",
             taxes: equipmentToEdit.taxes ?? "",
             relatedDocuments: equipmentToEdit.relatedDocuments || "",
-            workedHours: equipmentToEdit.workedHours ?? 0
+            workedHours: equipmentToEdit.workedHours ?? 0,
+            usefulLifeYears: equipmentToEdit.usefulLifeYears ?? "",
+            salvageValue: equipmentToEdit.salvageValue ?? "",
+            depreciationStartDate: formatDateForInput(equipmentToEdit.depreciationStartDate) || ""
         };
 
 
@@ -468,7 +475,8 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             shipping: formatNumberWithCommas(equipmentToEdit.shipping) || "",
             customs: formatNumberWithCommas(equipmentToEdit.customs) || "",
             taxes: formatNumberWithCommas(equipmentToEdit.taxes) || "",
-            workedHours: formatNumberWithCommas(equipmentToEdit.workedHours) || "0"
+            workedHours: formatNumberWithCommas(equipmentToEdit.workedHours) || "0",
+            salvageValue: formatNumberWithCommas(equipmentToEdit.salvageValue) || ""
         });
 
         // Fetch fresh presigned URL for equipment image (important for S3/MinIO)
@@ -600,7 +608,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         }
 
         // Apply thousand separator to all cost fields
-        if (["egpPrice", "dollarPrice", "shipping", "customs", "taxes"].includes(name)) {
+        if (["egpPrice", "dollarPrice", "shipping", "customs", "taxes", "salvageValue"].includes(name)) {
             const numericValue = parseNumberInput(value);
             setFormData(prev => ({
                 ...prev,
@@ -1095,6 +1103,16 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 formData.workedHours.toString().trim() !== ""
                 ? formData.workedHours : 0;
             formDataToSend.append('workedHours', workedHoursValue);
+
+            if (formData.usefulLifeYears) {
+                formDataToSend.append('usefulLifeYears', formData.usefulLifeYears);
+            }
+            if (formData.salvageValue) {
+                formDataToSend.append('salvageValue', formData.salvageValue);
+            }
+            if (formData.depreciationStartDate) {
+                formDataToSend.append('depreciationStartDate', formData.depreciationStartDate);
+            }
 
             // Add optional fields with proper null checking
             if (formData.siteId) {
@@ -1902,6 +1920,62 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         onChange={handleInputChange}
                                         placeholder="Enter examiner name"
                                     />
+                                </div>
+                            </div>
+
+                            <div className="equipment-modal-form-row">
+                                <div className="equipment-modal-form-group">
+                                    <label htmlFor="usefulLifeYears">Useful Life (Years)</label>
+                                    <input
+                                        type="number"
+                                        id="usefulLifeYears"
+                                        name="usefulLifeYears"
+                                        value={formData.usefulLifeYears}
+                                        onChange={handleInputChange}
+                                        onWheel={handleNumberInputWheel}
+                                        placeholder="e.g., 10"
+                                        min="1"
+                                    />
+                                    <div className="field-hint">
+                                        <FaInfoCircle />
+                                        <span>Expected lifespan for depreciation calculation</span>
+                                    </div>
+                                </div>
+                                <div className="equipment-modal-form-group">
+                                    <label htmlFor="salvageValue">Salvage Value (EGP)</label>
+                                    <input
+                                        type="text"
+                                        id="salvageValue"
+                                        name="salvageValue"
+                                        value={displayValues.salvageValue}
+                                        onChange={handleInputChange}
+                                        onWheel={handleNumberInputWheel}
+                                        placeholder="Resale value at end of life"
+                                    />
+                                    <div className="field-hint">
+                                        <FaInfoCircle />
+                                        <span>Estimated value when equipment reaches end of useful life</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="equipment-modal-form-row">
+                                <div className="equipment-modal-form-group">
+                                    <label htmlFor="depreciationStartDate">Depreciation Start Date</label>
+                                    <input
+                                        type="date"
+                                        id="depreciationStartDate"
+                                        name="depreciationStartDate"
+                                        value={formData.depreciationStartDate}
+                                        onChange={handleInputChange}
+                                    />
+                                    <div className="field-hint">
+                                        <FaInfoCircle />
+                                        <span>Date to begin calculating depreciation (defaults to purchase date)</span>
+                                    </div>
+                                </div>
+                                <div className="equipment-modal-form-group">
+                                    {/* Empty to maintain grid layout */}
                                 </div>
                             </div>
 

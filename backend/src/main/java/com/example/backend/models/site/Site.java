@@ -33,6 +33,9 @@ public class Site
     private String physicalAddress;
     private String companyAddress;
 
+    @Column(name = "site_no", unique = true)
+    private String siteNo;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate creationDate;
 

@@ -27,7 +27,12 @@ public class ItemType {
 
     private String name;
     private String comment;
-    private String measuringUnit;
+
+    @ManyToOne
+    @JoinColumn(name = "measuring_unit_id")
+    private MeasuringUnit measuringUnit;
+
+
     private String status;
     private int minQuantity;
     private String serialNumber;
@@ -59,4 +64,9 @@ public class ItemType {
     @OneToMany(mappedBy = "itemType")
     @JsonIgnore
     private List<OfferItem> offerItems = new ArrayList<>();
+
+    @Transient
+    public String getMeasuringUnitName() {
+        return measuringUnit != null ? measuringUnit.getName() : null;
+    }
 }

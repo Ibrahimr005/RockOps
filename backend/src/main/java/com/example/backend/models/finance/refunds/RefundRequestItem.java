@@ -1,7 +1,7 @@
 package com.example.backend.models.finance.refunds;
 
-import com.example.backend.models.procurement.PurchaseOrderItem;
-import com.example.backend.models.procurement.PurchaseOrderIssue;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

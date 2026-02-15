@@ -33,6 +33,13 @@ public class BankAccountResponseDTO {
     private LocalDateTime updatedAt;
     private String createdBy;
 
+    // Add fields:
+    private BigDecimal availableBalance;
+    private BigDecimal reservedBalance;
+    private BigDecimal totalBalance;
+
+
+
     public static BankAccountResponseDTO fromEntity(BankAccount entity) {
         return BankAccountResponseDTO.builder()
                 .id(entity.getId())
@@ -50,6 +57,9 @@ public class BankAccountResponseDTO {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())
+                .availableBalance(entity.getAvailableBalance())
+                .reservedBalance(entity.getReservedBalance())
+                .totalBalance(entity.getTotalBalance())
                 .build();
     }
 }

@@ -1,0 +1,107 @@
+// ProcurementLogistics.scss
+
+.procurement-logistics-page {
+  background-color: var(--main-background-color);
+  min-height: 100vh;
+
+  .logistics-content {
+    margin-top: 24px;
+
+    overflow: hidden;
+  }
+
+  .logistics-table {
+    .logistics-number {
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+      font-family: 'Courier New', monospace;
+    }
+
+    .logistics-cost {
+      font-weight: var(--bold-font-weight);
+      color: var(--color-success);
+    }
+
+
+
+    .logistics-table-payment-status {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      display: inline-block;
+      white-space: nowrap;
+      text-align: center;
+      min-width: 80px;
+
+      &--pending {
+        background-color: #fff3cd;
+        color: #856404;
+
+        [data-theme="dark"] & {
+          background-color: rgba(255, 193, 7, 0.2);
+          color: var(--color-warning);
+        }
+      }
+
+      &--approved {
+        background-color: #cfe2ff;
+        color: #084298;
+
+        [data-theme="dark"] & {
+          background-color: rgba(59, 130, 246, 0.2);
+          color: #60a5fa;
+        }
+      }
+
+      &--paid {
+        background-color: #d4edda;
+        color: #155724;
+
+        [data-theme="dark"] & {
+          background-color: rgba(92, 188, 96, 0.2);
+          color: var(--color-success);
+        }
+      }
+
+      &--rejected {
+        background-color: #f8d7da;
+        color: #721c24;
+
+        [data-theme="dark"] & {
+          background-color: rgba(255, 82, 82, 0.2);
+          color: var(--color-danger);
+        }
+      }
+
+      &--unknown {
+        background-color: #e2e3e5;
+        color: #383d41;
+
+        [data-theme="dark"] & {
+          background-color: rgba(107, 114, 128, 0.2);
+          color: #9ca3af;
+        }
+      }
+    }
+
+        .logistics-date {
+      color: var(--color-text-secondary);
+      font-size: 14px;
+    }
+  }
+
+
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .procurement-logistics-page {
+    padding: 16px;
+
+    .logistics-content {
+      margin-top: 16px;
+    }
+  }
+}

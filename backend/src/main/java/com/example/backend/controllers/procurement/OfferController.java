@@ -1,6 +1,7 @@
 package com.example.backend.controllers.procurement;
 
 import com.example.backend.dto.procurement.*;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderDTO;
 import com.example.backend.mappers.procurement.OfferMapper;
 import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
 import com.example.backend.models.procurement.Offer.Offer;

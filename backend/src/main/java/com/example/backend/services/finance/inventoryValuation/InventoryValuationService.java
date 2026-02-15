@@ -1,10 +1,15 @@
 package com.example.backend.services.finance.inventoryValuation;
 
 import com.example.backend.dto.finance.inventoryValuation.*;
+import com.example.backend.dto.finance.valuation.*;
 import com.example.backend.models.PartyType;
+import com.example.backend.models.equipment.Consumable;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.finance.inventoryValuation.ApprovalStatus;
 import com.example.backend.models.finance.inventoryValuation.ItemPriceApproval;
+import com.example.backend.models.finance.Valuation.EquipmentValuation;
+import com.example.backend.models.finance.Valuation.SiteValuation;
+import com.example.backend.models.finance.Valuation.WarehouseValuation;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.transaction.Transaction;
@@ -13,11 +18,15 @@ import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.Item;
 import com.example.backend.models.warehouse.ItemStatus;
 import com.example.backend.models.warehouse.Warehouse;
+import com.example.backend.repositories.equipment.ConsumableRepository;
 import com.example.backend.repositories.finance.inventoryValuation.ItemPriceApprovalRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.repositories.transaction.TransactionRepository;
 import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
+import com.example.backend.services.finance.valuation.EquipmentValuationService;
+import com.example.backend.services.finance.valuation.SiteValuationService;
+import com.example.backend.services.finance.valuation.WarehouseValuationService;
 import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +36,10 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Main service for inventory valuation operations
+ * Orchestrates warehouse, equipment, and site valuation services
+ */
 @Service
 public class InventoryValuationService {
 
@@ -47,6 +60,21 @@ public class InventoryValuationService {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    // NEW: Valuation services
+    @Autowired
+    private WarehouseValuationService warehouseValuationService;
+
+    @Autowired
+    private EquipmentValuationService equipmentValuationService;
+
+    @Autowired
+    private SiteValuationService siteValuationService;
+
+    @Autowired
+    private ConsumableRepository consumableRepository;
+
+    // ==================== PRICE APPROVAL METHODS (UNCHANGED) ====================
 
     /**
      * Get all pending item price approvals across all warehouses
@@ -77,12 +105,12 @@ public class InventoryValuationService {
 
     /**
      * Approve a single item price
+     * NOW TRIGGERS VALUATION UPDATE
      */
     @Transactional
     public ItemPriceApproval approveItemPrice(UUID itemId, Double approvedPrice, String approvedBy) {
         System.out.println("💰 Approving price for item: " + itemId + " with price: " + approvedPrice);
 
-        // Find the approval request
         ItemPriceApproval approval = itemPriceApprovalRepository.findByItemId(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Price approval request not found for item"));
 
@@ -90,18 +118,16 @@ public class InventoryValuationService {
             throw new IllegalArgumentException("Item price has already been processed");
         }
 
-        // Get the item
         Item item = approval.getItem();
 
         // Update item with price
         item.setUnitPrice(approvedPrice);
-        item.calculateTotalValue(); // This sets totalValue = quantity * unitPrice
-        item.setItemStatus(ItemStatus.IN_WAREHOUSE); // Move from PENDING to IN_WAREHOUSE
+        item.calculateTotalValue();
+        item.setItemStatus(ItemStatus.IN_WAREHOUSE);
         item.setPriceApprovedBy(approvedBy);
         item.setPriceApprovedAt(LocalDateTime.now());
 
         itemRepository.save(item);
-        System.out.println("✅ Item price set: " + approvedPrice + ", Total value: " + item.getTotalValue());
 
         // Update approval record
         approval.setApprovalStatus(ApprovalStatus.APPROVED);
@@ -111,13 +137,11 @@ public class InventoryValuationService {
 
         ItemPriceApproval savedApproval = itemPriceApprovalRepository.save(approval);
 
-        // Update warehouse balance
-        updateWarehouseBalance(item.getWarehouse().getId());
+        // ✅ NEW: Update valuations using new service
+        warehouseValuationService.calculateWarehouseValuation(item.getWarehouse().getId(), approvedBy);
+        siteValuationService.calculateSiteValuation(item.getWarehouse().getSite().getId(), approvedBy);
 
-        // Update site balance
-        updateSiteBalance(item.getWarehouse().getSite().getId());
-
-        // Send notification to warehouse users
+        // Send notification
         try {
             String warehouseName = item.getWarehouse().getName();
             String itemTypeName = item.getItemType().getName();
@@ -155,161 +179,11 @@ public class InventoryValuationService {
                 approvedItems.add(approved);
             } catch (Exception e) {
                 System.err.println("❌ Failed to approve item " + itemApproval.getItemId() + ": " + e.getMessage());
-                // Continue with other items
             }
         }
 
         System.out.println("✅ Bulk approval completed: " + approvedItems.size() + "/" + request.getItems().size());
         return approvedItems;
-    }
-
-    /**
-     * Update warehouse balance based on all IN_WAREHOUSE items
-     */
-    @Transactional
-    public void updateWarehouseBalance(UUID warehouseId) {
-        System.out.println("📊 Updating balance for warehouse: " + warehouseId);
-
-        Warehouse warehouse = warehouseRepository.findById(warehouseId)
-                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
-
-        // Calculate total value from all IN_WAREHOUSE items
-        Double totalValue = itemRepository.calculateWarehouseBalance(warehouse);
-
-        warehouse.setBalance(totalValue != null ? totalValue : 0.0);
-        warehouse.setBalanceUpdatedAt(LocalDateTime.now());
-
-        warehouseRepository.save(warehouse);
-
-        System.out.println("✅ Warehouse balance updated: " + warehouse.getBalance());
-    }
-
-    /**
-     * Update site balance (sum of all warehouse balances in site)
-     */
-    @Transactional
-    public void updateSiteBalance(UUID siteId) {
-        System.out.println("📊 Updating balance for site: " + siteId);
-
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new IllegalArgumentException("Site not found"));
-
-        // Sum all warehouse balances in this site
-        Double totalBalance = site.getWarehouses().stream()
-                .mapToDouble(warehouse -> warehouse.getBalance() != null ? warehouse.getBalance() : 0.0)
-                .sum();
-
-        site.setTotalBalance(totalBalance);
-        site.setBalanceUpdatedAt(LocalDateTime.now());
-
-        siteRepository.save(site);
-
-        System.out.println("✅ Site balance updated: " + site.getTotalBalance());
-    }
-
-    /**
-     * Get balance information for a specific warehouse
-     */
-    public WarehouseBalanceDTO getWarehouseBalance(UUID warehouseId) {
-        Warehouse warehouse = warehouseRepository.findById(warehouseId)
-                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
-
-        // ✅ RECALCULATE from actual items, don't use cached value
-        Double totalValue = itemRepository.calculateWarehouseBalance(warehouse);
-
-        Integer totalItems = itemRepository.getTotalQuantityInWarehouse(warehouse);
-        Long pendingCount = itemPriceApprovalRepository.countPendingApprovalsByWarehouse(warehouse);
-
-        return WarehouseBalanceDTO.builder()
-                .warehouseId(warehouse.getId())
-                .warehouseName(warehouse.getName())
-                .siteId(warehouse.getSite().getId())
-                .siteName(warehouse.getSite().getName())
-                .totalValue(totalValue != null ? totalValue : 0.0) // ✅ USE FRESH CALCULATION
-                .totalItems(totalItems != null ? totalItems : 0)
-                .pendingApprovalCount(pendingCount.intValue())
-                .build();
-    }
-
-    /**
-     * Get all warehouse balances for a site
-     */
-    /**
-     * Get all warehouse balances for a site
-     */
-    public SiteBalanceDTO getSiteBalance(UUID siteId) {
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new IllegalArgumentException("Site not found"));
-
-        List<WarehouseBalanceDTO> warehouseBalances = site.getWarehouses().stream()
-                .map(warehouse -> getWarehouseBalance(warehouse.getId()))
-                .collect(Collectors.toList());
-
-        // Calculate warehouse total value
-        Double totalWarehouseValue = warehouseBalances.stream()
-                .mapToDouble(WarehouseBalanceDTO::getTotalValue)
-                .sum();
-
-        // Get equipment count
-        int equipmentCount = site.getEquipment() != null ? site.getEquipment().size() : 0;
-
-        // Calculate equipment value
-        Double totalEquipmentValue = 0.0;
-        if (site.getEquipment() != null) {
-            totalEquipmentValue = site.getEquipment().stream()
-                    .mapToDouble(Equipment::getEgpPrice)
-                    .sum();
-        }
-
-        // Total site value = warehouses + equipment
-        Double totalValue = totalWarehouseValue + totalEquipmentValue;
-
-        return SiteBalanceDTO.builder()
-                .siteId(site.getId())
-                .siteName(site.getName())
-                .totalValue(totalValue)
-                .totalWarehouses(site.getWarehouses().size())
-                .equipmentCount(equipmentCount)
-                .totalEquipmentValue(totalEquipmentValue)
-                .totalWarehouseValue(totalWarehouseValue) // ADD THIS
-                .warehouses(warehouseBalances)
-                .build();
-    }
-    /**
-     * Get all site balances
-     */
-    /**
-     * Get all site balances
-     */
-    public List<SiteBalanceDTO> getAllSiteBalances() {
-        List<Site> sites = siteRepository.findAll();
-
-        return sites.stream()
-                .map(site -> getSiteBalance(site.getId())) // This will now include equipment data
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Helper method to convert ItemPriceApproval to DTO
-     */
-    private PendingItemApprovalDTO convertToPendingApprovalDTO(ItemPriceApproval approval) {
-        Item item = approval.getItem();
-
-        return PendingItemApprovalDTO.builder()
-                .itemId(item.getId())
-                .warehouseId(approval.getWarehouse().getId())
-                .warehouseName(approval.getWarehouse().getName())
-                .siteName(approval.getWarehouse().getSite().getName())
-                .itemTypeId(item.getItemType().getId())
-                .itemTypeName(item.getItemType().getName())
-                .itemTypeCategory(item.getItemType().getItemCategory().getName())
-                .measuringUnit(item.getItemType().getMeasuringUnit())
-                .quantity(item.getQuantity())
-                .suggestedPrice(approval.getSuggestedPrice())
-                .createdBy(approval.getRequestedBy())
-                .createdAt(approval.getRequestedAt().toString())
-                .comment(item.getComment())
-                .build();
     }
 
     /**
@@ -324,27 +198,140 @@ public class InventoryValuationService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Helper method to convert ItemPriceApproval to Approved History DTO
-     */
-    private ApprovedItemHistoryDTO convertToApprovedHistoryDTO(ItemPriceApproval approval) {
-        Item item = approval.getItem();
+    // ==================== NEW VALUATION METHODS ====================
 
-        return ApprovedItemHistoryDTO.builder()
-                .itemId(item.getId())
-                .warehouseId(approval.getWarehouse().getId())
-                .warehouseName(approval.getWarehouse().getName())
-                .siteName(approval.getWarehouse().getSite().getName())
-                .itemTypeName(item.getItemType().getName())
-                .itemTypeCategory(item.getItemType().getItemCategory().getName())
-                .measuringUnit(item.getItemType().getMeasuringUnit())
-                .quantity(item.getQuantity())
-                .approvedPrice(approval.getApprovedPrice())
-                .totalValue(approval.getApprovedPrice() * item.getQuantity())
-                .approvedBy(approval.getApprovedBy())
-                .approvedAt(approval.getApprovedAt().toString())
+    /**
+     * Get warehouse balance with valuation data
+     */
+    public WarehouseBalanceDTO getWarehouseBalance(UUID warehouseId) {
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+
+        // Get valuation data (will calculate if doesn't exist)
+        WarehouseValuation valuation = warehouseValuationService.getWarehouseValuation(warehouseId);
+
+        Long pendingCount = itemPriceApprovalRepository.countPendingApprovalsByWarehouse(warehouse);
+
+        return WarehouseBalanceDTO.builder()
+                .warehouseId(warehouse.getId())
+                .warehouseName(warehouse.getName())
+                .siteId(warehouse.getSite().getId())
+                .siteName(warehouse.getSite().getName())
+                .totalValue(valuation.getCurrentValue())
+                .totalItems(valuation.getTotalItems())
+                .pendingApprovalCount(pendingCount.intValue())
+                 .photoUrl(warehouse.getPhotoUrl())
                 .build();
     }
+
+    /**
+     * Get site balance with full valuation data
+     */
+    public SiteBalanceDTO getSiteBalance(UUID siteId) {
+        Site site = siteRepository.findById(siteId)
+                .orElseThrow(() -> new IllegalArgumentException("Site not found"));
+
+        // Get site valuation (will calculate if doesn't exist)
+        SiteValuation siteValuation = siteValuationService.getSiteValuation(siteId);
+
+        // Get warehouse balances
+        List<WarehouseBalanceDTO> warehouseBalances = site.getWarehouses().stream()
+                .map(warehouse -> getWarehouseBalance(warehouse.getId()))
+                .collect(Collectors.toList());
+
+        return SiteBalanceDTO.builder()
+                .siteId(site.getId())
+                .siteName(site.getName())
+                .totalValue(siteValuation.getTotalValue())
+                .totalWarehouses(siteValuation.getWarehouseCount())
+                .equipmentCount(siteValuation.getEquipmentCount())
+                .totalEquipmentValue(siteValuation.getEquipmentValue())
+                .totalWarehouseValue(siteValuation.getWarehouseValue())
+                .warehouses(warehouseBalances)
+                .build();
+    }
+
+    /**
+     * Get all site balances with valuation data
+     */
+    public List<SiteBalanceDTO> getAllSiteBalances() {
+        List<Site> sites = siteRepository.findAll();
+
+        return sites.stream()
+                .map(site -> getSiteBalance(site.getId()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * NEW: Get complete site valuation with expenses
+     */
+    /**
+     * NEW: Get complete site valuation with expenses
+     * ALWAYS recalculates to ensure fresh data
+     */
+    public SiteValuationDTO getSiteValuationComplete(UUID siteId) {
+        Site site = siteRepository.findById(siteId)
+                .orElseThrow(() -> new IllegalArgumentException("Site not found"));
+
+        // ✅ ALWAYS recalculate to get fresh data
+        SiteValuation valuation = siteValuationService.calculateSiteValuation(siteId, "SYSTEM");
+
+        return SiteValuationDTO.builder()
+                .siteId(site.getId())
+                .siteName(site.getName())
+                .photoUrl(site.getPhotoUrl())
+                .totalValue(valuation.getTotalValue())
+                .totalExpenses(valuation.getTotalExpenses())
+                .warehouseValue(valuation.getWarehouseValue())
+                .equipmentValue(valuation.getEquipmentValue())
+                .fixedAssetsValue(valuation.getFixedAssetsValue())
+                .warehouseExpenses(valuation.getWarehouseExpenses())
+                .equipmentExpenses(valuation.getEquipmentExpenses())
+                .fixedAssetsExpenses(valuation.getFixedAssetsExpenses())
+                .warehouseCount(valuation.getWarehouseCount())
+                .equipmentCount(valuation.getEquipmentCount())
+                .fixedAssetsCount(valuation.getFixedAssetsCount())
+                .lastCalculatedAt(valuation.getLastCalculatedAt() != null ? valuation.getLastCalculatedAt().toString() : null)
+                .lastCalculatedBy(valuation.getLastCalculatedBy())
+                .build();
+    }
+
+    /**
+     * NEW: Get all sites with complete valuation data including expenses
+     * ALWAYS recalculates to ensure fresh data
+     */
+    public List<SiteValuationDTO> getAllSiteValuations() {
+        List<Site> sites = siteRepository.findAll();
+
+        return sites.stream()
+                .map(site -> {
+                    // ✅ Recalculate is now called inside getSiteValuationComplete
+                    return getSiteValuationComplete(site.getId());
+                })
+                .collect(Collectors.toList());
+    }
+    /**
+     * NEW: Get equipment financial breakdown
+     */
+    /**
+     * NEW: Get equipment financial breakdown
+     * ALWAYS recalculates to ensure fresh data
+     */
+    public EquipmentFinancialBreakdownDTO getEquipmentFinancials(UUID equipmentId) {
+        // ✅ ALWAYS recalculate to get fresh depreciation
+        EquipmentValuation valuation = equipmentValuationService.calculateEquipmentValuation(equipmentId, "SYSTEM");
+
+        return EquipmentFinancialBreakdownDTO.builder()
+                .purchasePrice(valuation.getPurchasePrice())
+                .currentValue(valuation.getCurrentValue())
+                .currentInventoryValue(valuation.getCurrentInventoryValue())
+                .totalExpenses(valuation.getTotalExpenses())
+                .accumulatedDepreciation(valuation.getAccumulatedDepreciation())
+                .lastUpdated(valuation.getLastCalculatedAt() != null ? valuation.getLastCalculatedAt().toString() : null)
+                .build();
+    }
+
+    // ==================== HELPER METHODS (UNCHANGED) ====================
 
     /**
      * Get item breakdown (value composition) for a warehouse
@@ -353,152 +340,35 @@ public class InventoryValuationService {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
 
-        System.out.println("🔍 Warehouse found: " + warehouse.getName());
-
-        // Get all IN_WAREHOUSE items with approved prices
         List<Item> items = itemRepository.findByWarehouseAndItemStatus(warehouse, ItemStatus.IN_WAREHOUSE);
 
-        System.out.println("📦 Total items with IN_WAREHOUSE status: " + items.size());
-
-        // Log each item before filtering
-        items.forEach(item -> {
-            System.out.println("  - Item: " + item.getItemType().getName() +
-                    ", Quantity: " + item.getQuantity() +
-                    ", UnitPrice: " + item.getUnitPrice() +
-                    ", Status: " + item.getItemStatus());
-        });
-
-        List<ItemBreakdownDTO> breakdown = items.stream()
+        return items.stream()
                 .filter(item -> item.getUnitPrice() != null && item.getUnitPrice() > 0)
                 .map(item -> ItemBreakdownDTO.builder()
                         .itemId(item.getId())
                         .itemName(item.getItemType().getName())
                         .quantity(item.getQuantity())
-                        .measuringUnit(item.getItemType().getMeasuringUnit())
+                        .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                                item.getItemType().getMeasuringUnit().getName() : null)
                         .unitPrice(item.getUnitPrice())
                         .totalValue(item.getTotalValue())
                         .build())
                 .collect(Collectors.toList());
-
-        System.out.println("✅ Items after filtering (with valid prices): " + breakdown.size());
-
-        return breakdown;
-    }
-    /**
-     * Get transaction history for a warehouse (finance view)
-     */
-    /**
-     * Get transaction history for a warehouse (finance view)
-     * Returns one row per transaction item
-     */
-    public List<WarehouseTransactionHistoryDTO> getWarehouseTransactionHistory(UUID warehouseId) {
-        Warehouse warehouse = warehouseRepository.findById(warehouseId)
-                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
-
-        // Get all transactions where this warehouse is sender or receiver
-        List<Transaction> transactions = transactionRepository.findBySenderIdOrReceiverId(warehouseId, warehouseId);
-
-        List<WarehouseTransactionHistoryDTO> result = new ArrayList<>();
-
-        for (Transaction tx : transactions) {
-            // Get sender and receiver names
-            String senderName = getEntityName(tx.getSenderType(), tx.getSenderId());
-            String receiverName = getEntityName(tx.getReceiverType(), tx.getReceiverId());
-
-            // Create one row per transaction item
-            for (TransactionItem txItem : tx.getItems()) {
-                // Get unit price from warehouse items
-                Double unitPrice = getItemUnitPrice(txItem.getItemType().getId(), warehouseId);
-
-                // Determine quantity based on role
-                boolean isReceiver = tx.getReceiverId().equals(warehouseId);
-                Integer quantity = isReceiver
-                        ? (txItem.getReceivedQuantity() != null ? txItem.getReceivedQuantity() : txItem.getQuantity())
-                        : txItem.getQuantity();
-
-                Double totalValue = null;
-                if (unitPrice != null && quantity != null) {
-                    totalValue = unitPrice * quantity;
-                }
-
-                result.add(WarehouseTransactionHistoryDTO.builder()
-                        .transactionId(tx.getId())
-                        .batchNumber(tx.getBatchNumber())
-                        .transactionDate(tx.getTransactionDate() != null ? tx.getTransactionDate().toString() : null)
-                        .status(tx.getStatus().name())
-                        .senderName(senderName)
-                        .senderType(tx.getSenderType().name())
-                        .receiverName(receiverName)
-                        .receiverType(tx.getReceiverType().name())
-                        .itemName(txItem.getItemType().getName())
-                        .quantity(quantity)
-                        .measuringUnit(txItem.getItemType().getMeasuringUnit())
-                        .unitPrice(unitPrice)
-                        .totalValue(totalValue)
-                        .createdBy(tx.getAddedBy())
-                        .approvedBy(tx.getApprovedBy())
-                        .completedAt(tx.getCompletedAt() != null ? tx.getCompletedAt().toString() : null)
-                        .build());
-            }
-        }
-
-        // Sort by transaction date descending (most recent first)
-        result.sort((a, b) -> {
-            String dateA = a.getTransactionDate();
-            String dateB = b.getTransactionDate();
-            if (dateA == null) return 1;
-            if (dateB == null) return -1;
-            return dateB.compareTo(dateA);
-        });
-
-        return result;
-    }
-
-    private Double getItemUnitPrice(UUID itemTypeId, UUID warehouseId) {
-        List<Item> items = itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatus(
-                itemTypeId, warehouseId, ItemStatus.IN_WAREHOUSE);
-
-        return items.stream()
-                .map(Item::getUnitPrice)
-                .filter(price -> price != null && price > 0)
-                .findFirst()
-                .orElse(null);
     }
 
     /**
-     * Helper to get entity name by type and ID
-     */
-    private String getEntityName(PartyType type, UUID id) {
-        try {
-            if (type == PartyType.WAREHOUSE) {
-                return warehouseRepository.findById(id)
-                        .map(Warehouse::getName)
-                        .orElse("Unknown Warehouse");
-            } else if (type == PartyType.EQUIPMENT) {
-                return "Equipment"; // You'd need EquipmentRepository for full name
-            }
-            return "Unknown";
-        } catch (Exception e) {
-            return "Unknown";
-        }
-    }
-
-    /**
-     * Get ALL item history for a warehouse (transactions + manual entries + purchase orders + initial stock)
+     * Get ALL item history for a warehouse
      */
     public List<WarehouseTransactionHistoryDTO> getWarehouseAllItemHistory(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
 
         List<WarehouseTransactionHistoryDTO> result = new ArrayList<>();
-
-        // 1. Get all IN_WAREHOUSE items (includes all sources)
         List<Item> allItems = itemRepository.findByWarehouseAndItemStatus(warehouse, ItemStatus.IN_WAREHOUSE);
 
         for (Item item : allItems) {
             String itemSource = item.getItemSource() != null ? item.getItemSource().name() : "UNKNOWN";
 
-            // Check if item came from a transaction
             if (item.getTransactionItem() != null && item.getTransactionItem().getTransaction() != null) {
                 Transaction tx = item.getTransactionItem().getTransaction();
                 String senderName = getEntityName(tx.getSenderType(), tx.getSenderId());
@@ -515,7 +385,8 @@ public class InventoryValuationService {
                         .receiverType("WAREHOUSE")
                         .itemName(item.getItemType().getName())
                         .quantity(item.getQuantity())
-                        .measuringUnit(item.getItemType().getMeasuringUnit())
+                        .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                                item.getItemType().getMeasuringUnit().getName() : null)
                         .unitPrice(item.getUnitPrice())
                         .totalValue(item.getTotalValue())
                         .createdBy(item.getCreatedBy())
@@ -527,7 +398,6 @@ public class InventoryValuationService {
                         .createdAt(item.getCreatedAt() != null ? item.getCreatedAt().toString() : null)
                         .build());
             } else {
-                // Non-transaction item (manual entry, purchase order, initial stock)
                 result.add(WarehouseTransactionHistoryDTO.builder()
                         .itemId(item.getId())
                         .transactionId(null)
@@ -540,7 +410,8 @@ public class InventoryValuationService {
                         .receiverType("WAREHOUSE")
                         .itemName(item.getItemType().getName())
                         .quantity(item.getQuantity())
-                        .measuringUnit(item.getItemType().getMeasuringUnit())
+                        .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                                item.getItemType().getMeasuringUnit().getName() : null)
                         .unitPrice(item.getUnitPrice())
                         .totalValue(item.getTotalValue())
                         .createdBy(item.getCreatedBy())
@@ -554,7 +425,6 @@ public class InventoryValuationService {
             }
         }
 
-        // Sort by createdAt descending (most recent first)
         result.sort((a, b) -> {
             String dateA = a.getCreatedAt();
             String dateB = b.getCreatedAt();
@@ -563,7 +433,80 @@ public class InventoryValuationService {
             return dateB.compareTo(dateA);
         });
 
-        System.out.println("✅ Found " + result.size() + " item history entries for warehouse: " + warehouse.getName());
         return result;
+    }
+
+    private String getEntityName(PartyType type, UUID id) {
+        try {
+            if (type == PartyType.WAREHOUSE) {
+                return warehouseRepository.findById(id)
+                        .map(Warehouse::getName)
+                        .orElse("Unknown Warehouse");
+            } else if (type == PartyType.EQUIPMENT) {
+                return "Equipment";
+            }
+            return "Unknown";
+        } catch (Exception e) {
+            return "Unknown";
+        }
+    }
+
+    private PendingItemApprovalDTO convertToPendingApprovalDTO(ItemPriceApproval approval) {
+        Item item = approval.getItem();
+
+        return PendingItemApprovalDTO.builder()
+                .itemId(item.getId())
+                .warehouseId(approval.getWarehouse().getId())
+                .warehouseName(approval.getWarehouse().getName())
+                .siteName(approval.getWarehouse().getSite().getName())
+                .itemTypeId(item.getItemType().getId())
+                .itemTypeName(item.getItemType().getName())
+                .itemTypeCategory(item.getItemType().getItemCategory().getName())
+                .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                        item.getItemType().getMeasuringUnit().getName() : null)
+                .quantity(item.getQuantity())
+                .suggestedPrice(approval.getSuggestedPrice())
+                .createdBy(approval.getRequestedBy())
+                .createdAt(approval.getRequestedAt().toString())
+                .comment(item.getComment())
+                .build();
+    }
+
+    private ApprovedItemHistoryDTO convertToApprovedHistoryDTO(ItemPriceApproval approval) {
+        Item item = approval.getItem();
+
+        return ApprovedItemHistoryDTO.builder()
+                .itemId(item.getId())
+                .warehouseId(approval.getWarehouse().getId())
+                .warehouseName(approval.getWarehouse().getName())
+                .siteName(approval.getWarehouse().getSite().getName())
+                .itemTypeName(item.getItemType().getName())
+                .itemTypeCategory(item.getItemType().getItemCategory().getName())
+                .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
+                        item.getItemType().getMeasuringUnit().getName() : null)
+                .quantity(item.getQuantity())
+                .approvedPrice(approval.getApprovedPrice())
+                .totalValue(approval.getApprovedPrice() * item.getQuantity())
+                .approvedBy(approval.getApprovedBy())
+                .approvedAt(approval.getApprovedAt().toString())
+                .build();
+    }
+
+
+    public List<ConsumableBreakdownDTO> getEquipmentConsumablesBreakdown(UUID equipmentId) {
+        List<Consumable> consumables = consumableRepository.findByEquipmentIdAndStatus(
+                equipmentId, ItemStatus.IN_WAREHOUSE);
+
+        return consumables.stream()
+                .filter(c -> c.getTotalValue() != null && c.getTotalValue() > 0)
+                .map(c -> ConsumableBreakdownDTO.builder()
+                        .itemName(c.getItemType().getName())
+                        .quantity(c.getQuantity())
+                        .measuringUnit(c.getItemType().getMeasuringUnit() != null ?
+                                c.getItemType().getMeasuringUnit().getName() : null)
+                        .unitPrice(c.getUnitPrice())
+                        .totalValue(c.getTotalValue())
+                        .build())
+                .toList();
     }
 }

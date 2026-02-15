@@ -29,6 +29,11 @@ public class CashWithPersonResponseDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String createdBy;
+    // Add fields:
+    private BigDecimal availableBalance;
+    private BigDecimal reservedBalance;
+    private BigDecimal totalBalance;
+
 
     public static CashWithPersonResponseDTO fromEntity(CashWithPerson entity) {
         return CashWithPersonResponseDTO.builder()
@@ -45,6 +50,9 @@ public class CashWithPersonResponseDTO {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())
+                .availableBalance(entity.getAvailableBalance())
+                .reservedBalance(entity.getReservedBalance())
+                .totalBalance(entity.getTotalBalance())
                 .build();
     }
 }

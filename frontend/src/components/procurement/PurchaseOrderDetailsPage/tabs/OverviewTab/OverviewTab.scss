@@ -618,3 +618,533 @@
     }
   }
 }
+// ============================================================================
+// ADD THESE STYLES TO YOUR EXISTING OverviewTab.scss FILE
+// ============================================================================
+
+// Add this to .section-title (inside the existing .section-title block):
+.modification-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  padding: 4px 10px;
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-sm);
+}
+
+// ============================================================================
+// MODIFICATIONS TIMELINE - ADD THIS NEW SECTION
+// ============================================================================
+// ============================================================================
+// MODIFICATIONS TIMELINE
+// ============================================================================
+.modifications-timeline-container {
+  margin-top: 16px;
+
+  .modifications-loading {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .modifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 8px;
+
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--color-surface);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-color-medium);
+      border-radius: 3px;
+
+      &:hover {
+        background: var(--color-text-muted);
+      }
+    }
+
+    .modification-entry {
+      display: flex;
+      gap: 16px;
+      padding: 12px 16px;
+      background: var(--color-surface-secondary);
+      border: 1px solid var(--border-color-light);
+      border-left: 3px solid;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+
+      &:hover {
+        transform: translateX(4px);
+        box-shadow: var(--shadow-sm);
+      }
+
+      &.modification-add {
+        border-left-color: var(--color-success);
+
+        .modification-icon {
+          background: rgba(34, 197, 94, 0.1);
+          color: var(--color-success);
+        }
+
+        .modification-action-badge {
+          background: rgba(34, 197, 94, 0.1);
+          color: var(--color-success);
+        }
+      }
+
+      &.modification-edit {
+        border-left-color: var(--color-primary);
+
+        .modification-icon {
+          background: var(--color-edit-bg);
+          color: var(--color-primary);
+        }
+
+        .modification-action-badge {
+          background: var(--color-edit-bg);
+          color: var(--color-primary);
+        }
+      }
+
+      &.modification-delete {
+        border-left-color: var(--color-danger);
+
+        .modification-icon {
+          background: var(--color-delete-bg);
+          color: var(--color-danger);
+        }
+
+        .modification-action-badge {
+          background: var(--color-delete-bg);
+          color: var(--color-danger);
+        }
+      }
+
+      .modification-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+
+        svg {
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .modification-content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .modification-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 0;
+
+          .modification-action-badge {
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .modification-timestamp {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+          }
+        }
+
+        .modification-item-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--color-text-primary);
+          margin-bottom: 0;
+        }
+
+        .modification-details {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-bottom: 0;
+
+          .modification-change {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            flex-wrap: wrap;
+
+            .change-label {
+              font-weight: 600;
+              color: var(--color-text-secondary);
+            }
+
+            .change-value {
+              font-weight: 500;
+              padding: 2px 8px;
+              border-radius: var(--radius-sm);
+
+              &.old-value {
+                background: var(--color-delete-bg);
+                color: var(--color-danger);
+                text-decoration: line-through;
+              }
+
+              &.new-value {
+                background: rgba(34, 197, 94, 0.1);
+                color: var(--color-success);
+                font-weight: 600;
+              }
+            }
+
+            svg {
+              color: var(--color-text-muted);
+              flex-shrink: 0;
+            }
+          }
+        }
+
+        .modification-footer {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding-top: 0;
+          border-top: none;
+
+          .modification-user {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+
+            svg {
+              color: var(--color-text-muted);
+            }
+          }
+
+          .modification-notes {
+            font-size: 11px;
+            color: var(--color-text-muted);
+            font-style: italic;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// MODIFICATION BADGES ON ITEMS - ADD THIS NEW SECTION
+// ============================================================================
+.item-card {
+  &.item-modified {
+    border-left: 3px solid var(--color-primary);
+    background: linear-gradient(to right, rgba(var(--color-primary-rgb, 59, 130, 246), 0.03), var(--color-surface-secondary));
+  }
+
+  .item-header {
+    .item-title-container {
+      .item-name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+    }
+  }
+
+  .item-modification-info {
+    margin: 12px 0;
+    padding: 10px 12px;
+    background: var(--color-edit-bg);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+
+    .quantity-change {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+
+      .old-qty {
+        color: var(--color-danger);
+        text-decoration: line-through;
+        font-weight: 500;
+      }
+
+      .new-qty {
+        color: var(--color-success);
+        font-weight: 700;
+      }
+
+      svg {
+        color: var(--color-text-muted);
+        flex-shrink: 0;
+      }
+    }
+
+    .modification-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      font-weight: 500;
+
+      svg {
+        color: var(--color-text-muted);
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+.modification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  &.mod-badge-added {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--color-success);
+  }
+
+  &.mod-badge-edited {
+    background: var(--color-edit-bg);
+    color: var(--color-primary);
+  }
+
+  &.mod-badge-deleted {
+    background: var(--color-delete-bg);
+    color: var(--color-danger);
+  }
+}
+
+// ============================================================================
+// RESPONSIVE ADJUSTMENTS FOR MODIFICATIONS - ADD TO EXISTING @media
+// ============================================================================
+@media (max-width: 768px) {
+  .modifications-timeline-container {
+    .modifications-list {
+      .modification-entry {
+        padding: 12px;
+
+        .modification-icon {
+          width: 36px;
+          height: 36px;
+
+          svg {
+            width: 16px;
+            height: 16px;
+          }
+        }
+
+        .modification-content {
+          .modification-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+          }
+
+          .modification-details {
+            .modification-change {
+              font-size: 11px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .item-card {
+    .item-modification-info {
+      padding: 8px 10px;
+
+      .quantity-change {
+        font-size: 11px;
+      }
+
+      .modification-meta {
+        font-size: 10px;
+      }
+    }
+  }
+}
+// ============================================================================
+// MERCHANT GROUPING
+// ============================================================================
+.merchant-group {
+  margin-bottom: 52px;
+  margin-top: 30px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .merchant-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 2px solid var(--border-color-light);
+    margin-bottom: 16px;
+
+    .merchant-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: var(--color-edit-bg);
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+
+      svg {
+        color: var(--color-primary);
+      }
+    }
+
+    .merchant-info {
+      flex: 1;
+      min-width: 0;
+
+      .merchant-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 2px;
+      }
+
+      .merchant-item-count {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+    }
+
+    .merchant-contact {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+
+      svg {
+        color: var(--color-text-muted);
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .merchant-header {
+      flex-wrap: wrap;
+
+      .merchant-contact {
+        width: 100%;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border-color-light);
+      }
+    }
+  }
+}
+// ============================================================================
+// PAYMENT STATUS BADGES
+// ============================================================================
+.payment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  &.payment-status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--color-warning);
+
+    svg {
+      color: var(--color-warning);
+    }
+  }
+
+  &.payment-status-approved {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--color-primary);
+
+    svg {
+      color: var(--color-primary);
+    }
+  }
+
+  &.payment-status-paid {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--color-success);
+
+    svg {
+      color: var(--color-success);
+    }
+  }
+
+  &.payment-status-rejected {
+    background: var(--color-delete-bg);
+    color: var(--color-danger);
+
+    svg {
+      color: var(--color-danger);
+    }
+  }
+}

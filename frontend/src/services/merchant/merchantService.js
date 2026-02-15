@@ -22,5 +22,8 @@ export const merchantService = {
     getPerformance: async (merchantId) => {  // ADD THIS METHOD
         const response = await apiClient.get(MERCHANT_ENDPOINTS.PERFORMANCE(merchantId));
         return response.data || response;
-    }
+    },
+    getServiceMerchants: () => {
+        return apiClient.get(`${MERCHANT_ENDPOINTS.BASE}?merchantType=SERVICE`);
+    },
 };

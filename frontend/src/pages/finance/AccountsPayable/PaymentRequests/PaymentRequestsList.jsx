@@ -89,32 +89,44 @@ const PaymentRequestsList = () => {
             accessor: 'sourceNumber',
             sortable: true,
             render: (row) => {
-                // Use polymorphic sourceType field
+                // Use polymorphic sourceType field, with legacy field fallbacks
                 const sourceType = row.sourceType;
-                const sourceNumber = row.sourceNumber || row.purchaseOrderNumber || row.batchNumber;
+                const sourceNumber = row.sourceNumber || row.purchaseOrderNumber || row.batchNumber || row.companyLoanNumber;
 
-                if (sourceType === 'PURCHASE_ORDER' || row.purchaseOrderNumber) {
+                if (sourceType === 'PURCHASE_ORDER' || (!sourceType && row.purchaseOrderNumber)) {
                     return (
                         <span className="source-badge source-procurement">
                             {sourceNumber || 'PO'}
                         </span>
                     );
-                } else if (sourceType === 'MAINTENANCE' || row.maintenanceStepId) {
+                } else if (sourceType === 'MAINTENANCE' || (!sourceType && row.maintenanceStepId)) {
                     return (
                         <span className="source-badge source-maintenance">
                             {sourceNumber || row.maintenanceStepId?.substring(0, 8) || 'Maintenance'}
                         </span>
                     );
-                } else if (sourceType === 'PAYROLL_BATCH' || row.payrollBatchId) {
+                } else if (sourceType === 'PAYROLL_BATCH' || (!sourceType && row.payrollBatchId)) {
                     return (
                         <span className="source-badge source-payroll">
                             {sourceNumber || row.batchNumber || 'Payroll'}
                         </span>
                     );
-                } else if (sourceType === 'LOAN') {
+                } else if (sourceType === 'LOAN' || (!sourceType && row.companyLoanNumber)) {
                     return (
                         <span className="source-badge source-loan">
-                            {sourceNumber || 'Loan'}
+                            {sourceNumber || row.companyLoanNumber || 'Loan'}
+                        </span>
+                    );
+                } else if (sourceType === 'BONUS') {
+                    return (
+                        <span className="source-badge source-bonus">
+                            {sourceNumber || 'Bonus'}
+                        </span>
+                    );
+                } else if (sourceType === 'LOGISTICS' || (!sourceType && row.logisticsId)) {
+                    return (
+                        <span className="source-badge source-logistics">
+                            {sourceNumber || 'Logistics'}
                         </span>
                     );
                 }
@@ -126,9 +138,9 @@ const PaymentRequestsList = () => {
             accessor: 'targetName',
             sortable: true,
             render: (row) => {
-                // Use polymorphic targetType/targetName
+                // Use polymorphic targetType/targetName, with legacy field fallbacks
                 const targetType = row.targetType;
-                const targetName = row.targetName || row.merchantName;
+                const targetName = row.targetName || row.institutionName || row.merchantName;
 
                 if (targetType === 'EMPLOYEE_GROUP') {
                     return (
@@ -140,6 +152,12 @@ const PaymentRequestsList = () => {
                     return (
                         <span className="recipient-badge recipient-employee">
                             {targetName || 'Employee'}
+                        </span>
+                    );
+                } else if (targetType === 'FINANCIAL_INSTITUTION' || (!targetType && row.institutionName)) {
+                    return (
+                        <span className="recipient-badge recipient-institution">
+                            {targetName || row.institutionName || 'Institution'}
                         </span>
                     );
                 }

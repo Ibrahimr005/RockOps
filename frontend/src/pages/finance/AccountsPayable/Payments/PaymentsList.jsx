@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiEye, FiDollarSign, FiPlus } from 'react-icons/fi';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
@@ -9,9 +10,9 @@ import './Payments.scss';
 const PaymentsList = () => {
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showProcessPayment, setShowProcessPayment] = useState(false);
     const [activeFilter, setActiveFilter] = useState('history'); // 'all', 'today', 'history'
     const { showSuccess, showError } = useSnackbar();
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchPayments();
@@ -39,13 +40,9 @@ const PaymentsList = () => {
     };
 
     const handleProcessPayment = () => {
-        setShowProcessPayment(true);
+        navigate('/finance/accounts-payable/process-payment');
     };
 
-    const handlePaymentSubmit = () => {
-        setShowProcessPayment(false);
-        fetchPayments();
-    };
 
     const formatCurrency = (amount) => {
         if (!amount || isNaN(amount)) return 'EGP 0.00';
@@ -98,7 +95,7 @@ const PaymentsList = () => {
             sortable: true
         },
         {
-            header: 'Merchant',
+            header: 'Recipient',
             accessor: 'paidToName',
             sortable: true
         },
@@ -207,12 +204,6 @@ const PaymentsList = () => {
                 defaultSortDirection="desc"
             />
 
-            {showProcessPayment && (
-                <ProcessPaymentModal
-                    onClose={() => setShowProcessPayment(false)}
-                    onSubmit={handlePaymentSubmit}
-                />
-            )}
         </div>
     );
 };

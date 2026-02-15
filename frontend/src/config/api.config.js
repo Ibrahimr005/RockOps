@@ -419,7 +419,41 @@ export const FINANCE_ENDPOINTS = {
             BALANCES: '/api/v1/finance/dashboard/balances',
             MERCHANTS: '/api/v1/finance/dashboard/merchants'
         }
-    }
+    },
+
+    // Company Loans submodule endpoints
+    COMPANY_LOANS: {
+        // Financial Institutions
+        INSTITUTIONS: {
+            BASE: '/api/v1/finance/loans/institutions',
+            BY_ID: (id) => `/api/v1/finance/loans/institutions/${id}`,
+            ACTIVE: '/api/v1/finance/loans/institutions/active',
+            BY_TYPE: (type) => `/api/v1/finance/loans/institutions/type/${type}`,
+            SEARCH: '/api/v1/finance/loans/institutions/search',
+            DEACTIVATE: (id) => `/api/v1/finance/loans/institutions/${id}/deactivate`
+        },
+
+        // Company Loans
+        LOANS: {
+            BASE: '/api/v1/finance/loans/company-loans',
+            BY_ID: (id) => `/api/v1/finance/loans/company-loans/${id}`,
+            BY_NUMBER: (loanNumber) => `/api/v1/finance/loans/company-loans/number/${loanNumber}`,
+            ACTIVE: '/api/v1/finance/loans/company-loans/active',
+            BY_STATUS: (status) => `/api/v1/finance/loans/company-loans/status/${status}`,
+            BY_INSTITUTION: (institutionId) => `/api/v1/finance/loans/company-loans/institution/${institutionId}`,
+            INSTALLMENTS: (id) => `/api/v1/finance/loans/company-loans/${id}/installments`,
+            UPDATE_STATUS: (id) => `/api/v1/finance/loans/company-loans/${id}/status`,
+            UPCOMING_INSTALLMENTS: '/api/v1/finance/loans/company-loans/installments/upcoming',
+            OVERDUE_INSTALLMENTS: '/api/v1/finance/loans/company-loans/installments/overdue'
+        },
+
+        // Dashboard
+        DASHBOARD: {
+            SUMMARY: '/api/v1/finance/loans/dashboard/summary',
+            MATURING_SOON: '/api/v1/finance/loans/dashboard/maturing-soon',
+            MONTHLY_INSTALLMENTS: '/api/v1/finance/loans/dashboard/monthly-installments'
+        }
+    },
 };
 
 // Employee module endpoints
@@ -464,6 +498,7 @@ export const SITE_ENDPOINTS = {
     UNASSIGNED_PARTNERS: (siteId) => `/api/v1/site/${siteId}/unassigned-partners`,
     EMPLOYEES: (siteId) => `/api/v1/site/${siteId}/employees`,
     EQUIPMENT: (siteId) => `/api/v1/site/${siteId}/equipment`,
+    EQUIPMENT_DTO: (siteId) => `/api/v1/site/${siteId}/equipments-dto`,
     UNASSIGNED_EQUIPMENT: `/api/v1/site/unassigned-equipment`,
     WAREHOUSES: (siteId) => `/api/v1/site/${siteId}/warehouses`,
     MERCHANTS: (siteId) => `/api/v1/site/${siteId}/merchants`,
@@ -779,6 +814,15 @@ export const ITEM_TYPE_ENDPOINTS = {
     DELETE: (id) => `/api/v1/itemTypes/${id}`,
     DETAILS: (id) => `/api/v1/itemTypes/${id}/details`,  // ADD THIS
     ALL_TYPES: '/api/v1/item-types'
+};
+
+export const MEASURING_UNIT_ENDPOINTS = {
+    BASE: '/api/v1/measuring-units',
+    BY_ID: (id) => `/api/v1/measuring-units/${id}`,
+    CREATE: '/api/v1/measuring-units',
+    UPDATE: (id) => `/api/v1/measuring-units/${id}`,
+    DELETE: (id) => `/api/v1/measuring-units/${id}`,
+    ACTIVE: '/api/v1/measuring-units/active'
 };
 
 // Warehouse module endpoints
@@ -1098,16 +1142,21 @@ export const INVENTORY_VALUATION_ENDPOINTS = {
 
     // Warehouse Balances
     WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/balance`,
-    RECALCULATE_WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/recalculate-balance`,
 
-    // Site Balances
+    // Site Balances (Backward Compatible)
     SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/balance`,
     ALL_SITE_BALANCES: '/api/finance/inventory-valuation/sites/balances',
-    RECALCULATE_SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/recalculate-balance`,
+
+    // Site Valuations (With Expenses)
+    SITE_VALUATION: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/valuation`,
+    ALL_SITE_VALUATIONS: '/api/finance/inventory-valuation/sites/valuations',
+
+    // Equipment Financials
+    EQUIPMENT_FINANCIALS: (equipmentId) => `/api/finance/inventory-valuation/equipment/${equipmentId}/financials`,
+    EQUIPMENT_CONSUMABLES_BREAKDOWN: (equipmentId) => `/api/finance/inventory-valuation/equipment/${equipmentId}/consumables-breakdown`,
 
     // Warehouse Details
     WAREHOUSE_ITEMS_BREAKDOWN: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/items-breakdown`,
-    WAREHOUSE_TRANSACTIONS: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/transactions`,
     WAREHOUSE_ITEM_HISTORY: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/item-history`,
 };
 
@@ -1138,19 +1187,14 @@ export const EQUIPMENT_FINANCE_ENDPOINTS = {
 
 export const LOGISTICS_ENDPOINTS = {
     BASE: '/api/procurement/logistics',
-
-    // Get all logistics for a purchase order
+    GET_ALL: '/api/procurement/logistics',
+    GET_BY_ID: (id) => `/api/procurement/logistics/${id}`,
+    PENDING_APPROVAL: '/api/procurement/logistics/pending-approval',
+    PENDING_PAYMENT: '/api/procurement/logistics/pending-payment',  // ✅ ADD THIS
+    COMPLETED: '/api/procurement/logistics/completed',  // ✅ ADD THIS
     BY_PURCHASE_ORDER: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}`,
-
-    // Get total logistics cost
-    TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total`,
-
-    // Create new logistics
+    TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total-cost`,
     CREATE: '/api/procurement/logistics',
-
-    // Update logistics
     UPDATE: (id) => `/api/procurement/logistics/${id}`,
-
-    // Delete logistics
-    DELETE: (id) => `/api/procurement/logistics/${id}`
+    DELETE: (id) => `/api/procurement/logistics/${id}`,
 };

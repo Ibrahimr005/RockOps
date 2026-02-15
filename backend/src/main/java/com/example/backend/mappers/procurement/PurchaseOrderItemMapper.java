@@ -1,11 +1,9 @@
 package com.example.backend.mappers.procurement;
 
-import com.example.backend.dto.procurement.PurchaseOrderItemDTO;
-import com.example.backend.dto.merchant.MerchantDTO;
-import com.example.backend.dto.warehouse.ItemTypeDTO;
+import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderItemDTO;
 import com.example.backend.mappers.merchant.MerchantMapper;
 import com.example.backend.mappers.warehouse.ItemTypeMapper;
-import com.example.backend.models.procurement.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;

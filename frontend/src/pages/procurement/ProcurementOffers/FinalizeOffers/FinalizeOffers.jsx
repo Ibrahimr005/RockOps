@@ -402,14 +402,21 @@ const FinalizeOffers = ({
     const totalFinalizedItems = Object.values(finalizedItems).filter(v => v).length;
 
     const getFinalizedTotalValue = () => {
-        return Object.entries(finalizedItems)
-            .filter(([_, isFinalized]) => isFinalized)
-            .reduce((acc, [id, _]) => {
-                const item = activeOffer.offerItems.find(o => o.id.toString() === id);
-                return acc + (item ? parseFloat(item.totalPrice) : 0);
-            }, 0);
-    };
+        const totals = {};
 
+        Object.entries(finalizedItems)
+            .filter(([_, isFinalized]) => isFinalized)
+            .forEach(([id, _]) => {
+                const item = activeOffer.offerItems.find(o => o.id.toString() === id);
+                if (item) {
+                    const currency = item.currency || 'EGP';
+                    const price = parseFloat(item.totalPrice || 0);
+                    totals[currency] = (totals[currency] || 0) + price;
+                }
+            });
+
+        return totals;
+    };
 
 
     return (
@@ -622,8 +629,8 @@ const FinalizeOffers = ({
                                                                 >
                                                                     <td>{offerItem.merchant?.name || 'Unknown'}</td>
                                                                     <td>{offerItem.quantity} {requestItem.itemType?.measuringUnit}</td>
-                                                                    <td>${parseFloat(offerItem.unitPrice || 0).toFixed(2)}</td>
-                                                                    <td>${parseFloat(offerItem.totalPrice || 0).toFixed(2)}</td>
+                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice || 0).toFixed(2)}</td>
+                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice || 0).toFixed(2)}</td>
                                                                     <td>
                                                                         <label className="finalize-checkbox-container-finalize">
                                                                             <input
@@ -665,8 +672,13 @@ const FinalizeOffers = ({
                                         <FiDollarSign size={18} />
                                         <span className="summary-label-finalize">Total Value to be Finalized:</span>
                                         <span className="summary-value-finalize total-finalize">
-                                            ${getFinalizedTotalValue().toFixed(2)}
-                                        </span>
+        {Object.entries(getFinalizedTotalValue()).map(([currency, total], idx) => (
+            <span key={currency} style={{ marginLeft: idx > 0 ? '8px' : '0' }}>
+                {idx > 0 && '+ '}
+                {currency} {total.toFixed(2)}
+            </span>
+        ))}
+    </span>
                                     </div>
                                 </div>
                                 {/* End of Total Summary */}
@@ -701,7 +713,7 @@ const FinalizeOffers = ({
                 isVisible={showConfirmDialog}
                 type="success"
                 title="Finalize Offer"
-                message={`Are you sure you want to finalize ${totalFinalizedItems} item${totalFinalizedItems !== 1 ? 's' : ''} from this offer? The total value to be finalized is $${getFinalizedTotalValue().toFixed(2)}. This action will create a purchase order and cannot be undone.`}
+                message={`Are you sure you want to finalize ${totalFinalizedItems} item${totalFinalizedItems !== 1 ? 's' : ''} from this offer? The total value to be finalized is ${Object.entries(getFinalizedTotalValue()).map(([currency, total]) => `${currency} ${total.toFixed(2)}`).join(' + ')}. This action will create a purchase order and cannot be undone.`}
                 confirmText="Finalize Offer"
                 cancelText="Cancel"
                 onConfirm={saveFinalizedOffer}
