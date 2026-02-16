@@ -5,6 +5,9 @@ import com.example.backend.dto.payroll.LoanFinanceActionDTO;
 import com.example.backend.dto.payroll.LoanFinanceRequestDTO;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
+import com.example.backend.models.id.EntityTypeConfig;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;
@@ -14,6 +17,7 @@ import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRe
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.payroll.LoanFinanceRequestRepository;
 import com.example.backend.repositories.payroll.LoanRepository;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,6 +44,7 @@ public class LoanService {
     private final EmployeeRepository employeeRepository;
     private final EmployeeDeductionService employeeDeductionService;
     private final PaymentRequestRepository paymentRequestRepository;
+    private final EntityIdGeneratorService entityIdGeneratorService;
 
     // ===================================================
     // LOAN CRUD OPERATIONS
@@ -110,7 +115,7 @@ public class LoanService {
             .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + dto.getEmployeeId()));
 
         // Generate loan number
-        String loanNumber = generateLoanNumber();
+        String loanNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.LOAN);
 
         // Calculate monthly installment if not provided
         BigDecimal monthlyInstallment = dto.getMonthlyInstallment();
@@ -481,12 +486,12 @@ public class LoanService {
 
         PaymentRequest paymentRequest = PaymentRequest.builder()
             // Source polymorphism
-            .sourceType("LOAN")
+            .sourceType(PaymentSourceType.ELOAN)
             .sourceId(loan.getId())
             .sourceNumber(loan.getLoanNumber())
             .sourceDescription("Loan Disbursement: " + loan.getLoanNumber() + " - " + loan.getPurpose())
             // Target polymorphism
-            .targetType("EMPLOYEE")
+            .targetType(PaymentTargetType.EMPLOYEE)
             .targetId(employee.getId())
             .targetName(employeeName)
             .targetDetails(targetDetails)
@@ -663,13 +668,6 @@ public class LoanService {
     // ===================================================
     // HELPER METHODS
     // ===================================================
-
-    private String generateLoanNumber() {
-        int year = LocalDate.now().getYear();
-        Long maxSequence = loanRepository.getMaxLoanNumberSequence("LOAN-" + year + "-%");
-        long nextSequence = (maxSequence != null ? maxSequence : 0) + 1;
-        return Loan.generateLoanNumber(year, nextSequence);
-    }
 
     private String generateFinanceRequestNumber() {
         int year = LocalDate.now().getYear();

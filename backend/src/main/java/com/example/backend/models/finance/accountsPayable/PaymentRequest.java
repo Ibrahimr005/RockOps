@@ -61,8 +61,9 @@ PaymentRequest {
     /**
      * Type of source: PURCHASE_ORDER, MAINTENANCE, PAYROLL_BATCH, LOAN, etc.
      */
+    @Enumerated(EnumType.STRING)
     @Column(name = "source_type", length = 50)
-    private String sourceType;
+    private PaymentSourceType sourceType;
 
     /**
      * ID of the source entity
@@ -89,8 +90,9 @@ PaymentRequest {
     /**
      * Type of target: MERCHANT, EMPLOYEE, EXTERNAL
      */
+    @Enumerated(EnumType.STRING)
     @Column(name = "target_type", length = 50)
-    private String targetType;
+    private PaymentTargetType targetType;
 
     /**
      * ID of the target entity (merchant_id or employee_id)

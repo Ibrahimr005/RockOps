@@ -22,14 +22,14 @@ public enum EntityTypeConfig {
     EQUIPMENT_BRAND("EQB", 6),
 
     // HR
-    EMPLOYEE("EMP", 6),
-    DEPARTMENT("DEPT", 6),
-    JOB_POSITION("JP", 6),
-    VACANCY("VAC", 6),
+    EMPLOYEE("EMP", 6, true),
+    DEPARTMENT("DEPT", 6, true),
+    JOB_POSITION("POS", 6, true),
+    VACANCY("VAC", 6, true),
     WORK_TYPE("WT", 6),
 
     // Payroll
-    LOAN("LOAN", 6),
+    LOAN("ELOAN", 6),
     BONUS("BNS", 6),
     PAYROLL("PRL", 6),
     EMPLOYEE_PAYROLL("EPRL", 6),
@@ -49,10 +49,16 @@ public enum EntityTypeConfig {
 
     private final String prefix;
     private final int paddingLength;
+    private final boolean hashed;
 
     EntityTypeConfig(String prefix, int paddingLength) {
+        this(prefix, paddingLength, false);
+    }
+
+    EntityTypeConfig(String prefix, int paddingLength, boolean hashed) {
         this.prefix = prefix;
         this.paddingLength = paddingLength;
+        this.hashed = hashed;
     }
 
     public String getPrefix() {
@@ -61,6 +67,10 @@ public enum EntityTypeConfig {
 
     public int getPaddingLength() {
         return paddingLength;
+    }
+
+    public boolean isHashed() {
+        return hashed;
     }
 
     // Entity type is now the enum name itself

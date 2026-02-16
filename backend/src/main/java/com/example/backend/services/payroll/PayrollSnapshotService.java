@@ -15,7 +15,9 @@ import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.payroll.EmployeePayrollRepository;
 import com.example.backend.repositories.payroll.PayrollAttendanceSnapshotRepository;
 import com.example.backend.repositories.payroll.PayrollPublicHolidayRepository;
+import com.example.backend.models.id.EntityTypeConfig;
 import com.example.backend.repositories.payroll.PayrollRepository;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,6 +50,7 @@ public class PayrollSnapshotService {
     private final PayrollAttendanceSnapshotRepository snapshotRepository;
     private final PayrollPublicHolidayRepository publicHolidayRepository;
     private final PayrollRepository payrollRepository;
+    private final EntityIdGeneratorService entityIdGeneratorService;
 
     // ✅ NEW DEPENDENCY: Required to calculate money immediately after import
     private final PayrollCalculationEngine calculationEngine;
@@ -312,7 +315,7 @@ public class PayrollSnapshotService {
         log.info("     📸 Creating EmployeePayroll entity manually...");
         EmployeePayroll employeePayroll = new EmployeePayroll();
         // Generate employee payroll number
-        employeePayroll.setEmployeePayrollNumber(generateEmployeePayrollNumber(payroll.getStartDate()));
+        employeePayroll.setEmployeePayrollNumber(entityIdGeneratorService.generateNextId(EntityTypeConfig.EMPLOYEE_PAYROLL));
 employeePayroll.setPaymentTypeCode(employee.getPaymentType().getCode());
 employeePayroll.setPaymentTypeName(employee.getPaymentType().getName());
 employeePayroll.setPaymentTypeId(employee.getPaymentType().getId());
@@ -530,12 +533,5 @@ employeePayroll.setPaymentTypeId(employee.getPaymentType().getId());
         return totalDays;
     }
 
-    private String generateEmployeePayrollNumber(LocalDate startDate) {
-        String year = String.valueOf(startDate.getYear());
-        String prefix = "EPRL-" + year + "-";
-        Integer maxSeq = employeePayrollRepository.getMaxEmployeePayrollSequenceForYear(prefix);
-        int nextSeq = (maxSeq != null ? maxSeq : 0) + 1;
-        return String.format("EPRL-%s-%06d", year, nextSeq);
-    }
 
 }

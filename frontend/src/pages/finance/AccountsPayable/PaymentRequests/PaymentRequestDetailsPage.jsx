@@ -13,7 +13,8 @@ import {
     FiPackage,
     FiUsers,
     FiCreditCard,
-    FiBriefcase
+    FiBriefcase,
+    FiTruck
 } from 'react-icons/fi';
 import { FaBuilding, FaMoneyBillWave, FaUsersCog } from 'react-icons/fa';
 import IntroCard from '../../../../components/common/IntroCard/IntroCard';
@@ -22,6 +23,7 @@ import ContentLoader from '../../../../components/common/ContentLoader/ContentLo
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
+import { PAYMENT_SOURCE_TYPES, PAYMENT_TARGET_TYPES } from '../../../../utils/paymentRequestTypes';
 import './PaymentRequestDetailsPage.scss';
 
 const PaymentRequestDetailsPage = () => {
@@ -318,29 +320,32 @@ const PaymentRequestDetailsPage = () => {
         );
     }
 
-    // Determine source type from polymorphic field or legacy fields
+    // Determine source type info for display
     const getSourceTypeInfo = () => {
-        if (request.sourceType === 'PAYROLL_BATCH' || (!request.sourceType && request.payrollBatchId)) {
-            return { type: 'Payroll', label: 'Payroll Batch', icon: <FaUsersCog /> };
+        switch (request.sourceType) {
+            case PAYMENT_SOURCE_TYPES.PAYROLL_BATCH:
+                return { type: 'Payroll', label: 'Payroll Batch', icon: <FaUsersCog /> };
+            case PAYMENT_SOURCE_TYPES.PURCHASE_ORDER:
+                return { type: 'Procurement', label: 'Purchase Order', icon: <FiPackage /> };
+            case PAYMENT_SOURCE_TYPES.MAINTENANCE:
+                return { type: 'Maintenance', label: 'Maintenance', icon: <FiBriefcase /> };
+            case PAYMENT_SOURCE_TYPES.ELOAN:
+                return { type: 'Employee-loan', label: 'Employee Loan', icon: <FiCreditCard /> };
+            case PAYMENT_SOURCE_TYPES.CLOAN:
+                return { type: 'Company-loan', label: 'Company Loan', icon: <FiCreditCard /> };
+            case PAYMENT_SOURCE_TYPES.BONUS:
+                return { type: 'Bonus', label: 'Employee Bonus', icon: <FiDollarSign /> };
+            case PAYMENT_SOURCE_TYPES.LOGISTICS:
+                return { type: 'Logistics', label: 'Logistics', icon: <FiTruck /> };
+            default:
+                return { type: 'Unknown', label: 'Unknown', icon: <FiFileText /> };
         }
-        if (request.sourceType === 'PURCHASE_ORDER' || (!request.sourceType && request.purchaseOrderNumber)) {
-            return { type: 'Procurement', label: 'Purchase Order', icon: <FiPackage /> };
-        }
-        if (request.sourceType === 'MAINTENANCE' || (!request.sourceType && request.maintenanceStepId)) {
-            return { type: 'Maintenance', label: 'Maintenance', icon: <FiBriefcase /> };
-        }
-        if (request.sourceType === 'LOAN' || (!request.sourceType && request.loanInstallmentId)) {
-            return { type: 'Loan', label: 'Company Loan', icon: <FiCreditCard /> };
-        }
-        if (request.sourceType === 'BONUS') {
-            return { type: 'Bonus', label: 'Employee Bonus', icon: <FiDollarSign /> };
-        }
-        return { type: 'Unknown', label: 'Unknown', icon: <FiFileText /> };
     };
 
     const sourceTypeInfo = getSourceTypeInfo();
-    const isPayrollBatch = request.sourceType === 'PAYROLL_BATCH' || request.payrollBatchId;
-    const isLoanPayment = request.sourceType === 'LOAN' || request.loanInstallmentId != null;
+    const isPayrollBatch = request.sourceType === PAYMENT_SOURCE_TYPES.PAYROLL_BATCH;
+    const isLoanPayment = request.sourceType === PAYMENT_SOURCE_TYPES.ELOAN
+        || request.sourceType === PAYMENT_SOURCE_TYPES.CLOAN;
 
     // Batch employees table columns
     const batchEmployeesColumns = [

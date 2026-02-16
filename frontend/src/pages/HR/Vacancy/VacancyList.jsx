@@ -215,6 +215,13 @@ const VacancyList = () => {
 
     const columns = React.useMemo(() => [
         {
+            header: 'Vacancy #',
+            accessor: 'vacancyNumber',
+            render: (row) => (
+                <span className="entity-number">{row.vacancyNumber || '-'}</span>
+            )
+        },
+        {
             header: 'Title',
             accessor: 'title',
             render: (row) => (

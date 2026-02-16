@@ -23,6 +23,9 @@ public class Department {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
+    @Column(name = "department_number", unique = true, length = 20)
+    private String departmentNumber;
+
     @Column(name = "name", nullable = false, unique = true, length = 100)
     private String name;
 

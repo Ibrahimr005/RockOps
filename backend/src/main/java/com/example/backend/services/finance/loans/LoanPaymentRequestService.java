@@ -1,6 +1,8 @@
 package com.example.backend.services.finance.loans;
 
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import com.example.backend.models.finance.loans.CompanyLoan;
 import com.example.backend.models.finance.loans.FinancialInstitution;
@@ -80,6 +82,16 @@ public class LoanPaymentRequestService {
                 .requestNumber(requestNumber)
                 .loanInstallment(installment)
                 .financialInstitution(institution)
+                // Source polymorphism - company loan
+                .sourceType(PaymentSourceType.CLOAN)
+                .sourceId(loan.getId())
+                .sourceNumber(loan.getLoanNumber())
+                .sourceDescription(description)
+                // Target polymorphism - financial institution
+                .targetType(PaymentTargetType.FINANCIAL_INSTITUTION)
+                .targetId(institution.getId())
+                .targetName(institution.getName())
+                .targetDetails(buildInstitutionTargetDetails(institution))
                 .requestedAmount(installment.getTotalAmount())
                 .currency(loan.getCurrency())
                 .description(description)
@@ -107,6 +119,36 @@ public class LoanPaymentRequestService {
         log.debug("Created payment request {} for installment {}", requestNumber, installment.getInstallmentNumber());
 
         return saved;
+    }
+
+    /**
+     * Build target details JSON for financial institution
+     */
+    private String buildInstitutionTargetDetails(FinancialInstitution institution) {
+        if (institution == null) return null;
+
+        StringBuilder details = new StringBuilder();
+        details.append("{");
+        details.append("\"type\":\"FINANCIAL_INSTITUTION\"");
+
+        if (institution.getContactPersonName() != null) {
+            details.append(",\"contactPerson\":\"").append(institution.getContactPersonName()).append("\"");
+        }
+        if (institution.getContactPersonPhone() != null) {
+            details.append(",\"phone\":\"").append(institution.getContactPersonPhone()).append("\"");
+        }
+        if (institution.getContactPersonEmail() != null) {
+            details.append(",\"email\":\"").append(institution.getContactPersonEmail()).append("\"");
+        }
+        if (institution.getPaymentBankName() != null) {
+            details.append(",\"bankName\":\"").append(institution.getPaymentBankName()).append("\"");
+        }
+        if (institution.getPaymentAccountNumber() != null) {
+            details.append(",\"accountNumber\":\"").append(institution.getPaymentAccountNumber()).append("\"");
+        }
+
+        details.append("}");
+        return details.toString();
     }
 
     /**

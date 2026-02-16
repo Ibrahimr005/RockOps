@@ -21,6 +21,7 @@ public class JobPositionDetailsDTO {
     // BASIC INFORMATION
     // ======================================
     private UUID id;
+    private String positionNumber;
     private String positionName;
     private String departmentName;
     private String head;

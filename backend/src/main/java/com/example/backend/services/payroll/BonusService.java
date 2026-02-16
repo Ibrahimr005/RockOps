@@ -5,6 +5,8 @@ import com.example.backend.dto.payroll.BulkCreateBonusDTO;
 import com.example.backend.dto.payroll.CreateBonusDTO;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.payroll.Bonus;
@@ -64,7 +66,7 @@ public class BonusService {
                 .orElseThrow(() -> new ResourceNotFoundException("Site not found: " + siteId));
 
         // Generate bonus number
-        String bonusNumber = generateBonusNumber();
+        String bonusNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.BONUS);
 
         Bonus bonus = Bonus.builder()
                 .bonusNumber(bonusNumber)
@@ -106,7 +108,7 @@ public class BonusService {
             Employee employee = employeeRepository.findById(employeeId)
                     .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + employeeId));
 
-            String bonusNumber = generateBonusNumber();
+            String bonusNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.BONUS);
 
             Bonus bonus = Bonus.builder()
                     .bonusNumber(bonusNumber)
@@ -292,18 +294,6 @@ public class BonusService {
     // ===================================================
 
     /**
-     * Generate a unique bonus number using EntityIdGeneratorService
-     * Format: BNS-YYYY-NNNNNN
-     */
-    private String generateBonusNumber() {
-        int year = LocalDate.now().getYear();
-        String yearPrefix = "BNS-" + year + "-";
-        Long maxSequence = bonusRepository.getMaxBonusNumberSequence(yearPrefix + "%");
-        long nextSequence = (maxSequence != null ? maxSequence : 0) + 1;
-        return String.format("%s%06d", yearPrefix, nextSequence);
-    }
-
-    /**
      * Create a PaymentRequest for a bonus (following LoanService pattern)
      */
     private PaymentRequest createPaymentRequestForBonus(Bonus bonus, Employee employee) {
@@ -318,14 +308,14 @@ public class BonusService {
 
         PaymentRequest paymentRequest = PaymentRequest.builder()
                 // Source polymorphism
-                .sourceType("BONUS")
+                .sourceType(PaymentSourceType.BONUS)
                 .sourceId(bonus.getId())
                 .sourceNumber(bonus.getBonusNumber())
                 .sourceDescription("Bonus Payment: " + bonus.getBonusNumber() + " - " +
                         bonus.getBonusType().getName() +
                         (bonus.getReason() != null ? " - " + bonus.getReason() : ""))
                 // Target polymorphism
-                .targetType("EMPLOYEE")
+                .targetType(PaymentTargetType.EMPLOYEE)
                 .targetId(employee.getId())
                 .targetName(employeeName)
                 .targetDetails(targetDetails)

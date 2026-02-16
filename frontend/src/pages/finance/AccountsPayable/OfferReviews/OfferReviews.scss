@@ -11,52 +11,52 @@
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: var(--bg-secondary);
+    background: var(--color-surface-secondary);
     border: 2px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-sm);
     font-weight: 500;
-    color: var(--text-secondary);
-    transition: all 0.3s ease;
+    color: var(--color-text-secondary);
+    transition: all var(--transition-normal) ease;
 
     svg {
-      font-size: 16px;
+      font-size: var(--font-size-md);
     }
 
     &:hover {
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-      background: rgba(var(--primary-rgb), 0.05);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: rgba(var(--color-primary-rgb), 0.05);
     }
 
     &.active {
-      background: var(--primary-color);
+      background: var(--color-primary);
       color: white;
-      border-color: var(--primary-color);
+      border-color: var(--color-primary);
     }
   }
 
   .status-badge {
     padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
     font-weight: 600;
     text-transform: uppercase;
 
     &.status-pending {
-      background: rgba(255, 152, 0, 0.1);
-      color: #FF9800;
+      background: rgba(var(--color-warning-rgb), 0.1);
+      color: var(--color-warning);
     }
 
     &.status-approved {
-      background: rgba(76, 175, 80, 0.1);
-      color: #4CAF50;
+      background: rgba(var(--color-success-rgb), 0.1);
+      color: var(--color-success);
     }
 
     &.status-rejected {
-      background: rgba(244, 67, 54, 0.1);
-      color: #F44336;
+      background: rgba(var(--color-danger-rgb), 0.1);
+      color: var(--color-danger);
     }
   }
 }
@@ -66,16 +66,16 @@
   width: 90%;
 
   .offer-details-section {
-    background: var(--bg-secondary);
-    border-radius: 8px;
+    background: var(--color-surface-secondary);
+    border-radius: var(--radius-sm);
     padding: 16px;
     margin-bottom: 20px;
 
     h3 {
-      font-size: 16px;
+      font-size: var(--font-size-md);
       font-weight: 600;
       margin: 0 0 16px 0;
-      color: var(--text-color);
+      color: var(--color-text-primary);
     }
 
     .details-grid {
@@ -90,20 +90,20 @@
       gap: 4px;
 
       label {
-        font-size: 12px;
+        font-size: var(--font-size-xs);
         font-weight: 500;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         text-transform: uppercase;
       }
 
       span {
-        font-size: 14px;
-        color: var(--text-color);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
 
         &.amount {
-          font-size: 16px;
+          font-size: var(--font-size-md);
           font-weight: 700;
-          color: var(--primary-color);
+          color: var(--color-primary);
         }
       }
     }
@@ -126,47 +126,47 @@
       gap: 8px;
       padding: 14px;
       border: 2px solid var(--border-color);
-      border-radius: 8px;
-      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-secondary);
       cursor: pointer;
-      font-size: 14px;
+      font-size: var(--font-size-sm);
       font-weight: 600;
-      color: var(--text-secondary);
-      transition: all 0.3s ease;
+      color: var(--color-text-secondary);
+      transition: all var(--transition-normal) ease;
 
       svg {
-        font-size: 18px;
+        font-size: var(--font-size-lg);
       }
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-md);
       }
 
       &.approve-btn {
         &:hover {
-          border-color: #4CAF50;
-          color: #4CAF50;
-          background: rgba(76, 175, 80, 0.05);
+          border-color: var(--color-success);
+          color: var(--color-success);
+          background: rgba(var(--color-success-rgb), 0.05);
         }
 
         &.active {
-          background: #4CAF50;
-          border-color: #4CAF50;
+          background: var(--color-success);
+          border-color: var(--color-success);
           color: white;
         }
       }
 
       &.reject-btn {
         &:hover {
-          border-color: #F44336;
-          color: #F44336;
-          background: rgba(244, 67, 54, 0.05);
+          border-color: var(--color-danger);
+          color: var(--color-danger);
+          background: rgba(var(--color-danger-rgb), 0.05);
         }
 
         &.active {
-          background: #F44336;
-          border-color: #F44336;
+          background: var(--color-danger);
+          border-color: var(--color-danger);
           color: white;
         }
       }
@@ -179,8 +179,8 @@
     .modern-form-label {
       display: block;
       font-weight: 500;
-      color: var(--text-color);
-      font-size: 14px;
+      color: var(--color-text-primary);
+      font-size: var(--font-size-sm);
       margin-bottom: 6px;
 
       .required {
@@ -194,16 +194,16 @@
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 14px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
       background: var(--main-background-color);
-      color: var(--text-color);
-      transition: border-color 0.2s ease;
+      color: var(--color-text-primary);
+      transition: border-color var(--transition-fast) ease;
 
       &:focus {
         outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
       }
 
       &.error {
@@ -213,19 +213,19 @@
 
     .error-text {
       color: var(--color-danger);
-      font-size: 12px;
+      font-size: var(--font-size-xs);
       margin-top: 4px;
       display: block;
     }
   }
 
   .btn-danger {
-    background: #F44336;
-    border-color: #F44336;
+    background: var(--color-danger);
+    border-color: var(--color-danger);
 
     &:hover {
-      background: #D32F2F;
-      border-color: #D32F2F;
+      background: var(--color-danger-dark);
+      border-color: var(--color-danger-dark);
     }
   }
 }

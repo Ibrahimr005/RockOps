@@ -18,6 +18,7 @@ import java.util.UUID;
 public class JobPositionDTO {
 
     private UUID id;
+    private String positionNumber;
     private String positionName;
     private String department;
     private String head;

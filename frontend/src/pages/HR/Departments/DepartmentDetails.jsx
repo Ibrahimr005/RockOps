@@ -294,6 +294,7 @@ const DepartmentDetails = () => {
             {/* Header */}
             <IntroCard
                 title={department.name}
+                subtitle={department.departmentNumber}
                 label="DEPARTMENT DETAILS"
                 breadcrumbs={getBreadcrumbs()}
                 icon={<FaBuilding />}

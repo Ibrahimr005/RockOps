@@ -11,11 +11,13 @@ import com.example.backend.models.hr.Department;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.hr.PromotionRequest;
+import com.example.backend.models.id.EntityTypeConfig;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.hr.PromotionRequestRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import com.example.backend.services.notification.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -54,6 +56,9 @@ public class JobPositionService {
     @org.springframework.context.annotation.Lazy
     private VacationBalanceService vacationBalanceService;
 
+    @Autowired
+    private EntityIdGeneratorService entityIdGeneratorService;
+
 
     /**
      * Convert JobPosition entity to JobPositionDTO
@@ -65,6 +70,7 @@ public class JobPositionService {
 
         JobPositionDTO dto = new JobPositionDTO();
         dto.setId(jobPosition.getId());
+        dto.setPositionNumber(jobPosition.getPositionNumber());
         dto.setPositionName(jobPosition.getPositionName());
         dto.setDepartment(jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null);
         dto.setHead(jobPosition.getHead());
@@ -176,8 +182,12 @@ public class JobPositionService {
                         .orElseThrow(() -> new EntityNotFoundException("Department not found: " + jobPositionDTO.getDepartment()));
             }
 
+            // Generate position number
+            String positionNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.JOB_POSITION);
+
             // Build the job position entity
             JobPosition jobPosition = JobPosition.builder()
+                    .positionNumber(positionNumber)
                     .positionName(jobPositionDTO.getPositionName().trim())
                     .head(jobPositionDTO.getHead())
                     .department(department)
@@ -1458,6 +1468,7 @@ public class JobPositionService {
 
         // Basic info
         builder.id(jobPosition.getId())
+                .positionNumber(jobPosition.getPositionNumber())
                 .positionName(jobPosition.getPositionName())
                 .departmentName(jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null)
                 .head(jobPosition.getHead())

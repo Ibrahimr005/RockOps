@@ -7,10 +7,12 @@ import com.example.backend.dto.hr.vacancy.VacancyDTO;
 import com.example.backend.models.hr.Candidate;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.hr.Vacancy;
+import com.example.backend.models.id.EntityTypeConfig;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.VacancyRepository;
 import com.example.backend.repositories.hr.CandidateRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import com.example.backend.services.notification.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,9 @@ public class VacancyService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private EntityIdGeneratorService entityIdGeneratorService;
+
     public List<VacancyDTO> getAllVacancies() {
         return vacancyRepository.findAll().stream()
                 .map(this::mapVacanciesDTO)
@@ -52,6 +57,7 @@ public class VacancyService {
         if (jobPosition != null) {
             jobPositionDTO = MinimalJobPositionDTO.builder()
                     .id(jobPosition.getId())
+                    .positionNumber(jobPosition.getPositionNumber())
                     .positionName(jobPosition.getPositionName())
                     .experienceLevel(jobPosition.getExperienceLevel())
                     .contractType(jobPosition.getContractType().name())
@@ -62,6 +68,7 @@ public class VacancyService {
 
         return VacancyDTO.builder()
                 .id(vacancy.getId())
+                .vacancyNumber(vacancy.getVacancyNumber())
                 .title(vacancy.getTitle())
                 .description(vacancy.getDescription())
                 .status(vacancy.getStatus())
@@ -124,7 +131,11 @@ public class VacancyService {
 
         String determinedStatus = determineVacancyStatus(dto);
 
+        // Generate vacancy number
+        String vacancyNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.VACANCY);
+
         Vacancy vacancy = Vacancy.builder()
+                .vacancyNumber(vacancyNumber)
                 .title(trimmedTitle)
                 .description(dto.getDescription().trim())
                 .requirements(dto.getRequirements() != null ? dto.getRequirements().trim() : null)

@@ -39,35 +39,35 @@
 
   .status-badge {
     padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
     font-weight: 600;
     text-transform: uppercase;
 
     &.status-pending {
-      background: rgba(255, 152, 0, 0.1);
-      color: #FF9800;
+      background: rgba(var(--color-warning-rgb), 0.1);
+      color: var(--color-warning);
     }
 
     &.status-approved {
-      background: rgba(33, 150, 243, 0.1);
-      color: #2196F3;
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
     }
 
     &.status-rejected {
-      background: rgba(244, 67, 54, 0.1);
-      color: #F44336;
+      background: rgba(var(--color-danger-rgb), 0.1);
+      color: var(--color-danger);
     }
 
     &.status-partial,
     &.status-partially_paid {
-      background: rgba(156, 39, 176, 0.1);
-      color: #9C27B0;
+      background: rgba(var(--color-purple-rgb), 0.1);
+      color: var(--color-purple);
     }
 
     &.status-paid {
-      background: rgba(76, 175, 80, 0.1);
-      color: #4CAF50;
+      background: rgba(var(--color-success-rgb), 0.1);
+      color: var(--color-success);
     }
   }
 
@@ -77,33 +77,49 @@
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
     font-weight: 600;
 
     &.source-procurement {
-      background: rgba(33, 150, 243, 0.1);
-      color: #2196F3;
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
     }
 
     &.source-maintenance {
-      background: rgba(76, 175, 80, 0.1);
-      color: #4CAF50;
+      background: rgba(var(--color-success-rgb), 0.1);
+      color: var(--color-success);
     }
 
     &.source-payroll {
-      background: rgba(156, 39, 176, 0.1);
-      color: #9C27B0;
+      background: rgba(var(--color-purple-rgb), 0.1);
+      color: var(--color-purple);
     }
 
-    &.source-loan {
-      background: rgba(255, 152, 0, 0.1);
-      color: #FF9800;
+    &.source-eloan {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
     }
 
+    &.source-cloan {
+      background: rgba(var(--color-purple-rgb), 0.1);
+      color: var(--color-purple);
+    }
+
+    &.source-bonus {
+      background: rgba(var(--color-lime-rgb), 0.1);
+      color: var(--color-lime);
+    }
+
+    &.source-logistics {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
+    }
+
+    &.source-default,
     &.source-unknown {
-      background: rgba(158, 158, 158, 0.1);
-      color: #9E9E9E;
+      background: var(--color-surface-secondary);
+      color: var(--color-text-muted);
     }
   }
 
@@ -113,23 +129,33 @@
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
     font-weight: 500;
 
     &.recipient-merchant {
-      background: rgba(0, 150, 136, 0.1);
-      color: #009688;
+      background: rgba(var(--color-success-rgb), 0.1);
+      color: var(--color-success);
     }
 
     &.recipient-employee {
-      background: rgba(63, 81, 181, 0.1);
-      color: #3F51B5;
+      background: rgba(var(--color-primary-rgb), 0.1);
+      color: var(--color-primary);
     }
 
     &.recipient-employees {
-      background: rgba(103, 58, 183, 0.1);
-      color: #673AB7;
+      background: rgba(var(--color-purple-rgb), 0.1);
+      color: var(--color-purple);
+    }
+
+    &.recipient-institution {
+      background: rgba(var(--color-warning-rgb), 0.1);
+      color: var(--color-warning);
+    }
+
+    &.recipient-default {
+      background: var(--color-surface-secondary);
+      color: var(--color-text-muted);
     }
   }
 }
@@ -142,12 +168,12 @@
 
   .details-section {
     background: var(--color-surface-secondary);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 16px;
     margin-bottom: 20px;
 
     h3 {
-      font-size: 16px;
+      font-size: var(--font-size-md);
       font-weight: 600;
       margin: 0 0 16px 0;
       color: var(--color-text-primary);
@@ -204,10 +230,10 @@
       gap: 8px;
       padding: 12px;
       background: var(--main-background-color);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
 
       label {
-        font-size: 12px;
+        font-size: var(--font-size-xs);
         font-weight: 500;
         color: var(--color-text-secondary);
         text-transform: uppercase;
@@ -267,7 +293,7 @@
 
     .payment-item {
       background: var(--main-background-color);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 12px;
       border-left: 4px solid var(--color-success);
 
@@ -290,13 +316,13 @@
           text-transform: uppercase;
 
           &.status-completed {
-            background: rgba(76, 175, 80, 0.1);
-            color: #4CAF50;
+            background: rgba(var(--color-success-rgb), 0.1);
+            color: var(--color-success);
           }
 
           &.status-pending {
-            background: rgba(255, 152, 0, 0.1);
-            color: #FF9800;
+            background: rgba(var(--color-warning-rgb), 0.1);
+            color: var(--color-warning);
           }
         }
       }
@@ -336,7 +362,7 @@
 
   .request-summary {
     background: var(--color-surface-secondary);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 16px;
     margin-bottom: 20px;
 
@@ -395,47 +421,47 @@
       gap: 8px;
       padding: 14px;
       border: 2px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       background: var(--color-surface-secondary);
       cursor: pointer;
-      font-size: 14px;
+      font-size: var(--font-size-sm);
       font-weight: 600;
       color: var(--color-text-secondary);
-      transition: all 0.3s ease;
+      transition: all var(--transition-normal) ease;
 
       svg {
-        font-size: 18px;
+        font-size: var(--font-size-lg);
       }
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-md);
       }
 
       &.approve-btn {
         &:hover {
-          border-color: #4CAF50;
-          color: #4CAF50;
-          background: rgba(76, 175, 80, 0.05);
+          border-color: var(--color-success);
+          color: var(--color-success);
+          background: rgba(var(--color-success-rgb), 0.05);
         }
 
         &.active {
-          background: #4CAF50;
-          border-color: #4CAF50;
+          background: var(--color-success);
+          border-color: var(--color-success);
           color: white;
         }
       }
 
       &.reject-btn {
         &:hover {
-          border-color: #F44336;
-          color: #F44336;
-          background: rgba(244, 67, 54, 0.05);
+          border-color: var(--color-danger);
+          color: var(--color-danger);
+          background: rgba(var(--color-danger-rgb), 0.05);
         }
 
         &.active {
-          background: #F44336;
-          border-color: #F44336;
+          background: var(--color-danger);
+          border-color: var(--color-danger);
           color: white;
         }
       }
@@ -462,11 +488,11 @@
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 14px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
       background: var(--main-background-color);
       color: var(--color-text-primary);
-      transition: border-color 0.2s ease;
+      transition: border-color var(--transition-fast) ease;
       font-family: inherit;
 
       &:focus {
@@ -489,12 +515,12 @@
   }
 
   .btn-danger {
-    background: #F44336;
-    border-color: #F44336;
+    background: var(--color-danger);
+    border-color: var(--color-danger);
 
     &:hover {
-      background: #D32F2F;
-      border-color: #D32F2F;
+      background: var(--color-danger-dark);
+      border-color: var(--color-danger-dark);
     }
   }
 }

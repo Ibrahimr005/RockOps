@@ -10,7 +10,10 @@ import com.example.backend.models.payroll.Payroll;
 import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
 import com.example.backend.models.finance.accountsPayable.PaymentRequestItem;
+import com.example.backend.models.finance.accountsPayable.PaymentRequestSourceProvider;
 import com.example.backend.models.finance.accountsPayable.PaymentRequestStatusHistory;
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
 import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestItemStatus;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
@@ -165,12 +168,12 @@ public class PaymentRequestService {
                         .purchaseOrder(po)
                         .offerFinancialReview(offerFinancialReview)
                         // Source polymorphism - where payment originates
-                        .sourceType("PURCHASE_ORDER")
+                        .sourceType(PaymentSourceType.PURCHASE_ORDER)
                         .sourceId(po.getId())
                         .sourceNumber(po.getPoNumber())
                         .sourceDescription("Purchase Order: " + po.getPoNumber())
                         // Target polymorphism - who receives payment
-                        .targetType("MERCHANT")
+                        .targetType(PaymentTargetType.MERCHANT)
                         .targetId(merchant.getId())
                         .targetName(merchant.getName())
                         .targetDetails(buildMerchantTargetDetails(merchant))
@@ -341,12 +344,12 @@ public class PaymentRequestService {
                 .purchaseOrder(null)  // No PO for maintenance
                 .offerFinancialReview(financialReview)
                 // Source polymorphism - where payment originates
-                .sourceType("MAINTENANCE")
+                .sourceType(PaymentSourceType.MAINTENANCE)
                 .sourceId(step.getId())
                 .sourceNumber(record.getRecordNumber())
                 .sourceDescription(description)
                 // Target polymorphism - who receives payment
-                .targetType("MERCHANT")
+                .targetType(PaymentTargetType.MERCHANT)
                 .targetId(merchant.getId())
                 .targetName(merchant.getName())
                 .targetDetails(buildMerchantTargetDetails(merchant))
@@ -387,6 +390,48 @@ public class PaymentRequestService {
                 " for step " + step.getId() + " amount: " + amount + " EGP");
 
         return savedRequest;
+    }
+
+    /**
+     * Generic factory method: creates a PaymentRequest from any PaymentRequestSourceProvider.
+     * For complex scenarios (PO item grouping, idempotency), use the dedicated create methods instead.
+     */
+    @Transactional
+    public PaymentRequestResponseDTO createPaymentRequestFromSource(
+            PaymentRequestSourceProvider source,
+            String createdByUsername) {
+
+        String requestNumber = generatePaymentRequestNumber();
+
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+                .requestNumber(requestNumber)
+                .sourceType(source.getPaymentSourceType())
+                .sourceId(source.getPaymentSourceId())
+                .sourceNumber(source.getPaymentSourceNumber())
+                .sourceDescription(source.getPaymentSourceDescription())
+                .targetType(source.getPaymentTargetType())
+                .targetId(source.getPaymentTargetId())
+                .targetName(source.getPaymentTargetName())
+                .targetDetails(source.getPaymentTargetDetails())
+                .requestedAmount(source.getPaymentAmount())
+                .currency(source.getPaymentCurrency())
+                .description(source.getPaymentSourceDescription())
+                .status(PaymentRequestStatus.PENDING)
+                .requestedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+                .requestedByUserName(createdByUsername)
+                .requestedByDepartment(source.getPaymentDepartment())
+                .requestedAt(LocalDateTime.now())
+                .totalPaidAmount(BigDecimal.ZERO)
+                .remainingAmount(source.getPaymentAmount())
+                .build();
+
+        PaymentRequest saved = paymentRequestRepository.save(paymentRequest);
+
+        // Create initial status history
+        createStatusHistory(saved, null, PaymentRequestStatus.PENDING, null,
+                "Payment request created from " + source.getPaymentSourceType().getDisplayName());
+
+        return convertToDTO(saved);
     }
 
     /**
@@ -698,7 +743,8 @@ public class PaymentRequestService {
      * Sync loan status when payment request status changes.
      */
     private void syncLoanStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus, String username) {
-        if (!"LOAN".equals(paymentRequest.getSourceType())) {
+        if (paymentRequest.getSourceType() != PaymentSourceType.ELOAN &&
+                paymentRequest.getSourceType() != PaymentSourceType.CLOAN) {
             return;
         }
 
@@ -746,7 +792,7 @@ public class PaymentRequestService {
      * Sync bonus status when payment request status changes.
      */
     private void syncBonusStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus, String username) {
-        if (!"BONUS".equals(paymentRequest.getSourceType())) {
+        if (paymentRequest.getSourceType() != PaymentSourceType.BONUS) {
             return;
         }
 

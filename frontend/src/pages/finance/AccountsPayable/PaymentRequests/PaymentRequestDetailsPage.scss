@@ -161,9 +161,14 @@
       color: var(--color-info);
     }
 
-    &.source-loan {
-      background: rgba(var(--color-warning-rgb), 0.1);
-      color: var(--color-warning);
+    &.source-eloan {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
+    }
+
+    &.source-cloan {
+      background: rgba(var(--color-purple-rgb), 0.1);
+      color: var(--color-purple);
     }
 
     &.source-unknown {

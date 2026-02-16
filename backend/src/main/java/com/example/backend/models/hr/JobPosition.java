@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Entity
+@Table(name = "job_positions")
 @Builder
 @Getter
 @Setter
@@ -23,6 +24,9 @@ public class JobPosition {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+
+    @Column(name = "position_number", unique = true, length = 20)
+    private String positionNumber;
 
     private String positionName;
 

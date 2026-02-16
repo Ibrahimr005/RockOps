@@ -197,6 +197,7 @@ const JobPositionDetails = () => {
             {/* Header Section */}
             <IntroCard
                 title={position.positionName}
+                subtitle={position.positionNumber}
                 label="JOB POSITION DETAILS"
                 breadcrumbs={getBreadcrumbs()}
                 icon={<FiBriefcase />}

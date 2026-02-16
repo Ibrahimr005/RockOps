@@ -4,6 +4,14 @@ import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
 import { useNavigate } from 'react-router-dom';
+import {
+    PAYMENT_SOURCE_TYPES,
+    PAYMENT_TARGET_TYPES,
+    getSourceTypeLabel,
+    getSourceTypeBadgeClass,
+    getTargetTypeLabel,
+    getTargetTypeBadgeClass,
+} from '../../../../utils/paymentRequestTypes';
 
 import './PaymentRequests.scss';
 
@@ -89,48 +97,13 @@ const PaymentRequestsList = () => {
             accessor: 'sourceNumber',
             sortable: true,
             render: (row) => {
-                // Use polymorphic sourceType field, with legacy field fallbacks
-                const sourceType = row.sourceType;
-                const sourceNumber = row.sourceNumber || row.purchaseOrderNumber || row.batchNumber || row.companyLoanNumber;
-
-                if (sourceType === 'PURCHASE_ORDER' || (!sourceType && row.purchaseOrderNumber)) {
-                    return (
-                        <span className="source-badge source-procurement">
-                            {sourceNumber || 'PO'}
-                        </span>
-                    );
-                } else if (sourceType === 'MAINTENANCE' || (!sourceType && row.maintenanceStepId)) {
-                    return (
-                        <span className="source-badge source-maintenance">
-                            {sourceNumber || row.maintenanceStepId?.substring(0, 8) || 'Maintenance'}
-                        </span>
-                    );
-                } else if (sourceType === 'PAYROLL_BATCH' || (!sourceType && row.payrollBatchId)) {
-                    return (
-                        <span className="source-badge source-payroll">
-                            {sourceNumber || row.batchNumber || 'Payroll'}
-                        </span>
-                    );
-                } else if (sourceType === 'LOAN' || (!sourceType && row.companyLoanNumber)) {
-                    return (
-                        <span className="source-badge source-loan">
-                            {sourceNumber || row.companyLoanNumber || 'Loan'}
-                        </span>
-                    );
-                } else if (sourceType === 'BONUS') {
-                    return (
-                        <span className="source-badge source-bonus">
-                            {sourceNumber || 'Bonus'}
-                        </span>
-                    );
-                } else if (sourceType === 'LOGISTICS' || (!sourceType && row.logisticsId)) {
-                    return (
-                        <span className="source-badge source-logistics">
-                            {sourceNumber || 'Logistics'}
-                        </span>
-                    );
-                }
-                return <span className="source-badge source-unknown">{sourceNumber || 'N/A'}</span>;
+                const badgeClass = getSourceTypeBadgeClass(row.sourceType);
+                const label = getSourceTypeLabel(row.sourceType);
+                return (
+                    <span className={`source-badge ${badgeClass}`}>
+                        {row.sourceNumber || label}
+                    </span>
+                );
             }
         },
         {
@@ -138,31 +111,13 @@ const PaymentRequestsList = () => {
             accessor: 'targetName',
             sortable: true,
             render: (row) => {
-                // Use polymorphic targetType/targetName, with legacy field fallbacks
-                const targetType = row.targetType;
-                const targetName = row.targetName || row.institutionName || row.merchantName;
-
-                if (targetType === 'EMPLOYEE_GROUP') {
-                    return (
-                        <span className="recipient-badge recipient-employees">
-                            {targetName || `${row.batchEmployeeCount || 0} Employees`}
-                        </span>
-                    );
-                } else if (targetType === 'EMPLOYEE') {
-                    return (
-                        <span className="recipient-badge recipient-employee">
-                            {targetName || 'Employee'}
-                        </span>
-                    );
-                } else if (targetType === 'FINANCIAL_INSTITUTION' || (!targetType && row.institutionName)) {
-                    return (
-                        <span className="recipient-badge recipient-institution">
-                            {targetName || row.institutionName || 'Institution'}
-                        </span>
-                    );
-                }
-                // Default to merchant
-                return <span className="recipient-badge recipient-merchant">{targetName || 'N/A'}</span>;
+                const badgeClass = getTargetTypeBadgeClass(row.targetType);
+                const displayName = row.targetName || getTargetTypeLabel(row.targetType);
+                return (
+                    <span className={`recipient-badge ${badgeClass}`}>
+                        {displayName}
+                    </span>
+                );
             }
         },
         {

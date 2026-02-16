@@ -169,6 +169,14 @@ const PositionsList = () => {
 
     const columns = [
         {
+            header: 'Position #',
+            accessor: 'positionNumber',
+            sortable: true,
+            render: (row, value) => (
+                <span className="entity-number">{value || '-'}</span>
+            )
+        },
+        {
             header: 'Position Name',
             accessor: 'positionName',
             sortable: true,

@@ -3,12 +3,16 @@ package com.example.backend.services.payroll;
 import com.example.backend.dto.payroll.EmployeePayrollDTO;
 import com.example.backend.dto.payroll.PayrollBatchDTO;
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
+import com.example.backend.models.id.EntityTypeConfig;
 import com.example.backend.models.payroll.*;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.payroll.EmployeePayrollRepository;
 import com.example.backend.repositories.payroll.PayrollBatchRepository;
 import com.example.backend.repositories.payroll.PayrollRepository;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +33,7 @@ public class PayrollBatchService {
     private final PayrollRepository payrollRepository;
     private final EmployeePayrollRepository employeePayrollRepository;
     private final PaymentRequestRepository paymentRequestRepository;
+    private final EntityIdGeneratorService entityIdGeneratorService;
 
     /**
      * Create batches for a payroll by grouping employee payrolls by payment type
@@ -88,7 +93,7 @@ public class PayrollBatchService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             // Generate batch number
-            String batchNumber = generateBatchNumber();
+            String batchNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.PAYROLL_BATCH);
 
             PayrollBatch batch = PayrollBatch.builder()
                 .batchNumber(batchNumber)
@@ -180,12 +185,12 @@ public class PayrollBatchService {
                 " - " + batch.getEmployeeCount() + " employees via " +
                 (batch.getPaymentType() != null ? batch.getPaymentType().getName() : "Unknown"))
             // Source polymorphism
-            .sourceType("PAYROLL_BATCH")
+            .sourceType(PaymentSourceType.PAYROLL_BATCH)
             .sourceId(batch.getId())
             .sourceNumber(batch.getBatchNumber())
             .sourceDescription("Payroll " + payroll.getPayrollNumber() + " - Batch " + batch.getBatchNumber())
             // Target - for payroll, target is a group (employees), not a single merchant
-            .targetType("EMPLOYEE_GROUP")
+            .targetType(PaymentTargetType.EMPLOYEE_GROUP)
             .targetName(batch.getEmployeeCount() + " Employees")
             // Link to batch
             .payrollBatch(batch)
@@ -279,16 +284,6 @@ public class PayrollBatchService {
             payroll.setStatus(newStatus);
             payrollRepository.save(payroll);
         }
-    }
-
-    /**
-     * Generate batch number (format: PB-YYYY-NNNNNN)
-     */
-    private String generateBatchNumber() {
-        String year = String.valueOf(Year.now().getValue());
-        Integer maxSeq = batchRepository.getMaxBatchSequenceForYear(year);
-        int nextSeq = (maxSeq != null ? maxSeq : 0) + 1;
-        return String.format("PB-%s-%06d", year, nextSeq);
     }
 
     /**

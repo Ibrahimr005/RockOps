@@ -13,8 +13,10 @@ import com.example.backend.models.payroll.PayrollStatus;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.payroll.BonusRepository;
 import com.example.backend.repositories.payroll.EmployeePayrollRepository;
+import com.example.backend.models.id.EntityTypeConfig;
 import com.example.backend.repositories.payroll.PayrollRepository;
 import com.example.backend.services.hr.AttendanceService;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,7 @@ public class PayrollService {
     private final PayrollCalculationEngine calculationEngine;
     private final PayrollSnapshotService snapshotService;
     private final BonusRepository bonusRepository;
+    private final EntityIdGeneratorService entityIdGeneratorService;
 
     public Optional<Payroll> getLastPayroll() {
         return payrollRepository.findFirstByOrderByEndDateDesc();
@@ -67,7 +70,7 @@ public class PayrollService {
         Payroll payroll = Payroll.builder()
                 .startDate(startDate)
                 .endDate(endDate)
-                .payrollNumber(generatePayrollNumber(startDate))
+                .payrollNumber(entityIdGeneratorService.generateNextId(EntityTypeConfig.PAYROLL))
                 .status(PayrollStatus.PUBLIC_HOLIDAYS_REVIEW)
                 .totalGrossAmount(BigDecimal.ZERO)
                 .totalDeductions(BigDecimal.ZERO)
@@ -108,7 +111,7 @@ public class PayrollService {
         Payroll payroll = Payroll.builder()
                 .startDate(startDate)
                 .endDate(endDate)
-                .payrollNumber(generatePayrollNumber(startDate))
+                .payrollNumber(entityIdGeneratorService.generateNextId(EntityTypeConfig.PAYROLL))
                 .status(PayrollStatus.PUBLIC_HOLIDAYS_REVIEW)
                 .totalGrossAmount(BigDecimal.ZERO)
                 .totalDeductions(BigDecimal.ZERO)
@@ -122,13 +125,6 @@ public class PayrollService {
         return payrollRepository.save(payroll);
     }
 
-    private String generatePayrollNumber(LocalDate startDate) {
-        String year = String.valueOf(startDate.getYear());
-        String prefix = "PRL-" + year + "-";
-        Integer maxSeq = payrollRepository.getMaxPayrollSequenceForYear(prefix);
-        int nextSeq = (maxSeq != null ? maxSeq : 0) + 1;
-        return String.format("PRL-%s-%06d", year, nextSeq);
-    }
 
     /**
      * Add public holidays to payroll

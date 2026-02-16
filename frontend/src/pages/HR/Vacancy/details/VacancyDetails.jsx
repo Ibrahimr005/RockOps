@@ -244,6 +244,7 @@ const VacancyDetails = () => {
             {/* Header Section */}
             <IntroCard
                 title={vacancy.title}
+                subtitle={vacancy.vacancyNumber}
                 label="VACANCY DETAILS"
                 breadcrumbs={getBreadcrumbs()}
                 icon={<FiBriefcase />}

@@ -12,6 +12,8 @@ import com.example.backend.models.site.Site;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.models.id.EntityTypeConfig;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import com.example.backend.services.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ public class HREmployeeService {
     private final WarehouseRepository warehouseRepository;
     private final MinioService minioService;
     private final NotificationService notificationService;
+    private final EntityIdGeneratorService entityIdGeneratorService;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     /**
@@ -166,9 +169,8 @@ public class HREmployeeService {
             Employee employee = new Employee();
             updateEmployeeFromDTO(employee, employeeData);
 
-            // Generate employee number based on hire date year
-            LocalDate hireDate = employee.getHireDate() != null ? employee.getHireDate() : LocalDate.now();
-            employee.setEmployeeNumber(generateEmployeeNumber(hireDate));
+            // Generate employee number using centralized ID generator
+            employee.setEmployeeNumber(entityIdGeneratorService.generateNextId(EntityTypeConfig.EMPLOYEE));
 
             // Set job position if provided
             JobPosition jobPosition = null;
@@ -693,27 +695,6 @@ public class HREmployeeService {
         }
 
         return employee;
-    }
-
-    /**
-     * Generate a unique employee number based on hire date year
-     * Format: EMP-YYYY-#####
-     * Example: EMP-2024-00027
-     *
-     * @param hireDate The employee's hire date (used to determine the year)
-     * @return A unique employee number in the format EMP-YYYY-#####
-     */
-    private String generateEmployeeNumber(LocalDate hireDate) {
-        // Use hire date year, or current year if hire date is null
-        int year = hireDate != null ? hireDate.getYear() : LocalDate.now().getYear();
-        String yearStr = String.valueOf(year);
-
-        // Get the max sequence for this year
-        Long maxSequence = employeeRepository.getMaxEmployeeNumberSequenceByYear(yearStr);
-        long nextSequence = (maxSequence != null ? maxSequence : 0) + 1;
-
-        // Format: EMP-YYYY-##### (5 digits, zero-padded)
-        return String.format("EMP-%s-%05d", yearStr, nextSequence);
     }
 
     /**

@@ -1,5 +1,7 @@
 package com.example.backend.dto.finance.accountsPayable;
 
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,7 +29,7 @@ public class PaymentRequestResponseDTO {
     /**
      * Type of source: PURCHASE_ORDER, MAINTENANCE, PAYROLL_BATCH, LOAN
      */
-    private String sourceType;
+    private PaymentSourceType sourceType;
     private UUID sourceId;
     private String sourceNumber;
     private String sourceDescription;
@@ -39,7 +41,7 @@ public class PaymentRequestResponseDTO {
     /**
      * Type of target: MERCHANT, EMPLOYEE, EMPLOYEE_GROUP
      */
-    private String targetType;
+    private PaymentTargetType targetType;
     private UUID targetId;
     private String targetName;
     private String targetDetails;

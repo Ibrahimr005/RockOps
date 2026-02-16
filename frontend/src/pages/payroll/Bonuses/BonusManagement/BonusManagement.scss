@@ -11,54 +11,13 @@
   // ========================================
   // TABS
   // ========================================
-  .tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 24px;
-    border-bottom: 2px solid var(--border-color-light);
-    padding-bottom: 0;
 
-    .tab-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 20px;
-      background: transparent;
-      border: none;
-      border-bottom: 3px solid transparent;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--color-text-secondary);
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      margin-bottom: -2px;
-
-      svg {
-        font-size: 16px;
-      }
-
-      &:hover {
-        color: var(--color-primary);
-        background: rgba(var(--color-primary-rgb), 0.05);
-      }
-
-      &.active {
-        color: var(--color-primary);
-        border-bottom-color: var(--color-primary);
-        font-weight: var(--bold-font-weight);
-      }
-    }
-  }
 
   // ========================================
   // TABLE CONTAINER
   // ========================================
   .table-container {
-    background: var(--section-background-color);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-color);
-    overflow: hidden;
+
   }
 
   // ========================================
