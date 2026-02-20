@@ -7,17 +7,17 @@ import {
 import { financeService } from '../../../services/financeService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../components/common/DataTable/DataTable';
-import Snackbar from '../../../components/common/Snackbar/Snackbar';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './LoanDetailsPage.scss';
 
 const LoanDetailsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { showSuccess, showError } = useSnackbar();
 
     // State
     const [loan, setLoan] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
 
     // Fetch loan data
     useEffect(() => {
@@ -31,14 +31,10 @@ const LoanDetailsPage = () => {
             setLoan(response.data || response);
         } catch (error) {
             console.error('Error fetching loan:', error);
-            showSnackbar('Failed to load loan details', 'error');
+            showError('Failed to load loan details');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const showSnackbar = (message, type = 'success') => {
-        setSnackbar({ show: true, message, type });
     };
 
     // Format currency
@@ -349,13 +345,6 @@ const LoanDetailsPage = () => {
                 />
             </div>
 
-            {/* Snackbar */}
-            <Snackbar
-                show={snackbar.show}
-                message={snackbar.message}
-                type={snackbar.type}
-                onClose={() => setSnackbar({ ...snackbar, show: false })}
-            />
         </div>
     );
 };

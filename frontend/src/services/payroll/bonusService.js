@@ -52,10 +52,19 @@ export const BONUS_STATUS_CONFIG = {
 };
 
 // ========================================
-// HELPER: Get siteId from localStorage
+// HELPER: Get siteId from user context
 // ========================================
 
 const getSiteId = () => {
+    try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const user = JSON.parse(userData);
+            return user?.site?.id || user?.siteId || '';
+        }
+    } catch (e) {
+        // ignore parse errors
+    }
     return localStorage.getItem('selectedSiteId') || localStorage.getItem('siteId') || '';
 };
 
@@ -98,20 +107,14 @@ export const bonusService = {
      * Create a single bonus
      */
     createBonus: (bonusData) => {
-        const siteId = getSiteId();
-        return apiClient.post(BONUS_ENDPOINTS.BASE, bonusData, {
-            params: { siteId }
-        });
+        return apiClient.post(BONUS_ENDPOINTS.BASE, bonusData, { params: { siteId: getSiteId() } });
     },
 
     /**
      * Create bonuses in bulk for multiple employees
      */
     createBulkBonus: (bulkData) => {
-        const siteId = getSiteId();
-        return apiClient.post(BONUS_ENDPOINTS.BULK_CREATE, bulkData, {
-            params: { siteId }
-        });
+        return apiClient.post(BONUS_ENDPOINTS.BULK_CREATE, bulkData, { params: { siteId: getSiteId() } });
     },
 
     // ========================================
@@ -147,10 +150,7 @@ export const bonusService = {
      * Get bonus statistics for a site
      */
     getStatistics: () => {
-        const siteId = getSiteId();
-        return apiClient.get(BONUS_ENDPOINTS.STATISTICS, {
-            params: { siteId }
-        });
+        return apiClient.get(BONUS_ENDPOINTS.STATISTICS, { params: { siteId: getSiteId() } });
     },
 
     // ========================================
@@ -161,20 +161,14 @@ export const bonusService = {
      * Get all bonus types
      */
     getAllBonusTypes: () => {
-        const siteId = getSiteId();
-        return apiClient.get(BONUS_TYPE_ENDPOINTS.BASE, {
-            params: { siteId }
-        });
+        return apiClient.get(BONUS_TYPE_ENDPOINTS.BASE);
     },
 
     /**
      * Get active bonus types
      */
     getActiveBonusTypes: () => {
-        const siteId = getSiteId();
-        return apiClient.get(BONUS_TYPE_ENDPOINTS.ACTIVE, {
-            params: { siteId }
-        });
+        return apiClient.get(BONUS_TYPE_ENDPOINTS.ACTIVE);
     },
 
     /**
@@ -188,10 +182,7 @@ export const bonusService = {
      * Create a bonus type
      */
     createBonusType: (typeData) => {
-        const siteId = getSiteId();
-        return apiClient.post(BONUS_TYPE_ENDPOINTS.BASE, typeData, {
-            params: { siteId }
-        });
+        return apiClient.post(BONUS_TYPE_ENDPOINTS.BASE, typeData);
     },
 
     /**

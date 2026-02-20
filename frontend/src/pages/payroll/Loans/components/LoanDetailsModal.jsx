@@ -6,13 +6,12 @@ import {
     FaFileAlt, FaCreditCard, FaCheck, FaExclamationTriangle,
     FaChartLine, FaClock, FaDollarSign
 } from 'react-icons/fa';
-import { loanService } from '../../../../services/payroll/loanService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import './LoanModal.scss';
 
-const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
-    const { showSuccess, showError } = useSnackbar();
+const LoanDetailsModal = ({ loan, onClose }) => {
+    const { showError } = useSnackbar();
 
     // Scroll lock
     useEffect(() => {
@@ -21,7 +20,6 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
             document.body.style.overflow = 'unset';
         };
     }, []);
-    const [loading, setLoading] = useState(false);
     const [repaymentSchedule, setRepaymentSchedule] = useState([]);
     const [scheduleStats, setScheduleStats] = useState({
         totalPaid: 0,
@@ -32,24 +30,41 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
     });
 
     useEffect(() => {
-        if (loan?.id) {
-            loadRepaymentSchedule();
+        if (loan) {
+            generateRepaymentSchedule();
         }
-    }, [loan?.id]);
+    }, [loan]);
 
-    const loadRepaymentSchedule = async () => {
-        try {
-            setLoading(true);
-            const response = await loanService.getRepaymentSchedule(loan.id);
-            const schedules = response.data || [];
-            setRepaymentSchedule(schedules);
-            calculateScheduleStats(schedules);
-        } catch (error) {
-            console.error('Error loading repayment schedule:', error);
-            showError('Failed to load repayment schedule');
-        } finally {
-            setLoading(false);
+    const generateRepaymentSchedule = () => {
+        if (!loan?.installmentAmount || !loan?.numberOfInstallments) {
+            setRepaymentSchedule([]);
+            return;
         }
+
+        const schedules = [];
+        const startDate = new Date(loan.effectiveDate || loan.loanDate || loan.startDate);
+        const paidCount = loan.paidInstallments || 0;
+        const today = new Date();
+
+        for (let i = 0; i < loan.numberOfInstallments; i++) {
+            const dueDate = new Date(startDate);
+            dueDate.setMonth(dueDate.getMonth() + i + 1);
+
+            const isPaid = i < paidCount;
+            const isOverdue = !isPaid && dueDate < today;
+
+            schedules.push({
+                id: i + 1,
+                installmentNumber: i + 1,
+                dueDate: dueDate.toISOString().split('T')[0],
+                scheduledAmount: loan.installmentAmount,
+                actualAmount: isPaid ? loan.installmentAmount : null,
+                status: isPaid ? 'PAID' : (isOverdue ? 'OVERDUE' : 'PENDING')
+            });
+        }
+
+        setRepaymentSchedule(schedules);
+        calculateScheduleStats(schedules);
     };
 
     const calculateScheduleStats = (schedules) => {
@@ -63,15 +78,12 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
         schedules.forEach(schedule => {
             if (schedule.status === 'PAID') {
                 totalPaid += parseFloat(schedule.actualAmount || schedule.scheduledAmount);
+            } else if (schedule.status === 'OVERDUE') {
+                totalOverdue += parseFloat(schedule.scheduledAmount);
             } else if (schedule.status === 'PENDING') {
-                const dueDate = new Date(schedule.dueDate);
-                if (dueDate < today) {
-                    totalOverdue += parseFloat(schedule.scheduledAmount);
-                } else {
-                    totalPending += parseFloat(schedule.scheduledAmount);
-                    if (!nextPayment || dueDate < new Date(nextPayment.dueDate)) {
-                        nextPayment = schedule;
-                    }
+                totalPending += parseFloat(schedule.scheduledAmount);
+                if (!nextPayment) {
+                    nextPayment = schedule;
                 }
             }
         });

@@ -15,22 +15,17 @@ import java.util.UUID;
 public interface BonusTypeRepository extends JpaRepository<BonusType, UUID> {
 
     /**
-     * Find all bonus types for a site
+     * Find active bonus types
      */
-    List<BonusType> findBySiteId(UUID siteId);
+    List<BonusType> findByIsActiveTrue();
 
     /**
-     * Find active bonus types for a site
+     * Find bonus type by code
      */
-    List<BonusType> findBySiteIdAndIsActiveTrue(UUID siteId);
+    Optional<BonusType> findByCode(String code);
 
     /**
-     * Find bonus type by code and site
+     * Check if code exists
      */
-    Optional<BonusType> findByCodeAndSiteId(String code, UUID siteId);
-
-    /**
-     * Check if code exists for a site
-     */
-    boolean existsByCodeAndSiteId(String code, UUID siteId);
+    boolean existsByCode(String code);
 }

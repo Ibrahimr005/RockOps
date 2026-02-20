@@ -15,6 +15,7 @@ import './Dashboard.scss';
 const Dashboard = () => {
     const [summary, setSummary] = useState(null);
     const [balances, setBalances] = useState(null);
+    const [merchants, setMerchants] = useState([]);
     const [loading, setLoading] = useState(true);
     const { showError } = useSnackbar();
 
@@ -25,13 +26,15 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const [summaryRes, balancesRes] = await Promise.all([
+            const [summaryRes, balancesRes, merchantsRes] = await Promise.all([
                 financeService.accountsPayable.dashboard.getSummary(),
-                financeService.accountsPayable.dashboard.getBalances()
+                financeService.accountsPayable.dashboard.getBalances(),
+                financeService.accountsPayable.dashboard.getMerchants().catch(() => ({ data: [] }))
             ]);
 
             setSummary(summaryRes.data);
             setBalances(balancesRes.data);
+            setMerchants(merchantsRes.data || []);
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
             showError('Failed to load dashboard data');
@@ -153,6 +156,35 @@ const Dashboard = () => {
                             <span className="label">Reserved Balance:</span>
                             <span className="value">{formatCurrency(balances.reservedBalance)}</span>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Merchant Payment Summaries */}
+            {merchants.length > 0 && (
+                <div className="merchant-summaries">
+                    <h3 className="section-title">Top Merchants by Payment</h3>
+                    <div className="merchant-table-container">
+                        <table className="merchant-table">
+                            <thead>
+                                <tr>
+                                    <th>Merchant</th>
+                                    <th>Total Paid</th>
+                                    <th>Payments</th>
+                                    <th>Last Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {merchants.slice(0, 10).map((merchant) => (
+                                    <tr key={merchant.merchantId}>
+                                        <td className="merchant-name">{merchant.merchantName}</td>
+                                        <td className="merchant-amount">{formatCurrency(merchant.totalPaid)}</td>
+                                        <td>{merchant.numberOfPayments}</td>
+                                        <td>{merchant.lastPaymentDate ? new Date(merchant.lastPaymentDate).toLocaleDateString() : '-'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             )}

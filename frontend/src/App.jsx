@@ -340,7 +340,6 @@ function App() {
                                         <Route path="/finance/company-loans/institutions/new" element={<CreateInstitutionPage />} />
                                         <Route path="/finance/company-loans/institutions/:id/edit" element={<CreateInstitutionPage />} />
                                         <Route path="/finance/company-loans/institutions/:id" element={<CreateInstitutionPage />} />
-                                        <Route path="/finance/company-loans/:id/edit" element={<CreateLoanPage />} />
                                         <Route path="/finance/company-loans/:id" element={<LoanDetailsPage />} />
                                         {/* ===================== Generic Related Documents Route ===================== */}
                                         <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>

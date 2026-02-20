@@ -33,6 +33,7 @@ import com.example.backend.repositories.finance.accountsPayable.PaymentRequestSt
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
 import com.example.backend.repositories.payroll.BonusRepository;
 import com.example.backend.repositories.payroll.LoanRepository;
+import com.example.backend.services.finance.loans.LoanPaymentRequestService;
 import com.example.backend.services.payroll.PayrollBatchService;
 import com.example.backend.services.procurement.LogisticsService;
 import com.example.backend.models.payroll.Bonus;
@@ -63,6 +64,7 @@ public class PaymentRequestService {
     private final LoanRepository loanRepository;
     private final BonusRepository bonusRepository;
     private final LogisticsService logisticsService;
+    private final LoanPaymentRequestService loanPaymentRequestService;
 
     @Autowired
     public PaymentRequestService(
@@ -74,7 +76,8 @@ public class PaymentRequestService {
             @Lazy PayrollBatchService payrollBatchService,
             LoanRepository loanRepository,
             BonusRepository bonusRepository,
-            LogisticsService logisticsService) {
+            LogisticsService logisticsService,
+            @Lazy LoanPaymentRequestService loanPaymentRequestService) {
         this.paymentRequestRepository = paymentRequestRepository;
         this.statusHistoryRepository = statusHistoryRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
@@ -84,6 +87,7 @@ public class PaymentRequestService {
         this.loanRepository = loanRepository;
         this.bonusRepository = bonusRepository;
         this.logisticsService = logisticsService;
+        this.loanPaymentRequestService = loanPaymentRequestService;
     }
 
     public List<PaymentRequestResponseDTO> getAllPaymentRequests() {
@@ -743,20 +747,25 @@ public class PaymentRequestService {
      * Sync loan status when payment request status changes.
      */
     private void syncLoanStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus, String username) {
-        if (paymentRequest.getSourceType() != PaymentSourceType.ELOAN &&
-                paymentRequest.getSourceType() != PaymentSourceType.CLOAN) {
-            return;
+        if (paymentRequest.getSourceType() == PaymentSourceType.ELOAN) {
+            syncEmployeeLoanStatus(paymentRequest, newStatus, username);
+        } else if (paymentRequest.getSourceType() == PaymentSourceType.CLOAN) {
+            syncCompanyLoanStatus(paymentRequest, newStatus);
         }
+    }
 
+    /**
+     * Sync Employee Loan (payroll module) status with PaymentRequest status.
+     * Flow: HR approves → PR PENDING → Finance approves PR → APPROVED → Payment → PAID → Loan ACTIVE
+     */
+    private void syncEmployeeLoanStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus, String username) {
         UUID loanId = paymentRequest.getSourceId();
-        if (loanId == null) {
-            return;
-        }
+        if (loanId == null) return;
 
         try {
             Loan loan = loanRepository.findById(loanId).orElse(null);
             if (loan == null) {
-                System.err.println("[LoanSync] Loan not found for ID: " + loanId);
+                System.err.println("[EmployeeLoanSync] Employee loan not found for ID: " + loanId);
                 return;
             }
 
@@ -765,7 +774,7 @@ public class PaymentRequestService {
                 Loan.LoanStatus oldStatus = loan.getStatus();
                 loan.setStatus(newLoanStatus);
 
-                // Update disbursement fields if moving to DISBURSED
+                // Update disbursement fields if moving to ACTIVE (payment was made)
                 if (newLoanStatus == Loan.LoanStatus.DISBURSED || newLoanStatus == Loan.LoanStatus.ACTIVE) {
                     if (loan.getDisbursementDate() == null) {
                         loan.setDisbursementDate(LocalDate.now());
@@ -779,12 +788,34 @@ public class PaymentRequestService {
                 }
 
                 loanRepository.save(loan);
-                System.out.println("[LoanSync] Updated loan " + loan.getLoanNumber() +
+                System.out.println("[EmployeeLoanSync] Updated employee loan " + loan.getLoanNumber() +
                         " status from " + oldStatus + " to " + newLoanStatus +
-                        " from payment request " + paymentRequest.getRequestNumber());
+                        " (PR: " + paymentRequest.getRequestNumber() + ")");
             }
         } catch (Exception e) {
-            System.err.println("[LoanSync] Failed to update loan status: " + e.getMessage());
+            System.err.println("[EmployeeLoanSync] Failed to sync employee loan: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Sync Company Loan (finance module) status with PaymentRequest status.
+     * Company loans track payments via LoanInstallments — delegate to LoanPaymentRequestService.
+     */
+    private void syncCompanyLoanStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus) {
+        if (newStatus != PaymentRequestStatus.PAID && newStatus != PaymentRequestStatus.PARTIALLY_PAID) {
+            return; // Company loans only care about payment events
+        }
+
+        try {
+            BigDecimal paidAmount = paymentRequest.getTotalPaidAmount() != null
+                    ? paymentRequest.getTotalPaidAmount()
+                    : paymentRequest.getRequestedAmount();
+
+            loanPaymentRequestService.handlePaymentCompletion(paymentRequest.getId(), paidAmount);
+            System.out.println("[CompanyLoanSync] Synced company loan payment for PR: " +
+                    paymentRequest.getRequestNumber());
+        } catch (Exception e) {
+            System.err.println("[CompanyLoanSync] Failed to sync company loan: " + e.getMessage());
         }
     }
 
@@ -847,17 +878,22 @@ public class PaymentRequestService {
 
         switch (prStatus) {
             case APPROVED:
-                if (currentLoanStatus == Loan.LoanStatus.PENDING_FINANCE) {
+                // Finance approves the payment request → loan becomes FINANCE_APPROVED
+                if (currentLoanStatus == Loan.LoanStatus.HR_APPROVED ||
+                        currentLoanStatus == Loan.LoanStatus.PENDING_FINANCE) {
                     return Loan.LoanStatus.FINANCE_APPROVED;
                 }
                 return null;
             case REJECTED:
-                if (currentLoanStatus == Loan.LoanStatus.PENDING_FINANCE ||
+                // Finance rejects → loan becomes FINANCE_REJECTED
+                if (currentLoanStatus == Loan.LoanStatus.HR_APPROVED ||
+                        currentLoanStatus == Loan.LoanStatus.PENDING_FINANCE ||
                         currentLoanStatus == Loan.LoanStatus.FINANCE_APPROVED) {
                     return Loan.LoanStatus.FINANCE_REJECTED;
                 }
                 return null;
             case PAID:
+                // Payment processed → loan becomes ACTIVE (repayments start)
                 if (currentLoanStatus == Loan.LoanStatus.FINANCE_APPROVED ||
                         currentLoanStatus == Loan.LoanStatus.DISBURSED) {
                     return Loan.LoanStatus.ACTIVE;

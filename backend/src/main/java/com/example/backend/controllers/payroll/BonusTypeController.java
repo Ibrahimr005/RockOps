@@ -33,33 +33,32 @@ public class BonusTypeController {
     @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     public ResponseEntity<BonusTypeDTO> create(
             @Valid @RequestBody BonusTypeDTO dto,
-            @RequestParam UUID siteId,
             Principal principal) {
         String username = principal != null ? principal.getName() : "SYSTEM";
         log.info("Creating bonus type: {} by {}", dto.getName(), username);
-        BonusTypeDTO created = bonusTypeService.create(dto, siteId, username);
+        BonusTypeDTO created = bonusTypeService.create(dto, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /**
-     * Get all bonus types for a site
+     * Get all bonus types
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER')")
-    public ResponseEntity<List<BonusTypeDTO>> getAll(@RequestParam UUID siteId) {
-        log.info("Getting all bonus types for site: {}", siteId);
-        List<BonusTypeDTO> types = bonusTypeService.getAllBonusTypes(siteId);
+    public ResponseEntity<List<BonusTypeDTO>> getAll() {
+        log.info("Getting all bonus types");
+        List<BonusTypeDTO> types = bonusTypeService.getAllBonusTypes();
         return ResponseEntity.ok(types);
     }
 
     /**
-     * Get active bonus types for a site
+     * Get active bonus types
      */
     @GetMapping("/active")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER')")
-    public ResponseEntity<List<BonusTypeDTO>> getActive(@RequestParam UUID siteId) {
-        log.info("Getting active bonus types for site: {}", siteId);
-        List<BonusTypeDTO> types = bonusTypeService.getActiveBonusTypes(siteId);
+    public ResponseEntity<List<BonusTypeDTO>> getActive() {
+        log.info("Getting active bonus types");
+        List<BonusTypeDTO> types = bonusTypeService.getActiveBonusTypes();
         return ResponseEntity.ok(types);
     }
 

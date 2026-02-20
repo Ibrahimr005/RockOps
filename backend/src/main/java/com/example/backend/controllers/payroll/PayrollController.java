@@ -543,6 +543,24 @@ public class PayrollController {
     }
 
     /**
+     * Move to bonus review phase
+     * Transitions from OVERTIME_REVIEW to BONUS_REVIEW
+     *
+     * POST /api/v1/payroll/{id}/bonus-review
+     */
+    @PostMapping("/{id}/bonus-review")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> moveToBonusReview(@PathVariable UUID id, @RequestParam String username) {
+        try {
+            payrollService.moveToBonusReview(id, username);
+            return ResponseEntity.ok().body("Moved to bonus review");
+        } catch (Exception e) {
+            log.error("Error moving to bonus review", e);
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage(), System.currentTimeMillis()));
+        }
+    }
+
+    /**
      * Send payroll to finance for review and payment
      * Transitions from CONFIRMED_AND_LOCKED to PENDING_FINANCE_REVIEW
      * Stores the selected payment source (balance) for salary payment

@@ -77,7 +77,13 @@ const PayrollCycles = () => {
             ATTENDANCE_IMPORT: { icon: <FaClock />, class: 'warning', label: 'Attendance Import' },
             LEAVE_REVIEW: { icon: <FaUsers />, class: 'warning', label: 'Leave Review' },
             OVERTIME_REVIEW: { icon: <FaClock />, class: 'warning', label: 'Overtime Review' },
+            BONUS_REVIEW: { icon: <FaCheckCircle />, class: 'warning', label: 'Bonus Review' },
+            DEDUCTION_REVIEW: { icon: <FaClock />, class: 'warning', label: 'Deduction Review' },
             CONFIRMED_AND_LOCKED: { icon: <FaLock />, class: 'success', label: 'Confirmed & Locked' },
+            PENDING_FINANCE_REVIEW: { icon: <FaClock />, class: 'info', label: 'Pending Finance' },
+            FINANCE_APPROVED: { icon: <FaCheckCircle />, class: 'success', label: 'Finance Approved' },
+            FINANCE_REJECTED: { icon: <FaClock />, class: 'danger', label: 'Finance Rejected' },
+            PARTIALLY_PAID: { icon: <FaCheckCircle />, class: 'warning', label: 'Partially Paid' },
             PAID: { icon: <FaCheckCircle />, class: 'paid', label: 'Paid' },
         };
 

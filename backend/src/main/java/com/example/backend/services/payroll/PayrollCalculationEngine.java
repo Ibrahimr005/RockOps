@@ -90,6 +90,25 @@ public class PayrollCalculationEngine {
      *          Deductions = Absence + Late + Excess Leave + Loans + Other
      */
     private void calculateMonthlyPayroll(EmployeePayroll ep) {
+        // Check for missing attendance (0/0 case) — don't pay if no attendance data
+        Integer totalWorkingDays = ep.getTotalWorkingDays();
+        Integer attendedDays = ep.getAttendedDays();
+        if ((totalWorkingDays == null || totalWorkingDays == 0) &&
+                (attendedDays == null || attendedDays == 0) &&
+                (ep.getAttendanceSnapshots() == null || ep.getAttendanceSnapshots().isEmpty())) {
+            log.warn("⚠️ MONTHLY employee {} has no attendance data (0/0). Setting gross pay to ZERO.",
+                    ep.getEmployeeName());
+            ep.setGrossPay(BigDecimal.ZERO);
+            ep.setOvertimePay(BigDecimal.ZERO);
+            ep.setTotalDeductions(BigDecimal.ZERO);
+            ep.setAbsenceDeductionAmount(BigDecimal.ZERO);
+            ep.setLateDeductionAmount(BigDecimal.ZERO);
+            ep.setLeaveDeductionAmount(BigDecimal.ZERO);
+            ep.setLoanDeductionAmount(BigDecimal.ZERO);
+            ep.setOtherDeductionAmount(BigDecimal.ZERO);
+            return;
+        }
+
         // Gross Pay = Base Salary + Overtime
         BigDecimal baseSalary = ep.getMonthlyBaseSalary() != null ?
                 ep.getMonthlyBaseSalary() : BigDecimal.ZERO;
@@ -268,12 +287,27 @@ public class PayrollCalculationEngine {
     /**
      * Calculate absence deduction (MONTHLY only)
      * Formula: Unexcused Absences × Absent Deduction Rate
+     * Fallback: If no absent deduction configured, use daily rate (salary / working days)
      */
     private BigDecimal calculateAbsenceDeduction(EmployeePayroll ep) {
-        if (ep.getAbsentDeduction() == null ||
-                ep.getAbsentDays() == null ||
-                ep.getAbsentDays() == 0) {
+        if (ep.getAbsentDays() == null || ep.getAbsentDays() == 0) {
             return BigDecimal.ZERO;
+        }
+
+        // Determine the per-day deduction rate
+        BigDecimal perDayRate = ep.getAbsentDeduction();
+        if (perDayRate == null || perDayRate.compareTo(BigDecimal.ZERO) == 0) {
+            // Fallback: calculate daily rate from monthly salary / actual working days
+            BigDecimal monthlySalary = ep.getMonthlyBaseSalary();
+            Integer workingDays = ep.getTotalWorkingDays();
+            if (monthlySalary != null && monthlySalary.compareTo(BigDecimal.ZERO) > 0
+                    && workingDays != null && workingDays > 0) {
+                perDayRate = monthlySalary.divide(BigDecimal.valueOf(workingDays), SCALE, ROUNDING_MODE);
+                log.warn("No absent deduction configured for {}. Falling back to daily rate: {} / {} = {}",
+                        ep.getEmployeeName(), monthlySalary, workingDays, perDayRate);
+            } else {
+                return BigDecimal.ZERO;
+            }
         }
 
         // Count only unexcused absences (exclude public holidays)
@@ -283,12 +317,12 @@ public class PayrollCalculationEngine {
                 .filter(s -> !s.getIsExcusedAbsence()) // Skip excused absences
                 .count();
 
-        BigDecimal deduction = ep.getAbsentDeduction()
+        BigDecimal deduction = perDayRate
                 .multiply(BigDecimal.valueOf(unexcusedAbsences))
                 .setScale(SCALE, ROUNDING_MODE);
 
         log.debug("Absence deduction: {} absences × {} = {}",
-                unexcusedAbsences, ep.getAbsentDeduction(), deduction);
+                unexcusedAbsences, perDayRate, deduction);
 
         return deduction;
     }
@@ -569,7 +603,15 @@ public class PayrollCalculationEngine {
         List<PayrollAttendanceSnapshot> snapshots = ep.getAttendanceSnapshots();
 
         if (snapshots.isEmpty()) {
-            log.warn("No attendance snapshots for employee payroll: {}", ep.getId());
+            log.warn("⚠️ No attendance snapshots for employee: {} ({}). " +
+                    "Setting attendance to 0/0 — employee will receive ZERO pay until attendance is imported.",
+                    ep.getEmployeeName(), ep.getId());
+            ep.setTotalWorkingDays(0);
+            ep.setAttendedDays(0);
+            ep.setAbsentDays(0);
+            ep.setLateDays(0);
+            ep.setTotalWorkedHours(BigDecimal.ZERO);
+            ep.setOvertimeHours(BigDecimal.ZERO);
             return;
         }
 

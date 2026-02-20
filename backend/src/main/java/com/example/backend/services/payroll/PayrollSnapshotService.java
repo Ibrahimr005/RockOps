@@ -354,9 +354,9 @@ employeePayroll.setPaymentTypeId(employee.getPaymentType().getId());
 
                 employeePayroll.setMonthlyBaseSalary(monthlySalary != null ? monthlySalary : BigDecimal.ZERO);
 
-                BigDecimal absentDeduction = jobPosition.getAbsentDeduction() != null
-                        ? jobPosition.getAbsentDeduction()
-                        : BigDecimal.ONE;
+                // Absent deduction: use configured value, or null to signal
+                // the calculation engine to fall back to daily rate (salary / workingDays)
+                BigDecimal absentDeduction = jobPosition.getAbsentDeduction();
 
                 BigDecimal lateDeduction = jobPosition.getLateDeduction() != null
                         ? jobPosition.getLateDeduction()

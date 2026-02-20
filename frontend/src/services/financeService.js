@@ -947,9 +947,6 @@ export const financeService = {
                 return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.APPROVE_REJECT, requestData);
             },
 
-            createFromPO: (purchaseOrderId) => {
-                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.CREATE_FROM_PO(purchaseOrderId));
-            },
             createFromPurchaseOrder: (purchaseOrderId, offerId, username) => {
                 console.log('🔵 financeService: Creating payment request');
                 console.log('🔵 PO ID:', purchaseOrderId);

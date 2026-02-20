@@ -4,10 +4,8 @@ import com.example.backend.dto.payroll.BonusTypeDTO;
 import com.example.backend.exceptions.ResourceAlreadyExistsException;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.payroll.BonusType;
-import com.example.backend.models.site.Site;
 import com.example.backend.repositories.payroll.BonusRepository;
 import com.example.backend.repositories.payroll.BonusTypeRepository;
-import com.example.backend.repositories.site.SiteRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,22 +25,21 @@ public class BonusTypeService {
 
     private final BonusTypeRepository bonusTypeRepository;
     private final BonusRepository bonusRepository;
-    private final SiteRepository siteRepository;
 
     /**
-     * Get all bonus types for a site
+     * Get all bonus types
      */
-    public List<BonusTypeDTO> getAllBonusTypes(UUID siteId) {
-        return bonusTypeRepository.findBySiteId(siteId).stream()
+    public List<BonusTypeDTO> getAllBonusTypes() {
+        return bonusTypeRepository.findAll().stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Get active bonus types for a site
+     * Get active bonus types
      */
-    public List<BonusTypeDTO> getActiveBonusTypes(UUID siteId) {
-        return bonusTypeRepository.findBySiteIdAndIsActiveTrue(siteId).stream()
+    public List<BonusTypeDTO> getActiveBonusTypes() {
+        return bonusTypeRepository.findByIsActiveTrue().stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -60,24 +57,20 @@ public class BonusTypeService {
      * Create a new bonus type
      */
     @Transactional
-    public BonusTypeDTO create(BonusTypeDTO dto, UUID siteId, String createdBy) {
+    public BonusTypeDTO create(BonusTypeDTO dto, String createdBy) {
         log.info("Creating bonus type: {} by {}", dto.getName(), createdBy);
 
-        // Validate unique code per site
-        if (bonusTypeRepository.existsByCodeAndSiteId(dto.getCode().toUpperCase(), siteId)) {
+        // Validate unique code
+        if (bonusTypeRepository.existsByCode(dto.getCode().toUpperCase())) {
             throw new ResourceAlreadyExistsException(
-                    "Bonus type with code '" + dto.getCode() + "' already exists for this site");
+                    "Bonus type with code '" + dto.getCode() + "' already exists");
         }
-
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new ResourceNotFoundException("Site not found: " + siteId));
 
         BonusType bonusType = BonusType.builder()
                 .code(dto.getCode().toUpperCase())
                 .name(dto.getName())
                 .description(dto.getDescription())
                 .isActive(true)
-                .site(site)
                 .createdBy(createdBy)
                 .build();
 
@@ -99,9 +92,9 @@ public class BonusTypeService {
 
         // Check for duplicate code if changed
         if (!existing.getCode().equalsIgnoreCase(dto.getCode())) {
-            if (bonusTypeRepository.existsByCodeAndSiteId(dto.getCode().toUpperCase(), existing.getSite().getId())) {
+            if (bonusTypeRepository.existsByCode(dto.getCode().toUpperCase())) {
                 throw new ResourceAlreadyExistsException(
-                        "Bonus type with code '" + dto.getCode() + "' already exists for this site");
+                        "Bonus type with code '" + dto.getCode() + "' already exists");
             }
         }
 

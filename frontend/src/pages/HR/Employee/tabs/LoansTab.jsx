@@ -33,7 +33,6 @@ const LoansTab = ({ employee, formatCurrency }) => {
     useEffect(() => {
         if (employee?.id) {
             loadEmployeeLoans();
-            loadOutstandingBalance();
         }
     }, [employee?.id]);
 
@@ -55,16 +54,6 @@ const LoansTab = ({ employee, formatCurrency }) => {
             showError(`Failed to load loan information: ${errorMessage}`);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const loadOutstandingBalance = async () => {
-        try {
-            const response = await loanService.getOutstandingBalance(employee.id);
-            setOutstandingBalance(response.data || 0);
-        } catch (error) {
-            console.error('Error loading outstanding balance:', error);
-            setOutstandingBalance(0);
         }
     };
 
@@ -107,6 +96,7 @@ const LoansTab = ({ employee, formatCurrency }) => {
 
         setLoanSummary(summary);
         setMonthlyRepayment(summary.monthlyRepayment);
+        setOutstandingBalance(summary.totalOutstanding);
     };
 
     const handleViewLoan = (loan) => {
@@ -123,21 +113,7 @@ const LoansTab = ({ employee, formatCurrency }) => {
         setShowAddModal(false);
         setSelectedLoan(null);
         loadEmployeeLoans();
-        loadOutstandingBalance();
         showSuccess('Loan application submitted successfully');
-    };
-
-    const handleProcessRepayment = async (scheduleId, amount) => {
-        try {
-            await loanService.processRepayment(scheduleId, amount);
-            showSuccess('Repayment processed successfully');
-            loadEmployeeLoans();
-            loadOutstandingBalance();
-        } catch (error) {
-            console.error('Error processing repayment:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to process repayment';
-            showError(`Failed to process repayment: ${errorMessage}`);
-        }
     };
 
     const getLoanStatusBadge = (status) => {
@@ -364,10 +340,9 @@ const LoansTab = ({ employee, formatCurrency }) => {
             {/* Modals */}
             {showAddModal && (
                 <CreateLoanModal
-                    loan={selectedLoan}
+                    employees={[employee]}
                     onClose={() => setShowAddModal(false)}
-                    onSave={handleLoanSaved}
-                    prefilledEmployeeId={employee.id}
+                    onLoanCreated={handleLoanSaved}
                 />
             )}
 
@@ -375,7 +350,6 @@ const LoansTab = ({ employee, formatCurrency }) => {
                 <LoanDetailsModal
                     loan={selectedLoan}
                     onClose={() => setShowDetailsModal(false)}
-                    onProcessRepayment={handleProcessRepayment}
                 />
             )}
 

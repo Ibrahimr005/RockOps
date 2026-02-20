@@ -6,11 +6,12 @@ import { financeService } from '../../../services/financeService';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import Tabs from '../../../components/common/Tabs/Tabs';
 import DataTable from '../../../components/common/DataTable/DataTable';
-import Snackbar from '../../../components/common/Snackbar/Snackbar';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './CompanyLoansPage.scss';
 
 const CompanyLoansPage = () => {
     const navigate = useNavigate();
+    const { showSuccess, showError } = useSnackbar();
 
     // State
     const [loans, setLoans] = useState([]);
@@ -19,9 +20,6 @@ const CompanyLoansPage = () => {
     const [overdueInstallments, setOverdueInstallments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('loans');
-
-    // Snackbar
-    const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
 
     // Fetch data on mount
     useEffect(() => {
@@ -44,14 +42,15 @@ const CompanyLoansPage = () => {
             setOverdueInstallments(overdueRes.data || overdueRes || []);
         } catch (error) {
             console.error('Error fetching data:', error);
-            showSnackbar('Failed to load data', 'error');
+            showError('Failed to load data');
         } finally {
             setIsLoading(false);
         }
     };
 
     const showSnackbar = (message, type = 'success') => {
-        setSnackbar({ show: true, message, type });
+        if (type === 'error') showError(message);
+        else showSuccess(message);
     };
 
     // Format currency
@@ -402,13 +401,6 @@ const CompanyLoansPage = () => {
                 </div>
             )}
 
-            {/* Snackbar */}
-            <Snackbar
-                show={snackbar.show}
-                message={snackbar.message}
-                type={snackbar.type}
-                onClose={() => setSnackbar({ ...snackbar, show: false })}
-            />
         </div>
     );
 };

@@ -45,7 +45,7 @@ public class PayrollPublicHoliday {
 
     @Column(name = "is_paid", nullable = false)
     @Builder.Default
-    private Boolean isPaid = true;
+    private Boolean isPaid = false;
 
     @Column(name = "is_confirmed")
     @Builder.Default

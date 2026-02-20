@@ -236,6 +236,10 @@ public class LoanService {
         Loan saved = loanRepository.save(loan);
         log.info("HR approved loan: {}", saved.getLoanNumber());
 
+        // Create PaymentRequest with APPROVED status so it appears on Process Payments page
+        Employee employee = saved.getEmployee();
+        createApprovedPaymentRequestForLoan(saved, employee, approverId, approverName);
+
         // Automatically generate finance request after HR approval
         try {
             LoanFinanceRequestDTO financeRequest = sendToFinance(loanId, approverId, approverName);
@@ -450,8 +454,8 @@ public class LoanService {
         loan.activate();
         loanRepository.save(loan);
 
-        // Create PaymentRequest for unified Accounts Payable tracking
-        createPaymentRequestForLoan(loan, employee, disburserUserId, disburserUserName);
+        // Mark existing PaymentRequest as PAID (created during finance approval)
+        markLoanPaymentRequestAsPaid(loan, disburserUserId, disburserUserName);
 
         // Create employee deduction for loan repayment
         LocalDate endDate = request.getFirstDeductionDate()
@@ -472,9 +476,11 @@ public class LoanService {
     }
 
     /**
-     * Create a PaymentRequest for loan disbursement tracking in Accounts Payable
+     * Create a PaymentRequest with PENDING status when HR approves a loan.
+     * Finance must then approve/reject it. Once approved, it appears on Process Payments page.
+     * Due date is set to the loan date.
      */
-    private void createPaymentRequestForLoan(Loan loan, Employee employee, UUID disburserUserId, String disburserUserName) {
+    private void createApprovedPaymentRequestForLoan(Loan loan, Employee employee, UUID approverUserId, String approverUserName) {
         String requestNumber = generatePaymentRequestNumber();
 
         String employeeName = employee.getFirstName() + " " + employee.getLastName();
@@ -489,7 +495,7 @@ public class LoanService {
             .sourceType(PaymentSourceType.ELOAN)
             .sourceId(loan.getId())
             .sourceNumber(loan.getLoanNumber())
-            .sourceDescription("Loan Disbursement: " + loan.getLoanNumber() + " - " + loan.getPurpose())
+            .sourceDescription("Employee Loan: " + loan.getLoanNumber() + " - " + loan.getPurpose())
             // Target polymorphism
             .targetType(PaymentTargetType.EMPLOYEE)
             .targetId(employee.getId())
@@ -500,24 +506,78 @@ public class LoanService {
             .requestedAmount(loan.getLoanAmount())
             .currency("EGP")
             .description("Loan disbursement to " + employeeName + " - " + loan.getPurpose())
-            .status(PaymentRequestStatus.PAID) // Marked as PAID since disbursement means payment was made
+            .paymentDueDate(loan.getLoanDate()) // Due date = loan date
+            .status(PaymentRequestStatus.PENDING) // PENDING — Finance must approve before it can be paid
             // Requestor info
-            .requestedByUserId(disburserUserId)
-            .requestedByUserName(disburserUserName)
-            .requestedByDepartment("Finance")
+            .requestedByUserId(approverUserId)
+            .requestedByUserName(approverUserName)
+            .requestedByDepartment("HR")
             .requestedAt(LocalDateTime.now())
-            // Auto-approve since loan was already approved by Finance
-            .approvedByUserId(disburserUserId)
-            .approvedByUserName(disburserUserName)
-            .approvedAt(LocalDateTime.now())
-            .approvalNotes("Auto-approved: Loan " + loan.getLoanNumber() + " already approved by Finance")
-            // Payment tracking
-            .totalPaidAmount(loan.getLoanAmount()) // Marked as paid since disbursement happened
-            .remainingAmount(BigDecimal.ZERO)
+            // Payment tracking — not yet paid
+            .totalPaidAmount(BigDecimal.ZERO)
+            .remainingAmount(loan.getLoanAmount())
             .build();
 
         paymentRequestRepository.save(paymentRequest);
-        log.info("Created PaymentRequest {} for loan disbursement {}", requestNumber, loan.getLoanNumber());
+        log.info("Created PENDING PaymentRequest {} for loan {} (due: {}) — awaiting Finance approval",
+                requestNumber, loan.getLoanNumber(), loan.getLoanDate());
+    }
+
+    /**
+     * Mark an existing loan PaymentRequest as PAID after disbursement.
+     * Falls back to creating a new PAID PaymentRequest if none exists.
+     */
+    private void markLoanPaymentRequestAsPaid(Loan loan, UUID disburserUserId, String disburserUserName) {
+        // Find the existing APPROVED payment request for this loan
+        List<PaymentRequest> existing = paymentRequestRepository.findBySourceTypeAndSourceId(
+                PaymentSourceType.ELOAN, loan.getId());
+
+        if (!existing.isEmpty()) {
+            PaymentRequest pr = existing.get(0);
+            pr.setStatus(PaymentRequestStatus.PAID);
+            pr.setTotalPaidAmount(loan.getLoanAmount());
+            pr.setRemainingAmount(BigDecimal.ZERO);
+            paymentRequestRepository.save(pr);
+            log.info("Marked PaymentRequest {} as PAID for loan disbursement {}",
+                    pr.getRequestNumber(), loan.getLoanNumber());
+        } else {
+            // Fallback: create a PAID PaymentRequest if none exists (e.g., for loans approved before this fix)
+            log.warn("No existing PaymentRequest found for loan {}. Creating PAID record.", loan.getLoanNumber());
+            Employee employee = loan.getEmployee();
+            String requestNumber = generatePaymentRequestNumber();
+            String employeeName = employee.getFirstName() + " " + employee.getLastName();
+            String targetDetails = buildEmployeeTargetDetails(
+                employee.getBankName(), employee.getBankAccountNumber(), employee.getWalletNumber());
+
+            PaymentRequest paymentRequest = PaymentRequest.builder()
+                .sourceType(PaymentSourceType.ELOAN)
+                .sourceId(loan.getId())
+                .sourceNumber(loan.getLoanNumber())
+                .sourceDescription("Loan Disbursement: " + loan.getLoanNumber() + " - " + loan.getPurpose())
+                .targetType(PaymentTargetType.EMPLOYEE)
+                .targetId(employee.getId())
+                .targetName(employeeName)
+                .targetDetails(targetDetails)
+                .requestNumber(requestNumber)
+                .requestedAmount(loan.getLoanAmount())
+                .currency("EGP")
+                .description("Loan disbursement to " + employeeName + " - " + loan.getPurpose())
+                .status(PaymentRequestStatus.PAID)
+                .requestedByUserId(disburserUserId)
+                .requestedByUserName(disburserUserName)
+                .requestedByDepartment("Finance")
+                .requestedAt(LocalDateTime.now())
+                .approvedByUserId(disburserUserId)
+                .approvedByUserName(disburserUserName)
+                .approvedAt(LocalDateTime.now())
+                .approvalNotes("Auto-created: Loan " + loan.getLoanNumber() + " disbursed")
+                .totalPaidAmount(loan.getLoanAmount())
+                .remainingAmount(BigDecimal.ZERO)
+                .build();
+
+            paymentRequestRepository.save(paymentRequest);
+            log.info("Created PAID PaymentRequest {} for loan disbursement {}", requestNumber, loan.getLoanNumber());
+        }
     }
 
     /**

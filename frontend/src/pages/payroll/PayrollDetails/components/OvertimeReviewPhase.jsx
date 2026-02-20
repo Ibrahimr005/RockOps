@@ -177,7 +177,7 @@ const OvertimeReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDial
         openConfirmDialog(
             'finalize-overtime',
             'Finalize and Lock Overtime Review?',
-            'This action will LOCK all overtime data. No further changes can be made. This will move the payroll to the Confirmed & Locked phase. Are you sure?'
+            'This action will LOCK all overtime data. No further changes can be made. This will move the payroll to the Bonus Review phase. Are you sure?'
         );
     };
 

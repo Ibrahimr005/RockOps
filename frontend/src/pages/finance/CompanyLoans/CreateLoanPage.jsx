@@ -3,11 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FiDollarSign, FiSave, FiX, FiPlus, FiTrash2, FiCalendar } from 'react-icons/fi';
 import { financeService } from '../../../services/financeService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
-import Snackbar from '../../../components/common/Snackbar/Snackbar';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './CreateLoanPage.scss';
 
 const CreateLoanPage = () => {
     const navigate = useNavigate();
+    const { showSuccess, showError } = useSnackbar();
 
     // Form state
     const [formData, setFormData] = useState({
@@ -43,7 +44,6 @@ const CreateLoanPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingOptions, setIsFetchingOptions] = useState(true);
     const [errors, setErrors] = useState({});
-    const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
 
     // Loan type options
     const loanTypes = [
@@ -77,14 +77,10 @@ const CreateLoanPage = () => {
             setCashSafes(cashSafesRes.data || cashSafesRes || []);
         } catch (error) {
             console.error('Error fetching options:', error);
-            showSnackbar('Failed to load form options', 'error');
+            showError('Failed to load form options');
         } finally {
             setIsFetchingOptions(false);
         }
-    };
-
-    const showSnackbar = (message, type = 'success') => {
-        setSnackbar({ show: true, message, type });
     };
 
     // Handle form input change
@@ -133,7 +129,7 @@ const CreateLoanPage = () => {
         const { principalAmount, interestRate, termMonths, startDate } = formData;
 
         if (!principalAmount || !interestRate || !termMonths || !startDate) {
-            showSnackbar('Please fill in principal, interest rate, term months, and start date first', 'warning');
+            showError('Please fill in principal, interest rate, term months, and start date first');
             return;
         }
 
@@ -166,7 +162,7 @@ const CreateLoanPage = () => {
         }
 
         setInstallments(newInstallments);
-        showSnackbar(`Generated ${months} installments`, 'success');
+        showSuccess(`Generated ${months} installments`);
     };
 
     // Validate form
@@ -212,7 +208,7 @@ const CreateLoanPage = () => {
         e.preventDefault();
 
         if (!validateForm()) {
-            showSnackbar('Please fix the errors before submitting', 'error');
+            showError('Please fix the errors before submitting');
             return;
         }
 
@@ -231,14 +227,14 @@ const CreateLoanPage = () => {
             };
 
             await financeService.companyLoans.loans.create(payload);
-            showSnackbar('Loan created successfully', 'success');
+            showSuccess('Loan created successfully');
 
             setTimeout(() => {
                 navigate('/finance/company-loans');
             }, 1500);
         } catch (error) {
             console.error('Error creating loan:', error);
-            showSnackbar(error.response?.data?.message || 'Failed to create loan', 'error');
+            showError(error.response?.data?.message || 'Failed to create loan');
         } finally {
             setIsLoading(false);
         }
@@ -685,13 +681,6 @@ const CreateLoanPage = () => {
                 </div>
             </form>
 
-            {/* Snackbar */}
-            <Snackbar
-                show={snackbar.show}
-                message={snackbar.message}
-                type={snackbar.type}
-                onClose={() => setSnackbar({ ...snackbar, show: false })}
-            />
         </div>
     );
 };

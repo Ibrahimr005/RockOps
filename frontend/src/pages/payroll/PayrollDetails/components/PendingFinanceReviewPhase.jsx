@@ -32,7 +32,6 @@ const PendingFinanceReviewPhase = ({ payroll, onTransition, onRefresh, processin
     const [batches, setBatches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingBatches, setLoadingBatches] = useState(true);
-    const [markingPaid, setMarkingPaid] = useState(false);
 
     useEffect(() => {
         fetchEmployeePayrolls();
@@ -65,19 +64,6 @@ const PendingFinanceReviewPhase = ({ payroll, onTransition, onRefresh, processin
             setBatches([]);
         } finally {
             setLoadingBatches(false);
-        }
-    };
-
-    const handleMarkAsPaid = async () => {
-        try {
-            setMarkingPaid(true);
-            await payrollService.markAsPaid(payroll.id);
-            showSuccess('Payroll has been marked as paid');
-            if (onRefresh) onRefresh();
-        } catch (error) {
-            showError(error.message || 'Failed to mark payroll as paid');
-        } finally {
-            setMarkingPaid(false);
         }
     };
 
