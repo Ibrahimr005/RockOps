@@ -69,7 +69,7 @@ const Login = () => {
                                 <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         </div>
-                        <h1 className="rockops__auth__login__brand__text">RockOps</h1>
+                        <h1 className="rockops__auth__login__brand__text">Oretech</h1>
                     </div>
                     <h2 className="rockops__auth__login__welcome__title">Welcome Back</h2>
                     <p className="rockops__auth__login__welcome__subtitle">Sign in to your account to continue</p>
@@ -190,7 +190,7 @@ const Login = () => {
 
                 {/* Footer */}
                 <div className="rockops__auth__login__footer__section">
-                    <p>© 2024 RockOps. All rights reserved.</p>
+                    <p>© 2024 Oretech. All rights reserved.</p>
                 </div>
             </div>
         </div>
