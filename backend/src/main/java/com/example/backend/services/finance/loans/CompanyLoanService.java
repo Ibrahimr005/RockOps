@@ -11,13 +11,16 @@ import com.example.backend.models.finance.loans.CompanyLoan;
 import com.example.backend.models.finance.loans.FinancialInstitution;
 import com.example.backend.models.finance.loans.LoanInstallment;
 import com.example.backend.models.finance.loans.enums.CompanyLoanStatus;
+import com.example.backend.models.finance.loans.enums.LenderType;
 import com.example.backend.models.finance.loans.enums.LoanInstallmentStatus;
 import com.example.backend.models.id.EntityTypeConfig;
+import com.example.backend.models.merchant.Merchant;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.finance.balances.BalanceTransactionRepository;
 import com.example.backend.repositories.finance.loans.CompanyLoanRepository;
 import com.example.backend.repositories.finance.loans.FinancialInstitutionRepository;
 import com.example.backend.repositories.finance.loans.LoanInstallmentRepository;
+import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.services.finance.balances.BankAccountService;
 import com.example.backend.services.finance.balances.CashSafeService;
 import com.example.backend.services.id.EntityIdGeneratorService;
@@ -48,19 +51,47 @@ public class CompanyLoanService {
     private final BankAccountService bankAccountService;
     private final CashSafeService cashSafeService;
     private final LoanPaymentRequestService loanPaymentRequestService;
+    private final MerchantRepository merchantRepository;
 
     /**
      * Create a new company loan with installments
      */
     public CompanyLoanResponseDTO createLoan(CreateCompanyLoanRequestDTO requestDTO, String createdBy) {
-        log.info("Creating company loan for institution: {}", requestDTO.getFinancialInstitutionId());
+//        log.info("Creating company loan for institution: {}", requestDTO.getFinancialInstitutionId());
+//
+//        // Validate institution exists and is active
+//        FinancialInstitution institution = institutionRepository.findById(requestDTO.getFinancialInstitutionId())
+//                .orElseThrow(() -> new IllegalArgumentException("Financial institution not found"));
+//
+//        if (!institution.getIsActive()) {
+//            throw new IllegalArgumentException("Cannot create loan with inactive financial institution");
+//        }
+        // WITH this:
+        log.info("Creating company loan with lender type: {}", requestDTO.getLenderType());
 
-        // Validate institution exists and is active
-        FinancialInstitution institution = institutionRepository.findById(requestDTO.getFinancialInstitutionId())
-                .orElseThrow(() -> new IllegalArgumentException("Financial institution not found"));
+        FinancialInstitution institution = null;
+        Merchant merchant = null;
+        String lenderName;
 
-        if (!institution.getIsActive()) {
-            throw new IllegalArgumentException("Cannot create loan with inactive financial institution");
+        if (requestDTO.getLenderType() == LenderType.FINANCIAL_INSTITUTION) {
+            if (requestDTO.getFinancialInstitutionId() == null) {
+                throw new IllegalArgumentException("Financial institution ID is required when lender type is FINANCIAL_INSTITUTION");
+            }
+            institution = institutionRepository.findById(requestDTO.getFinancialInstitutionId())
+                    .orElseThrow(() -> new IllegalArgumentException("Financial institution not found"));
+            if (!institution.getIsActive()) {
+                throw new IllegalArgumentException("Cannot create loan with inactive financial institution");
+            }
+            lenderName = institution.getName();
+        } else if (requestDTO.getLenderType() == LenderType.MERCHANT) {
+            if (requestDTO.getMerchantId() == null) {
+                throw new IllegalArgumentException("Merchant ID is required when lender type is MERCHANT");
+            }
+            merchant = merchantRepository.findById(requestDTO.getMerchantId())
+                    .orElseThrow(() -> new IllegalArgumentException("Merchant not found"));
+            lenderName = merchant.getName();
+        } else {
+            throw new IllegalArgumentException("Invalid lender type");
         }
 
         // Validate dates
@@ -90,7 +121,10 @@ public class CompanyLoanService {
         // Create loan
         CompanyLoan loan = CompanyLoan.builder()
                 .loanNumber(loanNumber)
+                .lenderType(requestDTO.getLenderType())
                 .financialInstitution(institution)
+                .merchant(merchant)
+                .lenderName(lenderName)
                 .loanType(requestDTO.getLoanType())
                 .principalAmount(requestDTO.getPrincipalAmount())
                 .remainingPrincipal(requestDTO.getPrincipalAmount())
@@ -169,7 +203,7 @@ public class CompanyLoanService {
                 .transactionType(TransactionType.DEPOSIT)
                 .amount(loan.getPrincipalAmount())
                 .transactionDate(LocalDateTime.now())
-                .description("Loan disbursement: " + loan.getLoanNumber() + " from " + loan.getFinancialInstitution().getName())
+                .description("Loan disbursement: " + loan.getLoanNumber() + " from " + loan.getLenderName())
                 .referenceNumber(loan.getLoanNumber())
                 .accountType(convertAccountType(loan.getDisbursedToAccountType()))
                 .accountId(loan.getDisbursedToAccountId())

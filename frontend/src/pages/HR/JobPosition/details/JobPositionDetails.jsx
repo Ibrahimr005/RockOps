@@ -11,8 +11,9 @@ import {
     FiMinusCircle,
     FiClock,
     FiAlertCircle,
-    FiCheckCircle, // Added for the current node icon
-    FiChevronDown // Added for the connector
+    FiCheckCircle,
+    FiChevronDown,
+    FiChevronRight
 } from 'react-icons/fi';
 import EditPositionForm from '../components/EditPositionForm.jsx';
 import PositionOverview from './components/PositionOverview.jsx';
@@ -98,32 +99,75 @@ const JobPositionDetails = () => {
         return `$${Number(amount).toFixed(2)}`;
     };
 
-    // Helper to render the hierarchy tree based on the path string
+    // Helper to render the hierarchy tree with ancestors, current, and children
     const renderHierarchyTree = () => {
-        // Fallback if no path exists (should imply root)
         const pathString = position.hierarchyPath || position.positionName;
-        const nodes = pathString.split(' > ');
+        const ancestors = pathString.split(' > ');
+        // Remove the last item (current position) from ancestors
+        ancestors.pop();
+        const children = position.childPositions || [];
 
         return (
             <div className="hierarchy-tree-container">
-                {nodes.map((nodeName, index) => {
-                    const isLast = index === nodes.length - 1;
-                    return (
-                        <div key={index} className="tree-step">
-                            <div className={`tree-node ${isLast ? 'current' : 'ancestor'}`}>
-                                {isLast ? <FiCheckCircle /> :''}
-                                <span className="node-name">{nodeName}</span>
-                                {isLast && <span className="current-badge">Current</span>}
-                            </div>
-                            {/* Render connector line if not the last item */}
-                            {!isLast && (
-                                <div className="tree-connector">
-                                    <div className="line"></div>
-                                </div>
-                            )}
+                {/* Ancestor nodes */}
+                {ancestors.map((nodeName, index) => (
+                    <div key={`ancestor-${index}`} className="tree-step">
+                        <div className="tree-node ancestor" style={{ paddingLeft: `${index * 1.25}rem` }}>
+                            <FiChevronRight className="tree-indent-icon" />
+                            <span className="node-name">{nodeName}</span>
                         </div>
-                    );
-                })}
+                        <div className="tree-connector" style={{ marginLeft: `${(index + 0.5) * 1.25}rem` }}>
+                            <div className="line"></div>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Current position node */}
+                <div className="tree-step">
+                    <div className="tree-node current" style={{ marginLeft: `${ancestors.length * 1.25}rem` }}>
+                        <FiCheckCircle />
+                        <span className="node-name">{position.positionName}</span>
+                        <span className="current-badge">Current</span>
+                    </div>
+                </div>
+
+                {/* Children nodes */}
+                {children.length > 0 && (
+                    <div className="tree-children" style={{ marginLeft: `${(ancestors.length + 0.5) * 1.25}rem` }}>
+                        {children.map((child, index) => {
+                            const isLastChild = index === children.length - 1;
+                            return (
+                                <div key={child.id} className="tree-child-step">
+                                    <div className="tree-child-connector">
+                                        <div className={`vertical-line ${isLastChild ? 'last' : ''}`}></div>
+                                        <div className="horizontal-line"></div>
+                                    </div>
+                                    <div
+                                        className={`tree-node child ${!child.active ? 'inactive' : ''}`}
+                                        onClick={() => navigate(`/hr/positions/${child.id}`)}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => e.key === 'Enter' && navigate(`/hr/positions/${child.id}`)}
+                                    >
+                                        <FiBriefcase className="tree-child-icon" />
+                                        <span className="node-name">{child.positionName}</span>
+                                        {child.employeeCount > 0 && (
+                                            <span className="child-employee-count">
+                                                <FiUsers /> {child.employeeCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {children.length === 0 && (
+                    <div className="tree-no-children" style={{ marginLeft: `${(ancestors.length + 1) * 1.25}rem` }}>
+                        <span>No sub-positions</span>
+                    </div>
+                )}
             </div>
         );
     };

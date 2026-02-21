@@ -106,6 +106,11 @@ public class JobPositionDetailsDTO {
     private String hierarchyPath;
 
     // ======================================
+    // CHILD POSITIONS
+    // ======================================
+    private List<ChildPositionDTO> childPositions;
+
+    // ======================================
     // EMPLOYEE DATA
     // ======================================
     private Integer employeeCount;
@@ -225,5 +230,16 @@ public class JobPositionDetailsDTO {
         private String toPosition;
         private String promotionDate;
         private String reason;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChildPositionDTO {
+        private UUID id;
+        private String positionName;
+        private Integer employeeCount;
+        private Boolean active;
     }
 }

@@ -16,6 +16,7 @@ import {
 import { bonusService } from '../../../../../services/payroll/bonusService';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import EmployeeSelector from '../../../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 import './CreateBonusModal.scss';
 
 const CreateBonusModal = ({ employees, bonusTypes, onClose, onSuccess }) => {
@@ -125,8 +126,8 @@ const CreateBonusModal = ({ employees, bonusTypes, onClose, onSuccess }) => {
         }
     };
 
-    // Get selected employee details
-    const selectedEmployee = employees.find(e => e.id === form.employeeId);
+    // Get selected employee details for EmployeeSelector
+    const selectedEmployee = employees.find(e => e.id === form.employeeId) || null;
 
     return (
         <>
@@ -145,30 +146,13 @@ const CreateBonusModal = ({ employees, bonusTypes, onClose, onSuccess }) => {
                             <h4><FaUser /> Employee</h4>
                             <div className="form-group">
                                 <label>Employee <span className="required">*</span></label>
-                                <select
-                                    value={form.employeeId}
-                                    onChange={(e) => handleFieldChange('employeeId', e.target.value)}
-                                >
-                                    <option value="">-- Select Employee --</option>
-                                    {employees.map((emp) => (
-                                        <option key={emp.id} value={emp.id}>
-                                            {emp.firstName} {emp.lastName} {emp.employeeNumber ? `(${emp.employeeNumber})` : ''}
-                                        </option>
-                                    ))}
-                                </select>
+                                <EmployeeSelector
+                                    employees={employees}
+                                    selectedEmployee={selectedEmployee}
+                                    onSelect={(employee) => handleFieldChange('employeeId', employee?.id || '')}
+                                    placeholder="Search and select an employee..."
+                                />
                             </div>
-
-                            {selectedEmployee && (
-                                <div className="employee-preview">
-                                    <span className="employee-name">{selectedEmployee.firstName} {selectedEmployee.lastName}</span>
-                                    {selectedEmployee.departmentName && (
-                                        <span className="employee-dept">{selectedEmployee.departmentName}</span>
-                                    )}
-                                    {selectedEmployee.jobPositionName && (
-                                        <span className="employee-pos">{selectedEmployee.jobPositionName}</span>
-                                    )}
-                                </div>
-                            )}
                         </div>
 
                         {/* Bonus Details */}

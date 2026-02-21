@@ -163,7 +163,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
     };
 
     return (
-        <div className="modal-overlay">
+        <div className="modal-backdrop">
             <div className="modal-container transaction-form-modal">
                 <div className="modal-header">
                     <div className="modal-title">
@@ -186,6 +186,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                                 name="transactionType"
                                 value={formData.transactionType}
                                 onChange={handleChange}
+                                className={`modern-form-select ${errors.transactionType ? 'error' : ''}`}
                             >
                                 <option value="DEPOSIT">Deposit</option>
                                 <option value="WITHDRAWAL">Withdrawal</option>
@@ -203,7 +204,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                                 name="amount"
                                 value={formData.amount}
                                 onChange={handleChange}
-                                className={errors.amount ? 'error' : ''}
+                                className={`modern-form-input ${errors.amount ? 'error' : ''}`}
                                 step="0.01"
                                 min="0.01"
                                 placeholder="0.00"
@@ -220,6 +221,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                                 id="transactionDate"
                                 name="transactionDate"
                                 value={formData.transactionDate}
+                                className={`modern-form-input ${errors.transactionDate ? 'error' : ''}`}
                                 onChange={handleChange}
                             />
                         </div>
@@ -234,6 +236,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                                 name="referenceNumber"
                                 value={formData.referenceNumber}
                                 onChange={handleChange}
+                                className={`modern-form-input ${errors.referenceNumber ? 'error' : ''}`}
                                 placeholder="Optional reference..."
                             />
                         </div>
@@ -256,6 +259,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                                         handleChange(e);
                                         setFormData(prev => ({ ...prev, accountId: '' }));
                                     }}
+                                    className={`modern-form-input ${errors.accountType ? 'error' : ''}`}
                                 >
                                     <option value="BANK_ACCOUNT">Bank Account</option>
                                     <option value="CASH_SAFE">Cash Safe</option>
@@ -272,7 +276,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                                     name="accountId"
                                     value={formData.accountId}
                                     onChange={handleChange}
-                                    className={errors.accountId ? 'error' : ''}
+                                    className={`modern-form-input ${errors.accountId ? 'error' : ''}`}
                                 >
                                     <option value="">-- Select Account --</option>
                                     {getAccountOptions(formData.accountType).map(option => (
@@ -302,6 +306,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                                             handleChange(e);
                                             setFormData(prev => ({ ...prev, toAccountId: '' }));
                                         }}
+                                        className={`modern-form-input ${errors.toAccountType ? 'error' : ''}`}
                                     >
                                         <option value="BANK_ACCOUNT">Bank Account</option>
                                         <option value="CASH_SAFE">Cash Safe</option>
@@ -318,7 +323,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                                         name="toAccountId"
                                         value={formData.toAccountId}
                                         onChange={handleChange}
-                                        className={errors.toAccountId ? 'error' : ''}
+                                        className={`modern-form-input ${errors.toAccountId ? 'error' : ''}`}
                                     >
                                         <option value="">-- Select Account --</option>
                                         {getAccountOptions(formData.toAccountType).map(option => (
@@ -342,6 +347,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
+                            className="modern-form-textarea"
                             rows="3"
                             placeholder="Transaction description..."
                         />
@@ -351,7 +357,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
 
 
                 <div className="modal-footer">
-                    <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+                    <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>

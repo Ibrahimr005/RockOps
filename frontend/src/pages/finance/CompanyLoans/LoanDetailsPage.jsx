@@ -4,6 +4,7 @@ import {
     FiDollarSign, FiEdit2, FiArrowLeft, FiCalendar, FiPercent,
     FiCreditCard, FiFileText, FiAlertCircle, FiCheckCircle
 } from 'react-icons/fi';
+import { FaUniversity, FaStore } from 'react-icons/fa';
 import { financeService } from '../../../services/financeService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../components/common/DataTable/DataTable';
@@ -139,6 +140,10 @@ const LoanDetailsPage = () => {
         );
     }
 
+    // Determine lender info
+    const isMerchantLender = loan.lenderType === 'MERCHANT';
+    const lenderDisplayName = loan.lenderName || loan.financialInstitutionName || loan.merchantName || '-';
+
     // Breadcrumbs
     const breadcrumbs = [
         { label: 'Company Loans', onClick: () => navigate('/finance/company-loans') },
@@ -160,21 +165,7 @@ const LoanDetailsPage = () => {
                 icon={<FiDollarSign />}
                 breadcrumbs={breadcrumbs}
                 stats={stats}
-                actionButtons={[
-                    // {
-                    //     text: 'Back',
-                    //     icon: <FiArrowLeft />,
-                    //     onClick: () => navigate('/finance/company-loans'),
-                    //     className: 'secondary'
-                    // },
-                    // {
-                    //     text: 'Edit',
-                    //     icon: <FiEdit2 />,
-                    //     onClick: () => navigate(`/finance/company-loans/${id}/edit`),
-                    //     className: 'primary',
-                    //     disabled: loan.status !== 'ACTIVE'
-                    // }
-                ]}
+                actionButtons={[]}
             />
 
             {/* Loan Status Banner */}
@@ -186,20 +177,32 @@ const LoanDetailsPage = () => {
 
             {/* Details Grid */}
             <div className="details-grid">
-                {/* Institution Card */}
+                {/* Lender Card — UPDATED to handle both types */}
                 <div className="detail-card">
                     <h3 className="detail-card__title">
-                        <FiCreditCard /> Financial Institution
+                        {isMerchantLender ? <FaStore /> : <FiCreditCard />}
+                        {' '}
+                        {isMerchantLender ? 'Merchant Lender' : 'Financial Institution'}
                     </h3>
                     <div className="detail-card__content">
                         <div className="detail-row">
-                            <span className="detail-label">Name</span>
-                            <span className="detail-value">{loan.financialInstitutionName}</span>
+                            <span className="detail-label">Lender Type</span>
+                            <span className="detail-value">
+                                <span className={`lender-type-badge lender-type-badge--${(loan.lenderType || 'FINANCIAL_INSTITUTION').toLowerCase()}`}>
+                                    {isMerchantLender ? 'Merchant' : 'Financial Institution'}
+                                </span>
+                            </span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Institution Number</span>
-                            <span className="detail-value">{loan.financialInstitutionNumber}</span>
+                            <span className="detail-label">Name</span>
+                            <span className="detail-value">{lenderDisplayName}</span>
                         </div>
+                        {!isMerchantLender && loan.financialInstitutionNumber && (
+                            <div className="detail-row">
+                                <span className="detail-label">Institution Number</span>
+                                <span className="detail-value">{loan.financialInstitutionNumber}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 

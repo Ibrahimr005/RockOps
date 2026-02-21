@@ -16,7 +16,6 @@ import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRe
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.payroll.BonusRepository;
 import com.example.backend.repositories.payroll.BonusTypeRepository;
-import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.services.id.EntityIdGeneratorService;
 import com.example.backend.models.id.EntityTypeConfig;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +40,6 @@ public class BonusService {
     private final BonusRepository bonusRepository;
     private final BonusTypeRepository bonusTypeRepository;
     private final EmployeeRepository employeeRepository;
-    private final SiteRepository siteRepository;
     private final PaymentRequestRepository paymentRequestRepository;
     private final EntityIdGeneratorService entityIdGeneratorService;
 
@@ -53,7 +51,7 @@ public class BonusService {
      * Create a new bonus
      */
     @Transactional
-    public BonusResponseDTO createBonus(CreateBonusDTO dto, String username, UUID siteId) {
+    public BonusResponseDTO createBonus(CreateBonusDTO dto, String username) {
         log.info("Creating bonus for employee {} by {}", dto.getEmployeeId(), username);
 
         Employee employee = employeeRepository.findById(dto.getEmployeeId())
@@ -62,8 +60,10 @@ public class BonusService {
         BonusType bonusType = bonusTypeRepository.findById(dto.getBonusTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Bonus type not found: " + dto.getBonusTypeId()));
 
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new ResourceNotFoundException("Site not found: " + siteId));
+        Site site = employee.getSite();
+        if (site == null) {
+            throw new ResourceNotFoundException("Employee " + dto.getEmployeeId() + " has no assigned site");
+        }
 
         // Generate bonus number
         String bonusNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.BONUS);
@@ -92,14 +92,11 @@ public class BonusService {
      * Create bonuses for multiple employees (bulk)
      */
     @Transactional
-    public List<BonusResponseDTO> createBulkBonus(BulkCreateBonusDTO dto, String username, UUID siteId) {
+    public List<BonusResponseDTO> createBulkBonus(BulkCreateBonusDTO dto, String username) {
         log.info("Creating bulk bonuses for {} employees by {}", dto.getEmployeeIds().size(), username);
 
         BonusType bonusType = bonusTypeRepository.findById(dto.getBonusTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Bonus type not found: " + dto.getBonusTypeId()));
-
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new ResourceNotFoundException("Site not found: " + siteId));
 
         UUID bulkBonusId = UUID.randomUUID();
         List<Bonus> bonuses = new ArrayList<>();
@@ -107,6 +104,11 @@ public class BonusService {
         for (UUID employeeId : dto.getEmployeeIds()) {
             Employee employee = employeeRepository.findById(employeeId)
                     .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + employeeId));
+
+            Site site = employee.getSite();
+            if (site == null) {
+                throw new ResourceNotFoundException("Employee " + employeeId + " has no assigned site");
+            }
 
             String bonusNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.BONUS);
 

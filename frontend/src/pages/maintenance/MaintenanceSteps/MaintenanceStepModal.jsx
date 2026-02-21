@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FaTimes, FaSave, FaTools, FaUser, FaMapMarkerAlt, FaCalendarAlt, FaDollarSign, FaPlus, FaEnvelope, FaPhone } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
@@ -9,6 +9,7 @@ import { siteService } from '../../../services/siteService.js';
 import contactTypeService from '../../../services/contactTypeService.js';
 import maintenanceService from '../../../services/maintenanceService.js';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import EmployeeSelector from '../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 
 import apiClient from '../../../utils/apiClient.js';
 import '../../../styles/modal-styles.scss';
@@ -67,6 +68,22 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const [merchants, setMerchants] = useState([]);
     const [merchantContacts, setMerchantContacts] = useState([]);
     const [merchantItems, setMerchantItems] = useState([{ description: '', cost: '' }]);
+
+    // Map site employees to EmployeeSelector-compatible format
+    const mappedEmployees = useMemo(() => {
+        if (!Array.isArray(availableEmployees)) return [];
+        return availableEmployees.map(emp => ({
+            ...emp,
+            firstName: emp.firstName || emp.fullName?.split(' ')[0] || 'Unknown',
+            lastName: emp.lastName || emp.fullName?.split(' ').slice(1).join(' ') || '',
+            jobPositionName: emp.jobPositionName || emp.jobPosition?.positionName || '',
+        }));
+    }, [availableEmployees]);
+
+    const selectedResponsibleEmployee = useMemo(() => {
+        if (!formData.responsibleEmployeeId) return null;
+        return mappedEmployees.find(e => e.id === formData.responsibleEmployeeId) || null;
+    }, [mappedEmployees, formData.responsibleEmployeeId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -808,22 +825,21 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                     <label htmlFor="responsibleEmployeeId">
                                         Responsible Employee <span className="required">*</span>
                                     </label>
-                                    <select
-                                        id="responsibleEmployeeId"
-                                        name="responsibleEmployeeId"
-                                        value={formData.responsibleEmployeeId}
-                                        onChange={handleInputChange}
-                                        className={errors.responsibleEmployeeId ? 'error' : ''}
-                                    >
-                                        <option value="">Select Employee</option>
-                                        {Array.isArray(availableEmployees) && availableEmployees.map(employee => (
-                                            <option key={employee?.id || Math.random()} value={employee?.id}>
-                                                {employee?.fullName || 'Unknown Name'} {employee?.jobPosition?.positionName ? `- ${employee.jobPosition.positionName}` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <EmployeeSelector
+                                        employees={mappedEmployees}
+                                        selectedEmployee={selectedResponsibleEmployee}
+                                        onSelect={(employee) => {
+                                            setIsFormDirty(true);
+                                            setFormData(prev => ({ ...prev, responsibleEmployeeId: employee?.id || '' }));
+                                            if (errors.responsibleEmployeeId) {
+                                                setErrors(prev => ({ ...prev, responsibleEmployeeId: '' }));
+                                            }
+                                        }}
+                                        placeholder="Search and select an employee..."
+                                        error={errors.responsibleEmployeeId}
+                                    />
                                     {errors.responsibleEmployeeId && <span className="error-message">{errors.responsibleEmployeeId}</span>}
-                                    {(!Array.isArray(availableEmployees) || availableEmployees.length === 0) && (
+                                    {mappedEmployees.length === 0 && (
                                         <span className="info-text">No employees available from equipment site</span>
                                     )}
                                 </div>

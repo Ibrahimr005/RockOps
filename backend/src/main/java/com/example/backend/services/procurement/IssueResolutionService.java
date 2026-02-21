@@ -7,7 +7,7 @@ import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderResolutionType;
 import com.example.backend.repositories.procurement.*;
-import com.example.backend.services.finance.refunds.RefundRequestService;
+import com.example.backend.services.finance.incomingPayments.IncomingPaymentRequestService; // ← CHANGED
 import com.example.backend.services.warehouse.ItemTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class IssueResolutionService {
     private final PurchaseOrderIssueRepository issueRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
-    private final RefundRequestService refundRequestService;
+    private final IncomingPaymentRequestService incomingPaymentRequestService; // ← CHANGED
     private final ItemTypeService itemTypeService;
     private final PurchaseOrderService purchaseOrderService;
 
@@ -57,18 +57,16 @@ public class IssueResolutionService {
             updatePOStatus(po);
             purchaseOrderRepository.save(po);
 
-            // Create refund requests asynchronously for REFUND resolutions
+            // Create incoming payment requests for REFUND resolutions
             List<PurchaseOrderIssue> refundIssues = resolvedIssues.stream()
                     .filter(issue -> issue.getResolutionType() == PurchaseOrderResolutionType.REFUND)
                     .collect(Collectors.toList());
 
             if (!refundIssues.isEmpty()) {
-//                log.info("Found {} refund issues, creating refund requests...", refundIssues.size());
-                refundRequestService.createRefundRequestsFromIssues(po.getId(), refundIssues);
+                // ← CHANGED: Use new method name
+                incomingPaymentRequestService.createIncomingPaymentRequestsFromRefundIssues(po.getId(), refundIssues);
             }
         }
-
-
     }
 
     private void updateItemStatuses(PurchaseOrder po) {

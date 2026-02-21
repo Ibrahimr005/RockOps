@@ -107,14 +107,14 @@ export const bonusService = {
      * Create a single bonus
      */
     createBonus: (bonusData) => {
-        return apiClient.post(BONUS_ENDPOINTS.BASE, bonusData, { params: { siteId: getSiteId() } });
+        return apiClient.post(BONUS_ENDPOINTS.BASE, bonusData);
     },
 
     /**
      * Create bonuses in bulk for multiple employees
      */
     createBulkBonus: (bulkData) => {
-        return apiClient.post(BONUS_ENDPOINTS.BULK_CREATE, bulkData, { params: { siteId: getSiteId() } });
+        return apiClient.post(BONUS_ENDPOINTS.BULK_CREATE, bulkData);
     },
 
     // ========================================

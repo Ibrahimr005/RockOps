@@ -24,8 +24,7 @@ import {
     FaMoneyBillWave,
     FaPercentage,
     FaUserMinus,
-    FaCalendarAlt,
-    FaSearch
+    FaCalendarAlt
 } from 'react-icons/fa';
 import { deductionService, DEDUCTION_CATEGORY_CONFIG } from '../../../services/payroll/deductionService';
 import { employeeDeductionService } from '../../../services/payroll/employeeDeductionService';
@@ -33,6 +32,7 @@ import { employeeService } from '../../../services/hr/employeeService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import EmployeeSelector from '../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 import './DeductionManagement.scss';
 import PageHeader from "../../../components/common/PageHeader/index.js";
 import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards.jsx';
@@ -63,7 +63,6 @@ const DeductionManagement = () => {
 
     // Employee search/filter for employee deductions
     const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState('');
-    const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
 
     // Form state for employee deduction creation
     const [deductionForm, setDeductionForm] = useState({
@@ -455,22 +454,14 @@ const DeductionManagement = () => {
         }
     };
 
-    // Get selected employee details
-    const selectedEmployee = useMemo(() => {
-        return employees.find(e => e.id === deductionForm.employeeId);
-    }, [employees, deductionForm.employeeId]);
+    // Get selected employee objects for EmployeeSelector
+    const selectedFilterEmployee = useMemo(() => {
+        return employees.find(e => e.id === selectedEmployeeFilter) || null;
+    }, [employees, selectedEmployeeFilter]);
 
-    // Filter employees based on search
-    const filteredEmployees = useMemo(() => {
-        if (!employeeSearchTerm) return employees;
-        const term = employeeSearchTerm.toLowerCase();
-        return employees.filter(e =>
-            (e.firstName?.toLowerCase().includes(term)) ||
-            (e.lastName?.toLowerCase().includes(term)) ||
-            (e.employeeNumber?.toLowerCase().includes(term)) ||
-            (`${e.firstName} ${e.lastName}`.toLowerCase().includes(term))
-        );
-    }, [employees, employeeSearchTerm]);
+    const selectedModalEmployee = useMemo(() => {
+        return employees.find(e => e.id === deductionForm.employeeId) || null;
+    }, [employees, deductionForm.employeeId]);
 
     // ========================================
     // CATEGORY BADGE RENDERER
@@ -793,28 +784,12 @@ const DeductionManagement = () => {
                                 <p>Choose an employee to view and manage their deductions</p>
                             </div>
                             <div className="selector-controls">
-                                <div className="search-input-wrapper">
-                                    <FaSearch className="search-icon" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search employees by name or number..."
-                                        value={employeeSearchTerm}
-                                        onChange={(e) => setEmployeeSearchTerm(e.target.value)}
-                                        className="employee-search-input"
-                                    />
-                                </div>
-                                <select
-                                    value={selectedEmployeeFilter}
-                                    onChange={(e) => setSelectedEmployeeFilter(e.target.value)}
-                                    className="employee-select"
-                                >
-                                    <option value="">-- Select Employee --</option>
-                                    {filteredEmployees.map((emp) => (
-                                        <option key={emp.id} value={emp.id}>
-                                            {emp.firstName} {emp.lastName} {emp.employeeNumber ? `(${emp.employeeNumber})` : ''}
-                                        </option>
-                                    ))}
-                                </select>
+                                <EmployeeSelector
+                                    employees={employees}
+                                    selectedEmployee={selectedFilterEmployee}
+                                    onSelect={(employee) => setSelectedEmployeeFilter(employee?.id || '')}
+                                    placeholder="Search employees by name, number, or department..."
+                                />
                             </div>
                         </div>
 
@@ -1024,37 +999,14 @@ const DeductionManagement = () => {
                                 <h4><FaUsers /> Employee Information</h4>
                                 <div className="form-group">
                                     <label>Employee *</label>
-                                    <select
-                                        value={deductionForm.employeeId}
-                                        onChange={(e) => setDeductionForm(prev => ({ ...prev, employeeId: e.target.value }))}
+                                    <EmployeeSelector
+                                        employees={employees}
+                                        selectedEmployee={selectedModalEmployee}
+                                        onSelect={(employee) => setDeductionForm(prev => ({ ...prev, employeeId: employee?.id || '' }))}
+                                        placeholder="Search and select an employee..."
                                         disabled={!!editingEmployeeDeduction}
-                                    >
-                                        <option value="">-- Select Employee --</option>
-                                        {employees.map((emp) => (
-                                            <option key={emp.id} value={emp.id}>
-                                                {emp.firstName} {emp.lastName} {emp.employeeNumber ? `(${emp.employeeNumber})` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    />
                                 </div>
-
-                                {/* Employee Preview */}
-                                {selectedEmployee && (
-                                    <div className="employee-preview">
-                                        <div className="employee-info">
-                                            <h5>{selectedEmployee.firstName} {selectedEmployee.lastName}</h5>
-                                            {selectedEmployee.employeeNumber && (
-                                                <p className="employee-number">{selectedEmployee.employeeNumber}</p>
-                                            )}
-                                            {selectedEmployee.departmentName && (
-                                                <p>{selectedEmployee.departmentName}</p>
-                                            )}
-                                            {selectedEmployee.jobPositionName && (
-                                                <p>{selectedEmployee.jobPositionName}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Deduction Details */}

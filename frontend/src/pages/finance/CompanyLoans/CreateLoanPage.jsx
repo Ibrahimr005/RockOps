@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiDollarSign, FiSave, FiX, FiPlus, FiTrash2, FiCalendar } from 'react-icons/fi';
+import { FaUniversity, FaStore } from 'react-icons/fa';
 import { financeService } from '../../../services/financeService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
@@ -12,7 +13,9 @@ const CreateLoanPage = () => {
 
     // Form state
     const [formData, setFormData] = useState({
+        lenderType: 'FINANCIAL_INSTITUTION', // NEW: 'FINANCIAL_INSTITUTION' or 'MERCHANT'
         financialInstitutionId: '',
+        merchantId: '',                       // NEW
         loanType: '',
         principalAmount: '',
         interestRate: '',
@@ -37,6 +40,7 @@ const CreateLoanPage = () => {
 
     // Dropdown options
     const [institutions, setInstitutions] = useState([]);
+    const [merchants, setMerchants] = useState([]);           // NEW
     const [bankAccounts, setBankAccounts] = useState([]);
     const [cashSafes, setCashSafes] = useState([]);
 
@@ -66,13 +70,15 @@ const CreateLoanPage = () => {
     const fetchOptions = async () => {
         setIsFetchingOptions(true);
         try {
-            const [institutionsRes, bankAccountsRes, cashSafesRes] = await Promise.all([
+            const [institutionsRes, merchantsRes, bankAccountsRes, cashSafesRes] = await Promise.all([
                 financeService.companyLoans.institutions.getActive(),
+                financeService.companyLoans.loans.getMerchantsForLoan(),  // NEW
                 financeService.balances.bankAccounts.getAllActive(),
                 financeService.balances.cashSafes.getAll()
             ]);
 
             setInstitutions(institutionsRes.data || institutionsRes || []);
+            setMerchants(merchantsRes.data || merchantsRes || []);       // NEW
             setBankAccounts(bankAccountsRes.data || bankAccountsRes || []);
             setCashSafes(cashSafesRes.data || cashSafesRes || []);
         } catch (error) {
@@ -92,6 +98,23 @@ const CreateLoanPage = () => {
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
+    };
+
+    // Handle lender type change — reset the selected lender when toggling
+    const handleLenderTypeChange = (type) => {
+        setFormData(prev => ({
+            ...prev,
+            lenderType: type,
+            financialInstitutionId: '',
+            merchantId: ''
+        }));
+        // Clear lender-related errors
+        setErrors(prev => ({
+            ...prev,
+            financialInstitutionId: null,
+            merchantId: null,
+            lenderSource: null
+        }));
     };
 
     // Handle installment change
@@ -169,7 +192,13 @@ const CreateLoanPage = () => {
     const validateForm = () => {
         const newErrors = {};
 
-        if (!formData.financialInstitutionId) newErrors.financialInstitutionId = 'Institution is required';
+        // Validate lender based on type
+        if (formData.lenderType === 'FINANCIAL_INSTITUTION') {
+            if (!formData.financialInstitutionId) newErrors.financialInstitutionId = 'Institution is required';
+        } else if (formData.lenderType === 'MERCHANT') {
+            if (!formData.merchantId) newErrors.merchantId = 'Merchant is required';
+        }
+
         if (!formData.loanType) newErrors.loanType = 'Loan type is required';
         if (!formData.principalAmount || parseFloat(formData.principalAmount) <= 0) {
             newErrors.principalAmount = 'Valid principal amount is required';
@@ -215,10 +244,26 @@ const CreateLoanPage = () => {
         setIsLoading(true);
         try {
             const payload = {
-                ...formData,
+                lenderType: formData.lenderType,
+                financialInstitutionId: formData.lenderType === 'FINANCIAL_INSTITUTION' ? formData.financialInstitutionId : null,
+                merchantId: formData.lenderType === 'MERCHANT' ? formData.merchantId : null,
+                loanType: formData.loanType,
                 principalAmount: parseFloat(formData.principalAmount),
                 interestRate: parseFloat(formData.interestRate),
+                interestType: formData.interestType,
+                variableRateBase: formData.variableRateBase,
+                currency: formData.currency,
+                disbursementDate: formData.disbursementDate,
+                startDate: formData.startDate,
+                maturityDate: formData.maturityDate,
                 termMonths: parseInt(formData.termMonths),
+                disbursedToAccountId: formData.disbursedToAccountId,
+                disbursedToAccountType: formData.disbursedToAccountType,
+                purpose: formData.purpose,
+                collateral: formData.collateral,
+                guarantor: formData.guarantor,
+                contractReference: formData.contractReference,
+                notes: formData.notes,
                 installments: installments.map(inst => ({
                     ...inst,
                     principalAmount: parseFloat(inst.principalAmount),
@@ -280,26 +325,74 @@ const CreateLoanPage = () => {
                 <div className="form-section">
                     <h3 className="form-section__title">Basic Information</h3>
                     <div className="form-grid">
-                        <div className={`form-group ${errors.financialInstitutionId ? 'has-error' : ''}`}>
-                            <label>Financial Institution *</label>
-                            <select
-                                name="financialInstitutionId"
-                                value={formData.financialInstitutionId}
-                                onChange={handleInputChange}
-                                disabled={isFetchingOptions}
-                            >
-                                <option value="">Select Institution</option>
-                                {institutions.map(inst => (
-                                    <option key={inst.id} value={inst.id}>
-                                        {inst.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.financialInstitutionId && <span className="error-text">{errors.financialInstitutionId}</span>}
+
+                        {/* ===== LENDER TYPE TOGGLE ===== */}
+                        <div className="form-group form-group--full">
+                            <label>Lender Source <span className="required">*</span></label>
+                            <div className="lender-type-toggle">
+                                <button
+                                    type="button"
+                                    className={`lender-type-toggle__btn ${formData.lenderType === 'FINANCIAL_INSTITUTION' ? 'lender-type-toggle__btn--active' : ''}`}
+                                    onClick={() => handleLenderTypeChange('FINANCIAL_INSTITUTION')}
+                                >
+                                    <FaUniversity />
+                                    <span>Financial Institution</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`lender-type-toggle__btn ${formData.lenderType === 'MERCHANT' ? 'lender-type-toggle__btn--active' : ''}`}
+                                    onClick={() => handleLenderTypeChange('MERCHANT')}
+                                >
+                                    <FaStore />
+                                    <span>Merchant</span>
+                                </button>
+                            </div>
                         </div>
 
+                        {/* ===== INSTITUTION SELECT (shown when FINANCIAL_INSTITUTION) ===== */}
+                        {formData.lenderType === 'FINANCIAL_INSTITUTION' && (
+                            <div className={`form-group ${errors.financialInstitutionId ? 'has-error' : ''}`}>
+                                <label>Financial Institution <span className="required">*</span></label>
+                                <select
+                                    name="financialInstitutionId"
+                                    value={formData.financialInstitutionId}
+                                    onChange={handleInputChange}
+                                    disabled={isFetchingOptions}
+                                >
+                                    <option value="">Select Institution</option>
+                                    {institutions.map(inst => (
+                                        <option key={inst.id} value={inst.id}>
+                                            {inst.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.financialInstitutionId && <span className="error-text">{errors.financialInstitutionId}</span>}
+                            </div>
+                        )}
+
+                        {/* ===== MERCHANT SELECT (shown when MERCHANT) ===== */}
+                        {formData.lenderType === 'MERCHANT' && (
+                            <div className={`form-group ${errors.merchantId ? 'has-error' : ''}`}>
+                                <label>Merchant <span className="required">*</span></label>
+                                <select
+                                    name="merchantId"
+                                    value={formData.merchantId}
+                                    onChange={handleInputChange}
+                                    disabled={isFetchingOptions}
+                                >
+                                    <option value="">Select Merchant</option>
+                                    {merchants.map(m => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.name} {m.contactPersonName ? `(${m.contactPersonName})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.merchantId && <span className="error-text">{errors.merchantId}</span>}
+                            </div>
+                        )}
+
                         <div className={`form-group ${errors.loanType ? 'has-error' : ''}`}>
-                            <label>Loan Type *</label>
+                            <label>Loan Type <span className="required">*</span></label>
                             <select
                                 name="loanType"
                                 value={formData.loanType}
@@ -316,7 +409,7 @@ const CreateLoanPage = () => {
                         </div>
 
                         <div className={`form-group ${errors.principalAmount ? 'has-error' : ''}`}>
-                            <label>Principal Amount *</label>
+                            <label>Principal Amount <span className="required">*</span></label>
                             <input
                                 type="number"
                                 name="principalAmount"
@@ -349,7 +442,7 @@ const CreateLoanPage = () => {
                     <h3 className="form-section__title">Interest Details</h3>
                     <div className="form-grid">
                         <div className={`form-group ${errors.interestRate ? 'has-error' : ''}`}>
-                            <label>Interest Rate (% per annum) *</label>
+                            <label>Interest Rate (% per annum) <span className="required">*</span></label>
                             <input
                                 type="number"
                                 name="interestRate"
@@ -363,7 +456,7 @@ const CreateLoanPage = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>Interest Type *</label>
+                            <label>Interest Type <span className="required">*</span></label>
                             <select
                                 name="interestType"
                                 value={formData.interestType}
@@ -394,7 +487,7 @@ const CreateLoanPage = () => {
                     <h3 className="form-section__title">Dates & Term</h3>
                     <div className="form-grid">
                         <div className={`form-group ${errors.disbursementDate ? 'has-error' : ''}`}>
-                            <label>Disbursement Date *</label>
+                            <label>Disbursement Date <span className="required">*</span></label>
                             <input
                                 type="date"
                                 name="disbursementDate"
@@ -405,7 +498,7 @@ const CreateLoanPage = () => {
                         </div>
 
                         <div className={`form-group ${errors.startDate ? 'has-error' : ''}`}>
-                            <label>Start Date *</label>
+                            <label>Start Date <span className="required">*</span></label>
                             <input
                                 type="date"
                                 name="startDate"
@@ -416,7 +509,7 @@ const CreateLoanPage = () => {
                         </div>
 
                         <div className={`form-group ${errors.maturityDate ? 'has-error' : ''}`}>
-                            <label>Maturity Date *</label>
+                            <label>Maturity Date <span className="required">*</span></label>
                             <input
                                 type="date"
                                 name="maturityDate"
@@ -427,7 +520,7 @@ const CreateLoanPage = () => {
                         </div>
 
                         <div className={`form-group ${errors.termMonths ? 'has-error' : ''}`}>
-                            <label>Term (Months) *</label>
+                            <label>Term (Months) <span className="required">*</span></label>
                             <input
                                 type="number"
                                 name="termMonths"
@@ -446,7 +539,7 @@ const CreateLoanPage = () => {
                     <h3 className="form-section__title">Disbursement Account</h3>
                     <div className="form-grid">
                         <div className="form-group">
-                            <label>Account Type *</label>
+                            <label>Account Type <span className="required">*</span></label>
                             <select
                                 name="disbursedToAccountType"
                                 value={formData.disbursedToAccountType}
@@ -461,7 +554,7 @@ const CreateLoanPage = () => {
                         </div>
 
                         <div className={`form-group ${errors.disbursedToAccountId ? 'has-error' : ''}`}>
-                            <label>Account *</label>
+                            <label>Account <span className="required">*</span></label>
                             <select
                                 name="disbursedToAccountId"
                                 value={formData.disbursedToAccountId}

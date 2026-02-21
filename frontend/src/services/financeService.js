@@ -1156,7 +1156,11 @@ export const financeService = {
 
             getOverdueInstallments: () => {
                 return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.OVERDUE_INSTALLMENTS);
-            }
+            },
+
+            getMerchantsForLoan: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.MERCHANTS);
+            },
         },
 
         // Dashboard

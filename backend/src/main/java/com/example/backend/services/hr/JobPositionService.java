@@ -1528,6 +1528,22 @@ public class JobPositionService {
                 .hierarchyLevel(jobPosition.getHierarchyLevel())
                 .hierarchyPath(jobPosition.getHierarchyPath());
 
+        // Child positions
+        List<JobPosition> children = jobPosition.getChildPositions();
+        if (children != null && !children.isEmpty()) {
+            List<JobPositionDetailsDTO.ChildPositionDTO> childDTOs = children.stream()
+                    .map(child -> JobPositionDetailsDTO.ChildPositionDTO.builder()
+                            .id(child.getId())
+                            .positionName(child.getPositionName())
+                            .employeeCount(child.getEmployees() != null ? child.getEmployees().size() : 0)
+                            .active(child.getActive())
+                            .build())
+                    .collect(Collectors.toList());
+            builder.childPositions(childDTOs);
+        } else {
+            builder.childPositions(new ArrayList<>());
+        }
+
         // Employee data
         List<Employee> employees = jobPosition.getEmployees();
         builder.employeeCount(employees != null ? employees.size() : 0);

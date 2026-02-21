@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiDollarSign, FiPlus, FiEye, FiEdit2, FiTrendingUp, FiAlertCircle, FiCalendar } from 'react-icons/fi';
-import {FaUniversity} from 'react-icons/fa';
+import {FaUniversity, FaStore} from 'react-icons/fa';
 import { financeService } from '../../../services/financeService';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import Tabs from '../../../components/common/Tabs/Tabs';
@@ -89,7 +89,7 @@ const CompanyLoansPage = () => {
         return statusClasses[status] || 'status-badge--default';
     };
 
-    // Loan columns
+    // Loan columns — UPDATED to show lender name + type badge
     const loanColumns = [
         {
             header: 'Loan Number',
@@ -98,11 +98,19 @@ const CompanyLoansPage = () => {
             width: '120px'
         },
         {
-            header: 'Institution',
-            accessor: 'financialInstitutionName',
+            header: 'Lender',
+            accessor: 'lenderName',
             sortable: true,
             filterable: true,
-            filterType: 'select'
+            filterType: 'select',
+            render: (row) => (
+                <div className="lender-cell">
+                    <span className={`lender-type-icon lender-type-icon--${(row.lenderType || 'FINANCIAL_INSTITUTION').toLowerCase()}`}>
+                        {row.lenderType === 'MERCHANT' ? <FaStore /> : <FaUniversity />}
+                    </span>
+                    <span>{row.lenderName || row.financialInstitutionName || '-'}</span>
+                </div>
+            )
         },
         {
             header: 'Type',

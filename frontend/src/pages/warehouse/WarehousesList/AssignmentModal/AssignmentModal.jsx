@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTimes } from 'react-icons/fa';
 import { warehouseEmployeeService } from '../../../../services/warehouse/warehouseEmployeeService';
 import { useAuth } from '../../../../contexts/AuthContext';
+import EmployeeSelector from '../../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 import './AssignmentModal.scss';
 
 const AssignmentModal = ({
@@ -18,7 +19,7 @@ const AssignmentModal = ({
 
     const { currentUser } = useAuth();
     const [assignedEmployees, setAssignedEmployees] = useState([]);
-    const [selectedEmployee, setSelectedEmployee] = useState("");
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [assignmentLoading, setAssignmentLoading] = useState(false);
     const [pendingAssignments, setPendingAssignments] = useState([]);
     const [pendingUnassignments, setPendingUnassignments] = useState([]);
@@ -108,7 +109,7 @@ const AssignmentModal = ({
     };
 
     const resetModal = () => {
-        setSelectedEmployee("");
+        setSelectedEmployee(null);
         setAssignedEmployees([]);
         setAssignmentLoading(false);
         setPendingAssignments([]);
@@ -149,9 +150,8 @@ const AssignmentModal = ({
         }
     };
 
-    const handleEmployeeSelect = (e) => {
-        const employeeId = e.target.value;
-        setSelectedEmployee(employeeId);
+    const handleEmployeeSelect = (employee) => {
+        setSelectedEmployee(employee);
     };
 
     const handleAssignEmployee = () => {
@@ -159,27 +159,22 @@ const AssignmentModal = ({
             return;
         }
 
-        const employeeToAssign = warehouseEmployees.find(emp => emp.id === selectedEmployee);
-        if (!employeeToAssign) {
-            return;
-        }
-
         const tempAssignment = {
-            id: employeeToAssign.id,
-            firstName: employeeToAssign.firstName,
-            lastName: employeeToAssign.lastName,
-            username: employeeToAssign.username,
-            role: employeeToAssign.role,
+            id: selectedEmployee.id,
+            firstName: selectedEmployee.firstName,
+            lastName: selectedEmployee.lastName,
+            username: selectedEmployee.username,
+            role: selectedEmployee.role,
             assignedAt: new Date().toISOString(),
             assignedBy: currentUser?.username || 'Unknown',
             assignmentId: `temp-${Date.now()}`,
             isPending: true
         };
 
-        setPendingAssignments(prev => [...prev, selectedEmployee]);
+        setPendingAssignments(prev => [...prev, selectedEmployee.id]);
         setAssignedEmployees(prev => [...prev, tempAssignment]);
         setHasUnsavedChanges(true);
-        setSelectedEmployee("");
+        setSelectedEmployee(null);
     };
 
     const handleUnassignEmployee = (employeeId) => {
@@ -234,18 +229,12 @@ const AssignmentModal = ({
                             <div className="warehouse-assignment-section">
                                 <h3>Add Employee</h3>
                                 <div className="warehouse-assignment-controls">
-                                    <select
-                                        value={selectedEmployee}
-                                        onChange={handleEmployeeSelect}
-                                        className="warehouse-employee-select"
-                                    >
-                                        <option value="">Select an employee</option>
-                                        {getAvailableEmployeesForAssignment().map(emp => (
-                                            <option key={emp.id} value={emp.id}>
-                                                {emp.firstName} {emp.lastName} ({emp.username})
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <EmployeeSelector
+                                        employees={getAvailableEmployeesForAssignment()}
+                                        selectedEmployee={selectedEmployee}
+                                        onSelect={handleEmployeeSelect}
+                                        placeholder="Search and select an employee..."
+                                    />
                                     <button
                                         onClick={handleAssignEmployee}
                                         disabled={!selectedEmployee}

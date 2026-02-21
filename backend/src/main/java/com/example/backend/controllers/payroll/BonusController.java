@@ -40,11 +40,10 @@ public class BonusController {
     @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     public ResponseEntity<BonusResponseDTO> createBonus(
             @Valid @RequestBody CreateBonusDTO dto,
-            @RequestParam UUID siteId,
             Principal principal) {
         String username = principal != null ? principal.getName() : "SYSTEM";
         log.info("Creating bonus for employee {} by {}", dto.getEmployeeId(), username);
-        BonusResponseDTO created = bonusService.createBonus(dto, username, siteId);
+        BonusResponseDTO created = bonusService.createBonus(dto, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -55,11 +54,10 @@ public class BonusController {
     @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     public ResponseEntity<List<BonusResponseDTO>> createBulkBonus(
             @Valid @RequestBody BulkCreateBonusDTO dto,
-            @RequestParam UUID siteId,
             Principal principal) {
         String username = principal != null ? principal.getName() : "SYSTEM";
         log.info("Creating bulk bonuses for {} employees by {}", dto.getEmployeeIds().size(), username);
-        List<BonusResponseDTO> created = bonusService.createBulkBonus(dto, username, siteId);
+        List<BonusResponseDTO> created = bonusService.createBulkBonus(dto, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 

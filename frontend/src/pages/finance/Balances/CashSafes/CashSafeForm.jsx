@@ -102,7 +102,7 @@ const CashSafeForm = ({ safe, mode, onClose, onSubmit }) => {
     };
 
     return (
-        <div className="modal-overlay">
+        <div className="modal-backdrop">
             <div className="modal-container cash-safe-form-modal">
                 <div className="modal-header">
                     <div className="modal-title">
@@ -126,7 +126,7 @@ const CashSafeForm = ({ safe, mode, onClose, onSubmit }) => {
                                 name="safeName"
                                 value={formData.safeName}
                                 onChange={handleChange}
-                                className={errors.safeName ? 'error' : ''}
+                                className={`modern-form-input ${errors.safeName ? 'error' : ''}`}
                                 placeholder="e.g., Main Office Safe"
                             />
                             {errors.safeName && <span className="error-text">{errors.safeName}</span>}
@@ -142,7 +142,7 @@ const CashSafeForm = ({ safe, mode, onClose, onSubmit }) => {
                                 name="location"
                                 value={formData.location}
                                 onChange={handleChange}
-                                className={errors.location ? 'error' : ''}
+                                className={`modern-form-input ${errors.location ? 'error' : ''}`}
                                 placeholder="e.g., Finance Department, Room 201"
                             />
                             {errors.location && <span className="error-text">{errors.location}</span>}
@@ -158,14 +158,14 @@ const CashSafeForm = ({ safe, mode, onClose, onSubmit }) => {
                                 name="currentBalance"
                                 value={formData.currentBalance}
                                 onChange={handleChange}
-                                className={errors.currentBalance ? 'error' : ''}
+                                className={`modern-form-input ${errors.currentBalance ? 'error' : ''}`}
                                 step="0.01"
                                 min="0"
                             />
                             {errors.currentBalance && <span className="error-text">{errors.currentBalance}</span>}
                         </div>
 
-                        <div className="form-group checkbox-group">
+                        <div className="modern-form-field checkbox-group">
                             <label>
                                 <input
                                     type="checkbox"
@@ -188,13 +188,14 @@ const CashSafeForm = ({ safe, mode, onClose, onSubmit }) => {
                             value={formData.notes}
                             onChange={handleChange}
                             rows="3"
+                            className="modern-form-textarea"
                             placeholder="Additional notes about this safe..."
                         />
                     </div>
 
                 </form>
                 <div className="modal-footer">
-                    <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+                    <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>
