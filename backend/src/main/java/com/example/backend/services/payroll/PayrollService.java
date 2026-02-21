@@ -379,6 +379,13 @@ public class PayrollService {
     }
 
     /**
+     * Get payroll history for a specific employee across all payroll cycles
+     */
+    public List<EmployeePayroll> getPayrollHistoryByEmployee(UUID employeeId) {
+        return employeePayrollRepository.findByEmployeeIdWithPayrollDetails(employeeId);
+    }
+
+    /**
      * Delete payroll (only if not locked)
      */
     @Transactional

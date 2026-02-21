@@ -16,38 +16,28 @@ const VacationTab = ({ employee, formatDate }) => {
         if (employee?.id) {
             fetchVacationData();
         }
-    }, [employee]);
+    }, [employee?.id]);
 
     const fetchVacationData = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            // Fetch vacation balance
-            const balanceResponse = await vacationBalanceService.getVacationBalance(employee.id);
-            console.log('Vacation balance response:', balanceResponse);
+            // Fetch balance and leave history in parallel
+            const [balanceResponse, historyResponse] = await Promise.all([
+                vacationBalanceService.getVacationBalance(employee.id),
+                leaveRequestService.getEmployeeLeaveRequests(employee.id)
+            ]);
+
             setVacationBalance(balanceResponse.data.data);
-            console.log("ASSAAS"+ balanceResponse.data.data);
-            // Fetch leave history
-            const historyResponse = await leaveRequestService.getEmployeeLeaveRequests(employee.id);
-            console.log('Leave history response:', historyResponse);
-            console.log('Leave history response.data:', historyResponse.data);
-            console.log('Type of response.data:', typeof historyResponse.data);
-            console.log('Is Array?:', Array.isArray(historyResponse.data));
 
             // Ensure we have an array
             const historyData = historyResponse.data;
             if (Array.isArray(historyData)) {
                 setLeaveHistory(historyData);
             } else if (historyData && typeof historyData === 'object') {
-                // If data is wrapped in another object, try to extract the array
-                console.log('Data is object, checking for nested array...');
-                console.log('historyData.data:', historyData.data);
-                console.log('historyData.content:', historyData.content);
-                console.log('historyData.leaveRequests:', historyData.leaveRequests);
                 setLeaveHistory(historyData.data || historyData.content || historyData.leaveRequests || []);
             } else {
-                console.log('Setting empty array');
                 setLeaveHistory([]);
             }
 

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +19,10 @@ public class EmployeePayrollDTO {
     private UUID id;
     private String employeePayrollNumber;
     private UUID payrollId;
+    private String payrollNumber;
+    private LocalDate payrollStartDate;
+    private LocalDate payrollEndDate;
+    private String payrollStatus;
     private UUID employeeId;
     private String employeeName;
     private String jobPositionName;

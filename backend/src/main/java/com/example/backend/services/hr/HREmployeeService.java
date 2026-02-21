@@ -470,7 +470,7 @@ public class HREmployeeService {
      */
     public Map<String, Object> getEmployeeById(UUID id) {
         try {
-            Employee employee = employeeRepository.findById(id)
+            Employee employee = employeeRepository.findByIdWithDetails(id)
                     .orElseThrow(() -> new RuntimeException("Employee not found"));
 
             return convertEmployeeToMap(employee);

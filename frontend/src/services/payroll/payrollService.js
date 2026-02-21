@@ -48,6 +48,7 @@ const PAYROLL_ENDPOINTS = {
     // Employee payrolls
     EMPLOYEE_PAYROLLS: (id) => `/api/v1/payroll/${id}/employees`,
     EMPLOYEE_PAYROLL: (payrollId, employeeId) => `/api/v1/payroll/${payrollId}/employee/${employeeId}`,
+    EMPLOYEE_PAYROLL_HISTORY: (employeeId) => `/api/v1/payroll/employee/${employeeId}/history`,
 };
 
 export const payrollService = {
@@ -434,6 +435,14 @@ export const payrollService = {
 
             throw error;
         }
+    },
+
+    /**
+     * Get payroll history for a specific employee across all payroll cycles
+     */
+    getEmployeePayrollHistory: async (employeeId) => {
+        const response = await apiClient.get(PAYROLL_ENDPOINTS.EMPLOYEE_PAYROLL_HISTORY(employeeId));
+        return response.data;
     },
 
     // ========================================

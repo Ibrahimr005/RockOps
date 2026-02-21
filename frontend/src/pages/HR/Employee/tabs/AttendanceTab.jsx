@@ -72,7 +72,7 @@ const AttendanceTab = ({ employee, formatDate }) => {
         if (employee?.id) {
             fetchAttendanceData();
         }
-    }, [employee, dateRange, selectedMonth, selectedYear]);
+    }, [employee?.id, dateRange, selectedMonth, selectedYear]);
 
     const updateDateRange = () => {
         if (periodType === 'month') {

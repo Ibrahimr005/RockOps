@@ -16,6 +16,17 @@ import java.util.UUID;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
 
+    /**
+     * Find employee by ID with all details needed for the details page in a single query.
+     * Uses JOIN FETCH to avoid N+1 lazy loading (site, jobPosition, department).
+     */
+    @Query("SELECT e FROM Employee e " +
+           "LEFT JOIN FETCH e.site " +
+           "LEFT JOIN FETCH e.jobPosition jp " +
+           "LEFT JOIN FETCH jp.department " +
+           "WHERE e.id = :id")
+    Optional<Employee> findByIdWithDetails(@Param("id") UUID id);
+
     // Find by email
     Optional<Employee> findByEmail(String email);
 

@@ -782,6 +782,24 @@ public class PayrollController {
     }
 
     /**
+     * Get payroll history for a specific employee (across all payroll cycles)
+     */
+    @GetMapping("/employee/{employeeId}/history")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER')")
+    public ResponseEntity<List<EmployeePayrollDTO>> getEmployeePayrollHistory(@PathVariable UUID employeeId) {
+        try {
+            List<EmployeePayroll> employeePayrolls = payrollService.getPayrollHistoryByEmployee(employeeId);
+            List<EmployeePayrollDTO> dtos = employeePayrolls.stream()
+                    .map(this::convertToEmployeePayrollDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            log.error("Error fetching payroll history for employee {}", employeeId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
      * Get employee payrolls for a payroll
      */
     @GetMapping("/{id}/employees")
@@ -979,6 +997,10 @@ public class PayrollController {
                 .id(ep.getId())
                 .employeePayrollNumber(ep.getEmployeePayrollNumber())
                 .payrollId(ep.getPayroll().getId())
+                .payrollNumber(ep.getPayroll().getPayrollNumber())
+                .payrollStartDate(ep.getPayroll().getStartDate())
+                .payrollEndDate(ep.getPayroll().getEndDate())
+                .payrollStatus(ep.getPayroll().getStatus() != null ? ep.getPayroll().getStatus().name() : null)
                 .employeeId(ep.getEmployeeId())
                 .employeeName(ep.getEmployeeName())
                 .jobPositionName(ep.getJobPositionName())

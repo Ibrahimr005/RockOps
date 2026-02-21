@@ -1,19 +1,20 @@
 // EmployeeDetails.jsx - Updated version with refresh callback
-import React, {useEffect, useState} from 'react';
+import React, {lazy, Suspense, useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import './EmployeeDetails.scss';
 
-// Import tab components
-import PersonalInfoTab from '../tabs/PersonalInfoTab.jsx';
-import EmploymentTab from '../tabs/EmploymentTab.jsx';
-import DocumentsTab from '../tabs/DocumentsTab.jsx';
-import CompensationTab from '../tabs/CompensationTab.jsx';
-import AttendanceTab from '../tabs/AttendanceTab.jsx';
-import DeductionsTab from '../tabs/DeductionsTab.jsx';
-import CommissionsTab from '../tabs/CommissionsTab.jsx';
-import LoansTab from '../tabs/LoansTab.jsx';
-import PayslipsTab from '../tabs/PayslipsTab.jsx';
-import VacationTab from '../tabs/VacationTab.jsx';
+// Lazy-load tab components — only the active tab's code is loaded
+const PersonalInfoTab = lazy(() => import('../tabs/PersonalInfoTab.jsx'));
+const EmploymentTab = lazy(() => import('../tabs/EmploymentTab.jsx'));
+const DocumentsTab = lazy(() => import('../tabs/DocumentsTab.jsx'));
+const CompensationTab = lazy(() => import('../tabs/CompensationTab.jsx'));
+const AttendanceTab = lazy(() => import('../tabs/AttendanceTab.jsx'));
+const DeductionsTab = lazy(() => import('../tabs/DeductionsTab.jsx'));
+const CommissionsTab = lazy(() => import('../tabs/CommissionsTab.jsx'));
+const LoansTab = lazy(() => import('../tabs/LoansTab.jsx'));
+const PayslipsTab = lazy(() => import('../tabs/PayslipsTab.jsx'));
+const VacationTab = lazy(() => import('../tabs/VacationTab.jsx'));
+
 import IntroCard from "../../../../components/common/IntroCard/IntroCard.jsx";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 import {FaBuilding, FaEdit, FaFileDownload, FaMapMarkerAlt, FaUser} from "react-icons/fa";
@@ -295,26 +296,28 @@ const EmployeeDetails = () => {
                     </div>
 
                     <div className="tab-content">
-                        {activeTab === 'personal' && <PersonalInfoTab employee={employee} formatDate={formatDate}/>}
-                        {activeTab === 'employment' &&
-                            <EmploymentTab employee={employee} formatDate={formatDate} getPosition={getPosition}
-                                           getDepartment={getDepartment} getSiteName={getSiteName}/>}
-                        {activeTab === 'documents' && (
-                            <DocumentsTab
-                                employee={employee}
-                                onRefresh={fetchEmployeeDetails}
-                            />
-                        )}
-                        {activeTab === 'compensation' &&
-                            <CompensationTab employee={employee} formatCurrency={formatCurrency}/>}
-                        {activeTab === 'attendance' && <AttendanceTab employee={employee} formatDate={formatDate}/>}
-                        {activeTab === 'deductions' &&
-                            <DeductionsTab employee={employee} formatCurrency={formatCurrency}/>}
-                        {activeTab === 'commissions' &&
-                            <CommissionsTab employee={employee} formatCurrency={formatCurrency}/>}
-                        {activeTab === 'loans' && <LoansTab employee={employee} formatCurrency={formatCurrency}/>}
-                        {activeTab === 'payslips' && <PayslipsTab employee={employee} formatCurrency={formatCurrency}/>}
-                        {activeTab === 'vacation' && <VacationTab employee={employee} formatDate={formatDate}/>}
+                        <Suspense fallback={<ContentLoader text="Loading..." />}>
+                            {activeTab === 'personal' && <PersonalInfoTab employee={employee} formatDate={formatDate}/>}
+                            {activeTab === 'employment' &&
+                                <EmploymentTab employee={employee} formatDate={formatDate} getPosition={getPosition}
+                                               getDepartment={getDepartment} getSiteName={getSiteName}/>}
+                            {activeTab === 'documents' && (
+                                <DocumentsTab
+                                    employee={employee}
+                                    onRefresh={fetchEmployeeDetails}
+                                />
+                            )}
+                            {activeTab === 'compensation' &&
+                                <CompensationTab employee={employee} formatCurrency={formatCurrency}/>}
+                            {activeTab === 'attendance' && <AttendanceTab employee={employee} formatDate={formatDate}/>}
+                            {activeTab === 'deductions' &&
+                                <DeductionsTab employee={employee} formatCurrency={formatCurrency}/>}
+                            {activeTab === 'commissions' &&
+                                <CommissionsTab employee={employee} formatCurrency={formatCurrency}/>}
+                            {activeTab === 'loans' && <LoansTab employee={employee} formatCurrency={formatCurrency}/>}
+                            {activeTab === 'payslips' && <PayslipsTab employee={employee} formatCurrency={formatCurrency}/>}
+                            {activeTab === 'vacation' && <VacationTab employee={employee} formatDate={formatDate}/>}
+                        </Suspense>
                     </div>
                 </div>
             </div>

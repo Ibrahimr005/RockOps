@@ -27,6 +27,15 @@ public interface EmployeePayrollRepository extends JpaRepository<EmployeePayroll
      * Find all employee payrolls for a specific employee (ordered by most recent end date)
      */
     List<EmployeePayroll> findByEmployeeIdOrderByPayroll_EndDateDesc(UUID employeeId);
+
+    /**
+     * Find all employee payrolls for a specific employee with payroll details eagerly fetched
+     */
+    @Query("SELECT ep FROM EmployeePayroll ep " +
+           "JOIN FETCH ep.payroll p " +
+           "WHERE ep.employeeId = :employeeId " +
+           "ORDER BY p.endDate DESC")
+    List<EmployeePayroll> findByEmployeeIdWithPayrollDetails(@Param("employeeId") UUID employeeId);
     
     /**
      * Find uncalculated employee payrolls (for validation before locking)
