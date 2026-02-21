@@ -10,12 +10,13 @@ import com.example.backend.repositories.equipment.EquipmentBrandRepository;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.equipment.EquipmentTypeRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
-import com.example.backend.repositories.maintenance.MaintenanceRecordRepository;
-import com.example.backend.repositories.maintenance.SarkyLogRepository;
+import com.example.backend.repositories.MaintenanceRecordRepository;
+import com.example.backend.repositories.equipment.SarkyLogRepository;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.models.procurement.EquipmentPurchaseSpec;
 import com.example.backend.services.equipment.EquipmentService;
-import com.example.backend.services.minio.MinioService;
+import com.example.backend.services.MinioService;
 import com.example.backend.services.notification.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,16 +50,26 @@ import static org.mockito.Mockito.*;
 public class EquipmentPurchaseIntegrationTest {
 
     // ── EquipmentService dependencies ──
-    @Mock private EquipmentRepository equipmentRepository;
-    @Mock private EquipmentTypeRepository equipmentTypeRepository;
-    @Mock private SiteRepository siteRepository;
-    @Mock private EmployeeRepository employeeRepository;
-    @Mock private MinioService minioService;
-    @Mock private EquipmentBrandRepository equipmentBrandRepository;
-    @Mock private MerchantRepository merchantRepository;
-    @Mock private SarkyLogRepository sarkyLogRepository;
-    @Mock private NotificationService notificationService;
-    @Mock private MaintenanceRecordRepository maintenanceRecordRepository;
+    @Mock
+    private EquipmentRepository equipmentRepository;
+    @Mock
+    private EquipmentTypeRepository equipmentTypeRepository;
+    @Mock
+    private SiteRepository siteRepository;
+    @Mock
+    private EmployeeRepository employeeRepository;
+    @Mock
+    private MinioService minioService;
+    @Mock
+    private EquipmentBrandRepository equipmentBrandRepository;
+    @Mock
+    private MerchantRepository merchantRepository;
+    @Mock
+    private SarkyLogRepository sarkyLogRepository;
+    @Mock
+    private NotificationService notificationService;
+    @Mock
+    private MaintenanceRecordRepository maintenanceRecordRepository;
 
     @InjectMocks
     private EquipmentService equipmentService;
@@ -185,8 +196,10 @@ public class EquipmentPurchaseIntegrationTest {
             when(equipmentBrandRepository.findByName("Volvo")).thenReturn(Optional.of(volvoBrand));
             when(equipmentBrandRepository.findByName("Liebherr")).thenReturn(Optional.of(liebherrBrand));
 
-            EquipmentPurchaseSpec spec2 = createSpecWithValues("Loader", "Volvo L120H", "L120H", "Volvo", 2023, "Sweden");
-            EquipmentPurchaseSpec spec3 = createSpecWithValues("Crane", "Liebherr LTM", "LTM 1100", "Liebherr", 2024, "Germany");
+            EquipmentPurchaseSpec spec2 = createSpecWithValues("Loader", "Volvo L120H", "L120H", "Volvo", 2023,
+                    "Sweden");
+            EquipmentPurchaseSpec spec3 = createSpecWithValues("Crane", "Liebherr LTM", "LTM 1100", "Liebherr", 2024,
+                    "Germany");
 
             PurchaseOrderItem item2 = createMockPurchaseOrderItem(spec2, null, 180000.0);
             PurchaseOrderItem item3 = createMockPurchaseOrderItem(spec3, mockMerchant, 500000.0);
@@ -241,7 +254,7 @@ public class EquipmentPurchaseIntegrationTest {
         void shouldAutoCreateEquipmentTypeWhenNotFound() {
             // Given — type not found, should be auto-created
             EquipmentType newType = createMockEquipmentType("NewSpecialType");
-            mockSpec.setEquipmentType("NewSpecialType");
+            mockSpec.setEquipmentType(newType);
 
             when(equipmentTypeRepository.findByName("NewSpecialType")).thenReturn(Optional.empty());
             when(equipmentTypeRepository.save(any(EquipmentType.class))).thenReturn(newType);
@@ -266,7 +279,7 @@ public class EquipmentPurchaseIntegrationTest {
         void shouldAutoCreateEquipmentBrandWhenNotFound() {
             // Given — brand not found, should be auto-created
             EquipmentBrand newBrand = createMockEquipmentBrand("NewBrand");
-            mockSpec.setBrand("NewBrand");
+            mockSpec.setBrand(newBrand);
 
             when(equipmentBrandRepository.findByName("NewBrand")).thenReturn(Optional.empty());
             when(equipmentBrandRepository.save(any(EquipmentBrand.class))).thenReturn(newBrand);
@@ -497,14 +510,15 @@ public class EquipmentPurchaseIntegrationTest {
             when(equipmentTypeRepository.findByName("Loader")).thenReturn(Optional.of(loaderType));
             when(equipmentBrandRepository.findByName("Volvo")).thenReturn(Optional.of(volvoBrand));
 
-            EquipmentPurchaseSpec spec2 = createSpecWithValues("Loader", "Volvo L120H", "L120H", "Volvo", 2023, "Sweden");
+            EquipmentPurchaseSpec spec2 = createSpecWithValues("Loader", "Volvo L120H", "L120H", "Volvo", 2023,
+                    "Sweden");
             PurchaseOrderItem item2 = createMockPurchaseOrderItem(spec2, mockMerchant, 180000.0);
             mockPO.getPurchaseOrderItems().add(item2);
 
             when(equipmentRepository.existsByPurchaseOrderId(mockPO.getId())).thenReturn(false);
             when(equipmentRepository.save(any(Equipment.class)))
-                    .thenThrow(new RuntimeException("DB constraint violation"))  // first item fails
-                    .thenAnswer(invocation -> {                                   // second item succeeds
+                    .thenThrow(new RuntimeException("DB constraint violation")) // first item fails
+                    .thenAnswer(invocation -> { // second item succeeds
                         Equipment eq = invocation.getArgument(0);
                         eq.setId(UUID.randomUUID());
                         return eq;
@@ -602,7 +616,8 @@ public class EquipmentPurchaseIntegrationTest {
             when(equipmentTypeRepository.findByName("Loader")).thenReturn(Optional.of(loaderType));
             when(equipmentBrandRepository.findByName("Volvo")).thenReturn(Optional.of(volvoBrand));
 
-            EquipmentPurchaseSpec spec2 = createSpecWithValues("Loader", "Volvo L120H", "L120H", "Volvo", 2023, "Sweden");
+            EquipmentPurchaseSpec spec2 = createSpecWithValues("Loader", "Volvo L120H", "L120H", "Volvo", 2023,
+                    "Sweden");
             PurchaseOrderItem item2 = createMockPurchaseOrderItem(spec2, mockMerchant, 180000.0);
             mockPO.getPurchaseOrderItems().add(item2);
 
@@ -666,7 +681,8 @@ public class EquipmentPurchaseIntegrationTest {
         return po;
     }
 
-    private PurchaseOrderItem createMockPurchaseOrderItem(EquipmentPurchaseSpec spec, Merchant merchant, double totalPrice) {
+    private PurchaseOrderItem createMockPurchaseOrderItem(EquipmentPurchaseSpec spec, Merchant merchant,
+            double totalPrice) {
         PurchaseOrderItem item = new PurchaseOrderItem();
         item.setId(UUID.randomUUID());
         item.setEquipmentSpec(spec);
@@ -688,13 +704,14 @@ public class EquipmentPurchaseIntegrationTest {
         return createSpecWithValues("Excavator", "CAT 320", "320GC", "Caterpillar", 2024, "Japan");
     }
 
-    private EquipmentPurchaseSpec createSpecWithValues(String type, String name, String model, String brand, Integer year, String country) {
+    private EquipmentPurchaseSpec createSpecWithValues(String type, String name, String model, String brand,
+            Integer year, String country) {
         EquipmentPurchaseSpec spec = new EquipmentPurchaseSpec();
         spec.setId(UUID.randomUUID());
-        spec.setEquipmentType(type);
+        spec.setEquipmentType(createMockEquipmentType(type));
         spec.setName(name);
         spec.setModel(model);
-        spec.setBrand(brand);
+        spec.setBrand(createMockEquipmentBrand(brand));
         spec.setManufactureYear(year);
         spec.setCountryOfOrigin(country);
         spec.setSpecifications("Standard specifications");

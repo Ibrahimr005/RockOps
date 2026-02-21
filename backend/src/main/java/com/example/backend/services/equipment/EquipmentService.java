@@ -199,7 +199,7 @@ public class EquipmentService {
         // Set depreciation fields
         equipment.setUsefulLifeYears(createDTO.getUsefulLifeYears());
         equipment.setSalvageValue(createDTO.getSalvageValue());
-// Use purchased date as depreciation start date by default
+        // Use purchased date as depreciation start date by default
         equipment.setDepreciationStartDate(createDTO.getDepreciationStartDate() != null
                 ? createDTO.getDepreciationStartDate()
                 : createDTO.getPurchasedDate());
@@ -273,7 +273,7 @@ public class EquipmentService {
         // Upload photo if provided (stored in equipment/{equipmentId}/ folder)
         if (equipmentPhoto != null && !equipmentPhoto.isEmpty()) {
             String fileName = minioService.uploadEquipmentFile(savedEquipment.getId(), equipmentPhoto, "Main_Image");
-            
+
             // CRITICAL: Save the storage key using the standard structure
             String storageKey = "equipment/" + savedEquipment.getId() + "/" + fileName;
             savedEquipment.setImageStorageKey(storageKey);
@@ -374,12 +374,12 @@ public class EquipmentService {
         if (requestBody.get("workedHours") != null)
             createDTO.setWorkedHours(Integer.parseInt(requestBody.get("workedHours").toString()));
 
-
         if (requestBody.get("usefulLifeYears") != null)
             createDTO.setUsefulLifeYears(Integer.parseInt(requestBody.get("usefulLifeYears").toString()));
         if (requestBody.get("salvageValue") != null)
             createDTO.setSalvageValue(Double.parseDouble(requestBody.get("salvageValue").toString()));
-        if (requestBody.get("depreciationStartDate") != null && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
+        if (requestBody.get("depreciationStartDate") != null
+                && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
             createDTO.setDepreciationStartDate(LocalDate.parse(requestBody.get("depreciationStartDate").toString()));
 
         // FIX: Parse relationships - handle both naming conventions
@@ -560,7 +560,7 @@ public class EquipmentService {
         // Upload photo if provided (stored in equipment/{equipmentId}/ folder)
         if (equipmentPhoto != null && !equipmentPhoto.isEmpty()) {
             String fileName = minioService.uploadEquipmentFile(id, equipmentPhoto, "Main_Image");
-            
+
             // CRITICAL: Save the storage key
             String storageKey = "equipment/" + equipment.getId() + "/" + fileName;
             equipment.setImageStorageKey(storageKey);
@@ -572,7 +572,6 @@ public class EquipmentService {
         // Create and return DTO
         EquipmentDTO resultDTO = EquipmentDTO.fromEntity(updatedEquipment);
         resultDTO.setImageUrl(resolveEquipmentImageUrl(updatedEquipment));
-
 
         // Send notifications to EQUIPMENT_MANAGER and ADMIN users
         try {
@@ -667,12 +666,12 @@ public class EquipmentService {
         if (requestBody.get("workedHours") != null && !requestBody.get("workedHours").toString().isEmpty())
             updateDTO.setWorkedHours(Integer.parseInt(requestBody.get("workedHours").toString()));
 
-
         if (requestBody.get("usefulLifeYears") != null && !requestBody.get("usefulLifeYears").toString().isEmpty())
             updateDTO.setUsefulLifeYears(Integer.parseInt(requestBody.get("usefulLifeYears").toString()));
         if (requestBody.get("salvageValue") != null && !requestBody.get("salvageValue").toString().isEmpty())
             updateDTO.setSalvageValue(Double.parseDouble(requestBody.get("salvageValue").toString()));
-        if (requestBody.get("depreciationStartDate") != null && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
+        if (requestBody.get("depreciationStartDate") != null
+                && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
             updateDTO.setDepreciationStartDate(LocalDate.parse(requestBody.get("depreciationStartDate").toString()));
 
         // FIX: Parse relationships - handle both naming conventions
@@ -809,7 +808,8 @@ public class EquipmentService {
      * - Per-item error handling: one failure won't block other items
      *
      * @param po The completed PurchaseOrder
-     * @return List of created Equipment entities (may be empty if idempotency guard fires)
+     * @return List of created Equipment entities (may be empty if idempotency guard
+     *         fires)
      */
     @Transactional
     public List<Equipment> createFromPurchaseOrder(PurchaseOrder po) {
@@ -830,27 +830,15 @@ public class EquipmentService {
             try {
                 Equipment equipment = new Equipment();
 
-                // Map from spec — look up or create EquipmentType entity by name
+                // Map from spec — use the related EquipmentType entity directly
                 if (spec.getEquipmentType() != null) {
-                    EquipmentType equipmentType = equipmentTypeRepository.findByName(spec.getEquipmentType())
-                            .orElseGet(() -> {
-                                EquipmentType newType = new EquipmentType();
-                                newType.setName(spec.getEquipmentType());
-                                return equipmentTypeRepository.save(newType);
-                            });
-                    equipment.setType(equipmentType);
+                    equipment.setType(spec.getEquipmentType());
                 }
                 equipment.setName(spec.getName());
                 equipment.setModel(spec.getModel() != null ? spec.getModel() : "N/A");
-                // Look up or create EquipmentBrand entity by name
+                // Use the related EquipmentBrand entity directly
                 if (spec.getBrand() != null) {
-                    EquipmentBrand equipmentBrand = equipmentBrandRepository.findByName(spec.getBrand())
-                            .orElseGet(() -> {
-                                EquipmentBrand newBrand = new EquipmentBrand();
-                                newBrand.setName(spec.getBrand());
-                                return equipmentBrandRepository.save(newBrand);
-                            });
-                    equipment.setBrand(equipmentBrand);
+                    equipment.setBrand(spec.getBrand());
                 }
                 equipment.setManufactureYear(spec.getManufactureYear() != null
                         ? Year.of(spec.getManufactureYear())
@@ -948,7 +936,8 @@ public class EquipmentService {
      */
     public List<EmployeeSummaryDTO> getEligibleDriversForEquipmentType(UUID equipmentTypeId) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
 
         String requiredPosition = equipmentType.getDriverPositionName();
 
@@ -961,35 +950,37 @@ public class EquipmentService {
     }
 
     /**
-     * Get drivers for Sarky logs (anyone who can drive this type) - simplified version
+     * Get drivers for Sarky logs (anyone who can drive this type) - simplified
+     * version
      */
     public List<EmployeeSummaryDTO> getDriversForSarkyByEquipmentType(UUID equipmentTypeId) {
-        // Reuse logic from getEligibleDrivers since we don't need to filter by availability for Sarky logs
+        // Reuse logic from getEligibleDrivers since we don't need to filter by
+        // availability for Sarky logs
         // Just need the list of people qualified to operate it
         return getEligibleDriversForEquipmentType(equipmentTypeId);
     }
-    
+
     /**
      * Check compatibility between a specific driver and equipment
      */
     public DriverCompatibilityResponse checkDriverCompatibility(UUID equipmentId, UUID employeeId) {
         Equipment equipment = equipmentRepository.findById(equipmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
-            
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
+
         Employee employee = employeeRepository.findById(employeeId)
-            .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
-            
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
+
         boolean compatible = validateDriverForEquipment(equipment, employee);
         String message = compatible ? "Driver is compatible" : "Driver is not qualified for this equipment type";
-        
+
         return new DriverCompatibilityResponse(compatible, message);
     }
-    
+
     @Data
     public static class DriverCompatibilityResponse {
         private boolean compatible;
         private String message;
-        
+
         public DriverCompatibilityResponse(boolean compatible, String message) {
             this.compatible = compatible;
             this.message = message;
@@ -1008,7 +999,8 @@ public class EquipmentService {
 
         // Validate compatibility
         if (!validateDriverForEquipment(equipment, driver)) {
-            throw new IllegalArgumentException("Driver " + driver.getFullName() + " is not qualified for " + equipment.getType().getName());
+            throw new IllegalArgumentException(
+                    "Driver " + driver.getFullName() + " is not qualified for " + equipment.getType().getName());
         }
 
         if ("main".equalsIgnoreCase(type)) {
@@ -1026,7 +1018,7 @@ public class EquipmentService {
         }
 
         Equipment saved = equipmentRepository.save(equipment);
-        
+
         // Return DTO with resolved image
         EquipmentDTO dto = EquipmentDTO.fromEntity(saved);
         dto.setImageUrl(resolveEquipmentImageUrl(saved));
@@ -1057,7 +1049,7 @@ public class EquipmentService {
         }
 
         Equipment saved = equipmentRepository.save(equipment);
-        
+
         // Return DTO with resolved image
         EquipmentDTO dto = EquipmentDTO.fromEntity(saved);
         dto.setImageUrl(resolveEquipmentImageUrl(saved));
@@ -1068,7 +1060,8 @@ public class EquipmentService {
      * Helper to assign drivers to equipment's site
      */
     private void assignDriversToEquipmentSite(Equipment equipment) {
-        if (equipment.getSite() == null) return;
+        if (equipment.getSite() == null)
+            return;
 
         if (equipment.getMainDriver() != null && equipment.getMainDriver().getSite() == null) {
             Employee mainDriver = equipment.getMainDriver();
