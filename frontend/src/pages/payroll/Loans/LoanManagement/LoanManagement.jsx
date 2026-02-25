@@ -329,10 +329,10 @@ const LoanManagement = () => {
             render: (loan) => renderStatusBadge(loan.status)
         },
         {
-            accessor: 'loanDate',
-            header: 'Date',
+            accessor: 'loanEffectiveDate',
+            header: 'Effective Date',
             sortable: true,
-            render: (loan) => formatDate(loan.loanDate)
+            render: (loan) => formatDate(loan.loanEffectiveDate)
         }
     ];
 
@@ -423,7 +423,7 @@ const LoanManagement = () => {
 
                     defaultItemsPerPage={15}
                     itemsPerPageOptions={[10, 15, 25, 50]}
-                    defaultSortField="loanDate"
+                    defaultSortField="loanEffectiveDate"
                     defaultSortDirection="desc"
 
                     onRowClick={(loan) => navigate(`/payroll/loans/${loan.id}`)}

@@ -150,6 +150,10 @@ public class DeductionTypeService {
         DeductionType existing = deductionTypeRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Deduction type not found: " + id));
 
+        if ("LOAN".equals(existing.getCode())) {
+            throw new IllegalStateException("Deduction type LOAN cannot be deactivated.");
+        }
+
         if (existing.getIsSystemDefined()) {
             throw new IllegalStateException("Cannot deactivate system-defined deduction types");
         }

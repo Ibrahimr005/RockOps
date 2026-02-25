@@ -190,7 +190,7 @@ const Login = () => {
 
                 {/* Footer */}
                 <div className="rockops__auth__login__footer__section">
-                    <p>© 2024 Oretech. All rights reserved.</p>
+                    <p>© 2025 Oretech. All rights reserved.</p>
                 </div>
             </div>
         </div>

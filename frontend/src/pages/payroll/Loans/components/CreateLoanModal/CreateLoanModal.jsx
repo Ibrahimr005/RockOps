@@ -30,7 +30,8 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
         loanAmount: '',
         interestRate: '0',
         installmentMonths: '12',
-        loanDate: new Date().toISOString().split('T')[0],
+        loanEffectiveDate: new Date().toISOString().split('T')[0],
+        loanStartDate: '',
         purpose: '',
         notes: ''
     });
@@ -72,10 +73,11 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                 totalInterest = 0;
             }
 
-            // Calculate end date
+            // Calculate end date based on deduction start date or effective date
             let endDate = '';
-            if (formData.loanDate) {
-                const startDate = new Date(formData.loanDate);
+            const dateForCalc = formData.loanStartDate || formData.loanEffectiveDate;
+            if (dateForCalc) {
+                const startDate = new Date(dateForCalc);
                 const calculatedEndDate = new Date(startDate);
                 calculatedEndDate.setMonth(calculatedEndDate.getMonth() + months);
                 endDate = calculatedEndDate.toISOString().split('T')[0];
@@ -95,7 +97,7 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                 endDate: ''
             });
         }
-    }, [formData.loanAmount, formData.interestRate, formData.installmentMonths, formData.loanDate]);
+    }, [formData.loanAmount, formData.interestRate, formData.installmentMonths, formData.loanStartDate, formData.loanEffectiveDate]);
 
     useEffect(() => {
         calculateLoanDetails();
@@ -151,8 +153,8 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
             errors.installmentMonths = 'Maximum 60 installments allowed';
         }
 
-        if (!formData.loanDate) {
-            errors.loanDate = 'Please select a loan date';
+        if (!formData.loanEffectiveDate) {
+            errors.loanEffectiveDate = 'Please select a loan effective date';
         }
 
         const interestRate = parseFloat(formData.interestRate);
@@ -184,7 +186,8 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                 loanAmount: parseFloat(formData.loanAmount),
                 installmentMonths: parseInt(formData.installmentMonths),
                 interestRate: parseFloat(formData.interestRate) || 0,
-                loanDate: formData.loanDate,
+                loanEffectiveDate: formData.loanEffectiveDate,
+                loanStartDate: formData.loanStartDate || null,
                 purpose: formData.purpose || `Loan for ${selectedEmployee?.firstName} ${selectedEmployee?.lastName}`,
                 notes: formData.notes || ''
             };
@@ -384,17 +387,36 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                                 </div>
 
                                 <div className="create-loan-form-group">
-                                    <label>Loan Date *</label>
+                                    <label>Loan Effective Date *</label>
                                     <input
                                         type="date"
-                                        value={formData.loanDate}
-                                        onChange={(e) => handleInputChange('loanDate', e.target.value)}
-                                        className={`create-loan-form-input ${validation.loanDate ? 'create-loan-error' : ''}`}
+                                        value={formData.loanEffectiveDate}
+                                        onChange={(e) => handleInputChange('loanEffectiveDate', e.target.value)}
+                                        className={`create-loan-form-input ${validation.loanEffectiveDate ? 'create-loan-error' : ''}`}
                                         disabled={loading}
                                     />
-                                    {validation.loanDate && (
-                                        <span className="create-loan-error-message">{validation.loanDate}</span>
+                                    {validation.loanEffectiveDate && (
+                                        <span className="create-loan-error-message">{validation.loanEffectiveDate}</span>
                                     )}
+                                    <small className="create-loan-field-help">
+                                        Date the loan was officially approved
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div className="create-loan-form-row">
+                                <div className="create-loan-form-group">
+                                    <label>Deduction Start Date</label>
+                                    <input
+                                        type="date"
+                                        value={formData.loanStartDate}
+                                        onChange={(e) => handleInputChange('loanStartDate', e.target.value)}
+                                        className="create-loan-form-input"
+                                        disabled={loading}
+                                    />
+                                    <small className="create-loan-field-help">
+                                        When payroll deductions begin (defaults to effective date)
+                                    </small>
                                 </div>
                             </div>
 

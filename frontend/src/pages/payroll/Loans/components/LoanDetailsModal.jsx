@@ -42,7 +42,7 @@ const LoanDetailsModal = ({ loan, onClose }) => {
         }
 
         const schedules = [];
-        const startDate = new Date(loan.effectiveDate || loan.loanDate || loan.startDate);
+        const startDate = new Date(loan.loanStartDate || loan.loanEffectiveDate || loan.effectiveDate || loan.startDate);
         const paidCount = loan.paidInstallments || 0;
         const today = new Date();
 

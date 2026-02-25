@@ -52,6 +52,7 @@ export const LOAN_STATUS = {
     DISBURSED: 'DISBURSED',
     ACTIVE: 'ACTIVE',
     COMPLETED: 'COMPLETED',
+    RESOLVED: 'RESOLVED',
     CANCELLED: 'CANCELLED',
     // Legacy statuses
     PENDING: 'PENDING',
@@ -71,6 +72,7 @@ export const LOAN_STATUS_CONFIG = {
     [LOAN_STATUS.DISBURSED]: { label: 'Disbursed', color: '#0891b2', bgColor: '#cffafe' },
     [LOAN_STATUS.ACTIVE]: { label: 'Active', color: '#16a34a', bgColor: '#dcfce7' },
     [LOAN_STATUS.COMPLETED]: { label: 'Completed', color: '#65a30d', bgColor: '#ecfccb' },
+    [LOAN_STATUS.RESOLVED]: { label: 'Resolved', color: '#0d9488', bgColor: '#ccfbf1' },
     [LOAN_STATUS.CANCELLED]: { label: 'Cancelled', color: '#6b7280', bgColor: '#e5e7eb' },
     [LOAN_STATUS.APPROVED]: { label: 'Approved', color: '#059669', bgColor: '#d1fae5' },
     [LOAN_STATUS.REJECTED]: { label: 'Rejected', color: '#dc2626', bgColor: '#fee2e2' }

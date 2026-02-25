@@ -54,7 +54,7 @@ public interface LoanRepository extends JpaRepository<Loan, UUID> {
     /**
      * Find loans within date range
      */
-    @Query("SELECT l FROM Loan l WHERE l.loanDate BETWEEN :startDate AND :endDate")
+    @Query("SELECT l FROM Loan l WHERE l.loanEffectiveDate BETWEEN :startDate AND :endDate")
     List<Loan> findByLoanDateBetween(
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate

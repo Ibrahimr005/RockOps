@@ -62,8 +62,11 @@ public class Loan {
     private BigDecimal interestRate; // Annual interest rate percentage
 
     // Dates
-    @Column(nullable = false)
-    private LocalDate loanDate;
+    @Column(name = "loan_effective_date", nullable = false)
+    private LocalDate loanEffectiveDate;
+
+    @Column(name = "loan_start_date")
+    private LocalDate loanStartDate;
 
     @Column(nullable = true)
     private LocalDate disbursementDate; // When the loan was actually given to employee
@@ -199,6 +202,7 @@ public class Loan {
         DISBURSED,                // Loan amount paid to employee
         ACTIVE,                   // Loan is being repaid through payroll
         COMPLETED,                // Loan fully paid
+        RESOLVED,                 // Loan closed early via resolution request
         CANCELLED,                // Loan cancelled
         // Legacy statuses for backward compatibility
         PENDING,                  // @Deprecated - Use PENDING_HR_APPROVAL
@@ -494,6 +498,18 @@ public class Loan {
         if (this.remainingBalance == null) {
             this.remainingBalance = this.loanAmount;
         }
+    }
+
+    /**
+     * Resolve this loan early (before full repayment)
+     * Called when a LoanResolutionRequest is approved by both HR and Finance
+     */
+    public void resolve() {
+        if (this.status != LoanStatus.ACTIVE && this.status != LoanStatus.DISBURSED) {
+            throw new IllegalStateException("Can only resolve active or disbursed loans");
+        }
+        this.status = LoanStatus.RESOLVED;
+        this.completionDate = LocalDate.now();
     }
 
     /**

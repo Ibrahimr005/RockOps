@@ -127,9 +127,10 @@ public class LoanService {
             );
         }
 
-        // Calculate loan start and end dates
-        LocalDate loanDate = dto.getLoanDate() != null ? dto.getLoanDate() : LocalDate.now();
-        LocalDate endDate = loanDate.plusMonths(dto.getInstallmentMonths());
+        // Calculate loan dates
+        LocalDate loanEffectiveDate = dto.getLoanEffectiveDate() != null ? dto.getLoanEffectiveDate() : LocalDate.now();
+        LocalDate loanStartDate = dto.getLoanStartDate() != null ? dto.getLoanStartDate() : loanEffectiveDate;
+        LocalDate endDate = loanStartDate.plusMonths(dto.getInstallmentMonths());
 
         Loan loan = Loan.builder()
             .loanNumber(loanNumber)
@@ -140,7 +141,8 @@ public class LoanService {
             .monthlyInstallment(monthlyInstallment)
             .installmentAmount(monthlyInstallment) // Sync with monthlyInstallment for backward compatibility
             .interestRate(dto.getInterestRate())
-            .loanDate(loanDate)
+            .loanEffectiveDate(loanEffectiveDate)
+            .loanStartDate(loanStartDate)
             .endDate(endDate)
             .disbursementDate(dto.getDisbursementDate())
             .firstPaymentDate(dto.getFirstPaymentDate())
@@ -191,9 +193,10 @@ public class LoanService {
         existing.setInstallmentAmount(monthlyInstallment); // Sync with monthlyInstallment
         existing.setRemainingBalance(dto.getLoanAmount());
 
-        // Recalculate end date based on loan date and new installment months
-        if (existing.getLoanDate() != null) {
-            LocalDate endDate = existing.getLoanDate().plusMonths(dto.getInstallmentMonths());
+        // Recalculate end date based on loan start date and new installment months
+        LocalDate startDate = existing.getLoanStartDate() != null ? existing.getLoanStartDate() : existing.getLoanEffectiveDate();
+        if (startDate != null) {
+            LocalDate endDate = startDate.plusMonths(dto.getInstallmentMonths());
             existing.setEndDate(endDate);
         }
 
@@ -506,7 +509,7 @@ public class LoanService {
             .requestedAmount(loan.getLoanAmount())
             .currency("EGP")
             .description("Loan disbursement to " + employeeName + " - " + loan.getPurpose())
-            .paymentDueDate(loan.getLoanDate()) // Due date = loan date
+            .paymentDueDate(loan.getLoanEffectiveDate()) // Due date = loan effective date
             .status(PaymentRequestStatus.PENDING) // PENDING — Finance must approve before it can be paid
             // Requestor info
             .requestedByUserId(approverUserId)
@@ -520,7 +523,7 @@ public class LoanService {
 
         paymentRequestRepository.save(paymentRequest);
         log.info("Created PENDING PaymentRequest {} for loan {} (due: {}) — awaiting Finance approval",
-                requestNumber, loan.getLoanNumber(), loan.getLoanDate());
+                requestNumber, loan.getLoanNumber(), loan.getLoanEffectiveDate());
     }
 
     /**

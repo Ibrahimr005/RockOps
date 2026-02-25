@@ -1040,6 +1040,14 @@ export const LOAN_ENDPOINTS = {
     STATISTICS: '/api/v1/payroll/loans/statistics'
 };
 
+// Loan Resolution Request endpoints
+export const LOAN_RESOLUTION_ENDPOINTS = {
+    BASE: '/api/v1/payroll/loan-resolution-requests',
+    BY_ID: (id) => `/api/v1/payroll/loan-resolution-requests/${id}`,
+    HR_DECISION: (id) => `/api/v1/payroll/loan-resolution-requests/${id}/hr-decision`,
+    FINANCE_DECISION: (id) => `/api/v1/payroll/loan-resolution-requests/${id}/finance-decision`,
+};
+
 // Bonus module endpoints
 export const BONUS_ENDPOINTS = {
     BASE: '/api/v1/payroll/bonuses',

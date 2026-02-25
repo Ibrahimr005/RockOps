@@ -95,9 +95,9 @@ const LoansTab = ({ employee, formatCurrency }) => {
         },
         {
             header: 'Date Applied',
-            accessor: 'loanDate',
+            accessor: 'loanEffectiveDate',
             sortable: true,
-            render: (row) => formatDate(row.loanDate)
+            render: (row) => formatDate(row.loanEffectiveDate)
         },
         {
             header: 'Purpose',
@@ -248,7 +248,7 @@ const LoansTab = ({ employee, formatCurrency }) => {
                 isLoading={loading}
                 emptyMessage="No loans found for this employee"
                 searchPlaceholder="Search loans..."
-                defaultSortField="loanDate"
+                defaultSortField="loanEffectiveDate"
                 defaultSortDirection="desc"
                 exportFileName={`${employee.firstName}_${employee.lastName}_Loans`}
                 showAddButton={canApplyForNewLoan()}

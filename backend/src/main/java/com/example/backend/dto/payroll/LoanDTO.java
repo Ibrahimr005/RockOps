@@ -50,8 +50,10 @@ public class LoanDTO {
     private BigDecimal interestRate;
 
     // Dates
-    @NotNull(message = "Loan date is required")
-    private LocalDate loanDate;
+    @NotNull(message = "Loan effective date is required")
+    private LocalDate loanEffectiveDate;
+
+    private LocalDate loanStartDate;
 
     private LocalDate disbursementDate;
 
@@ -131,7 +133,8 @@ public class LoanDTO {
             .installmentMonths(entity.getInstallmentMonths())
             .monthlyInstallment(entity.getMonthlyInstallment())
             .interestRate(entity.getInterestRate())
-            .loanDate(entity.getLoanDate())
+            .loanEffectiveDate(entity.getLoanEffectiveDate())
+            .loanStartDate(entity.getLoanStartDate())
             .disbursementDate(entity.getDisbursementDate())
             .firstPaymentDate(entity.getFirstPaymentDate())
             .lastPaymentDate(entity.getLastPaymentDate())
@@ -203,6 +206,7 @@ public class LoanDTO {
             case DISBURSED -> "Disbursed";
             case ACTIVE -> "Active";
             case COMPLETED -> "Completed";
+            case RESOLVED -> "Resolved";
             case CANCELLED -> "Cancelled";
             case PENDING -> "Pending";
             case APPROVED -> "Approved";

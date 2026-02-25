@@ -23,11 +23,14 @@ import {
     FaTimesCircle,
     FaHourglassHalf,
     FaHistory,
-    FaInfoCircle
+    FaInfoCircle,
+    FaGavel
 } from 'react-icons/fa';
 import { loanService, LOAN_STATUS, LOAN_STATUS_CONFIG } from '../../../../services/payroll/loanService.js';
+import { loanResolutionService, RESOLUTION_STATUS_CONFIG } from '../../../../services/payroll/loanResolutionService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import PageHeader from '../../../../components/common/PageHeader/index.js';
+import LoanResolutionModal from '../components/LoanResolutionModal.jsx';
 import './LoanDetails.scss';
 
 const LoanDetails = () => {
@@ -42,6 +45,8 @@ const LoanDetails = () => {
     const [error, setError] = useState(null);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
+    const [showResolutionModal, setShowResolutionModal] = useState(false);
+    const [resolutionRequests, setResolutionRequests] = useState([]);
 
     // ========================================
     // DATA LOADING
@@ -68,9 +73,25 @@ const LoanDetails = () => {
         loadLoanDetails();
     }, [loadLoanDetails]);
 
+    // Load resolution requests for this loan
+    const loadResolutionRequests = useCallback(async () => {
+        if (!id) return;
+        try {
+            const response = await loanResolutionService.getByLoanId(id);
+            setResolutionRequests(response.data || []);
+        } catch (err) {
+            // Non-critical: don't show error to user
+            console.error('Error loading resolution requests:', err);
+        }
+    }, [id]);
+
+    useEffect(() => {
+        if (loan) loadResolutionRequests();
+    }, [loan, loadResolutionRequests]);
+
     // Scroll lock for inline modals
     useEffect(() => {
-        if (showRejectModal) {
+        if (showRejectModal || showResolutionModal) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
@@ -78,7 +99,7 @@ const LoanDetails = () => {
         return () => {
             document.body.style.overflow = 'unset';
         };
-    }, [showRejectModal]);
+    }, [showRejectModal, showResolutionModal]);
 
     // ========================================
     // ACTION HANDLERS
@@ -473,8 +494,12 @@ const LoanDetails = () => {
                     <h3><FaCalendarAlt /> Important Dates</h3>
                     <div className="loan-details-grid">
                         <div className="loan-details-field">
-                            <label>Loan Date</label>
-                            <span>{formatDate(loan.loanDate)}</span>
+                            <label>Effective Date</label>
+                            <span>{formatDate(loan.loanEffectiveDate)}</span>
+                        </div>
+                        <div className="loan-details-field">
+                            <label>Deduction Start Date</label>
+                            <span>{formatDate(loan.loanStartDate)}</span>
                         </div>
                         <div className="loan-details-field">
                             <label>Disbursement Date</label>
@@ -641,6 +666,78 @@ const LoanDetails = () => {
                     </div>
                 )}
 
+                {/* Early Resolution Section */}
+                {(loan.status === LOAN_STATUS.ACTIVE || loan.status === LOAN_STATUS.DISBURSED) && (
+                    <div className="loan-details-section">
+                        <h3><FaGavel /> Early Resolution</h3>
+                        <div style={{ marginBottom: '12px' }}>
+                            <p style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                                Request to close this loan before all installments are paid. Requires HR and Finance approval.
+                            </p>
+                            <button
+                                className="loan-details-btn loan-details-btn-warning"
+                                onClick={() => setShowResolutionModal(true)}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                            >
+                                <FaGavel /> Request Early Resolution
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Resolution History */}
+                {resolutionRequests.length > 0 && (
+                    <div className="loan-details-section">
+                        <h3><FaHistory /> Resolution Requests</h3>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>Reason</th>
+                                        <th style={{ padding: '8px', textAlign: 'right' }}>Balance</th>
+                                        <th style={{ padding: '8px', textAlign: 'center' }}>Status</th>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>HR</th>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>Finance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {resolutionRequests.map((req) => {
+                                        const config = RESOLUTION_STATUS_CONFIG[req.status] || {};
+                                        return (
+                                            <tr key={req.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                <td style={{ padding: '8px' }}>
+                                                    {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : '-'}
+                                                </td>
+                                                <td style={{ padding: '8px' }}>
+                                                    {req.reason?.length > 50 ? req.reason.substring(0, 50) + '...' : req.reason}
+                                                </td>
+                                                <td style={{ padding: '8px', textAlign: 'right' }}>
+                                                    {formatCurrency(req.remainingBalance)}
+                                                </td>
+                                                <td style={{ padding: '8px', textAlign: 'center' }}>
+                                                    <span
+                                                        className="loan-status-badge"
+                                                        style={{ backgroundColor: config.bgColor, color: config.color }}
+                                                    >
+                                                        {config.label || req.status}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '8px' }}>
+                                                    {req.hrApprovedBy || '-'}
+                                                </td>
+                                                <td style={{ padding: '8px' }}>
+                                                    {req.financeApprovedBy || '-'}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
                 {/* Audit Trail */}
                 <div className="loan-details-section">
                     <h3><FaHistory /> Audit Trail</h3>
@@ -668,6 +765,18 @@ const LoanDetails = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Resolution Modal */}
+            {showResolutionModal && loan && (
+                <LoanResolutionModal
+                    loan={loan}
+                    onClose={() => setShowResolutionModal(false)}
+                    onRequestCreated={() => {
+                        loadResolutionRequests();
+                        loadLoanDetails();
+                    }}
+                />
+            )}
 
             {/* Reject Modal */}
             {showRejectModal && (
