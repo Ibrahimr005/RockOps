@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiCheck } from 'react-icons/fi';
+import { equipmentPurchaseSpecService } from '../../../../../services/procurement/equipmentPurchaseSpecService.js';
 import './ProcurementSolutionModal.scss';
 
 const ProcurementSolutionModal = ({
-                                      isVisible = false,
-                                      mode = 'add', // 'add' or 'edit'
-                                      requestItem = null,
-                                      offerItem = null,
-                                      merchants = [],
-                                      onClose,
-                                      onSave,
-                                      defaultCurrency = 'EGP'
-                                  }) => {
+    isVisible = false,
+    mode = 'add', // 'add' or 'edit'
+    requestItem = null,
+    offerItem = null,
+    merchants = [],
+    onClose,
+    onSave,
+    defaultCurrency = 'EGP'
+}) => {
+    // Detect if this is an equipment item
+    const isEquipment = !!(requestItem?.equipmentSpecId || requestItem?.equipmentSpec);
+
     const [formData, setFormData] = useState({
         merchantId: '',
         currency: defaultCurrency,
@@ -22,6 +26,36 @@ const ProcurementSolutionModal = ({
         deliveryNotes: '',
         comment: ''
     });
+
+    // Equipment details state (fetched from backend)
+    const [equipmentDetails, setEquipmentDetails] = useState(null);
+    const [equipmentLoading, setEquipmentLoading] = useState(false);
+
+    // Fetch equipment details when modal opens for equipment items
+    useEffect(() => {
+        if (!isVisible || !isEquipment) {
+            setEquipmentDetails(null);
+            return;
+        }
+
+        const specId = requestItem?.equipmentSpecId || requestItem?.equipmentSpec?.id;
+        if (!specId) return;
+
+        const fetchEquipmentDetails = async () => {
+            setEquipmentLoading(true);
+            try {
+                const data = await equipmentPurchaseSpecService.getById(specId);
+                setEquipmentDetails(data);
+            } catch (err) {
+                console.warn('Failed to fetch equipment details:', err);
+                setEquipmentDetails(null);
+            } finally {
+                setEquipmentLoading(false);
+            }
+        };
+
+        fetchEquipmentDetails();
+    }, [isVisible, isEquipment, requestItem]);
 
     // Initialize form data when modal opens
     useEffect(() => {
@@ -40,11 +74,11 @@ const ProcurementSolutionModal = ({
                 comment: offerItem.comment || ''
             });
         } else if (mode === 'add' && requestItem) {
-            // Reset form for new item
+            // Reset form for new item — equipment defaults to quantity 1
             setFormData({
                 merchantId: '',
                 currency: defaultCurrency,
-                quantity: '',
+                quantity: isEquipment ? 1 : '',
                 unitPrice: '',
                 totalPrice: 0,
                 estimatedDeliveryDays: 7,
@@ -52,7 +86,7 @@ const ProcurementSolutionModal = ({
                 comment: ''
             });
         }
-    }, [isVisible, mode, offerItem, requestItem, defaultCurrency]);
+    }, [isVisible, mode, offerItem, requestItem, defaultCurrency, isEquipment]);
 
     // Handle form field changes
     const handleFieldChange = (field, value) => {
@@ -88,7 +122,7 @@ const ProcurementSolutionModal = ({
         }
     };
 
-// Handle form submission
+    // Handle form submission
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -101,6 +135,7 @@ const ProcurementSolutionModal = ({
 
         const submissionData = {
             itemTypeId: requestItem.itemTypeId,
+            equipmentSpecId: requestItem.equipmentSpecId,
             merchantId: formData.merchantId,
             currency: formData.currency,
             quantity: formData.quantity,
@@ -133,7 +168,7 @@ const ProcurementSolutionModal = ({
             <div className="modal-content modal-lg procurement-solution-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2 className="modal-title">
-                        {mode === 'edit' ? 'Edit' : 'Add'} Procurement Solution for: {requestItem.itemTypeName || 'Item'}
+                        {mode === 'edit' ? 'Edit' : 'Add'} Procurement Solution for: {requestItem.itemTypeName || requestItem.equipmentName || 'Item'}
                     </h2>
                     <button className="btn-close" onClick={onClose} type="button">
                         <FiX />
@@ -142,6 +177,56 @@ const ProcurementSolutionModal = ({
 
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
+                        {/* Equipment Details Summary Card — only for equipment items */}
+                        {isEquipment && (
+                            <div className="equipment-details-card">
+                                <div className="equipment-details-header">
+                                    <span className="equipment-icon">🔧</span>
+                                    <span className="equipment-title">Equipment Details</span>
+                                </div>
+                                {equipmentLoading ? (
+                                    <div className="equipment-details-loading">Loading equipment details...</div>
+                                ) : equipmentDetails ? (
+                                    <div className="equipment-details-grid">
+                                        {equipmentDetails.equipmentType?.name && (
+                                            <div className="equipment-detail-item">
+                                                <span className="detail-label">Type</span>
+                                                <span className="detail-value">{equipmentDetails.equipmentType.name}</span>
+                                            </div>
+                                        )}
+                                        {equipmentDetails.brand?.name && (
+                                            <div className="equipment-detail-item">
+                                                <span className="detail-label">Brand</span>
+                                                <span className="detail-value">{equipmentDetails.brand.name}</span>
+                                            </div>
+                                        )}
+                                        {equipmentDetails.model && (
+                                            <div className="equipment-detail-item">
+                                                <span className="detail-label">Model</span>
+                                                <span className="detail-value">{equipmentDetails.model}</span>
+                                            </div>
+                                        )}
+                                        {equipmentDetails.manufactureYear && (
+                                            <div className="equipment-detail-item">
+                                                <span className="detail-label">Year</span>
+                                                <span className="detail-value">{equipmentDetails.manufactureYear}</span>
+                                            </div>
+                                        )}
+                                        {equipmentDetails.estimatedBudget != null && (
+                                            <div className="equipment-detail-item">
+                                                <span className="detail-label">Estimated Budget</span>
+                                                <span className="detail-value budget">
+                                                    EGP {Number(equipmentDetails.estimatedBudget).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="equipment-details-loading">Equipment details not available</div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="solution-form">
                             {/* Merchant and Currency Row */}
                             <div className="form-row">
@@ -153,7 +238,7 @@ const ProcurementSolutionModal = ({
                                         required
                                     >
                                         <option value="">Select a merchant</option>
-                                        {merchants.map(merchant => (
+                                        {(Array.isArray(merchants) ? merchants : []).map(merchant => (
                                             <option key={merchant.id} value={merchant.id}>
                                                 {merchant.name}
                                             </option>
@@ -190,14 +275,16 @@ const ProcurementSolutionModal = ({
                                     <div className="input-with-unit">
                                         <input
                                             type="number"
-                                            min="1"
+                                            min={isEquipment ? 1 : 1}
+                                            max={isEquipment ? 1 : undefined}
                                             value={formData.quantity}
                                             onChange={handleQuantityChange}
                                             placeholder="Enter quantity"
                                             required
+                                            readOnly={isEquipment}
                                         />
                                         <span className="unit-badge">
-                                            {requestItem.itemTypeMeasuringUnit || 'units'}
+                                            {isEquipment ? 'unit' : (requestItem.itemTypeMeasuringUnit || 'units')}
                                         </span>
                                     </div>
                                 </div>
