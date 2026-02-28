@@ -100,10 +100,12 @@ public class Contact {
     // Relationships
     @OneToMany(mappedBy = "responsibleContact", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<MaintenanceStep> assignedSteps = new ArrayList<>();
 
     @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<ContactLog> contactLogs = new ArrayList<>();
 
     // Merchant relationship (optional)
