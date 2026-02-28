@@ -12,6 +12,7 @@ import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
 import com.example.backend.models.warehouse.ItemType;
+import com.example.backend.models.procurement.EquipmentPurchaseSpec;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
@@ -29,7 +30,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
 
-
 @Service
 public class OfferService {
 
@@ -45,6 +45,7 @@ public class OfferService {
     private final OfferTimelineService timelineService;
     private final PaymentRequestService paymentRequestService;
     private final OfferRequestItemService offerRequestItemService;
+    private final EquipmentPurchaseSpecRepository equipmentPurchaseSpecRepository;
 
     // Add mappers
     private final OfferMapper offerMapper;
@@ -55,20 +56,22 @@ public class OfferService {
 
     @Autowired
     public OfferService(OfferRepository offerRepository,
-                        OfferItemRepository offerItemRepository,
-                        RequestOrderRepository requestOrderRepository,
-                        RequestOrderItemRepository requestOrderItemRepository,
-                        MerchantRepository merchantRepository,
-                        ItemTypeRepository itemTypeRepository ,
-                        PurchaseOrderRepository purchaseOrderRepository,
-                        PurchaseOrderItemRepository purchaseOrderItemRepository,
-                        OfferTimelineService timelineService,
-                        OfferMapper offerMapper,
-                        OfferItemMapper offerItemMapper,
-                        PurchaseOrderMapper purchaseOrderMapper,
-                        RequestOrderMapper requestOrderMapper,
-                        OfferTimelineEventMapper timelineEventMapper,
-                        PaymentRequestService paymentRequestService,OfferRequestItemService offerRequestItemService) {
+            OfferItemRepository offerItemRepository,
+            RequestOrderRepository requestOrderRepository,
+            RequestOrderItemRepository requestOrderItemRepository,
+            MerchantRepository merchantRepository,
+            ItemTypeRepository itemTypeRepository,
+            PurchaseOrderRepository purchaseOrderRepository,
+            PurchaseOrderItemRepository purchaseOrderItemRepository,
+            OfferTimelineService timelineService,
+            OfferMapper offerMapper,
+            OfferItemMapper offerItemMapper,
+            PurchaseOrderMapper purchaseOrderMapper,
+            RequestOrderMapper requestOrderMapper,
+            OfferTimelineEventMapper timelineEventMapper,
+            PaymentRequestService paymentRequestService,
+            OfferRequestItemService offerRequestItemService,
+            EquipmentPurchaseSpecRepository equipmentPurchaseSpecRepository) {
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.requestOrderRepository = requestOrderRepository;
@@ -85,9 +88,11 @@ public class OfferService {
         this.itemTypeRepository = itemTypeRepository;
         this.paymentRequestService = paymentRequestService;
         this.offerRequestItemService = offerRequestItemService;
+        this.equipmentPurchaseSpecRepository = equipmentPurchaseSpecRepository;
 
         // ADD THIS LINE:
-        System.out.println("🚀🚀🚀 OfferService initialized! PaymentRequestService is: " + (this.paymentRequestService != null ? "AVAILABLE ✓" : "NULL ✗"));
+        System.out.println("🚀🚀🚀 OfferService initialized! PaymentRequestService is: "
+                + (this.paymentRequestService != null ? "AVAILABLE ✓" : "NULL ✗"));
 
     }
 
@@ -147,6 +152,7 @@ public class OfferService {
             offerItem.setOffer(offer);
             offerItem.setRequestOrderItem(requestOrderItem);
             offerItem.setItemType(requestOrderItem.getItemType());
+            offerItem.setEquipmentSpec(requestOrderItem.getEquipmentSpec());
             offerItem.setEstimatedDeliveryDays(dto.getEstimatedDeliveryDays());
             offerItem.setDeliveryNotes(dto.getDeliveryNotes());
             offerItem.setComment(dto.getComment());
@@ -190,42 +196,77 @@ public class OfferService {
                         .orElseThrow(() -> new RuntimeException("Merchant not found"));
                 System.out.println("SERVICE: Merchant found: " + merchant.getName());
 
-                // Find the item type
+                // Find the item type or equipment spec
                 UUID itemTypeId = dto.getItemTypeId();
-                System.out.println("SERVICE: ItemTypeId from DTO: " + itemTypeId);
+                UUID equipmentSpecId = dto.getEquipmentSpecId();
 
-                if (itemTypeId == null) {
-                    throw new RuntimeException("Item type ID is required");
+                System.out.println("SERVICE: ItemTypeId: " + itemTypeId + ", EquipmentSpecId: " + equipmentSpecId);
+
+                ItemType itemType = null;
+                EquipmentPurchaseSpec equipmentSpec = null;
+                OfferRequestItemDTO effectiveItem = null;
+
+                if (itemTypeId != null) {
+                    System.out.println("SERVICE: Finding item type with ID: " + itemTypeId);
+                    itemType = itemTypeRepository.findById(itemTypeId)
+                            .orElseThrow(() -> new RuntimeException("Item type not found: " + itemTypeId));
+                    System.out.println("SERVICE: Item type found: " + itemType.getName());
+
+                    // Find the effective request item for this item type
+                    System.out.println("SERVICE: Finding effective request item for itemTypeId: " + itemTypeId);
+                    effectiveItem = effectiveItems.stream()
+                            .filter(item -> itemTypeId.equals(item.getItemTypeId()))
+                            .findFirst()
+                            .orElseThrow(
+                                    () -> new RuntimeException("Item type not found in request items: " + itemTypeId));
+                } else if (equipmentSpecId != null) {
+                    System.out.println("SERVICE: Finding equipment spec with ID: " + equipmentSpecId);
+                    equipmentSpec = equipmentPurchaseSpecRepository.findById(equipmentSpecId)
+                            .orElseThrow(() -> new RuntimeException("Equipment spec not found: " + equipmentSpecId));
+                    System.out.println("SERVICE: Equipment spec found: " + equipmentSpec.getName());
+
+                    // Find the effective request item for this equipment spec
+                    System.out
+                            .println("SERVICE: Finding effective request item for equipmentSpecId: " + equipmentSpecId);
+                    effectiveItem = effectiveItems.stream()
+                            .filter(item -> equipmentSpecId.equals(item.getEquipmentSpecId()))
+                            .findFirst()
+                            .orElseThrow(() -> new RuntimeException(
+                                    "Equipment spec not found in request items: " + equipmentSpecId));
+                } else {
+                    throw new RuntimeException("Either item type ID or equipment spec ID is required");
                 }
 
-                System.out.println("SERVICE: Finding item type with ID: " + itemTypeId);
-                ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                        .orElseThrow(() -> new RuntimeException("Item type not found: " + itemTypeId));
-                System.out.println("SERVICE: Item type found: " + itemType.getName());
-
-                // Find the effective request item for this item type
-                System.out.println("SERVICE: Finding effective request item for itemTypeId: " + itemTypeId);
-                OfferRequestItemDTO effectiveItem = effectiveItems.stream()
-                        .filter(item -> item.getItemTypeId().equals(itemTypeId))
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Item type not found in request items: " + itemTypeId));
                 System.out.println("SERVICE: Effective item found with quantity: " + effectiveItem.getQuantity());
 
                 // Get or create RequestOrderItem
                 RequestOrderItem requestOrderItem;
                 RequestOrder requestOrder = offer.getRequestOrder();
 
-                System.out.println("SERVICE: Checking for original request order item ID: " + effectiveItem.getOriginalRequestOrderItemId());
+                System.out.println("SERVICE: Checking for original request order item ID: "
+                        + effectiveItem.getOriginalRequestOrderItemId());
 
                 if (effectiveItem.getOriginalRequestOrderItemId() != null) {
                     System.out.println("SERVICE: Linking to original request order item");
-                    requestOrderItem = requestOrderItemRepository.findById(effectiveItem.getOriginalRequestOrderItemId())
+                    requestOrderItem = requestOrderItemRepository
+                            .findById(effectiveItem.getOriginalRequestOrderItemId())
                             .orElseThrow(() -> new RuntimeException("Original request order item not found"));
                     System.out.println("SERVICE: Original request order item found");
                 } else {
                     System.out.println("SERVICE: This is a NEW item, checking if RequestOrderItem exists...");
+
+                    final UUID finalItemTypeId = itemTypeId;
+                    final UUID finalEquipmentSpecId = equipmentSpecId;
+
                     Optional<RequestOrderItem> existingItem = requestOrder.getRequestItems().stream()
-                            .filter(item -> item.getItemType().getId().equals(itemTypeId))
+                            .filter(item -> {
+                                if (finalItemTypeId != null && item.getItemType() != null) {
+                                    return finalItemTypeId.equals(item.getItemType().getId());
+                                } else if (finalEquipmentSpecId != null && item.getEquipmentSpec() != null) {
+                                    return finalEquipmentSpecId.equals(item.getEquipmentSpec().getId());
+                                }
+                                return false;
+                            })
                             .findFirst();
 
                     if (existingItem.isPresent()) {
@@ -236,9 +277,11 @@ public class OfferService {
                         requestOrderItem = new RequestOrderItem();
                         requestOrderItem.setRequestOrder(requestOrder);
                         requestOrderItem.setItemType(itemType);
+                        requestOrderItem.setEquipmentSpec(equipmentSpec);
                         requestOrderItem.setQuantity((int) effectiveItem.getQuantity());
                         requestOrderItem = requestOrderItemRepository.save(requestOrderItem);
-                        System.out.println("SERVICE: New RequestOrderItem created with ID: " + requestOrderItem.getId());
+                        System.out
+                                .println("SERVICE: New RequestOrderItem created with ID: " + requestOrderItem.getId());
                     }
                 }
 
@@ -267,6 +310,10 @@ public class OfferService {
                 System.out.println("SERVICE: Setting itemType...");
                 offerItem.setItemType(itemType);
                 System.out.println("SERVICE: ItemType set");
+
+                System.out.println("SERVICE: Setting equipmentSpec...");
+                offerItem.setEquipmentSpec(equipmentSpec);
+                System.out.println("SERVICE: equipmentSpec set");
 
                 // Now set the offer - this is where it's crashing
                 System.out.println("SERVICE: About to set offer...");
@@ -308,11 +355,12 @@ public class OfferService {
         System.out.println("=== SERVICE: addOfferItems SUCCESS ===");
         return offerItemMapper.toDTOList(savedItems);
     }
+
     /**
      * Updated method to use timeline service
      */
 
-    @Transactional  // ← Add this
+    @Transactional // ← Add this
     public OfferDTO updateOfferStatus(UUID offerId, String status, String username, String rejectionReason) {
         System.out.println("=== UPDATE OFFER STATUS START ===");
 
@@ -371,7 +419,8 @@ public class OfferService {
         // Update the request order item if it's changed
         if (offerItemDTO.getRequestOrderItemId() != null &&
                 !offerItemDTO.getRequestOrderItemId().equals(offerItem.getRequestOrderItem().getId())) {
-            RequestOrderItem requestOrderItem = requestOrderItemRepository.findById(offerItemDTO.getRequestOrderItemId())
+            RequestOrderItem requestOrderItem = requestOrderItemRepository
+                    .findById(offerItemDTO.getRequestOrderItemId())
                     .orElseThrow(() -> new RuntimeException("Request Order Item not found"));
             offerItem.setRequestOrderItem(requestOrderItem);
         }
@@ -606,31 +655,30 @@ public class OfferService {
         return offerItemMapper.toDTO(savedItem);
     }
 
-//    public List<OfferDTO> getFinanceCompletedOffers() {
-//        List<Offer> offers = offerRepository.findAll().stream()
-//                .filter(offer ->
-//                        "FINANCE_ACCEPTED".equals(offer.getFinanceStatus()) ||
-//                                "FINANCE_REJECTED".equals(offer.getFinanceStatus()) ||
-//                                "FINANCE_PARTIALLY_ACCEPTED".equals(offer.getFinanceStatus())
-//                )
-//                .collect(Collectors.toList());
-//
-//        return offerMapper.toDTOList(offers);
-//    }
-// ✅ CORRECT: Only return offers that are STILL in MANAGERACCEPTED status
-public List<OfferDTO> getFinanceCompletedOffers() {
-    List<Offer> offers = offerRepository.findAll().stream()
-            .filter(offer ->
-                    "MANAGERACCEPTED".equals(offer.getStatus()) && // ✅ ADDED: Must still be in manager accepted
-                            offer.getFinanceStatus() != null && // ✅ ADDED: Must have finance status
-                            ("FINANCE_ACCEPTED".equals(offer.getFinanceStatus()) ||
-                                    "FINANCE_REJECTED".equals(offer.getFinanceStatus()) ||
-                                    "FINANCE_PARTIALLY_ACCEPTED".equals(offer.getFinanceStatus()))
-            )
-            .collect(Collectors.toList());
+    // public List<OfferDTO> getFinanceCompletedOffers() {
+    // List<Offer> offers = offerRepository.findAll().stream()
+    // .filter(offer ->
+    // "FINANCE_ACCEPTED".equals(offer.getFinanceStatus()) ||
+    // "FINANCE_REJECTED".equals(offer.getFinanceStatus()) ||
+    // "FINANCE_PARTIALLY_ACCEPTED".equals(offer.getFinanceStatus())
+    // )
+    // .collect(Collectors.toList());
+    //
+    // return offerMapper.toDTOList(offers);
+    // }
+    // ✅ CORRECT: Only return offers that are STILL in MANAGERACCEPTED status
+    public List<OfferDTO> getFinanceCompletedOffers() {
+        List<Offer> offers = offerRepository.findAll().stream()
+                .filter(offer -> "MANAGERACCEPTED".equals(offer.getStatus()) && // ✅ ADDED: Must still be in manager
+                                                                                // accepted
+                        offer.getFinanceStatus() != null && // ✅ ADDED: Must have finance status
+                        ("FINANCE_ACCEPTED".equals(offer.getFinanceStatus()) ||
+                                "FINANCE_REJECTED".equals(offer.getFinanceStatus()) ||
+                                "FINANCE_PARTIALLY_ACCEPTED".equals(offer.getFinanceStatus())))
+                .collect(Collectors.toList());
 
-    return offerMapper.toDTOList(offers);
-}
+        return offerMapper.toDTOList(offers);
+    }
 
     @Transactional
     public OfferDTO completeFinanceReview(UUID offerId, String username) {
@@ -731,7 +779,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
     /**
      * Continue and Return functionality - simplified approach
-     * Original offer continues to finalization, new offer created for remaining quantities
+     * Original offer continues to finalization, new offer created for remaining
+     * quantities
      */
     @Transactional
     public Map<String, Object> continueAndReturnOffer(UUID offerId, String username) {
@@ -740,11 +789,14 @@ public List<OfferDTO> getFinanceCompletedOffers() {
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         // Verify that the offer has been finance reviewed
-//        if (!Arrays.asList("FINANCE_PARTIALLY_ACCEPTED", "FINANCE_ACCEPTED").contains(originalOffer.getStatus())) {
-//            throw new IllegalStateException("Only finance reviewed offers can be processed with continue and return");
-//        }
+        // if (!Arrays.asList("FINANCE_PARTIALLY_ACCEPTED",
+        // "FINANCE_ACCEPTED").contains(originalOffer.getStatus())) {
+        // throw new IllegalStateException("Only finance reviewed offers can be
+        // processed with continue and return");
+        // }
         // ✅ CORRECT: Check financeStatus, not status
-        if (!Arrays.asList("FINANCE_PARTIALLY_ACCEPTED", "FINANCE_ACCEPTED").contains(originalOffer.getFinanceStatus())) {
+        if (!Arrays.asList("FINANCE_PARTIALLY_ACCEPTED", "FINANCE_ACCEPTED")
+                .contains(originalOffer.getFinanceStatus())) {
             throw new IllegalStateException("Only finance reviewed offers can be processed with continue and return");
         }
 
@@ -771,7 +823,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
                 .sum();
         timelineService.recordOfferSplit(offerId, username, acceptedItems.size(), (int) totalRemainingQuantity);
 
-        // Step 4: Update original offer to continue to finalization with only accepted items
+        // Step 4: Update original offer to continue to finalization with only accepted
+        // items
         List<OfferItem> rejectedItems = originalOffer.getOfferItems().stream()
                 .filter(item -> "REJECTED".equals(item.getFinanceStatus()))
                 .collect(Collectors.toList());
@@ -813,13 +866,13 @@ public List<OfferDTO> getFinanceCompletedOffers() {
         Map<UUID, Double> acceptedQuantitiesByItem = acceptedItems.stream()
                 .collect(Collectors.groupingBy(
                         item -> item.getRequestOrderItem().getId(),
-                        Collectors.summingDouble(OfferItem::getQuantity)
-                ));
+                        Collectors.summingDouble(OfferItem::getQuantity)));
 
         // Check each request order item for remaining quantities
         for (RequestOrderItem requestItem : originalOffer.getRequestOrder().getRequestItems()) {
             double requestedQuantity = requestItem.getQuantity(); // Required (e.g., 30.0)
-            double acceptedQuantity = acceptedQuantitiesByItem.getOrDefault(requestItem.getId(), 0.0); // Accepted (e.g., 20.0)
+            double acceptedQuantity = acceptedQuantitiesByItem.getOrDefault(requestItem.getId(), 0.0); // Accepted
+                                                                                                       // (e.g., 20.0)
 
             if (acceptedQuantity < requestedQuantity) {
                 double remaining = requestedQuantity - acceptedQuantity; // Remaining (e.g., 10.0)
@@ -839,7 +892,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
      * Helper method: Create new offer for remaining quantities
      * Creates NEW RequestOrder and RequestOrderItems with only remaining quantities
      */
-    private Offer createNewOfferForRemaining(Offer originalOffer, Map<UUID, Double> remainingQuantities, String username, String originalTitle) {
+    private Offer createNewOfferForRemaining(Offer originalOffer, Map<UUID, Double> remainingQuantities,
+            String username, String originalTitle) {
         // Create new offer title
         String newTitle = originalTitle
                 .replaceAll("\\s*\\(Remaining\\)\\s*$", "")
@@ -902,7 +956,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
         // Create the new offer with the NEW RequestOrder (no offer items initially)
         Offer newOffer = Offer.builder()
                 .title(newTitle)
-                .description("New offer for remaining quantities after continue & return. Original offer ID: " + originalOffer.getId())
+                .description("New offer for remaining quantities after continue & return. Original offer ID: "
+                        + originalOffer.getId())
                 .createdAt(LocalDateTime.now())
                 .createdBy(username)
                 .status("INPROGRESS")
@@ -922,13 +977,13 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
         for (OfferTimelineEvent originalEvent : originalTimeline) {
             timelineService.createTimelineEvent(
-                    savedNewOffer.getId(),  // ← Pass ID, not object
+                    savedNewOffer.getId(), // ← Pass ID, not object
                     originalEvent.getEventType(),
                     originalEvent.getActionBy(),
                     originalEvent.getNotes(),
                     originalEvent.getPreviousStatus(),
                     originalEvent.getNewStatus(),
-                    originalEvent.getAttemptNumber()  // ← Add attempt number
+                    originalEvent.getAttemptNumber() // ← Add attempt number
             );
         }
 
@@ -954,7 +1009,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
             List<OfferItem> itemsToFinalize = offer.getOfferItems().stream()
                     .filter(item -> finalizedItemIds.contains(item.getId()))
-                    .filter(item -> "ACCEPTED".equals(item.getFinanceStatus()) || "FINANCE_ACCEPTED".equals(item.getFinanceStatus()))
+                    .filter(item -> "ACCEPTED".equals(item.getFinanceStatus())
+                            || "FINANCE_ACCEPTED".equals(item.getFinanceStatus()))
                     .collect(Collectors.toList());
 
             if (itemsToFinalize.isEmpty()) {
@@ -985,6 +1041,7 @@ public List<OfferDTO> getFinanceCompletedOffers() {
             throw e;
         }
     }
+
     /**
      * Finalize selected items and create new offer for unfinalized items
      */
@@ -1003,7 +1060,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
             System.out.println("✓ Found offer: " + originalOffer.getTitle());
 
             if (!"FINALIZING".equals(originalOffer.getStatus())) {
-                throw new IllegalStateException("Only offers in FINALIZING status can use this method. Current status: " + originalOffer.getStatus());
+                throw new IllegalStateException("Only offers in FINALIZING status can use this method. Current status: "
+                        + originalOffer.getStatus());
             }
             System.out.println("✓ Status check passed: " + originalOffer.getStatus());
 
@@ -1104,13 +1162,14 @@ public List<OfferDTO> getFinanceCompletedOffers() {
             List<OfferTimelineEvent> originalEvents = timelineService.getCompleteTimeline(originalOfferId);
             System.out.println("✓ Retrieved " + originalEvents.size() + " timeline events");
 
-            // Create new timeline events for the new offer WITHOUT loading the full offer context
+            // Create new timeline events for the new offer WITHOUT loading the full offer
+            // context
             for (OfferTimelineEvent originalEvent : originalEvents) {
                 System.out.println("DEBUG: Creating timeline event: " + originalEvent.getEventType());
 
                 // Create a new timeline event with minimal data - no complex relationships
                 OfferTimelineEvent newEvent = OfferTimelineEvent.builder()
-                        .offer(newOfferEntity)  // Only reference to new offer
+                        .offer(newOfferEntity) // Only reference to new offer
                         .eventType(originalEvent.getEventType())
                         .attemptNumber(originalEvent.getAttemptNumber())
                         .eventTime(originalEvent.getEventTime())
@@ -1144,7 +1203,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
      */
 
     /**
-     * Core method to create purchase order with items - ensures proper creation every time
+     * Core method to create purchase order with items - ensures proper creation
+     * every time
      */
     private PurchaseOrder createPurchaseOrderForItems(Offer offer, List<OfferItem> items, String username) {
         try {
@@ -1167,7 +1227,7 @@ public List<OfferDTO> getFinanceCompletedOffers() {
                     .createdBy(username)
                     .purchaseOrderItems(new ArrayList<>()) // Initialize the list
                     .paymentTerms("Net 30")
-                    .paymentStatus(POPaymentStatus.REQUESTED)      // ← ADD THIS
+                    .paymentStatus(POPaymentStatus.REQUESTED) // ← ADD THIS
                     .totalPaidAmount(BigDecimal.ZERO)
                     .currency("EGP")
                     .build();
@@ -1203,7 +1263,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
                     if (item.getRequestOrderItem() != null && item.getRequestOrderItem().getItemType() != null) {
                         System.out.println("✓ Found ItemType through RequestOrderItem");
                     } else {
-                        throw new RuntimeException("ItemType is null and cannot be retrieved for item: " + item.getId());
+                        throw new RuntimeException(
+                                "ItemType is null and cannot be retrieved for item: " + item.getId());
                     }
                 }
 
@@ -1220,9 +1281,11 @@ public List<OfferDTO> getFinanceCompletedOffers() {
                         .purchaseOrder(savedPO)
                         .offerItem(item)
                         .status("PROCESSING")
-                        .estimatedDeliveryDays(item.getEstimatedDeliveryDays() != null ? item.getEstimatedDeliveryDays() : 30)
+                        .estimatedDeliveryDays(
+                                item.getEstimatedDeliveryDays() != null ? item.getEstimatedDeliveryDays() : 30)
                         .deliveryNotes(item.getDeliveryNotes())
-                        .itemType(item.getItemType() != null ? item.getItemType() : item.getRequestOrderItem().getItemType())
+                        .itemType(item.getItemType() != null ? item.getItemType()
+                                : item.getRequestOrderItem().getItemType())
                         .merchant(item.getMerchant())
                         .build();
 
@@ -1240,7 +1303,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
                 // Calculate totals
                 totalAmount += item.getTotalPrice().doubleValue();
-                maxDeliveryDays = Math.max(maxDeliveryDays, item.getEstimatedDeliveryDays() != null ? item.getEstimatedDeliveryDays() : 30);
+                maxDeliveryDays = Math.max(maxDeliveryDays,
+                        item.getEstimatedDeliveryDays() != null ? item.getEstimatedDeliveryDays() : 30);
             }
 
             // Update purchase order with calculated values
@@ -1252,21 +1316,23 @@ public List<OfferDTO> getFinanceCompletedOffers() {
             PurchaseOrder finalPO = purchaseOrderRepository.save(savedPO);
             System.out.println("✓ Final purchase order saved with total: $" + totalAmount);
             // Automatically create payment request for the new purchase order
-//            try {
-//                System.out.println("DEBUG: Creating payment request for PO: " + finalPO.getId());
-//
-//                // Pass BOTH purchaseOrderId AND offerId
-//                paymentRequestService.createPaymentRequestFromPO(
-//                        finalPO.getId(),
-//                        offer.getId(),  // ADD THIS PARAMETER
-//                        username
-//                );
-//
-//                System.out.println("✓ Payment request created successfully");
-//            } catch (Exception e) {
-//                System.err.println("ERROR: Failed to create payment request: " + e.getMessage());
-//                e.printStackTrace();
-//            }
+            // try {
+            // System.out.println("DEBUG: Creating payment request for PO: " +
+            // finalPO.getId());
+            //
+            // // Pass BOTH purchaseOrderId AND offerId
+            // paymentRequestService.createPaymentRequestFromPO(
+            // finalPO.getId(),
+            // offer.getId(), // ADD THIS PARAMETER
+            // username
+            // );
+            //
+            // System.out.println("✓ Payment request created successfully");
+            // } catch (Exception e) {
+            // System.err.println("ERROR: Failed to create payment request: " +
+            // e.getMessage());
+            // e.printStackTrace();
+            // }
 
             System.out.println("=== DEBUG: createPurchaseOrderForItems SUCCESS ===");
 
@@ -1281,7 +1347,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
         }
     }
 
-    private Offer createNewOfferForUnfinalizedItems(Offer originalOffer, List<OfferItem> unfinalizedItems, String username) {
+    private Offer createNewOfferForUnfinalizedItems(Offer originalOffer, List<OfferItem> unfinalizedItems,
+            String username) {
         try {
             System.out.println("=== DEBUG: createNewOfferForUnfinalizedItems START ===");
 
@@ -1326,7 +1393,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
                 // Create new request item with ONLY the unfinalized quantity
                 RequestOrderItem newRequestItem = RequestOrderItem.builder()
                         .quantity(unfinalizedQuantity.intValue()) // Only the unfinalized quantity
-                        .comment(originalItem.getComment() + " (Unfinalized: " + unfinalizedQuantity + " from original)")
+                        .comment(
+                                originalItem.getComment() + " (Unfinalized: " + unfinalizedQuantity + " from original)")
                         .itemType(originalItem.getItemType())
                         .requestOrder(savedNewRequestOrder)
                         .build();
@@ -1383,7 +1451,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
     }
 
     /**
-     * Calculate quantities that were NOT finalized (opposite of calculateRemainingQuantities)
+     * Calculate quantities that were NOT finalized (opposite of
+     * calculateRemainingQuantities)
      */
     private Map<UUID, Double> calculateUnfinalizedQuantities(Offer originalOffer, List<OfferItem> unfinalizedItems) {
         Map<UUID, Double> unfinalizedQuantities = new HashMap<>();
@@ -1392,12 +1461,12 @@ public List<OfferDTO> getFinanceCompletedOffers() {
         Map<UUID, Double> unfinalizedQuantitiesByItem = unfinalizedItems.stream()
                 .collect(Collectors.groupingBy(
                         item -> item.getRequestOrderItem().getId(),
-                        Collectors.summingDouble(OfferItem::getQuantity)
-                ));
+                        Collectors.summingDouble(OfferItem::getQuantity)));
 
         System.out.println("DEBUG - Unfinalized quantities by item: " + unfinalizedQuantitiesByItem);
 
-        // For each request order item that has unfinalized quantities, calculate how much is unfinalized
+        // For each request order item that has unfinalized quantities, calculate how
+        // much is unfinalized
         for (Map.Entry<UUID, Double> entry : unfinalizedQuantitiesByItem.entrySet()) {
             UUID requestOrderItemId = entry.getKey();
             Double unfinalizedQuantity = entry.getValue();
@@ -1412,7 +1481,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
     }
 
     /**
-     * SEPARATE METHOD - Add timeline copying to existing offer (call this after finalization)
+     * SEPARATE METHOD - Add timeline copying to existing offer (call this after
+     * finalization)
      */
     @Transactional
     public void addTimelineHistoryToOffer(UUID originalOfferId, UUID newOfferId) {
@@ -1426,13 +1496,13 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
             for (OfferTimelineEventDTO event : originalEvents) {
                 timelineService.createTimelineEvent(
-                        newOffer.getId(),  // ← Pass ID, not object
+                        newOffer.getId(), // ← Pass ID, not object
                         event.getEventType(),
                         event.getActionBy(),
                         "Copied from original offer: " + event.getNotes(),
                         event.getPreviousStatus(),
                         event.getNewStatus(),
-                        event.getAttemptNumber()  // ← Add attempt number
+                        event.getAttemptNumber() // ← Add attempt number
                 );
             }
             System.out.println("✓ Successfully added " + originalEvents.size() + " timeline events");
@@ -1442,30 +1512,33 @@ public List<OfferDTO> getFinanceCompletedOffers() {
             // Don't throw - this is optional
         }
     }
-//    @Transactional
-//    public PurchaseOrderDTO createPurchaseOrderFromItems(UUID offerId, List<UUID> offerItemIds, String username) {
-//        Offer offer = offerRepository.findById(offerId)
-//                .orElseThrow(() -> new RuntimeException("Offer not found"));
-//
-//        // Get the specified offer items
-//        List<OfferItem> selectedItems = offer.getOfferItems().stream()
-//                .filter(item -> offerItemIds.contains(item.getId()) &&
-//                        "ACCEPTED".equals(item.getFinanceStatus()))
-//                .collect(Collectors.toList());
-//
-//        if (selectedItems.isEmpty()) {
-//            throw new IllegalStateException("No valid items found for purchase order creation");
-//        }
-//
-//        // MARK ALL SELECTED ITEMS AS FINALIZED
-//        for (OfferItem item : selectedItems) {
-//            item.setFinalized(true);
-//            offerItemRepository.save(item);
-//        }
-//
-//        PurchaseOrder po = createPurchaseOrderForItems(offer, selectedItems, username);
-//        return purchaseOrderMapper.toDTO(po);
-//    }
+    // @Transactional
+    // public PurchaseOrderDTO createPurchaseOrderFromItems(UUID offerId, List<UUID>
+    // offerItemIds, String username) {
+    // Offer offer = offerRepository.findById(offerId)
+    // .orElseThrow(() -> new RuntimeException("Offer not found"));
+    //
+    // // Get the specified offer items
+    // List<OfferItem> selectedItems = offer.getOfferItems().stream()
+    // .filter(item -> offerItemIds.contains(item.getId()) &&
+    // "ACCEPTED".equals(item.getFinanceStatus()))
+    // .collect(Collectors.toList());
+    //
+    // if (selectedItems.isEmpty()) {
+    // throw new IllegalStateException("No valid items found for purchase order
+    // creation");
+    // }
+    //
+    // // MARK ALL SELECTED ITEMS AS FINALIZED
+    // for (OfferItem item : selectedItems) {
+    // item.setFinalized(true);
+    // offerItemRepository.save(item);
+    // }
+    //
+    // PurchaseOrder po = createPurchaseOrderForItems(offer, selectedItems,
+    // username);
+    // return purchaseOrderMapper.toDTO(po);
+    // }
 
     @Transactional
     public PurchaseOrderDTO createPurchaseOrderFromItems(UUID offerId, List<UUID> offerItemIds, String username) {
@@ -1524,25 +1597,28 @@ public List<OfferDTO> getFinanceCompletedOffers() {
         List<OfferItem> items = offerItemRepository.findAllById(offerItemIds);
 
         for (OfferItem item : items) {
-            // **UPDATED: Check if the offer is in FINALIZING status instead of item financeStatus**
+            // **UPDATED: Check if the offer is in FINALIZING status instead of item
+            // financeStatus**
             if (item.getOffer() == null) {
                 throw new IllegalStateException("Cannot finalize item " + item.getId() + " - no offer associated");
             }
 
             if (!"FINALIZING".equals(item.getOffer().getStatus())) {
-                throw new IllegalStateException("Cannot finalize item " + item.getId() + " - offer is not in FINALIZING status");
+                throw new IllegalStateException(
+                        "Cannot finalize item " + item.getId() + " - offer is not in FINALIZING status");
             }
 
             item.setFinalized(true);
             offerItemRepository.save(item);
         }
     }
+
     /**
      * Confirm and import RFQ response data
      */
     @Transactional
     public List<OfferItemDTO> confirmRFQImport(UUID offerId, UUID merchantId, List<UUID> validRowIds,
-                                               RFQImportPreviewDTO preview, String username) {
+            RFQImportPreviewDTO preview, String username) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
@@ -1570,7 +1646,8 @@ public List<OfferDTO> getFinanceCompletedOffers() {
             OfferRequestItemDTO effectiveItem = effectiveItems.stream()
                     .filter(item -> item.getItemTypeId().equals(row.getItemTypeId()))
                     .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Item type not found in request items: " + row.getItemTypeId()));
+                    .orElseThrow(
+                            () -> new RuntimeException("Item type not found in request items: " + row.getItemTypeId()));
 
             // Create offer item from imported data
             OfferItem offerItem = new OfferItem();
@@ -1648,13 +1725,13 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
             // Create timeline event for finance approval
             timelineService.createTimelineEvent(
-                    offer.getId(),  // ← Pass ID, not object
+                    offer.getId(), // ← Pass ID, not object
                     TimelineEventType.FINANCE_ACCEPTED,
                     "Finance Module",
                     "Offer approved by Finance Module",
                     "MANAGERACCEPTED",
                     "FINALIZING",
-                    offer.getCurrentAttemptNumber()  // ← Add attempt number
+                    offer.getCurrentAttemptNumber() // ← Add attempt number
             );
 
         } else if ("REJECT".equalsIgnoreCase(decision)) {
@@ -1667,13 +1744,13 @@ public List<OfferDTO> getFinanceCompletedOffers() {
 
             // Create timeline event for finance rejection
             timelineService.createTimelineEvent(
-                    offer.getId(),  // ← Pass ID, not object
+                    offer.getId(), // ← Pass ID, not object
                     TimelineEventType.FINANCE_REJECTED,
                     "Finance Module",
                     "Offer rejected by Finance Module",
                     offer.getStatus(),
                     offer.getStatus(),
-                    offer.getCurrentAttemptNumber()  // ← Add attempt number
+                    offer.getCurrentAttemptNumber() // ← Add attempt number
             );
         } else {
             throw new RuntimeException("Invalid decision: " + decision + ". Must be APPROVE or REJECT");
@@ -1720,13 +1797,13 @@ public List<OfferDTO> getFinanceCompletedOffers() {
                 acceptedCount, rejectedCount);
 
         timelineService.createTimelineEvent(
-                offer.getId(),  // ← Pass ID, not object
+                offer.getId(), // ← Pass ID, not object
                 timelineEventType,
                 reviewerUsername,
                 notes,
                 "MANAGERACCEPTED",
                 "MANAGERACCEPTED",
-                offer.getCurrentAttemptNumber()  // ← Add attempt number
+                offer.getCurrentAttemptNumber() // ← Add attempt number
         );
 
         Offer savedOffer = offerRepository.save(offer);

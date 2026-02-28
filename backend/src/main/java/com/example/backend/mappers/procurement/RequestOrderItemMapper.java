@@ -19,7 +19,8 @@ public class RequestOrderItemMapper {
     }
 
     public RequestOrderItemDTO toDTO(RequestOrderItem requestOrderItem) {
-        if (requestOrderItem == null) return null;
+        if (requestOrderItem == null)
+            return null;
 
         RequestOrderItemDTO.RequestOrderItemDTOBuilder builder = RequestOrderItemDTO.builder()
                 .id(requestOrderItem.getId())
@@ -37,11 +38,22 @@ public class RequestOrderItemMapper {
                     .itemType(itemTypeMapper.toDTO(requestOrderItem.getItemType()));
         }
 
+        // Equipment Spec
+        if (requestOrderItem.getEquipmentSpec() != null) {
+            builder.equipmentSpecId(requestOrderItem.getEquipmentSpec().getId())
+                    .equipmentName(requestOrderItem.getEquipmentSpec().getName() +
+                            (requestOrderItem.getEquipmentSpec().getModel() != null
+                                    && !requestOrderItem.getEquipmentSpec().getModel().isEmpty()
+                                            ? " " + requestOrderItem.getEquipmentSpec().getModel()
+                                            : ""));
+        }
+
         return builder.build();
     }
 
     public List<RequestOrderItemDTO> toDTOList(List<RequestOrderItem> items) {
-        if (items == null) return new ArrayList<>();
+        if (items == null)
+            return new ArrayList<>();
         return items.stream().map(this::toDTO).collect(Collectors.toList());
     }
 }
