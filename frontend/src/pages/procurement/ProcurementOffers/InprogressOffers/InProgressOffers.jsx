@@ -322,7 +322,7 @@ const InProgressOffers = ({
         }
         if (equipmentSpecId) {
             return activeOffer.offerItems.some(
-                item => item.equipmentSpec?.id === equipmentSpecId
+                item => (item.equipmentSpec?.id === equipmentSpecId) || (item.equipmentSpecId === equipmentSpecId)
             );
         }
 
@@ -344,7 +344,7 @@ const InProgressOffers = ({
         }
         if (equipmentSpecId) {
             return activeOffer.offerItems.filter(
-                item => item.equipmentSpec?.id === equipmentSpecId
+                item => (item.equipmentSpec?.id === equipmentSpecId) || (item.equipmentSpecId === equipmentSpecId)
             );
         }
 
@@ -624,6 +624,9 @@ const InProgressOffers = ({
 
 
 
+    // Detect if this is an equipment offer (component-level flag)
+    const isEquipmentOffer = effectiveRequestItems?.some(item => item.equipmentSpecId || item.equipmentSpec) || false;
+
     return (
         <div className="procurement-offers-main-content">
             {/* Offers List */}
@@ -754,39 +757,43 @@ const InProgressOffers = ({
 
                                 <div className="procurement-request-summary-card-inprogress procurement-request-items-summary">
                                     <h4>
-                                        <span>Request Order Items</span>
-                                        <div className="request-items-actions">
-                                            <button
-                                                className="btn-modify-items"
-                                                onClick={handleModifyItems}
-                                                title="Modify Request Items"
-                                            >
-                                                <FiEdit /> Modify Items
-                                            </button>
-                                            <button
-                                                className="btn-modify-items"
-                                                onClick={handleExportRFQ}
-                                                title="Export RFQ to Excel"
-                                            >
-                                                <FiDownload /> Export RFQ
-                                            </button>
-                                            <button
-                                                className="btn-modify-items"
-                                                onClick={handleImportRFQ}
-                                                title="Import RFQ Response"
-                                            >
-                                                <FiUpload /> Import Response
-                                            </button>
-                                        </div>
+                                        <span>{isEquipmentOffer ? 'Equipment Sourcing' : 'Request Order Items'}</span>
+                                        {!isEquipmentOffer && (
+                                            <div className="request-items-actions">
+                                                <button
+                                                    className="btn-modify-items"
+                                                    onClick={handleModifyItems}
+                                                    title="Modify Request Items"
+                                                >
+                                                    <FiEdit /> Modify Items
+                                                </button>
+                                                <button
+                                                    className="btn-modify-items"
+                                                    onClick={handleExportRFQ}
+                                                    title="Export RFQ to Excel"
+                                                >
+                                                    <FiDownload /> Export RFQ
+                                                </button>
+                                                <button
+                                                    className="btn-modify-items"
+                                                    onClick={handleImportRFQ}
+                                                    title="Import RFQ Response"
+                                                >
+                                                    <FiUpload /> Import Response
+                                                </button>
+                                            </div>
+                                        )}
                                     </h4>
                                     <p className="procurement-section-description-inprogress">
-                                        Complete all items below to submit this procurement offer.
+                                        {isEquipmentOffer
+                                            ? 'Complete equipment sourcing below to submit this procurement offer.'
+                                            : 'Complete all items below to submit this procurement offer.'}
                                     </p>
 
                                     <div className="procurement-overall-progress-inprogress">
                                         <div className="procurement-progress-stats-inprogress">
                                             <div className="procurement-progress-stat-inprogress">
-                                                <div className="procurement-progress-stat-label-inprogress">Total Items</div>
+                                                <div className="procurement-progress-stat-label-inprogress">{isEquipmentOffer ? 'Total Equipment' : 'Total Items'}</div>
                                                 <div className="procurement-progress-stat-value-inprogress">
                                                     {effectiveRequestItems?.length || 0}
                                                 </div>
@@ -794,7 +801,7 @@ const InProgressOffers = ({
 
 
                                             <div className="procurement-progress-stat-inprogress">
-                                                <div className="procurement-progress-stat-label-inprogress">Items Covered</div>
+                                                <div className="procurement-progress-stat-label-inprogress">{isEquipmentOffer ? 'Equipment Sourced' : 'Items Covered'}</div>
                                                 <div className={`procurement-progress-stat-value-inprogress ${isOfferComplete(activeOffer) ? 'fulfilled' : 'unfulfilled'
                                                     }`}>
                                                     {effectiveRequestItems?.filter(item => {
@@ -857,11 +864,11 @@ const InProgressOffers = ({
 
                                                     {isComplete ? (
                                                         <span className="procurement-status-badge status-complete">
-                                                            <FiCheckCircle size={14} /> Complete
+                                                            <FiCheckCircle size={14} /> {isEquipmentItem ? 'Sourced' : 'Complete'}
                                                         </span>
                                                     ) : (
                                                         <span className="procurement-status-badge status-needed">
-                                                            <FiAlertCircle size={14} /> Needs {requestItem.quantity - totalOffered} more {itemTypeMeasuringUnit}
+                                                            <FiAlertCircle size={14} /> {isEquipmentItem ? 'Needs Procurement Solution' : `Needs ${requestItem.quantity - totalOffered} more ${itemTypeMeasuringUnit}`}
                                                         </span>
                                                     )}
                                                 </div>
@@ -1054,7 +1061,7 @@ const InProgressOffers = ({
                 onClose={hideSnackbar}
                 duration={3000}
             />
-        </div>
+        </div >
     );
 };
 
