@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaCalculator, FaCheckCircle } from 'react-icons/fa';
+import { Button } from '../../../components/common/Button';
 
 const Step3FinalizePurchasingForm = ({ ticketId, ticketData, onSave, onComplete, isLoading }) => {
     const [formData, setFormData] = useState({
@@ -199,22 +200,18 @@ const Step3FinalizePurchasingForm = ({ ticketId, ticketData, onSave, onComplete,
 
             {/* Actions */}
             <div className="form-actions">
-                <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={handleSave}
-                    disabled={isLoading}
-                >
+                <Button variant="secondary" onClick={handleSave} disabled={isLoading}>
                     Save Progress
-                </button>
-                <button
-                    type="button"
-                    className="btn-primary"
+                </Button>
+                <Button
+                    variant="primary"
                     onClick={handleComplete}
                     disabled={isLoading}
+                    loading={isLoading}
+                    loadingText="Saving..."
                 >
-                    {isLoading ? 'Saving...' : 'Complete Step 3'}
-                </button>
+                    Complete Step 3
+                </Button>
             </div>
         </div>
     );

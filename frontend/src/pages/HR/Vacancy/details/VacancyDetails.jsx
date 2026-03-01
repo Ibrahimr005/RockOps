@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import './VacancyDetails.scss';
 import CandidatesTable from "../Candidate/CandidatesTable.jsx";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { Button } from '../../../../components/common/Button/Button';
 import { vacancyService } from '../../../../services/hr/vacancyService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import { FaArrowLeft, FaEdit, FaTrash, FaUsers, FaBriefcase, FaCalendar, FaClock, FaBuilding } from 'react-icons/fa';
@@ -175,10 +176,10 @@ const VacancyDetails = () => {
                 <div className="error-state">
                     <h3>Error Loading Vacancy</h3>
                     <p>{error || 'Vacancy not found'}</p>
-                    <button className="btn btn-primary" onClick={handleBackClick}>
+                    <Button variant="primary" onClick={handleBackClick}>
                         <FaArrowLeft />
                         Back to Vacancies
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

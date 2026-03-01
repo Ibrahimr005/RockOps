@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { FiX, FiDownload } from 'react-icons/fi';
+import { FiDownload } from 'react-icons/fi';
+import { CloseButton } from '../../../../../components/common/Button';
 import './LanguageSelectionModal.scss';
 
 const LanguageSelectionModal = ({ isVisible, onClose, onSelectLanguage, title }) => {
@@ -28,9 +29,7 @@ const LanguageSelectionModal = ({ isVisible, onClose, onSelectLanguage, title })
                     <h3 className="modal-title">
                         <FiDownload /> {title || 'Select Language'}
                     </h3>
-                    <button className="btn-close" onClick={onClose}>
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">

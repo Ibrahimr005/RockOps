@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import { Button, CloseButton } from '../../../../components/common/Button/Button';
 import './AddPositionForm.scss';
 import { employeeService } from "../../../../services/hr/employeeService.js";
 import { departmentService } from "../../../../services/hr/departmentService.js";
@@ -608,7 +609,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
             <div className="modal-content modal-xl">
                 <div className="modal-header">
                     <h2>Edit Position: {position?.positionName}</h2>
-                    <button className="btn-close" onClick={onClose}>×</button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {(loadingDepartments || loadingEmployees || loadingPositions) ? (
@@ -761,8 +762,8 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                     </div>
                 )}
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>Cancel</button>
-                    <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>{loading ? 'Updating...' : 'Update Position'}</button>
+                    <Button variant="ghost" onClick={onClose} disabled={loading}>Cancel</Button>
+                    <Button variant="primary" onClick={handleSubmit} disabled={loading} loading={loading} loadingText="Updating...">Update Position</Button>
                 </div>
             </div>
         </div>

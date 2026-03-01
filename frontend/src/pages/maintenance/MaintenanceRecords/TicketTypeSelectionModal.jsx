@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { FaTimes, FaTools, FaShoppingCart } from 'react-icons/fa';
+import { FaTools, FaShoppingCart } from 'react-icons/fa';
+import { CloseButton } from '../../../components/common/Button';
 import '../../../styles/modal-styles.scss';
 import './TicketTypeSelectionModal.scss';
 
@@ -29,9 +30,7 @@ const TicketTypeSelectionModal = ({ isOpen, onClose, onSelectMaintenanceTicket, 
                     <div className="modal-title">
                         Select Ticket Type
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">

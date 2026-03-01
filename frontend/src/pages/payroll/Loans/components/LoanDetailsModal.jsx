@@ -2,10 +2,11 @@
 // frontend/src/pages/payroll/Loans/components/LoanDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
 import {
-    FaTimes, FaUser, FaMoneyBillWave, FaCalendarAlt, FaPercent,
+    FaUser, FaMoneyBillWave, FaCalendarAlt, FaPercent,
     FaFileAlt, FaCreditCard, FaCheck, FaExclamationTriangle,
     FaChartLine, FaClock, FaDollarSign
 } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import './LoanModal.scss';
@@ -267,13 +268,7 @@ const LoanDetailsModal = ({ loan, onClose }) => {
                         <FaMoneyBillWave className="modal-icon" />
                         Loan Details - {loan.employeeName}
                     </h3>
-                    <button
-                        type="button"
-                        className="modal-close"
-                        onClick={onClose}
-                    >
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">
@@ -411,13 +406,9 @@ const LoanDetailsModal = ({ loan, onClose }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={onClose}
-                    >
+                    <Button variant="ghost" onClick={onClose}>
                         Close
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

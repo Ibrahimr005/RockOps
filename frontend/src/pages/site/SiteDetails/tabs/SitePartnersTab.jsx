@@ -7,6 +7,7 @@ import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { siteService } from "../../../../services/siteService.js";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
+import { Button, IconButton, CloseButton } from '../../../../components/common/Button';
 
 const SitePartnersTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -57,24 +58,24 @@ const SitePartnersTab = ({siteId}) => {
                             step="0.01"
                             style={{ width: '80px' }}
                         />
-                        <button
-                            className="icon-button success"
+                        <IconButton
+                            variant="success"
+                            size="sm"
+                            icon={<FaSave />}
                             onClick={() => handleUpdatePartner(row.partnerID, editPercentage)}
                             disabled={!editPercentage || parseFloat(editPercentage) < 0 || parseFloat(editPercentage) > 100}
                             title="Save"
-                        >
-                            <FaSave />
-                        </button>
-                        <button
-                            className="icon-button cancel"
+                        />
+                        <IconButton
+                            variant="ghost"
+                            size="sm"
+                            icon={<FaTimes />}
                             onClick={() => {
                                 setEditingPartner(null);
                                 setEditPercentage("");
                             }}
                             title="Cancel"
-                        >
-                            <FaTimes />
-                        </button>
+                        />
                     </div>
                 ) : (
                     row.partnerPercentage
@@ -88,23 +89,23 @@ const SitePartnersTab = ({siteId}) => {
             render: (row) => (
                 isSiteAdmin && (
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                            className="icon-button primary"
+                        <IconButton
+                            variant="primary"
+                            size="sm"
+                            icon={<FaEdit />}
                             onClick={() => {
                                 setEditingPartner(row.partnerID);
                                 setEditPercentage(row.partnerPercentage.replace('%', ''));
                             }}
                             title="Edit Percentage"
-                        >
-                            <FaEdit />
-                        </button>
-                        <button
-                            className="icon-button danger"
+                        />
+                        <IconButton
+                            variant="danger"
+                            size="sm"
+                            icon={<FaTrash />}
                             onClick={() => handleRemovePartner(row.partnerID)}
                             title="Remove Partner"
-                        >
-                            <FaTrash />
-                        </button>
+                        />
                     </div>
                 )
             )
@@ -327,12 +328,7 @@ const SitePartnersTab = ({siteId}) => {
                     <div className="assign-partner-modal-content">
                         <div className="assign-partner-modal-header">
                             <h2>Assign Partner</h2>
-                            <button
-                                className="assign-partner-modal-close-button"
-                                onClick={handleCloseModal}
-                            >
-                                ×
-                            </button>
+                            <CloseButton onClick={handleCloseModal} />
                         </div>
 
                         <div className="assign-partner-modal-body">
@@ -394,13 +390,14 @@ const SitePartnersTab = ({siteId}) => {
                                                         </div>
                                                     </td>
                                                     <td data-label="Action">
-                                                        <button
-                                                            className="assign-partner-btn"
+                                                        <Button
+                                                            variant="primary"
+                                                            size="sm"
                                                             onClick={() => handleAssignPartner(partner.id)}
                                                             disabled={!isValidPercentage}
                                                         >
                                                             {t('site.assign')}
-                                                        </button>
+                                                        </Button>
                                                     </td>
                                                 </tr>
                                             );

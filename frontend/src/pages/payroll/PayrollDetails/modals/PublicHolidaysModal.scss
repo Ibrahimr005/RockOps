@@ -91,6 +91,32 @@
       font-style: italic;
     }
 
+    // --- Payroll Period Info Banner ---
+    .payroll-period-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1.25rem;
+      background: rgba(var(--color-primary-rgb, 72, 128, 255), 0.08);
+      border: 1px solid rgba(var(--color-primary-rgb, 72, 128, 255), 0.2);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.25rem;
+      color: var(--color-text-primary);
+      font-size: 0.9rem;
+      line-height: 1.5;
+
+      svg {
+        color: var(--color-primary);
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+
+      strong {
+        font-weight: 600;
+        color: var(--color-primary);
+      }
+    }
+
     // --- Form Section ---
     .add-holiday-form {
       background: var(--color-surface-secondary);

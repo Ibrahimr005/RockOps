@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaCheckCircle, FaClock, FaExclamationCircle, FaCreditCard, FaPlus, FaUniversity, FaWallet } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
@@ -412,7 +413,7 @@ const EmployeePayrollsTable = ({ employeePayrolls, payroll, onRefresh, loading }
                                 <FaCreditCard />
                                 Set Payment Type
                             </h3>
-                            <button className="close-btn" onClick={closePaymentTypeModal}>×</button>
+                            <CloseButton onClick={closePaymentTypeModal} />
                         </div>
 
                         <div className="modal-body">
@@ -586,29 +587,33 @@ const EmployeePayrollsTable = ({ employeePayrolls, payroll, onRefresh, loading }
                         </div>
 
                         <div className="modal-footer">
-                            <button
-                                className="cancel-btn"
+                            <Button
+                                variant="ghost"
                                 onClick={closePaymentTypeModal}
                                 disabled={savingPaymentType || creatingPaymentType}
                             >
                                 Cancel
-                            </button>
+                            </Button>
                             {isCreatingNew ? (
-                                <button
-                                    className="save-btn create-btn"
+                                <Button
+                                    variant="primary"
                                     onClick={handleCreatePaymentType}
                                     disabled={!newPaymentType.code || !newPaymentType.name || creatingPaymentType}
+                                    loading={creatingPaymentType}
+                                    loadingText="Creating..."
                                 >
-                                    {creatingPaymentType ? 'Creating...' : 'Create Payment Type'}
-                                </button>
+                                    Create Payment Type
+                                </Button>
                             ) : (
-                                <button
-                                    className="save-btn"
+                                <Button
+                                    variant="primary"
                                     onClick={handleSavePaymentType}
                                     disabled={!selectedPaymentType || savingPaymentType}
+                                    loading={savingPaymentType}
+                                    loadingText="Saving..."
                                 >
-                                    {savingPaymentType ? 'Saving...' : 'Save Payment Type'}
-                                </button>
+                                    Save Payment Type
+                                </Button>
                             )}
                         </div>
                     </div>

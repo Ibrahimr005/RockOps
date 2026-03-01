@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaUserPlus, FaEdit, FaTrash,  FaUser } from 'react-icons/fa';
+import { Button } from '../../../components/common/Button';
 import './EmployeesList.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
@@ -470,7 +471,7 @@ const EmployeesList = () => {
         return (
             <div className="error-container">
                 <p>Error: {error}</p>
-                <button onClick={fetchEmployees}>Try Again</button>
+                <Button variant="primary" onClick={fetchEmployees}>Try Again</Button>
             </div>
         );
     }

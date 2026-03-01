@@ -4,7 +4,8 @@
 // ========================================
 
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaGavel, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
+import { FaGavel, FaExclamationTriangle } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { loanResolutionService } from '../../../../services/payroll/loanResolutionService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
@@ -83,14 +84,7 @@ const LoanResolutionModal = ({ loan, onClose, onRequestCreated }) => {
             <div className="create-loan-modal" style={{ maxWidth: '550px' }}>
                 <div className="create-loan-modal-header">
                     <h2><FaGavel style={{ marginRight: '8px' }} /> Request Early Resolution</h2>
-                    <button
-                        className="create-loan-modal-close-btn"
-                        onClick={handleCloseAttempt}
-                        type="button"
-                        disabled={loading}
-                    >
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} disabled={loading} />
                 </div>
 
                 <div className="create-loan-modal-content">
@@ -141,25 +135,22 @@ const LoanResolutionModal = ({ loan, onClose, onRequestCreated }) => {
                             </div>
 
                             <div className="create-loan-form-actions">
-                                <button
-                                    type="button"
-                                    className="create-loan-cancel-btn"
+                                <Button
+                                    variant="ghost"
                                     onClick={handleCloseAttempt}
                                     disabled={loading}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    className="create-loan-submit-btn"
-                                    disabled={loading || !reason.trim()}
+                                    variant="primary"
+                                    disabled={!reason.trim()}
+                                    loading={loading}
+                                    loadingText="Submitting..."
                                 >
-                                    {loading ? (
-                                        <><FaSpinner className="create-loan-spinner" /> Submitting...</>
-                                    ) : (
-                                        <><FaGavel /> Submit Request</>
-                                    )}
-                                </button>
+                                    <FaGavel /> Submit Request
+                                </Button>
                             </div>
                         </form>
                     </div>

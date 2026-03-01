@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaGlobeAmericas, FaBriefcase, FaBuilding, FaCalendarAlt, FaStickyNote, FaFilePdf } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaGlobeAmericas, FaBriefcase, FaBuilding, FaCalendarAlt, FaStickyNote, FaFilePdf } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './EditCandidateModal.scss';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
@@ -167,9 +168,7 @@ const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
                         <FaUser />
                         Edit Candidate
                     </h2>
-                    <button className="btn-close" onClick={handleCloseAttempt} disabled={isLoading}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} disabled={isLoading} />
                 </div>
 
                 {/* Modal Body */}
@@ -378,22 +377,23 @@ const EditCandidateModal = ({ candidate, onClose, onSave, isLoading }) => {
                 {/* Modal Footer - Outside form but fixed at bottom */}
                 <div className="modal-footer">
                     <div className="footer-actions">
-                        <button
-                            type="button"
-                            className="secondary-button"
+                        <Button
+                            variant="ghost"
                             onClick={handleCloseAttempt}
                             disabled={isLoading}
                         >
                             Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="submit"
                             form="edit-candidate-form"
-                            className="primary-button"
+                            variant="primary"
                             disabled={isLoading}
+                            loading={isLoading}
+                            loadingText="Updating..."
                         >
-                            {isLoading ? 'Updating...' : 'Update'}
-                        </button>
+                            Update
+                        </Button>
                     </div>
                 </div>
             </div>

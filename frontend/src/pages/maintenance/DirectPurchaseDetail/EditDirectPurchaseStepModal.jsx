@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
@@ -155,9 +155,7 @@ const EditDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) => {
                         <div className="modal-title">
                             Edit Step: {step?.stepName}
                         </div>
-                        <button className="btn-close" onClick={handleCloseAttempt}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
                 <div className="modal-body">
                     <form onSubmit={handleSubmit} className="edit-step-form" id="edit-step-form">
@@ -339,13 +337,12 @@ const EditDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) => {
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={handleCloseAttempt}>
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" form="edit-step-form">
-                        <FaSave />
+                    </Button>
+                    <Button variant="primary" type="submit" form="edit-step-form">
                         Update Step
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

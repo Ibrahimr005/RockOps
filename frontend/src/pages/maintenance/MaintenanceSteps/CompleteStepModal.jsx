@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { FaTimes, FaCheck, FaCalendarAlt, FaDollarSign } from 'react-icons/fa';
+import { FaCheck, FaCalendarAlt, FaDollarSign } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/modal-styles.scss';
 import './CompleteStepModal.scss';
@@ -126,9 +127,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                             <FaCheck />
                             Complete Maintenance Step
                         </div>
-                        <button className="btn-close" onClick={handleCloseAttempt}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                 <div className="modal-body">
@@ -248,20 +247,12 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={handleCloseAttempt}
-                    >
-                        <FaTimes /> Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="btn btn-success"
-                        onClick={handleSubmit}
-                    >
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" onClick={handleSubmit}>
                         <FaCheck /> Complete Step
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

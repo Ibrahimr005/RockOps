@@ -11,7 +11,50 @@
   // ========================================
   // TABS
   // ========================================
+  .tabs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
 
+    .tabs-left {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      margin-bottom: -1px;
+
+      &:hover {
+        color: var(--color-text-primary);
+      }
+
+      &.active {
+        color: var(--color-primary);
+        border-bottom-color: var(--color-primary);
+        font-weight: 600;
+      }
+
+      svg {
+        font-size: 0.85rem;
+      }
+    }
+  }
 
   // ========================================
   // TABLE CONTAINER
@@ -282,13 +325,22 @@
     padding: 16px;
 
     .tabs {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      flex-wrap: wrap;
+
+      .tabs-left {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
 
       .tab-btn {
         white-space: nowrap;
         padding: 10px 16px;
         font-size: 13px;
+      }
+
+      .btn-bulk-bonus {
+        font-size: 12px;
+        padding: 6px 12px;
       }
     }
   }

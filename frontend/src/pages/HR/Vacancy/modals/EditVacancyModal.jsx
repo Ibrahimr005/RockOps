@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaBriefcase, FaTimes } from 'react-icons/fa';
+import { FaBriefcase } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './VacancyModals.scss';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
@@ -168,9 +169,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                             Edit Vacancy
                         </h2>
 
-                        <button className="btn-close" onClick={handleCloseAttempt} disabled={isSubmitting}>
-                            <FaTimes/>
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} disabled={isSubmitting} />
                     </div>
 
                     <div className="modal-body">
@@ -323,32 +322,23 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                     </div>
 
                     <div className="modal-footer">
-                        <button
-                            type="button"
-                            className="modal-btn-secondary"
+                        <Button
+                            variant="ghost"
                             onClick={handleCloseAttempt}
                             disabled={isSubmitting}
                         >
                             Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
+                        </Button>
+                        <Button
+                            variant="primary"
                             disabled={isSubmitting}
                             onClick={handleSubmit}
+                            loading={isSubmitting}
+                            loadingText="Updating..."
                         >
-                            {isSubmitting ? (
-                                <>
-                                    <div className="spinner"></div>
-                                    Updating...
-                                </>
-                            ) : (
-                                <>
-                                    <FaBriefcase/>
-                                    Update Vacancy
-                                </>
-                            )}
-                        </button>
+                            <FaBriefcase/>
+                            Update Vacancy
+                        </Button>
                     </div>
                 </div>
             </div>

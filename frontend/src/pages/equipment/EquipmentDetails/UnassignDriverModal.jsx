@@ -1,7 +1,8 @@
 // UnassignDriverModal.jsx
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUserTimes } from 'react-icons/fa';
+import { FaUserTimes } from 'react-icons/fa';
 import { equipmentService } from '../../../services/equipmentService';
+import { CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const UnassignDriverModal = ({ isOpen, onClose, equipmentId, onDriverUnassigned }) => {
@@ -109,9 +110,7 @@ const UnassignDriverModal = ({ isOpen, onClose, equipmentId, onDriverUnassigned 
                 <div className="driver-modal-container">
                     <div className="driver-modal-header">
                         <h2>Manage Equipment Drivers</h2>
-                        <button className="driver-modal-close" onClick={handleCloseAttempt}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                     <div className="driver-modal-body">

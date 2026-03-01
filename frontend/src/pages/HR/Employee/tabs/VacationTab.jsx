@@ -4,6 +4,7 @@ import { leaveRequestService } from '../../../../services/hr/leaveRequestService
 import './VacationTab.scss';
 import LeaveRequestModal from "../../LeaveRequests/LeaveRequestModal.jsx";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
+import { Button } from '../../../../components/common/Button';
 
 const VacationTab = ({ employee, formatDate }) => {
     const [vacationBalance, setVacationBalance] = useState(null);
@@ -103,9 +104,9 @@ const VacationTab = ({ employee, formatDate }) => {
             <div className="vacation-info tab-panel">
                 <div className="error-message">
                     <p>Error: {error}</p>
-                    <button onClick={fetchVacationData} className="retry-btn">
+                    <Button variant="primary" onClick={fetchVacationData}>
                         Retry
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -254,18 +255,18 @@ const VacationTab = ({ employee, formatDate }) => {
 
             {/* Action Buttons */}
             <div className="leave-actions">
-                <button
-                    className="request-leave-btn primary"
+                <Button
+                    variant="primary"
                     onClick={() => setShowRequestModal(true)}
                 >
                     + New Leave Request
-                </button>
-                <button
-                    className="refresh-btn secondary"
+                </Button>
+                <Button
+                    variant="ghost"
                     onClick={fetchVacationData}
                 >
-                    🔄 Refresh
-                </button>
+                    Refresh
+                </Button>
             </div>
 
             {/* Leave Request Modal */}

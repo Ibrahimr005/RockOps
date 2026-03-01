@@ -6,6 +6,7 @@ import EditPositionForm from './components/EditPositionForm.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
+import { CloseButton } from '../../../components/common/Button/Button';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { jobPositionService } from '../../../services/hr/jobPositionService.js';
 import './PositionsList.scss';
@@ -408,12 +409,7 @@ const PositionsList = () => {
             {error && (
                 <div className="positions-error">
                     <strong>Error:</strong> {error}
-                    <button
-                        onClick={() => setError(null)}
-                        style={{ marginLeft: '10px', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '16px' }}
-                    >
-                        ×
-                    </button>
+                    <CloseButton onClick={() => setError(null)} />
                 </div>
             )}
 

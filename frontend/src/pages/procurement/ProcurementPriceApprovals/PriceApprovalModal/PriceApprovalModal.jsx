@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './PriceApprovalModal.scss';
-import { FiX, FiDollarSign } from 'react-icons/fi';
+import { FiDollarSign } from 'react-icons/fi';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
@@ -89,9 +90,7 @@ const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
                 {/* Header */}
                 <div className="modal-header">
                     <h2>Approve Item Price</h2>
-                    <button className="modal-close" onClick={handleCloseAttempt}>
-                        <FiX size={20} />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 {/* Body */}
@@ -187,16 +186,16 @@ const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
 
                 {/* Footer */}
                 <div className="modal-footer">
-                    <button className="btn btn-secondary" onClick={handleCloseAttempt}>
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button
-                        className="btn btn-primary"
+                    </Button>
+                    <Button
+                        variant="success"
                         onClick={handleApprove}
                         disabled={!approvedPrice || parseFloat(approvedPrice) <= 0}
                     >
                         Approve Price
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

@@ -1,0 +1,477 @@
+.demotion-list-page {
+    padding: var(--spacing-lg);
+}
+
+.demotion-list-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.demotion-list-filters {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.demotion-list-filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+
+    &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.15);
+    }
+}
+
+.demotion-list-create-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: var(--color-primary-dark, var(--color-primary));
+        opacity: 0.9;
+    }
+}
+
+// Status badge
+.demotion-status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+// Employee cell
+.demotion-employee-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.demotion-employee-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.demotion-employee-number {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+// Position and salary display
+.demotion-new-position {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-danger);
+    font-weight: 500;
+}
+
+.demotion-arrow-icon {
+    font-size: 10px;
+}
+
+.demotion-new-salary {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+.demotion-reduction-percentage {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+// Modal styles
+.demotion-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--spacing-md);
+}
+
+.demotion-modal {
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+}
+
+.demotion-review-modal {
+    max-width: 650px;
+}
+
+.demotion-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+
+    h2 {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+}
+
+.demotion-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+}
+
+.demotion-modal-content {
+    padding: var(--spacing-lg);
+    overflow-y: auto;
+    flex: 1;
+}
+
+.demotion-modal-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-2xl);
+    color: var(--text-secondary);
+}
+
+.demotion-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+.demotion-review-footer {
+    justify-content: space-between;
+}
+
+.demotion-review-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+// Form elements
+.demotion-form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.demotion-form-label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.demotion-form-input,
+.demotion-form-select,
+.demotion-form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    transition: border-color 0.2s;
+
+    &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.15);
+    }
+
+    &.error {
+        border-color: var(--color-danger);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
+.demotion-form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.demotion-form-error {
+    display: block;
+    color: var(--color-danger);
+    font-size: var(--font-size-xs);
+    margin-top: 4px;
+}
+
+.demotion-form-char-count {
+    display: block;
+    text-align: right;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+// Current info display
+.demotion-current-info {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.demotion-current-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: var(--font-size-sm);
+
+    span {
+        color: var(--text-secondary);
+    }
+
+    strong {
+        color: var(--text-primary);
+    }
+}
+
+// Impact preview
+.demotion-impact-preview {
+    background-color: rgba(var(--color-danger-rgb, 220, 38, 38), 0.06);
+    border: 1px solid rgba(var(--color-danger-rgb, 220, 38, 38), 0.2);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.demotion-impact-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-danger);
+    margin-bottom: var(--spacing-xs);
+}
+
+.demotion-impact-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+
+    span:first-child {
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+    }
+}
+
+.demotion-impact-value {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+
+    &.reduction {
+        color: var(--color-danger);
+    }
+}
+
+// Workflow note
+.demotion-workflow-note {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: rgba(var(--color-primary-rgb), 0.06);
+    border: 1px solid rgba(var(--color-primary-rgb), 0.15);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+// Review summary
+.demotion-review-summary {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.demotion-review-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 6px 0;
+    gap: var(--spacing-md);
+
+    &:not(:last-child) {
+        border-bottom: 1px solid var(--border-color);
+    }
+}
+
+.demotion-review-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    min-width: 140px;
+}
+
+.demotion-review-value {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    font-weight: 500;
+    text-align: right;
+}
+
+.demotion-review-highlight-danger {
+    color: var(--color-danger);
+    font-weight: 700;
+}
+
+// Buttons
+.demotion-btn-cancel {
+    padding: 10px 18px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background-color: var(--bg-secondary);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.demotion-btn-submit {
+    padding: 10px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-primary);
+    color: white;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+
+    &:hover {
+        opacity: 0.9;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.demotion-btn-approve {
+    padding: 10px 18px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-success);
+    color: white;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+
+    &:hover {
+        opacity: 0.9;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.demotion-btn-reject {
+    padding: 10px 18px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-danger);
+    color: white;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+
+    &:hover {
+        opacity: 0.9;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+// Spin animation
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

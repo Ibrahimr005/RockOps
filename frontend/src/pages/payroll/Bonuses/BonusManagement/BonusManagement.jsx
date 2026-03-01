@@ -8,7 +8,6 @@ import {
     FaPlus,
     FaEdit,
     FaEye,
-    FaTimes,
     FaGift,
     FaCheckCircle,
     FaTimesCircle,
@@ -16,9 +15,9 @@ import {
     FaMoneyBillWave,
     FaClock,
     FaBan,
-    FaUsers,
-    FaSpinner
+    FaUsers
 } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { bonusService, BONUS_STATUS, BONUS_STATUS_CONFIG } from '../../../../services/payroll/bonusService';
 import { employeeService } from '../../../../services/hr/employeeService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
@@ -525,14 +524,10 @@ const BonusManagement = () => {
                             defaultSortDirection="desc"
 
                             className="bonuses-table"
-
                             additionalHeaderContent={
-                                <button
-                                    className="btn-bulk-bonus"
-                                    onClick={() => setShowBulkBonusModal(true)}
-                                >
+                                <Button variant="primary" outline onClick={() => setShowBulkBonusModal(true)}>
                                     <FaUsers /> Bulk Bonus
-                                </button>
+                                </Button>
                             }
                         />
                     </div>
@@ -610,9 +605,7 @@ const BonusManagement = () => {
                     <div className="modal-content reject-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3><FaTimesCircle /> Reject Bonus</h3>
-                            <button className="btn-close" onClick={() => setRejectModal({ open: false, bonusId: null, reason: '' })}>
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={() => setRejectModal({ open: false, bonusId: null, reason: '' })} />
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
@@ -626,23 +619,21 @@ const BonusManagement = () => {
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button
-                                className="btn-cancel"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setRejectModal({ open: false, bonusId: null, reason: '' })}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="btn-reject"
+                            </Button>
+                            <Button
+                                variant="danger"
                                 onClick={handleSubmitRejection}
-                                disabled={!rejectModal.reason.trim() || processingId === rejectModal.bonusId}
+                                disabled={!rejectModal.reason.trim()}
+                                loading={processingId === rejectModal.bonusId}
+                                loadingText="Rejecting..."
                             >
-                                {processingId === rejectModal.bonusId ? (
-                                    <><FaSpinner className="spin" /> Rejecting...</>
-                                ) : (
-                                    <><FaTimesCircle /> Reject Bonus</>
-                                )}
-                            </button>
+                                <FaTimesCircle /> Reject Bonus
+                            </Button>
                         </div>
                     </div>
                 </div>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FiX } from 'react-icons/fi';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { departmentService } from '../../../services/hr/departmentService.js';
 import {FaBuilding} from "react-icons/fa";
+import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const DepartmentModal = ({
@@ -135,15 +135,7 @@ const DepartmentModal = ({
                         <FaBuilding/>
                         {modalTitle}
                     </h2>
-                    <button
-                        type="button"
-                        className="btn-close"
-                        onClick={handleClose}
-                        disabled={loading}
-                        aria-label="Close modal"
-                    >
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={handleClose} disabled={loading} />
                 </div>
 
                 {/* Modal Body */}
@@ -193,22 +185,23 @@ const DepartmentModal = ({
 
                 {/* Modal Footer */}
                 <div className="modal-footer modal-footer">
-                    <button
-                        type="button"
-                        className="btn-cancel"
+                    <Button
+                        variant="ghost"
                         onClick={handleClose}
                         disabled={loading}
                     >
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="submit"
                         form="department-form"
-                        className="btn-primary"
+                        variant="primary"
                         disabled={loading || !formData.name.trim()}
+                        loading={loading}
+                        loadingText={isEdit ? 'Updating...' : 'Creating...'}
                     >
-                        {loading ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Department' : 'Create Department')}
-                    </button>
+                        {isEdit ? 'Update Department' : 'Create Department'}
+                    </Button>
                 </div>
             </div>
         </div>

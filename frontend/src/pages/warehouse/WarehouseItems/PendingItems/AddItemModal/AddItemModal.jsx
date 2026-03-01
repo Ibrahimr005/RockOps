@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { itemTypeService } from '../../../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../../../services/warehouse/itemCategoryService';
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const AddItemModal = ({
@@ -195,11 +196,7 @@ const AddItemModal = ({
                         </svg>
                         Add New Item
                     </h2>
-                    <button className="btn-close" onClick={handleCloseAttempt}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 {/* Modal Body */}
@@ -318,31 +315,18 @@ const AddItemModal = ({
 
                 {/* Modal Footer */}
                 <div className="modal-footer">
-                    <button type="button" className="modal-btn-secondary" onClick={handleCloseAttempt}>
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        variant="success"
                         type="submit"
                         form="add-item-form"
-                        className="btn-success"
-                        disabled={loading}
+                        loading={loading}
+                        loadingText="Adding..."
                     >
-                        {loading ? (
-                            <>
-                                <svg className="spinner" viewBox="0 0 24 24" width="16" height="16">
-                                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" strokeDasharray="32" strokeLinecap="round" />
-                                </svg>
-                                Adding...
-                            </>
-                        ) : (
-                            <>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                                    <path d="M12 5v14M5 12h14" />
-                                </svg>
-                                Add Item
-                            </>
-                        )}
-                    </button>
+                        Add Item
+                    </Button>
                 </div>
             </div>
         </div>

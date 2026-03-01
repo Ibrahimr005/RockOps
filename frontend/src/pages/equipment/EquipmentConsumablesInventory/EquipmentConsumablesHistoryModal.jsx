@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { CloseButton } from '../../../components/common/Button';
 import "./EquipmentConsumablesHistoryModal.scss";
 
 const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, consumableResolutions, itemDetails }) => {
@@ -322,7 +323,7 @@ const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, 
                             </div>
                         </div>
                     </div>
-                                    <button className="btn-close" onClick={onClose} aria-label="Close"></button>
+                                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body consumables-history-modal-body">

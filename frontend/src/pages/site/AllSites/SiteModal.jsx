@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 /**
@@ -310,14 +311,7 @@ const SiteModal = ({
             <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modern-modal-header">
                     <h2>{isEditMode ? t('site.editSite') : t('site.addSite')}</h2>
-                    <button
-                        className="modern-modal-close"
-                        onClick={handleClose}
-                        disabled={isLoading}
-                        aria-label="Close modal"
-                    >
-                        ×
-                    </button>
+                    <CloseButton onClick={handleClose} disabled={isLoading} />
                 </div>
 
                 <form onSubmit={handleSubmit} noValidate>
@@ -444,28 +438,21 @@ const SiteModal = ({
                     </div>
 
                     <div className="modern-modal-footer">
-                        <button
-                            type="button"
-                            className="modern-btn modern-btn-cancel"
+                        <Button
+                            variant="ghost"
                             onClick={handleClose}
                             disabled={isLoading}
                         >
                             {t('common.cancel')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="primary"
                             type="submit"
-                            className="modern-btn modern-btn-primary"
-                            disabled={isLoading}
+                            loading={isLoading}
+                            loadingText={t('common.saving') || 'Saving...'}
                         >
-                            {isLoading ? (
-                                <>
-                                    <span className="spinner"></span>
-                                    {t('common.saving') || 'Saving...'}
-                                </>
-                            ) : (
-                                isEditMode ? t('common.save') : t('site.addSite')
-                            )}
-                        </button>
+                            {isEditMode ? t('common.save') : t('site.addSite')}
+                        </Button>
                     </div>
                 </form>
             </div>

@@ -1,6 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { salaryIncreaseService } from '../../../../services/hr/salaryIncreaseService.js';
 
 const CompensationTab = ({ employee, formatCurrency }) => {
+    const [salaryHistory, setSalaryHistory] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    useEffect(() => {
+        if (employee?.id) {
+            setLoadingHistory(true);
+            salaryIncreaseService.getEmployeeHistory(employee.id)
+                .then(res => setSalaryHistory(res.data || []))
+                .catch(() => setSalaryHistory([]))
+                .finally(() => setLoadingHistory(false));
+        }
+    }, [employee?.id]);
     // Helper function to get the appropriate base salary
     const getBaseSalary = () => {
         if (employee.baseSalaryOverride) {
@@ -89,11 +102,39 @@ const CompensationTab = ({ employee, formatCurrency }) => {
             </div>
 
             <div className="salary-history">
-                <h4>Salary Information</h4>
-                <p className="info-text">
-                    This employee's compensation is based on the {employee.jobPosition?.positionName || 'current'} position,
-                    {employee.baseSalaryOverride ? ' with a custom salary override applied.' : ' using the standard position salary.'}
-                </p>
+                <h4>Salary History</h4>
+                {loadingHistory ? (
+                    <p className="info-text">Loading salary history...</p>
+                ) : salaryHistory.length > 0 ? (
+                    <table className="compensation-history-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Previous</th>
+                                <th>New</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {salaryHistory.map(record => (
+                                <tr key={record.id}>
+                                    <td>{record.effectiveDate ? new Date(record.effectiveDate).toLocaleDateString() : new Date(record.createdAt).toLocaleDateString()}</td>
+                                    <td>{record.changeType?.replace('_', ' ')}</td>
+                                    <td>{formatCurrency(record.previousSalary)}</td>
+                                    <td style={{ fontWeight: '600', color: 'var(--color-success)' }}>{formatCurrency(record.newSalary)}</td>
+                                    <td>{record.changeReason?.length > 50 ? record.changeReason.substring(0, 50) + '...' : record.changeReason}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : (
+                    <p className="info-text">
+                        No salary changes recorded.
+                        This employee's compensation is based on the {employee.jobPosition?.positionName || 'current'} position
+                        {employee.baseSalaryOverride ? ', with a custom salary override applied.' : ', using the standard position salary.'}
+                    </p>
+                )}
             </div>
         </div>
     );

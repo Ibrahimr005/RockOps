@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaTimes } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import './EditUserModal.css';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
@@ -174,9 +174,7 @@ const EditUserModal = ({ user, mode = 'edit', onCancel, onSave }) => {
             <div className="modal-content">
                 <div className="modal-header">
                     <h2>{mode === 'edit' ? t('admin.editUser') : t('admin.addUser')}</h2>
-                    <button className="btn-close" onClick={handleCloseAttempt} disabled={isSubmitting}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} disabled={isSubmitting} />
                 </div>
 
                 <form onSubmit={handleSubmit} className="edit-form">
@@ -272,24 +270,21 @@ const EditUserModal = ({ user, mode = 'edit', onCancel, onSave }) => {
                     </div>
 
                     <div className="form-actions">
-                        <button
-                            type="button"
-                            className="cancel-button"
+                        <Button
+                            variant="ghost"
                             onClick={handleCloseAttempt}
                             disabled={isSubmitting}
                         >
                             {t('common.cancel')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="primary"
                             type="submit"
-                            className="save-button"
-                            disabled={isSubmitting}
+                            loading={isSubmitting}
+                            loadingText={t('common.saving', 'Saving...')}
                         >
-                            {isSubmitting ?
-                                t('common.saving', 'Saving...') :
-                                (mode === 'edit' ? t('common.save') : t('admin.addUser'))
-                            }
-                        </button>
+                            {mode === 'edit' ? t('common.save') : t('admin.addUser')}
+                        </Button>
                     </div>
                 </form>
             </div>

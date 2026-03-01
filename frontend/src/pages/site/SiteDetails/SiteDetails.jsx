@@ -18,6 +18,7 @@ import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
 import {FaTrash} from "react-icons/fa";
 import ContentLoader from "../../../components/common/ContentLoader/ContentLoader.jsx";
+import { Button } from '../../../components/common/Button';
 
 const SiteDetails = () => {
     const { siteId } = useParams();
@@ -321,8 +322,8 @@ const SiteDetails = () => {
                     <h2>Error Loading Data</h2>
                     <p>{error}</p>
                     <div className="error-actions">
-                        <button onClick={() => fetchSiteDetails()}>Try Again</button>
-                        <button onClick={() => navigate('/sites')}>Back to Sites</button>
+                        <Button variant="primary" onClick={() => fetchSiteDetails()}>Try Again</Button>
+                        <Button variant="ghost" onClick={() => navigate('/sites')}>Back to Sites</Button>
                     </div>
                 </div>
             </div>
@@ -335,7 +336,7 @@ const SiteDetails = () => {
                 <div className="error-message">
                     <h2>Site Not Found</h2>
                     <p>The requested site could not be found.</p>
-                    <button onClick={() => navigate('/sites')}>Back to Sites List</button>
+                    <Button variant="primary" onClick={() => navigate('/sites')}>Back to Sites List</Button>
                 </div>
             </div>
         );

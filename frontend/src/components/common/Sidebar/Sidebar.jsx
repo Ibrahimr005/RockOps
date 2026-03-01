@@ -45,7 +45,7 @@ import {
     FaUserClock,
     FaMoneyCheckAlt,
     FaGift,
-    FaRulerCombined, FaDollarSign
+    FaRulerCombined, FaDollarSign, FaArrowDown
 } from 'react-icons/fa';
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE } from '../../../utils/roles';
@@ -402,6 +402,18 @@ const Sidebar = () => {
                     title: 'Promotions',
                     icon: <FaArrowUp/>,
                     path: '/hr/promotions',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE],
+                },
+                {
+                    title: 'Salary Increases',
+                    icon: <FaDollarSign/>,
+                    path: '/hr/salary-increases',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER],
+                },
+                {
+                    title: 'Demotions',
+                    icon: <FaArrowDown/>,
+                    path: '/hr/demotions',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE],
                 },
             ]

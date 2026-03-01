@@ -12,6 +12,7 @@ import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { leaveRequestService } from '../../../services/hr/leaveRequestService';
 import './LeaveRequestDetailPage.scss';
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
+import { Button } from '../../../components/common/Button';
 import {FiCalendar, FiCheck, FiHome, FiX} from "react-icons/fi";
 
 const LeaveRequestDetailPage = () => {
@@ -219,9 +220,9 @@ const LeaveRequestDetailPage = () => {
         return (
             <div className="error-page">
                 <h2>Leave Request Not Found</h2>
-                <button className="btn-primary" onClick={() => navigate('/hr/leave-requests')}>
+                <Button variant="primary" onClick={() => navigate('/hr/leave-requests')}>
                     Back to Leave Requests
-                </button>
+                </Button>
             </div>
         );
     }

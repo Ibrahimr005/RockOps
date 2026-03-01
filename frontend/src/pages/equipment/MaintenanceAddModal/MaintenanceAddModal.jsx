@@ -6,6 +6,7 @@ import { siteService } from '../../../services/siteService';
 import { itemTypeService } from '../../../services/warehouse/itemTypeService.js';
 import { warehouseService } from '../../../services/warehouse/warehouseService.js';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { Button, CloseButton } from '../../../components/common/Button';
 import InlineTransactionValidation from './InlineTransactionValidation';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './MaintenanceAddModal.scss';
@@ -657,7 +658,7 @@ const MaintenanceAddModal = ({
             <div className="maintenance-modal">
                 <div className="maintenance-modal-header">
                     <h2>{isEditing ? 'Edit Maintenance Record' : 'Add Maintenance Record'}</h2>
-                    <button className="btn-close" onClick={handleCloseAttempt} aria-label="Close"></button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <form onSubmit={handleSubmit} className="maintenance-form">
@@ -840,12 +841,17 @@ const MaintenanceAddModal = ({
                     )}
 
                     <div className="form-actions">
-                        <button type="button" className="cancel-button" onClick={handleCloseAttempt} disabled={isLoading}>
+                        <Button variant="ghost" onClick={handleCloseAttempt} disabled={isLoading}>
                             Cancel
-                        </button>
-                        <button type="submit" className="submit-button" disabled={isLoading}>
-                            {isLoading ? 'Saving...' : (isEditing ? 'Update Maintenance' : 'Create Maintenance')}
-                        </button>
+                        </Button>
+                        <Button
+                            variant="primary"
+                            type="submit"
+                            loading={isLoading}
+                            loadingText="Saving..."
+                        >
+                            {isEditing ? 'Update Maintenance' : 'Create Maintenance'}
+                        </Button>
                     </div>
                 </form>
 
@@ -855,7 +861,7 @@ const MaintenanceAddModal = ({
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h2>Add New Maintenance Type</h2>
-                                <button className="modal-close" onClick={handleCancelMaintenanceTypeCreation}>&times;</button>
+                                <CloseButton onClick={handleCancelMaintenanceTypeCreation} />
                             </div>
                             <form onSubmit={handleCreateMaintenanceType}>
                                 <div className="form-group">
@@ -891,10 +897,15 @@ const MaintenanceAddModal = ({
                                     </label>
                                 </div>
                                 <div className="modal-actions">
-                                    <button type="button" onClick={handleCancelMaintenanceTypeCreation}>Cancel</button>
-                                    <button type="submit" className="save-button" disabled={creatingMaintenanceType}>
-                                        {creatingMaintenanceType ? 'Creating...' : 'Create Type'}
-                                    </button>
+                                    <Button variant="ghost" onClick={handleCancelMaintenanceTypeCreation}>Cancel</Button>
+                                    <Button
+                                        variant="primary"
+                                        type="submit"
+                                        loading={creatingMaintenanceType}
+                                        loadingText="Creating..."
+                                    >
+                                        Create Type
+                                    </Button>
                                 </div>
                             </form>
                         </div>

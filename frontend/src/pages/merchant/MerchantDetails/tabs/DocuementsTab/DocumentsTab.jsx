@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaFileAlt, FaDownload, FaUpload, FaEye, FaTrash, FaPlus, FaSync, FaCalendar, FaUser, FaFolder } from 'react-icons/fa';
+import { Button, CloseButton, IconButton } from '../../../../../components/common/Button';
 import { documentService } from '../../../../../services/documentService';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import Snackbar from '../../../../../components/common/Snackbar/Snackbar';
@@ -214,10 +215,10 @@ const DocumentsTab = ({ merchant }) => {
                 </h3>
                 <div className="header-actions">
 
-                    <button className="btn-primary" onClick={() => setShowUploadModal(true)}>
+                    <Button variant="primary" onClick={() => setShowUploadModal(true)}>
                         <FaPlus />
                         Upload Document
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -319,27 +320,27 @@ const DocumentsTab = ({ merchant }) => {
                             </div>
 
                             <div className="document-actions">
-                                <button
-                                    className="btn-view"
+                                <IconButton
+                                    variant="primary"
+                                    size="sm"
+                                    icon={<FaEye />}
                                     onClick={() => handleView(document)}
                                     title="View Document"
-                                >
-                                    <FaEye />
-                                </button>
-                                <button
-                                    className="btn-download"
+                                />
+                                <IconButton
+                                    variant="primary"
+                                    size="sm"
+                                    icon={<FaDownload />}
                                     onClick={() => handleDownload(document)}
                                     title="Download Document"
-                                >
-                                    <FaDownload />
-                                </button>
-                                <button
-                                    className="btn-delete"
+                                />
+                                <IconButton
+                                    variant="danger"
+                                    size="sm"
+                                    icon={<FaTrash />}
                                     onClick={() => handleDeleteClick(document)}
                                     title="Delete Document"
-                                >
-                                    <FaTrash />
-                                </button>
+                                />
                             </div>
                         </div>
                     ))}
@@ -352,9 +353,7 @@ const DocumentsTab = ({ merchant }) => {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Upload Document</h3>
-                            <button onClick={() => !uploading && setShowUploadModal(false)} disabled={uploading}>
-                                ×
-                            </button>
+                            <CloseButton onClick={() => !uploading && setShowUploadModal(false)} disabled={uploading} />
                         </div>
 
                         <form onSubmit={handleUpload}>
@@ -416,21 +415,22 @@ const DocumentsTab = ({ merchant }) => {
                             </div>
 
                             <div className="modal-footer">
-                                <button
-                                    type="button"
-                                    className="btn-cancel"
+                                <Button
+                                    variant="ghost"
                                     onClick={() => setShowUploadModal(false)}
                                     disabled={uploading}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    className="btn-submit"
+                                    variant="primary"
                                     disabled={uploading}
+                                    loading={uploading}
+                                    loadingText="Uploading..."
                                 >
-                                    {uploading ? 'Uploading...' : 'Upload'}
-                                </button>
+                                    Upload
+                                </Button>
                             </div>
                         </form>
                     </div>

@@ -14,6 +14,7 @@ import {
     FaInfoCircle,
     FaChartBar
 } from 'react-icons/fa';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
 import EmployeePayrollsTable from './EmployeePayrollsTable';
@@ -226,32 +227,25 @@ const AttendanceImportPhase = ({ payroll, onTransition, onRefresh, processing, o
                 </div>
 
                 <div className="import-actions">
-                    <button
-                        className="btn-primary btn-large"
+                    <Button
+                        variant="primary"
+                        size="lg"
                         onClick={handleImportAttendance}
                         disabled={importing}
+                        loading={importing}
+                        loadingText="Importing..."
                     >
-                        {importing ? (
-                            <>
-                                <FaClock className="spin" />
-                                Importing...
-                            </>
-                        ) : (
-                            <>
-                                <FaClock />
-                                Import Attendance
-                            </>
-                        )}
-                    </button>
+                        <FaClock /> Import Attendance
+                    </Button>
 
-                    <button
-                        className="btn-secondary-outline"
+                    <Button
+                        variant="secondary"
+                        outline
                         onClick={handleNotifyHR}
                         disabled={notifying}
                     >
-                        <FaBell />
-                        Notify HR to Review
-                    </button>
+                        <FaBell /> Notify HR to Review
+                    </Button>
                 </div>
 
                 <div className="import-info">
@@ -329,50 +323,35 @@ const AttendanceImportPhase = ({ payroll, onTransition, onRefresh, processing, o
 
             {/* Actions */}
             <div className="review-actions">
-                <button
-                    className="btn-secondary"
+                <Button
+                    variant="secondary"
                     onClick={handleImportAttendance}
                     disabled={importing || finalizing}
+                    loading={importing}
+                    loadingText="Re-importing..."
                 >
-                    {importing ? (
-                        <>
-                            <FaClock className="spin" />
-                            Re-importing...
-                        </>
-                    ) : (
-                        <>
-                            <FaRedo />
-                            Re-Import Attendance
-                        </>
-                    )}
-                </button>
+                    <FaRedo /> Re-Import Attendance
+                </Button>
 
-                <button
-                    className="btn-secondary-outline"
+                <Button
+                    variant="secondary"
+                    outline
                     onClick={handleNotifyHR}
                     disabled={notifying || attendanceStatus.hrNotificationSent}
                 >
-                    <FaBell />
-                    {attendanceStatus.hrNotificationSent ? 'HR Notified ✓' : 'Notify HR'}
-                </button>
+                    <FaBell /> {attendanceStatus.hrNotificationSent ? 'HR Notified' : 'Notify HR'}
+                </Button>
 
-                <button
-                    className="btn-success btn-large"
+                <Button
+                    variant="success"
+                    size="lg"
                     onClick={confirmFinalize}
                     disabled={finalizing || importing}
+                    loading={finalizing}
+                    loadingText="Finalizing..."
                 >
-                    {finalizing ? (
-                        <>
-                            <FaClock className="spin" />
-                            Finalizing...
-                        </>
-                    ) : (
-                        <>
-                            <FaLock />
-                            Finalize Attendance
-                        </>
-                    )}
-                </button>
+                    <FaLock /> Finalize Attendance
+                </Button>
             </div>
 
             {/* Employee Table */}

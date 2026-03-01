@@ -7,6 +7,7 @@ import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx"
 import ConfirmationDialog from "../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
+import { Button } from '../../../../components/common/Button';
 import { offerService } from '../../../../services/procurement/offerService.js';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 import  {financeService} from '../../../../services/financeService';
@@ -489,45 +490,41 @@ const FinalizeOffers = ({
                             <div className="procurement-header-actions">
                                 {activeOffer.status !== 'FINALIZED' && !purchaseOrder && (
                                     <div className="action-buttons-group">
-                                        <button
-                                            className="btn-primary"
+                                        <Button
+                                            variant="primary"
                                             onClick={handleConfirmFinalization}
                                             disabled={
                                                 loading ||
                                                 totalFinalizedItems === 0 ||
                                                 purchaseOrder !== null
                                             }
+                                            loading={loading}
+                                            loadingText="Processing..."
                                             style={{ marginRight: '10px' }}
                                         >
-                                            {loading ? (
-                                                <>
-                                                    <div className="button-spinner"></div> Processing...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FiCheckCircle /> Confirm Finalization
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
-                                            className="btn-primary"
+                                            <FiCheckCircle /> Confirm Finalization
+                                        </Button>
+                                        <Button
+                                            variant="primary"
                                             onClick={handleRetryClick}
                                             disabled={loading || isRetrying}
+                                            loading={isRetrying}
+                                            loadingText="Creating..."
                                             title="Start over with entire quantity"
                                             style={{ marginRight: '10px' }}
                                         >
-                                            <FiRefreshCw />
-                                            {isRetrying ? 'Creating...' : 'Retry Offer'}
-                                        </button>
-                                        <button
-                                            className="btn-primary"
+                                            <FiRefreshCw /> Retry Offer
+                                        </Button>
+                                        <Button
+                                            variant="danger"
                                             onClick={handleDeleteClick}
                                             disabled={loading || isDeleting}
+                                            loading={isDeleting}
+                                            loadingText="Deleting..."
                                             title="Delete this offer permanently"
                                         >
-                                            <FiTrash2 />
-                                            {isDeleting ? 'Deleting...' : 'Delete Offer'}
-                                        </button>
+                                            <FiTrash2 /> Delete Offer
+                                        </Button>
                                     </div>
                                 )}
                             </div>
@@ -552,12 +549,12 @@ const FinalizeOffers = ({
                                     <h4>Purchase Order Created</h4>
                                     <p>A purchase order #{purchaseOrder.poNumber || purchaseOrder.id} has been generated for this offer.</p>
                                 </div>
-                                <button
-                                    className="view-purchase-order-button"
+                                <Button
+                                    variant="primary"
                                     onClick={() => window.location.href = '/procurement/purchase-orders'}
                                 >
                                     View Purchase Orders
-                                </button>
+                                </Button>
                             </div>
                         )}
 
@@ -570,12 +567,12 @@ const FinalizeOffers = ({
                                     <h4>Offer Finalized</h4>
                                     <p>This offer has been finalized and a purchase order has been created.</p>
                                 </div>
-                                <button
-                                    className="view-purchase-order-button"
+                                <Button
+                                    variant="primary"
                                     onClick={() => window.location.href = '/procurement/purchase-orders'}
                                 >
                                     View Purchase Orders
-                                </button>
+                                </Button>
                             </div>
                         )}
 

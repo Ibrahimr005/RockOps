@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiDollarSign, FiSave, FiX, FiPlus, FiTrash2, FiCalendar } from 'react-icons/fi';
+import { FiDollarSign, FiSave, FiPlus, FiTrash2, FiCalendar } from 'react-icons/fi';
 import { FaUniversity, FaStore } from 'react-icons/fa';
 import { financeService } from '../../../services/financeService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
+import { Button, IconButton } from '../../../components/common/Button';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './CreateLoanPage.scss';
 
@@ -639,20 +640,18 @@ const CreateLoanPage = () => {
                     <div className="form-section__header">
                         <h3 className="form-section__title">Payment Schedule</h3>
                         <div className="form-section__actions">
-                            <button
-                                type="button"
-                                className="btn btn--secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={generateInstallments}
                             >
                                 <FiCalendar /> Auto-Generate
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn--primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={addInstallment}
                             >
                                 <FiPlus /> Add Installment
-                            </button>
+                            </Button>
                         </div>
                     </div>
 
@@ -716,13 +715,13 @@ const CreateLoanPage = () => {
                                                 />
                                             </td>
                                             <td>
-                                                <button
-                                                    type="button"
-                                                    className="btn-icon btn-icon--danger"
+                                                <IconButton
+                                                    variant="danger"
                                                     onClick={() => removeInstallment(index)}
+                                                    title="Remove installment"
                                                 >
                                                     <FiTrash2 />
-                                                </button>
+                                                </IconButton>
                                             </td>
                                         </tr>
                                     ))}
@@ -748,29 +747,21 @@ const CreateLoanPage = () => {
 
                 {/* Form Actions */}
                 <div className="form-actions">
-                    <button
-                        type="button"
-                        className="btn btn--secondary"
+                    <Button
+                        variant="ghost"
                         onClick={() => navigate('/finance/company-loans')}
                         disabled={isLoading}
                     >
-                        <FiX /> Cancel
-                    </button>
-                    <button
+                        Cancel
+                    </Button>
+                    <Button
                         type="submit"
-                        className="btn btn--primary"
-                        disabled={isLoading}
+                        variant="primary"
+                        loading={isLoading}
+                        loadingText="Creating..."
                     >
-                        {isLoading ? (
-                            <>
-                                <span className="spinner"></span> Creating...
-                            </>
-                        ) : (
-                            <>
-                                <FiSave /> Create Loan
-                            </>
-                        )}
-                    </button>
+                        <FiSave /> Create Loan
+                    </Button>
                 </div>
             </form>
 

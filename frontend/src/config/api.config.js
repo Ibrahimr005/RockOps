@@ -1048,6 +1048,25 @@ export const LOAN_RESOLUTION_ENDPOINTS = {
     FINANCE_DECISION: (id) => `/api/v1/payroll/loan-resolution-requests/${id}/finance-decision`,
 };
 
+// Salary Increase Request endpoints
+export const SALARY_INCREASE_ENDPOINTS = {
+    BASE: '/api/v1/hr/salary-increase-requests',
+    BY_ID: (id) => `/api/v1/hr/salary-increase-requests/${id}`,
+    STATISTICS: '/api/v1/hr/salary-increase-requests/statistics',
+    HR_DECISION: (id) => `/api/v1/hr/salary-increase-requests/${id}/hr-decision`,
+    FINANCE_DECISION: (id) => `/api/v1/hr/salary-increase-requests/${id}/finance-decision`,
+    EMPLOYEE_HISTORY: (employeeId) => `/api/v1/hr/salary-increase-requests/employee/${employeeId}/history`,
+};
+
+// Demotion Request endpoints
+export const DEMOTION_ENDPOINTS = {
+    BASE: '/api/v1/hr/demotion-requests',
+    BY_ID: (id) => `/api/v1/hr/demotion-requests/${id}`,
+    STATISTICS: '/api/v1/hr/demotion-requests/statistics',
+    DEPT_HEAD_DECISION: (id) => `/api/v1/hr/demotion-requests/${id}/dept-head-decision`,
+    HR_DECISION: (id) => `/api/v1/hr/demotion-requests/${id}/hr-decision`,
+};
+
 // Bonus module endpoints
 export const BONUS_ENDPOINTS = {
     BASE: '/api/v1/payroll/bonuses',

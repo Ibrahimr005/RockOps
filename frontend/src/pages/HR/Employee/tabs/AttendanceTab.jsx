@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BsCalendarCheck, BsClockHistory, BsPersonCheck, BsClipboardData } from 'react-icons/bs';
 import { FaEye, FaEdit, FaClock } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
+import { Button } from '../../../../components/common/Button';
 
 import './AttendanceTab.scss';
 import {useSnackbar} from "../../../../contexts/SnackbarContext.jsx";
@@ -624,7 +625,7 @@ const AttendanceTab = ({ employee, formatDate }) => {
             <div className="attendance-tab">
                 <div className="attendance-tab-error-container">
                     <p>Error: {error}</p>
-                    <button onClick={fetchAttendanceData}>Try Again</button>
+                    <Button variant="primary" onClick={fetchAttendanceData}>Try Again</Button>
                 </div>
             </div>
         );
@@ -714,13 +715,13 @@ const AttendanceTab = ({ employee, formatDate }) => {
                                     max={new Date().toISOString().split('T')[0]}
                                 />
                             </div>
-                            <button
-                                className="attendance-tab-apply-btn"
+                            <Button
+                                variant="primary"
                                 onClick={handleApplyCustomRange}
                                 disabled={!dateRange.startDate || !dateRange.endDate}
                             >
                                 Apply
-                            </button>
+                            </Button>
                         </div>
                     )}
                 </div>

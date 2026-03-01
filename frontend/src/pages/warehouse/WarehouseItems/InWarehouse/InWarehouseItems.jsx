@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
+import { Button, CloseButton } from '../../../../components/common/Button';
 import "./InWarehouseItems.scss";
 import { itemService } from '../../../../services/warehouse/itemService';
 import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
@@ -420,9 +421,9 @@ const InWarehouseItems = ({
                                     </div>
                                 </div>
                                 <div className="warning-actions">
-                                    <button className="restock-button" onClick={handleRestockButtonClick} title="Create request order for low stock items">
+                                    <Button variant="primary" className="restock-button" onClick={handleRestockButtonClick} title="Create request order for low stock items">
                                         Restock Items
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )}
@@ -534,7 +535,7 @@ const InWarehouseItems = ({
                     <div className="add-item-modal">
                         <div className="modal-header">
                             <h2>Add New Item</h2>
-                            <button className="btn-close" onClick={() => setIsAddItemModalOpen(false)}></button>
+                            <CloseButton onClick={() => setIsAddItemModalOpen(false)} />
                         </div>
                         <div className="add-item-modal-body modal-body">
                             <form onSubmit={handleAddItemSubmit} className="add-item-form modal-body">
@@ -624,9 +625,9 @@ const InWarehouseItems = ({
                             </form>
                         </div>
                         <div className="modal-footer">
-                            <button type="submit" className="btn-primary" onClick={handleAddItemSubmit}>
-                                {addItemLoading ? (<><div className="button-spinner"></div>Adding...</>) : "Add Item"}
-                            </button>
+                            <Button type="submit" variant="primary" onClick={handleAddItemSubmit} loading={addItemLoading} loadingText="Adding...">
+                                Add Item
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -649,7 +650,7 @@ const InWarehouseItems = ({
                                     </div>
                                 </div>
                             </div>
-                            <button className="btn-close" onClick={() => setIsTransactionDetailsModalOpen(false)}></button>
+                            <CloseButton onClick={() => setIsTransactionDetailsModalOpen(false)} />
                         </div>
                         <div className="transaction-details-modal-body">
                             {transactionDetailsLoading ? (

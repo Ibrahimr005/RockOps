@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaBriefcase, FaUsers, FaSearch, FaPlus } from 'react-icons/fa';
+import { FaBriefcase, FaUsers, FaSearch, FaPlus } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './AddToVacancyModal.scss';
 import { vacancyService } from '../../../../services/hr/vacancyService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
@@ -120,9 +121,7 @@ const AddToVacancyModal = ({ onClose, onConfirm, candidateCount, isLoading }) =>
                         <FaPlus className="title-icon" />
                         Add Candidates to Vacancy
                     </h2>
-                    <button className="modal-close" onClick={handleCloseAttempt}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <div className="modal-body">
@@ -237,30 +236,23 @@ const AddToVacancyModal = ({ onClose, onConfirm, candidateCount, isLoading }) =>
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        className="btn btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={handleCloseAttempt}
                         disabled={isLoading}
                     >
                         Cancel
-                    </button>
-                    <button
-                        className="btn btn-primary"
+                    </Button>
+                    <Button
+                        variant="primary"
                         onClick={handleConfirm}
                         disabled={!selectedVacancy || isLoading}
+                        loading={isLoading}
+                        loadingText="Adding..."
                     >
-                        {isLoading ? (
-                            <>
-                                <div className="loading-spinner small"></div>
-                                Adding...
-                            </>
-                        ) : (
-                            <>
-                                <FaPlus />
-                                Add to Vacancy
-                            </>
-                        )}
-                    </button>
+                        <FaPlus />
+                        Add to Vacancy
+                    </Button>
                 </div>
             </div>
         </div>

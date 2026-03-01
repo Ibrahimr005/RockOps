@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiHome, FiSave, FiX } from 'react-icons/fi';
+import { FiHome, FiSave } from 'react-icons/fi';
 import { financeService } from '../../../services/financeService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
+import { Button } from '../../../components/common/Button';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './CreateInstitutionPage.scss';
 
@@ -415,29 +416,21 @@ const CreateInstitutionPage = () => {
 
                 {/* Form Actions */}
                 <div className="form-actions">
-                    <button
-                        type="button"
-                        className="btn btn--secondary"
+                    <Button
+                        variant="ghost"
                         onClick={() => navigate('/finance/company-loans/institutions')}
                         disabled={isLoading}
                     >
-                        <FiX /> Cancel
-                    </button>
-                    <button
+                        Cancel
+                    </Button>
+                    <Button
                         type="submit"
-                        className="btn btn--primary"
-                        disabled={isLoading}
+                        variant="primary"
+                        loading={isLoading}
+                        loadingText="Saving..."
                     >
-                        {isLoading ? (
-                            <>
-                                <span className="spinner"></span> Saving...
-                            </>
-                        ) : (
-                            <>
-                                <FiSave /> {isEdit ? 'Update' : 'Create'} Institution
-                            </>
-                        )}
-                    </button>
+                        <FiSave /> {isEdit ? 'Update' : 'Create'} Institution
+                    </Button>
                 </div>
             </form>
 

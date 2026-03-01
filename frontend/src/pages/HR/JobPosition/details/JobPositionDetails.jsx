@@ -20,6 +20,7 @@ import PositionOverview from './components/PositionOverview.jsx';
 import PositionEmployees from './components/PositionEmployees.jsx';
 import {useSnackbar} from '../../../../contexts/SnackbarContext';
 import {jobPositionService} from '../../../../services/hr/jobPositionService.js';
+import { Button } from '../../../../components/common/Button/Button';
 import './JobPositionDetails.scss';
 import IntroCard from "../../../../components/common/IntroCard/IntroCard.jsx";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
@@ -184,12 +185,12 @@ const JobPositionDetails = () => {
                 <div className="error-container">
                     <h2>Error Loading Position</h2>
                     <p>{error || 'Position not found'}</p>
-                    <button
-                        className="btn btn-primary"
+                    <Button
+                        variant="primary"
                         onClick={() => navigate('/hr/positions')}
                     >
                         <FiArrowLeft/> Back to Positions
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

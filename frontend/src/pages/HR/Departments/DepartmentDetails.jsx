@@ -11,6 +11,7 @@ import StatisticsCards from '../../../components/common/StatisticsCards/Statisti
 import './DepartmentDetails.scss';
 import {FaBuilding} from "react-icons/fa";
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
+import { Button } from '../../../components/common/Button';
 
 const DepartmentDetails = () => {
     const { id } = useParams();
@@ -116,9 +117,9 @@ const DepartmentDetails = () => {
                 <div className="error-content">
                     <h2>Department Not Found</h2>
                     <p>{error || 'The requested department could not be found.'}</p>
-                    <button onClick={handleBackClick} className="btn-primary">
+                    <Button variant="primary" onClick={handleBackClick}>
                         <FiArrowLeft /> Back to Departments
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

@@ -17,6 +17,7 @@ import {
     FaBusinessTime,
     FaDollarSign
 } from 'react-icons/fa';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
 import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
@@ -223,32 +224,25 @@ const OvertimeReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDial
                 </div>
 
                 <div className="review-actions">
-                    <button
-                        className="btn-primary btn-large"
+                    <Button
+                        variant="primary"
+                        size="lg"
                         onClick={handleProcessOvertimeReview}
                         disabled={processingOvertime}
+                        loading={processingOvertime}
+                        loadingText="Processing..."
                     >
-                        {processingOvertime ? (
-                            <>
-                                <FaClock className="spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <FaBusinessTime />
-                                Process Overtime Review
-                            </>
-                        )}
-                    </button>
+                        <FaBusinessTime /> Process Overtime Review
+                    </Button>
 
-                    <button
-                        className="btn-secondary-outline"
+                    <Button
+                        variant="secondary"
+                        outline
                         onClick={handleNotifyHR}
                         disabled={notifying}
                     >
-                        <FaBell />
-                        Notify HR to Review
-                    </button>
+                        <FaBell /> Notify HR to Review
+                    </Button>
                 </div>
 
                 <div className="review-info">
@@ -302,50 +296,35 @@ const OvertimeReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDial
 
             {/* Actions */}
             <div className="review-actions">
-                <button
-                    className="btn-secondary"
+                <Button
+                    variant="secondary"
                     onClick={handleProcessOvertimeReview}
                     disabled={processingOvertime || finalizing}
+                    loading={processingOvertime}
+                    loadingText="Re-processing..."
                 >
-                    {processingOvertime ? (
-                        <>
-                            <FaClock className="spin" />
-                            Re-processing...
-                        </>
-                    ) : (
-                        <>
-                            <FaRedo />
-                            Re-Process Overtime Review
-                        </>
-                    )}
-                </button>
+                    <FaRedo /> Re-Process Overtime Review
+                </Button>
 
-                <button
-                    className="btn-secondary-outline"
+                <Button
+                    variant="secondary"
+                    outline
                     onClick={handleNotifyHR}
                     disabled={notifying || overtimeStatus.hrNotificationSent}
                 >
-                    <FaBell />
-                    {overtimeStatus.hrNotificationSent ? 'HR Notified ✓' : 'Notify HR'}
-                </button>
+                    <FaBell /> {overtimeStatus.hrNotificationSent ? 'HR Notified' : 'Notify HR'}
+                </Button>
 
-                <button
-                    className="btn-success btn-large"
+                <Button
+                    variant="success"
+                    size="lg"
                     onClick={confirmFinalize}
                     disabled={finalizing || processingOvertime}
+                    loading={finalizing}
+                    loadingText="Finalizing..."
                 >
-                    {finalizing ? (
-                        <>
-                            <FaClock className="spin" />
-                            Finalizing...
-                        </>
-                    ) : (
-                        <>
-                            <FaLock />
-                            Finalize Overtime Review
-                        </>
-                    )}
-                </button>
+                    <FaLock /> Finalize Overtime Review
+                </Button>
             </div>
 
             {/* Overtime Records Table */}

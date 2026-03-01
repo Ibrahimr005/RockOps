@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Button, CloseButton } from '../../../components/common/Button';
 import './MerchantModal.scss';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
@@ -153,7 +154,7 @@ const MerchantModal = ({
             <div className="proc-merchant-employee-modal">
                 <div className="proc-merchant-modal-header">
                     <h2>{modalMode === 'add' ? 'Add New Merchant' : 'Edit Merchant'}</h2>
-                    <button className="proc-merchant-close-button" onClick={handleCloseAttempt}>×</button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -468,10 +469,10 @@ const MerchantModal = ({
                     </div>
 
                     <div className="proc-merchant-modal-footer">
-                        <button type="button" className="proc-merchant-cancel-btn" onClick={handleCloseAttempt}>Cancel</button>
-                        <button type="submit" className="proc-merchant-save-btn">
+                        <Button variant="ghost" onClick={handleCloseAttempt}>Cancel</Button>
+                        <Button variant="primary" type="submit">
                             {modalMode === 'add' ? 'Save Merchant' : 'Update Merchant'}
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div>

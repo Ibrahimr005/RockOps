@@ -16,6 +16,7 @@ import {
     FaChartBar,
     FaCalendarAlt
 } from 'react-icons/fa';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
 import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
@@ -222,32 +223,25 @@ const LeaveReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
                 </div>
 
                 <div className="review-actions">
-                    <button
-                        className="btn-primary btn-large"
+                    <Button
+                        variant="primary"
+                        size="lg"
                         onClick={handleProcessLeaveReview}
                         disabled={processingLeave}
+                        loading={processingLeave}
+                        loadingText="Processing..."
                     >
-                        {processingLeave ? (
-                            <>
-                                <FaClock className="spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <FaCalendarAlt />
-                                Process Leave Review
-                            </>
-                        )}
-                    </button>
+                        <FaCalendarAlt /> Process Leave Review
+                    </Button>
 
-                    <button
-                        className="btn-secondary-outline"
+                    <Button
+                        variant="secondary"
+                        outline
                         onClick={handleNotifyHR}
                         disabled={notifying}
                     >
-                        <FaBell />
-                        Notify HR to Review
-                    </button>
+                        <FaBell /> Notify HR to Review
+                    </Button>
                 </div>
 
                 <div className="review-info">
@@ -301,50 +295,35 @@ const LeaveReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
 
             {/* Actions */}
             <div className="review-actions">
-                <button
-                    className="btn-secondary"
+                <Button
+                    variant="secondary"
                     onClick={handleProcessLeaveReview}
                     disabled={processingLeave || finalizing}
+                    loading={processingLeave}
+                    loadingText="Re-processing..."
                 >
-                    {processingLeave ? (
-                        <>
-                            <FaClock className="spin" />
-                            Re-processing...
-                        </>
-                    ) : (
-                        <>
-                            <FaRedo />
-                            Re-Process Leave Review
-                        </>
-                    )}
-                </button>
+                    <FaRedo /> Re-Process Leave Review
+                </Button>
 
-                <button
-                    className="btn-secondary-outline"
+                <Button
+                    variant="secondary"
+                    outline
                     onClick={handleNotifyHR}
                     disabled={notifying || leaveStatus.hrNotificationSent}
                 >
-                    <FaBell />
-                    {leaveStatus.hrNotificationSent ? 'HR Notified ✓' : 'Notify HR'}
-                </button>
+                    <FaBell /> {leaveStatus.hrNotificationSent ? 'HR Notified' : 'Notify HR'}
+                </Button>
 
-                <button
-                    className="btn-success btn-large"
+                <Button
+                    variant="success"
+                    size="lg"
                     onClick={confirmFinalize}
                     disabled={finalizing || processingLeave}
+                    loading={finalizing}
+                    loadingText="Finalizing..."
                 >
-                    {finalizing ? (
-                        <>
-                            <FaClock className="spin" />
-                            Finalizing...
-                        </>
-                    ) : (
-                        <>
-                            <FaLock />
-                            Finalize Leave Review
-                        </>
-                    )}
-                </button>
+                    <FaLock /> Finalize Leave Review
+                </Button>
             </div>
 
             {/* Leave Requests Table */}

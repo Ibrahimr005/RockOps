@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaMoneyBillWave, FaUsers, FaPiggyBank, FaExclamationTriangle, FaPlus, FaFileAlt, FaEye } from 'react-icons/fa';
+import { Button } from '../../../components/common/Button';
 import { payslipService } from '../../../services/payroll/payslipService.js';
 import { payrollService } from '../../../services/payroll/payrollService.js';
 import { loanService } from '../../../services/payroll/loanService.js';
@@ -86,18 +87,18 @@ const PayrollDashboard = () => {
                 <div className="rockops-header-content">
                     <h1 className="rockops-page-title">Payroll Dashboard</h1>
                     <div className="rockops-header-actions">
-                        <button
-                            className="rockops-btn rockops-btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={handleGenerateMonthlyPayroll}
                         >
                             <FaPlus /> Generate Monthly Payroll
-                        </button>
-                        <button
-                            className="rockops-btn rockops-btn-secondary"
+                        </Button>
+                        <Button
+                            variant="secondary"
                             onClick={() => navigate('/payroll/reports')}
                         >
                             <FaFileAlt /> View Reports
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -264,9 +265,9 @@ const PendingActionItem = ({ action }) => {
                 <div className="rockops-action-type">{action.type}</div>
                 <div className="rockops-action-description">{action.description}</div>
             </div>
-            <button className="rockops-btn rockops-btn-sm rockops-btn-primary">
+            <Button variant="primary" size="sm">
                 Take Action
-            </button>
+            </Button>
         </div>
     );
 };

@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS loan_resolution_requests (
     created_by VARCHAR(255),
 
     CONSTRAINT fk_loan_resolution_loan FOREIGN KEY (loan_id) REFERENCES loans(id),
-    CONSTRAINT fk_loan_resolution_employee FOREIGN KEY (employee_id) REFERENCES employees(id),
-    CONSTRAINT fk_loan_resolution_site FOREIGN KEY (site_id) REFERENCES sites(id)
+    CONSTRAINT fk_loan_resolution_employee FOREIGN KEY (employee_id) REFERENCES employee(id),
+    CONSTRAINT fk_loan_resolution_site FOREIGN KEY (site_id) REFERENCES site(id)
 );
 
 -- Indexes for common queries

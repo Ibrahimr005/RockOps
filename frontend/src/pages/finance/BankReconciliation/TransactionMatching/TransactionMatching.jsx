@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaExchangeAlt, FaCheck, FaTimes, FaRobot, FaEye, FaFileExcel } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -270,23 +271,16 @@ const TransactionMatching = () => {
                             </option>
                         ))}
                     </select>
-                    <button
-                        className="bank-reconciliation-btn bank-reconciliation-btn-primary"
+                    <Button
+                        variant="primary"
                         onClick={handleAutoMatch}
-                        disabled={!selectedAccountId || autoMatchingLoading}
+                        disabled={!selectedAccountId}
+                        loading={autoMatchingLoading}
+                        loadingText="Processing..."
                     >
-                        {autoMatchingLoading ? (
-                            <>
-                                <div className="bank-reconciliation-loading-spinner" style={{ width: '16px', height: '16px' }}></div>
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <FaRobot />
-                                Auto Match
-                            </>
-                        )}
-                    </button>
+                        <FaRobot />
+                        Auto Match
+                    </Button>
                 </div>
             </div>
 

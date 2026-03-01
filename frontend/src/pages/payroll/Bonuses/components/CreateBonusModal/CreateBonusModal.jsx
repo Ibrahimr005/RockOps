@@ -5,9 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    FaTimes,
     FaGift,
-    FaSpinner,
     FaCheckCircle,
     FaUser,
     FaDollarSign,
@@ -15,6 +13,7 @@ import {
 } from 'react-icons/fa';
 import { bonusService } from '../../../../../services/payroll/bonusService';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext';
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import EmployeeSelector from '../../../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 import './CreateBonusModal.scss';
@@ -135,9 +134,7 @@ const CreateBonusModal = ({ employees, bonusTypes, onClose, onSuccess }) => {
                 <div className="bonus-modal-content" onClick={(e) => e.stopPropagation()}>
                     <div className="bonus-modal-header">
                         <h3><FaGift /> Create Bonus</h3>
-                        <button className="btn-close" onClick={handleCloseAttempt}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                     <div className="bonus-modal-body">
@@ -242,20 +239,17 @@ const CreateBonusModal = ({ employees, bonusTypes, onClose, onSuccess }) => {
                     </div>
 
                     <div className="bonus-modal-footer">
-                        <button className="btn-cancel" onClick={handleCloseAttempt}>
+                        <Button variant="ghost" onClick={handleCloseAttempt}>
                             Cancel
-                        </button>
-                        <button
-                            className="btn-save"
+                        </Button>
+                        <Button
+                            variant="primary"
                             onClick={handleSubmit}
-                            disabled={saving}
+                            loading={saving}
+                            loadingText="Creating..."
                         >
-                            {saving ? (
-                                <><FaSpinner className="spin" /> Creating...</>
-                            ) : (
-                                <><FaCheckCircle /> Create Bonus</>
-                            )}
-                        </button>
+                            <FaCheckCircle /> Create Bonus
+                        </Button>
                     </div>
                 </div>
             </div>

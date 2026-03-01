@@ -13,6 +13,7 @@ import {
     FiX, FiCheck, FiTrash2, FiCalendar, FiUser,
     FiTrendingUp, FiDollarSign, FiShoppingCart
 } from 'react-icons/fi';
+import { Button } from '../../../../components/common/Button';
 
 const SubmittedOffers = ({
                              offers,
@@ -405,22 +406,22 @@ const SubmittedOffers = ({
                                 {/* Action buttons - only shown for managers */}
                                 {activeOffer.status === 'SUBMITTED' && userRole && managerRoles.includes(userRole) && (
                                     <>
-                                        <button
-                                            className="btn-primary"
+                                        <Button
+                                            variant="success"
                                             onClick={(e) => handleApprove(e, activeOffer)}
                                             title="Approve Offer"
                                         >
                                             <FiCheck />
                                             <span>Approve</span>
-                                        </button>
-                                        <button
-                                            className="btn-primary"
+                                        </Button>
+                                        <Button
+                                            variant="danger"
                                             onClick={(e) => handleDecline(e, activeOffer)}
                                             title="Decline Offer"
                                         >
                                             <FiX />
                                             <span>Decline</span>
-                                        </button>
+                                        </Button>
                                     </>
                                 )}
                             </div>

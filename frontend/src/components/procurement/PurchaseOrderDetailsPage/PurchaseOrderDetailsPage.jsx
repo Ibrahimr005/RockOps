@@ -9,6 +9,7 @@ import OverviewTab from './tabs/OverviewTab/OverviewTab';
 import ReceivingTab from './tabs/ReceivingTab/ReceivingTab2';
 import IssuesTab from './tabs/IssuesTab/IssuesTab';
 import LogisticsTab from './tabs/LogisticsTab/LogisticsTab';
+import { Button } from '../../../components/common/Button';
 
 import './PurchaseOrderDetailsPage.scss';
 
@@ -131,9 +132,9 @@ const PurchaseOrderDetailsPage = () => {
                     <FiAlertCircle size={48} />
                     <h3>Error Loading Purchase Order</h3>
                     <p>{error || 'Purchase order not found'}</p>
-                    <button className="btn-primary" onClick={() => navigate(-1)}>
+                    <Button variant="primary" onClick={() => navigate(-1)}>
                         Go Back
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

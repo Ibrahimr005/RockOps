@@ -1,7 +1,8 @@
 // ==================== ADD DEDUCTION TYPE MODAL ====================
 // frontend/src/pages/payroll/DeductionManagement/components/AddDeductionTypeModal.jsx
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaCog, FaExclamationTriangle, FaPlus, FaSpinner, FaInfoCircle } from 'react-icons/fa';
+import { FaCog, FaExclamationTriangle, FaPlus, FaInfoCircle } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { deductionService } from '../../../../services/payroll/deductionService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
@@ -260,14 +261,7 @@ return (
                     <FaCog className="modal-icon" />
                     {deductionType ? 'Edit' : 'Add'} Deduction Type
                 </h3>
-                <button
-                    type="button"
-                    className="modal-close"
-                    onClick={handleCloseAttempt}
-                    disabled={loading}
-                >
-                    <FaTimes />
-                </button>
+                <CloseButton onClick={handleCloseAttempt} disabled={loading} />
             </div>
 
             <form onSubmit={handleSubmit} className="modal-body">
@@ -580,32 +574,21 @@ return (
             </form>
 
             <div className="modal-footer">
-                <button
-                    type="button"
-                    className="btn btn-secondary"
+                <Button
+                    variant="ghost"
                     onClick={handleCloseAttempt}
                     disabled={loading}
                 >
                     Cancel
-                </button>
-                <button
-                    type="submit"
-                    className="btn btn-primary"
+                </Button>
+                <Button
+                    variant="primary"
                     onClick={handleSubmit}
-                    disabled={loading}
+                    loading={loading}
+                    loadingText={deductionType ? 'Updating...' : 'Creating...'}
                 >
-                    {loading ? (
-                        <>
-                            <FaSpinner className="spinning" />
-                            {deductionType ? 'Updating...' : 'Creating...'}
-                        </>
-                    ) : (
-                        <>
-                            <FaPlus />
-                            {deductionType ? 'Update' : 'Create'} Type
-                        </>
-                    )}
-                </button>
+                    <FaPlus /> {deductionType ? 'Update' : 'Create'} Type
+                </Button>
             </div>
         </div>
     </div>

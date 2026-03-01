@@ -6,6 +6,7 @@ import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceSer
 import { useTranslation } from 'react-i18next';
 import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards';
 import './EquipmentManagerDashboard.scss';
+import { Button } from '../../../components/common/Button';
 
 const EquipmentManagerDashboard = () => {
     const { t } = useTranslation();
@@ -355,10 +356,17 @@ const EquipmentManagerDashboard = () => {
                                     <option key={type.id} value={type.id}>{type.name}</option>
                                 ))}
                             </select>
-                            <button onClick={loadAllData} disabled={loading} className="eq-refresh-btn">
+                            <Button
+                                variant="primary"
+                                onClick={loadAllData}
+                                disabled={loading}
+                                className="eq-refresh-btn"
+                                loading={loading}
+                                loadingText="Refreshing..."
+                            >
                                 <RefreshCw className={loading ? "eq-spinning" : ""} />
                                 Refresh
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

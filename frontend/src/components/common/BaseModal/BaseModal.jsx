@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { FiX } from 'react-icons/fi';
+import { CloseButton } from '../Button';
 import './BaseModal.scss';
 
 /**
@@ -134,15 +134,11 @@ const BaseModal = ({
                             )}
                         </div>
                         {showCloseButton && (
-                            <button
-                                type="button"
+                            <CloseButton
                                 className="base-modal-close"
                                 onClick={handleClose}
                                 disabled={preventCloseWhileLoading && isLoading}
-                                aria-label="Close modal"
-                            >
-                                <FiX size={20} />
-                            </button>
+                            />
                         )}
                     </div>
                 )}

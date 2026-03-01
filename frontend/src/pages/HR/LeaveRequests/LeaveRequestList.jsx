@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FaPlus, FaEye, FaCheck, FaTimes, FaCalendarAlt, FaClock, FaUser } from 'react-icons/fa';
+import { Button } from '../../../components/common/Button';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
@@ -390,9 +391,9 @@ const LeaveRequestList = () => {
             {error && !isModalOpen && (
                 <div className="leave-request-error">
                     {error}
-                    <button onClick={fetchLeaveRequests} className="retry-button">
+                    <Button variant="primary" onClick={fetchLeaveRequests}>
                         Try Again
-                    </button>
+                    </Button>
                 </div>
             )}
 

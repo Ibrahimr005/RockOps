@@ -3,6 +3,7 @@ import "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactions.scss
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import { equipmentService } from "../../../services/equipmentService";
 import { siteService } from "../../../services/siteService";
+import { Button, CloseButton } from '../../../components/common/Button';
 
 const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate, equipmentId }) => {
     const [updatedTransaction, setUpdatedTransaction] = useState(transaction || {});
@@ -232,14 +233,7 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
 
                 <div className="flat-modal-header">
                     <h2>Update Transaction</h2>
-                    <button
-                        className="btn-close"
-                        onClick={onClose}
-                        disabled={isLoading}
-                        aria-label="Close"
-                    >
-                        ×
-                    </button>
+                    <CloseButton onClick={onClose} disabled={isLoading} />
                 </div>
 
                 <div className="flat-modal-content">
@@ -305,24 +299,23 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
                                             required
                                         />
                                     </div>
-                                    <button
-                                        type="button"
-                                        className="btn-remove"
+                                    <Button
+                                        variant="danger"
                                         onClick={() => removeItem(index)}
                                         disabled={isLoading || updatedTransaction.items.length === 1}
                                     >
                                         Remove
-                                    </button>
+                                    </Button>
                                 </div>
                             ))}
-                            <button
-                                type="button"
-                                className="btn-add"
+                            <Button
+                                variant="primary"
+                                outline
                                 onClick={addItem}
                                 disabled={isLoading}
                             >
                                 Add Item
-                            </button>
+                            </Button>
                         </div>
 
                         {error && (
@@ -334,22 +327,23 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
                 </div>
 
                 <div className="flat-modal-footer">
-                    <button
-                        type="button"
-                        className="btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={onClose}
                         disabled={isLoading}
                     >
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="submit"
-                        className="btn-primary"
+                        variant="primary"
                         onClick={handleSubmit}
                         disabled={isLoading}
+                        loading={isLoading}
+                        loadingText="Updating..."
                     >
-                        {isLoading ? "Updating..." : "Update Transaction"}
-                    </button>
+                        Update Transaction
+                    </Button>
                 </div>
             </div>
         </div>

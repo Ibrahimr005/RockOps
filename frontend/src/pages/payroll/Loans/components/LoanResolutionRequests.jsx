@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaCheck, FaTimes, FaSpinner, FaEye, FaGavel } from 'react-icons/fa';
+import { Button } from '../../../../components/common/Button';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { loanResolutionService, RESOLUTION_STATUS_CONFIG } from '../../../../services/payroll/loanResolutionService.js';
@@ -239,12 +240,12 @@ const LoanResolutionRequests = ({ filterStatus, role = 'HR', onUpdate }) => {
                             rows={4}
                         />
                         <div className="modal-actions">
-                            <button className="btn-cancel" onClick={() => { setShowRejectModal(false); setRejectReason(''); }}>
+                            <Button variant="ghost" onClick={() => { setShowRejectModal(false); setRejectReason(''); }}>
                                 Cancel
-                            </button>
-                            <button className="btn-reject" onClick={confirmReject} disabled={!rejectReason.trim() || processingId}>
-                                {processingId ? <FaSpinner className="spin" /> : null} Reject
-                            </button>
+                            </Button>
+                            <Button variant="danger" onClick={confirmReject} disabled={!rejectReason.trim() || processingId} loading={!!processingId} loadingText="Reject">
+                                Reject
+                            </Button>
                         </div>
                     </div>
                 </div>

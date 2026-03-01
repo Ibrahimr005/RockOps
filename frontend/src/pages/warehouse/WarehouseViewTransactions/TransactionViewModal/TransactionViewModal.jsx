@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { CloseButton } from "../../../../components/common/Button";
 import "./TransactionViewModal.scss";
 
 const TransactionViewModal = ({ transaction, isOpen, onClose, hideItemQuantities = false, currentWarehouseId }) => {
@@ -123,9 +124,7 @@ const TransactionViewModal = ({ transaction, isOpen, onClose, hideItemQuantities
                             </div>
                         )}
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Content */}

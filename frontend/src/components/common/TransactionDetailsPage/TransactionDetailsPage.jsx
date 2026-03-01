@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FiAlertCircle, FiPackage, FiArrowRight } from 'react-icons/fi';
 import { transactionService } from '../../../services/transaction/transactionService';
+import { Button } from '../../../components/common/Button';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import Snackbar from '../../../components/common/Snackbar2/Snackbar2';
 import './TransactionDetailsPage.scss';
@@ -161,9 +162,9 @@ const TransactionDetailsPage = () => {
                     <FiAlertCircle size={48} />
                     <h3>Error Loading Transaction</h3>
                     <p>{error || 'Transaction not found'}</p>
-                    <button className="btn-primary" onClick={() => navigate(-1)}>
+                    <Button variant="primary" onClick={() => navigate(-1)}>
                         Go Back
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

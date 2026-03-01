@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-    FaCheckCircle, FaTimesCircle, FaTimes, FaTools, FaExclamationTriangle, FaUser
+    FaCheckCircle, FaTimesCircle, FaTools, FaExclamationTriangle, FaUser
 } from 'react-icons/fa';
 import maintenanceService from '../../../../services/maintenanceService';
 import { financeService } from '../../../../services/financeService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner/LoadingSpinner';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './OfferReviewForm.scss';
 
 const MaintenanceReviewForm = ({ offerId, onClose, onSuccess }) => {
@@ -137,9 +138,7 @@ const MaintenanceReviewForm = ({ offerId, onClose, onSuccess }) => {
                         <FaTools style={{ color: 'var(--primary-color)' }} />
                         <h2>Review Maintenance Record - MR-{record.id.substring(0, 8)}</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">
@@ -259,42 +258,35 @@ const MaintenanceReviewForm = ({ offerId, onClose, onSuccess }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={onClose}
                         disabled={submitting}
                     >
                         Cancel
-                    </button>
+                    </Button>
 
-                    <button
-                        type="button"
-                        className="btn-danger"
+                    <Button
+                        variant="danger"
                         onClick={() => handleAction('REJECT')}
                         disabled={submitting}
+                        loading={submitting}
+                        loadingText="Processing..."
                     >
-                        {submitting ? 'Processing...' : (
-                            <>
-                                <FaTimesCircle />
-                                <span>Reject Record</span>
-                            </>
-                        )}
-                    </button>
+                        <FaTimesCircle />
+                        <span>Reject Record</span>
+                    </Button>
 
-                    <button
-                        type="button"
-                        className="btn-success"
+                    <Button
+                        variant="success"
                         onClick={() => handleAction('APPROVE')}
                         disabled={submitting}
+                        loading={submitting}
+                        loadingText="Processing..."
                     >
-                        {submitting ? 'Processing...' : (
-                            <>
-                                <FaCheckCircle />
-                                <span>Approve Record</span>
-                            </>
-                        )}
-                    </button>
+                        <FaCheckCircle />
+                        <span>Approve Record</span>
+                    </Button>
                 </div>
             </div>
         </div>

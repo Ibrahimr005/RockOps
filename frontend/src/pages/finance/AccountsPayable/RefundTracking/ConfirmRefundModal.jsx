@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiCheckCircle, FiDollarSign, FiCalendar } from 'react-icons/fi';
+import { FiCheckCircle, FiCalendar } from 'react-icons/fi';
 import { financeService } from '../../../../services/financeService';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ConfirmRefundModal.scss';
 
@@ -204,9 +205,7 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
                         <FiCheckCircle />
                         <h2>Confirm Refund Receipt</h2>
                     </div>
-                    <button className="close-button" onClick={handleCloseAttempt}>
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 {/* Body */}
@@ -328,20 +327,17 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
 
                 {/* Footer */}
                 <div className="modal-footer">
-                    <button
-                        className="btn-cancel"
-                        onClick={handleCloseAttempt}
-                        disabled={submitting}
-                    >
+                    <Button variant="ghost" onClick={handleCloseAttempt} disabled={submitting}>
                         Cancel
-                    </button>
-                    <button
-                        className="btn-confirm"
+                    </Button>
+                    <Button
+                        variant="success"
                         onClick={handleSubmit}
-                        disabled={submitting}
+                        loading={submitting}
+                        loadingText="Confirming..."
                     >
-                        {submitting ? 'Confirming...' : 'Confirm Refund'}
-                    </button>
+                        Confirm Refund
+                    </Button>
                 </div>
             </div>
         </div>

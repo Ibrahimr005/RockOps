@@ -94,6 +94,8 @@ import PayrollReports from "./pages/payroll/PayrollReports/PayrollReports.jsx";
 import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
 import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
 import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
+import SalaryIncreaseList from "./pages/HR/SalaryIncrease/SalaryIncreaseList.jsx";
+import DemotionList from "./pages/HR/Demotion/DemotionList.jsx";
 import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetails.jsx";
 import PayslipManagement from "./pages/payroll/payslip/PayslipManagement.jsx";
 import PayslipEdit from "./pages/payroll/payslip/PayslipEdit.jsx";
@@ -263,6 +265,8 @@ function App() {
                                             <Route path="departments" element={<DepartmentsList/>}/>
                                             <Route path="departments/:id" element={<DepartmentDetails/>}/>
                                             <Route path="promotions/*" element={<PromotionList/>}/>
+                                            <Route path="salary-increases" element={<SalaryIncreaseList/>}/>
+                                            <Route path="demotions" element={<DemotionList/>}/>
                                             <Route path="leave-requests/:id" element={<LeaveRequestDetailPage />} />
                                             <Route path="leave-requests" element={<LeaveRequestList />} />
                                             <Route path="vacation-balances" element={<VacationBalancePage />} />

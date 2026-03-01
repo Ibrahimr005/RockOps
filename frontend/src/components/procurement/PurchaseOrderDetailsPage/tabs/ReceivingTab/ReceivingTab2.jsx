@@ -6,7 +6,8 @@ import './ReceivingTab2.scss';
 import { FiPrinter } from 'react-icons/fi'; // Add FiPrinter to existing imports
 import { generateMerchantReceivingPDF, generateAllMerchantsReceivingPDF } from '../../../../../services/procurement/receivingPrintService';
 import LanguageSelectionModal from "./LanguageSelectionModal.jsx";
-import { FiX, FiDownload } from 'react-icons/fi';
+import { FiDownload } from 'react-icons/fi';
+import { Button } from '../../../../../components/common/Button';
 
 const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
     const [selectedMerchant, setSelectedMerchant] = useState(null);
@@ -373,12 +374,12 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                 </h3>
                                 <p className="section-description">Process all items from one merchant at a time</p>
                             </div>
-                            <button
-                                className="btn-primary"
+                            <Button
+                                variant="primary"
                                 onClick={handlePrintAllMerchants}
                             >
                                 <FiDownload /> Download All Checklists
-                            </button>
+                            </Button>
                         </div>
 
                         <div className="merchant-list">
@@ -449,9 +450,9 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                         <FiTruck />
                         Merchant Information
                     </h3>
-                    <button className="btn-back" onClick={() => setSelectedMerchant(null)}>
+                    <Button variant="ghost" onClick={() => setSelectedMerchant(null)}>
                         ← Back to Merchants
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="merchant-info-card">
@@ -856,12 +857,12 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                         Items to Process ({filteredItems.length})
                     </h3>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <button
-                            className="btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={handlePrintSingleMerchant}
                         >
                             <FiDownload /> Download Checklist
-                        </button>
+                        </Button>
                         {currentMerchant.items.filter(item => itemNeedsProcessing(item)).length > 0 && (
                             <button
                                 className={`filter-btn ${Object.values(filters).some(f => f) ? 'active' : ''}`}
@@ -1385,23 +1386,16 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                     </div>
 
                     <div className="submit-actions">
-                        <button
-                            className="btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={handleSubmit}
                             disabled={processing}
+                            loading={processing}
+                            loadingText="Processing..."
                         >
-                            {processing ? (
-                                <>
-                                    <span className="spinner"></span>
-                                    Processing...
-                                </>
-                            ) : (
-                                <>
-                                    <FiCheck />
-                                    Submit Delivery
-                                </>
-                            )}
-                        </button>
+                            <FiCheck />
+                            Submit Delivery
+                        </Button>
                     </div>
                 </div>
             )}

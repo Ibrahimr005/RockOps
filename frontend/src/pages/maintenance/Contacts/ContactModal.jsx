@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaBuilding, FaBriefcase, FaCog, FaClock, FaExclamationTriangle, FaStore } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaBriefcase, FaCog, FaClock, FaExclamationTriangle, FaStore } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/modal-styles.scss';
 import '../../../styles/cancel-modal-button.scss';
@@ -286,9 +287,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                 <FaUser />
                                 {editingContact ? 'Edit Contact' : 'New Contact'}
                             </div>
-                            <button className="modal-close btn-cancel" onClick={handleCloseAttempt}>
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={handleCloseAttempt} />
                         </div>
 
                     <div className="modal-body">
@@ -574,12 +573,12 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                         </form>
                     </div>
                     <div className="modal-footer">
-                        <button type="button" className="btn-cancel" onClick={handleCloseAttempt}>
+                        <Button variant="ghost" onClick={handleCloseAttempt}>
                             Cancel
-                        </button>
-                        <button type="submit" className="btn-primary" form="contact-form" disabled={isSubmitting}>
-                            {isSubmitting ? 'Saving...' : (editingContact ? 'Update Contact' : 'Create Contact')}
-                        </button>
+                        </Button>
+                        <Button variant="primary" type="submit" form="contact-form" loading={isSubmitting} loadingText="Saving...">
+                            {editingContact ? 'Update Contact' : 'Create Contact'}
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -604,18 +603,16 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                 <div className="modal-container" onClick={e => e.stopPropagation()}>
                     <div className="modal-header">
                         <div className="modal-title">Contact Form Error</div>
-                        <button className="modal-close btn-cancel" onClick={onClose}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={onClose} />
                     </div>
                     <div className="modal-body">
                         <p>There was an error loading the contact form. Please try again.</p>
                         <p>Error: {error.message}</p>
                     </div>
                     <div className="modal-footer">
-                        <button type="button" className="btn-cancel" onClick={onClose}>
+                        <Button variant="ghost" onClick={onClose}>
                             Close
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

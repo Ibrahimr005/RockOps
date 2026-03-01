@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaCalculator, FaEye, FaFileDownload, FaTimes, FaInfoCircle, FaDollarSign, FaCalendarAlt, FaChartLine, FaClock } from 'react-icons/fa';
+import { FaCalculator, FaEye, FaFileDownload, FaInfoCircle, FaDollarSign, FaCalendarAlt, FaChartLine, FaClock } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../../components/common/PageHeader';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -388,12 +389,7 @@ const DepreciationManagement = () => {
                             <h3 className="depreciation-management__modal-title">
                                 Depreciation Details - {selectedAsset.name}
                             </h3>
-                            <button
-                                className="depreciation-management__modal-close"
-                                onClick={() => setShowDetailsModal(false)}
-                            >
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={() => setShowDetailsModal(false)} />
                         </div>
 
                         <div className="depreciation-management__modal-body">
@@ -559,18 +555,18 @@ const DepreciationManagement = () => {
                         </div>
 
                         <div className="depreciation-management__modal-actions">
-                            <button
-                                className="depreciation-management__btn depreciation-management__btn--secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowDetailsModal(false)}
                             >
                                 Close
-                            </button>
-                            <button
-                                className="depreciation-management__btn depreciation-management__btn--primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={() => handleRecalculateDepreciation(selectedAsset)}
                             >
                                 Recalculate Depreciation
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

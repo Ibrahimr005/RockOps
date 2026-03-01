@@ -5,6 +5,7 @@ import './MaintenanceTransactionModal.scss';
 import { siteService } from '../../../services/siteService';
 import { itemTypeService } from '../../../services/itemTypeService';
 import { transactionService } from '../../../services/transactionService';
+import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const MaintenanceTransactionModal = ({
@@ -329,7 +330,7 @@ const MaintenanceTransactionModal = ({
             <div className="maintenance-transaction-modal">
                 <div className="maintenance-transaction-modal-header">
                     <h2>Add Transaction to Maintenance</h2>
-                    <button className="btn-close" onClick={handleCloseAttempt} aria-label="Close"></button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <form onSubmit={handleSubmit} className="transaction-form">
@@ -504,21 +505,22 @@ const MaintenanceTransactionModal = ({
                     )}
 
                     <div className="form-actions">
-                        <button
-                            type="button"
-                            className="btn-primary--outline"
+                        <Button
+                            variant="ghost"
                             onClick={handleCloseAttempt}
                             disabled={isLoading}
                         >
                             Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="primary"
                             type="submit"
-                            className="btn-primary"
-                            disabled={isLoading || (!batchVerificationResult?.found && !showTransactionForm)}
+                            loading={isLoading}
+                            loadingText="Processing..."
+                            disabled={!batchVerificationResult?.found && !showTransactionForm}
                         >
-                            {isLoading ? 'Processing...' : 'Add Transaction'}
-                        </button>
+                            Add Transaction
+                        </Button>
                     </div>
                 </form>
             </div>

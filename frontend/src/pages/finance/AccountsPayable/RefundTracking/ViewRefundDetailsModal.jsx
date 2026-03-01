@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { FiX, FiCheckCircle, FiCalendar, FiUser } from 'react-icons/fi';
+import { FiCheckCircle, FiCalendar, FiUser } from 'react-icons/fi';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './ViewRefundDetailsModal.scss';
 
 const ViewRefundDetailsModal = ({ refund, onClose }) => {
@@ -38,9 +39,7 @@ const ViewRefundDetailsModal = ({ refund, onClose }) => {
                         <FiCheckCircle />
                         <h2>Refund Details</h2>
                     </div>
-                    <button className="close-button" onClick={onClose}>
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Body */}
@@ -123,9 +122,9 @@ const ViewRefundDetailsModal = ({ refund, onClose }) => {
 
                 {/* Footer */}
                 <div className="modal-footer">
-                    <button className="btn-danger" onClick={onClose}>
+                    <Button variant="ghost" onClick={onClose}>
                         Close
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

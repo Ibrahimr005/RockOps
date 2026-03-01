@@ -7,6 +7,7 @@ import { siteService } from "../../../../../services/siteService.js";
 import { merchantService } from "../../../../../services/merchant/merchantService.js";
 import { documentService } from "../../../../../services/documentService.js";
 import { useSnackbar } from "../../../../../contexts/SnackbarContext.jsx";
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import DocumentUpload from '../../../../../components/equipment/DocumentUpload';
 import "./EquipmentModal.scss";
@@ -1339,9 +1340,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             <div className="modal-container equipment-modal">
                 <div className="modal-header equipment-modal-header">
                     <h2 className="modal-title">{equipmentToEdit ? 'Edit Equipment' : 'Add New Equipment'}</h2>
-                    <button className="btn-close" onClick={handleCloseAttempt} aria-label="Close">
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 {/* Form guidance banner */}
@@ -2024,30 +2023,33 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                             </span>
                         </div>
                         <div className="form-actions">
-                            <button
-                                type="button"
-                                className="btn-cancel equipment-modal-clear"
+                            <Button
+                                variant="ghost"
+                                className="equipment-modal-clear"
                                 onClick={handleClearForm}
                                 disabled={loading}
                             >
                                 <FaTrash /> Clear
-                            </button>
-                            <button
-                                type="button"
-                                className="btn-cancel equipment-modal-cancel"
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                className="equipment-modal-cancel"
                                 onClick={handleCloseAttempt}
                                 disabled={loading}
                             >
                                 Cancel
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="primary"
                                 type="submit"
-                                className="btn-primary equipment-modal-submit"
-                                disabled={loading || !formValid}
+                                className="equipment-modal-submit"
+                                loading={loading}
+                                loadingText="Saving..."
+                                disabled={!formValid}
                                 title={!formValid ? "Please complete all required fields before submitting" : ""}
                             >
-                                {loading ? 'Saving...' : equipmentToEdit ? 'Update Equipment' : 'Add Equipment'}
-                            </button>
+                                {equipmentToEdit ? 'Update Equipment' : 'Add Equipment'}
+                            </Button>
                         </div>
                     </div>
                 </form>
@@ -2059,13 +2061,11 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                     <div className="modal-container modal-md brand-modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header brand-modal-header">
                             <h3 className="modal-title">Add New Equipment Brand</h3>
-                            <button
-                                className="btn-close brand-modal-close"
+                            <CloseButton
+                                className="brand-modal-close"
                                 onClick={handleCancelBrandCreation}
                                 disabled={creatingBrand}
-                            >
-                                <FaTimes />
-                            </button>
+                            />
                         </div>
                         <form onSubmit={handleCreateBrand}>
                             <div className="modal-body brand-modal-body">
@@ -2096,21 +2096,23 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                 </div>
                             </div>
                             <div className="modal-footer brand-modal-footer">
-                                <button
-                                    type="button"
-                                    className="modal-btn-secondary"
+                                <Button
+                                    variant="ghost"
                                     onClick={handleCancelBrandCreation}
                                     disabled={creatingBrand}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    variant="success"
                                     type="submit"
-                                    className="btn-success brand-modal-submit"
-                                    disabled={creatingBrand || !newBrandData.name.trim()}
+                                    className="brand-modal-submit"
+                                    loading={creatingBrand}
+                                    loadingText="Creating..."
+                                    disabled={!newBrandData.name.trim()}
                                 >
-                                    {creatingBrand ? 'Creating...' : 'Create Brand'}
-                                </button>
+                                    Create Brand
+                                </Button>
                             </div>
                         </form>
                     </div>

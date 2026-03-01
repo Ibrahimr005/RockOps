@@ -12,6 +12,7 @@ import RequestOrderDetails from '../../../../components/procurement/RequestOrder
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import Snackbar from '../../../../components/common/Snackbar/Snackbar.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
+import { Button } from '../../../../components/common/Button';
 import { offerRequestItemService } from '../../../../services/procurement/offerRequestItemService.js';
 import { offerService } from '../../../../services/procurement/offerService.js';
 
@@ -473,25 +474,27 @@ const ValidatedOffers = ({
                                 {/* Action buttons for rejected offers */}
                                 {activeOffer.status === 'MANAGERREJECTED' && (
                                     <div className="action-buttons-group">
-                                        <button
-                                            className="btn-primary"
+                                        <Button
+                                            variant="primary"
                                             onClick={handleRetryClick}
-                                            disabled={isRetrying}
+                                            loading={isRetrying}
+                                            loadingText="Creating..."
                                             title="Create a new offer"
                                             style={{ marginRight: '10px' }}
                                         >
                                             <FiRefreshCw />
-                                            {isRetrying ? 'Creating...' : 'Retry Offer'}
-                                        </button>
-                                        <button
-                                            className="btn-primary"
+                                            Retry Offer
+                                        </Button>
+                                        <Button
+                                            variant="danger"
                                             onClick={handleDeleteClick}
-                                            disabled={isDeleting}
+                                            loading={isDeleting}
+                                            loadingText="Deleting..."
                                             title="Delete this offer permanently"
                                         >
                                             <FiTrash2 />
-                                            {isDeleting ? 'Deleting...' : 'Delete Offer'}
-                                        </button>
+                                            Delete Offer
+                                        </Button>
                                     </div>
                                 )}
                             </div>

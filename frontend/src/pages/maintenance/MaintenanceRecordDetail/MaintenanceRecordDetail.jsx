@@ -8,6 +8,7 @@ import MaintenanceRecordModal from '../MaintenanceRecords/MaintenanceRecordModal
 import MaintenanceTimeline from './MaintenanceTimeline';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
+import { Button } from '../../../components/common/Button';
 import '../../../styles/status-badges.scss';
 import '../../../styles/tabs.scss';
 import './MaintenanceRecordDetail.scss';
@@ -168,9 +169,9 @@ const MaintenanceRecordDetail = () => {
                 <div className="error-message">
                     <h3>Error Loading Maintenance Record</h3>
                     <p>{error || 'Maintenance record not found'}</p>
-                    <button onClick={() => navigate('/maintenance/records')} className="back-btn">
+                    <Button variant="primary" onClick={() => navigate('/maintenance/records')}>
                         <FaArrowLeft /> Back to Records
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

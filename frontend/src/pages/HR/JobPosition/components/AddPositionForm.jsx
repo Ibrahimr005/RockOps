@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import { Button, CloseButton } from '../../../../components/common/Button/Button';
 import './AddPositionForm.scss';
 import {employeeService} from "../../../../services/hr/employeeService.js";
 import {departmentService} from "../../../../services/hr/departmentService.js";
@@ -407,7 +408,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
             <div className=" modal-content modal-lg">
                 <div className="modal-header">
                     <h2>Add New Position</h2>
-                    <button className="jp-modal-close" onClick={onClose}>×</button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
 
@@ -631,32 +632,31 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                     )}
                 </div>
                 <div className="jp-wizard-actions modal-footer">
-                    <button
-                        type="button"
-                        className="jp-btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={currentStep === 1 ? onClose : handleBack}
                         disabled={loading}
                     >
                         {currentStep === 1 ? 'Cancel' : 'Back'}
-                    </button>
+                    </Button>
 
                     {currentStep < 3 ? (
-                        <button
-                            type="button"
-                            className="jp-submit-button"
+                        <Button
+                            variant="primary"
                             onClick={handleNext}
                         >
                             Next Step
-                        </button>
+                        </Button>
                     ) : (
-                        <button
-                            type="button"
-                            className="jp-submit-button"
+                        <Button
+                            variant="primary"
                             onClick={handleSubmit}
                             disabled={loading}
+                            loading={loading}
+                            loadingText="Creating Position..."
                         >
-                            {loading ? 'Creating Position...' : 'Create Position'}
-                        </button>
+                            Create Position
+                        </Button>
                     )}
                 </div>
             </div>

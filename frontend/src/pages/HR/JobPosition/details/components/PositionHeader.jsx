@@ -7,6 +7,7 @@ import {
     FiCheckCircle,
     FiAlertTriangle
 } from 'react-icons/fi';
+import { Button, IconButton } from '../../../../../components/common/Button/Button';
 
 const PositionHeader = ({ position, onEdit, onDelete, onBack }) => {
     const getStatusIcon = (active) => {
@@ -16,13 +17,12 @@ const PositionHeader = ({ position, onEdit, onDelete, onBack }) => {
     return (
         <div className="position-header">
             <div className="header-left">
-                <button
+                <IconButton
+                    variant="ghost"
+                    icon={<FiArrowLeft />}
                     onClick={onBack}
-                    className="back-button"
                     title="Back to positions"
-                >
-                    <FiArrowLeft />
-                </button>
+                />
                 <div className="header-info">
                     <h1>{position.positionName}</h1>
                     <div className="header-meta">
@@ -38,14 +38,14 @@ const PositionHeader = ({ position, onEdit, onDelete, onBack }) => {
                 </div>
             </div>
             <div className="header-actions">
-                <button onClick={onEdit} className="btn btn-secondary">
+                <Button variant="secondary" onClick={onEdit}>
                     <FiEdit />
                     Edit
-                </button>
-                <button onClick={onDelete} className="btn btn-danger">
+                </Button>
+                <Button variant="danger" onClick={onDelete}>
                     <FiTrash2 />
                     Delete
-                </button>
+                </Button>
             </div>
         </div>
     );

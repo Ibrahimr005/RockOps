@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave, FaUserTie } from 'react-icons/fa';
+import { FaSave, FaUserTie } from 'react-icons/fa';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import { financeService } from '../../../../services/financeService.js';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './CashWithPersonForm.css';
 
 const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
@@ -117,9 +118,7 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
                         <FaUserTie />
                         <h2>{mode === 'create' ? 'Add Cash Holder' : 'Edit Cash Holder'}</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <form onSubmit={handleSubmit} className="modal-body">
@@ -263,19 +262,19 @@ const CashWithPersonForm = ({ person, mode, onClose, onSubmit }) => {
 
                 </form>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>
+                    <Button variant="ghost" onClick={onClose} disabled={loading}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>
-                        {loading ? (
-                            <span>Saving...</span>
-                        ) : (
-                            <>
-                                <FaSave />
-                                <span>{mode === 'create' ? 'Create' : 'Update'}</span>
-                            </>
-                        )}
-                    </button>
+                    </Button>
+                    <Button
+                        variant="primary"
+                        disabled={loading}
+                        onClick={handleSubmit}
+                        loading={loading}
+                        loadingText="Saving..."
+                    >
+                        <FaSave />
+                        <span>{mode === 'create' ? 'Create' : 'Update'}</span>
+                    </Button>
                 </div>
             </div>
         </div>

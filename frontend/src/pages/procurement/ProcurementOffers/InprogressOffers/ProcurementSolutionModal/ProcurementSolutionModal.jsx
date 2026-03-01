@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiCheck } from 'react-icons/fi';
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ProcurementSolutionModal.scss';
 
@@ -172,9 +172,7 @@ const ProcurementSolutionModal = ({
                     <h2 className="modal-title">
                         {mode === 'edit' ? 'Edit' : 'Add'} Procurement Solution for: {requestItem.itemTypeName || 'Item'}
                     </h2>
-                    <button className="btn-close" onClick={handleCloseAttempt} type="button">
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -310,12 +308,12 @@ const ProcurementSolutionModal = ({
                     <div className="modal-footer">
                         <div className="footer-left"></div>
                         <div className="footer-right">
-                            <button type="button" className="btn-cancel" onClick={handleCloseAttempt}>
+                            <Button variant="ghost" onClick={handleCloseAttempt}>
                                 Cancel
-                            </button>
-                            <button type="submit" className="btn-save">
-                                <FiCheck /> {mode === 'edit' ? 'Save Changes' : 'Add to Offer'}
-                            </button>
+                            </Button>
+                            <Button type="submit" variant="primary">
+                                {mode === 'edit' ? 'Save Changes' : 'Add to Offer'}
+                            </Button>
                         </div>
                     </div>
                 </form>

@@ -13,6 +13,7 @@ import {
     FaUserPlus
 } from 'react-icons/fa';
 import './EmployeeOnboarding.scss';
+import { Button } from '../../../components/common/Button/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import { employeeService } from '../../../services/hr/employeeService.js';
 import { jobPositionService } from '../../../services/hr/jobPositionService.js';
@@ -1032,10 +1033,10 @@ const EmployeeOnboarding = () => {
     return (
         <div className="employee-onboarding">
             <div className="onboarding-header">
-                <button className="back-button" onClick={() => navigate(-1)}>
+                <Button variant="ghost" onClick={() => navigate(-1)}>
                     <FaArrowLeft />
                     Back
-                </button>
+                </Button>
                 <div className="header-content">
                     <h1>
                         {isFromCandidate ? 'Complete Hiring Process' : 'Add New Employee'}
@@ -1057,33 +1058,35 @@ const EmployeeOnboarding = () => {
                 </div>
 
                 <div className="navigation-controls">
-                    <button
-                        className="nav-button secondary"
+                    <Button
+                        variant="secondary"
                         onClick={prevStep}
                         disabled={currentStep === 1 || isLoading}
                     >
                         <FaArrowLeft />
                         Previous
-                    </button>
+                    </Button>
 
                     {currentStep < 4 ? (
-                        <button
-                            className="nav-button primary"
+                        <Button
+                            variant="primary"
                             onClick={nextStep}
                             disabled={isLoading}
                         >
                             Next
                             <FaArrowRight />
-                        </button>
+                        </Button>
                     ) : (
-                        <button
-                            className="nav-button success"
+                        <Button
+                            variant="success"
                             onClick={handleSubmit}
                             disabled={isLoading}
+                            loading={isLoading}
+                            loadingText="Creating..."
                         >
-                            {isLoading ? 'Creating...' : isFromCandidate ? 'Complete Hiring' : 'Create Employee'}
+                            {isFromCandidate ? 'Complete Hiring' : 'Create Employee'}
                             <FaCheckCircle />
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div>

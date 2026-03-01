@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { itemCategoryService } from "../../../../services/warehouse/itemCategoryService.js";
 import { measuringUnitService } from "../../../../services/warehouse/measuringUnitService.js";
+import { Button, CloseButton } from "../../../../components/common/Button";
 import MeasuringUnitModal from "../../WarehouseMeasuringUnits/MeasuringUnitModal/MeasuringUnitModal.jsx";
 import "./ItemTypeModal.scss"
 
@@ -229,11 +230,7 @@ const ItemTypeModal = ({
                             </svg>
                             {selectedItem ? 'Edit Item Type' : 'Add New Item Type'}
                         </h2>
-                        <button className="btn-close" onClick={onClose}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <CloseButton onClick={onClose} />
                     </div>
 
                     {/* Modal Body */}
@@ -398,15 +395,12 @@ const ItemTypeModal = ({
 
                     {/* Modal Footer */}
                     <div className="modal-footer">
-                        <button type="button" className="modal-btn-secondary" onClick={onClose}>
+                        <Button variant="ghost" onClick={onClose}>
                             Cancel
-                        </button>
-                        <button type="submit" form="item-type-form" className="btn-success">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
+                        </Button>
+                        <Button variant="success" type="submit" form="item-type-form">
                             {selectedItem ? 'Update Item Type' : 'Add Item Type'}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

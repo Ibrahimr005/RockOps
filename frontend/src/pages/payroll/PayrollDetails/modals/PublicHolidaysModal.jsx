@@ -3,7 +3,8 @@
 // ========================================
 
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaTimes, FaPlus, FaTrash, FaInfoCircle } from 'react-icons/fa';
+import { FaCalendarAlt, FaPlus, FaTrash, FaInfoCircle } from 'react-icons/fa';
+import { Button, CloseButton, IconButton } from '../../../../components/common/Button';
 import payrollService from '../../../../services/payroll/payrollService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
@@ -182,15 +183,13 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
     return (
         <>
         <div className="modal-overlay" onClick={handleCloseAttempt}>
-            <div className="modal-content public-holidays-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content public-holidays-modal modal-lgTHERE " onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2>
                         <FaCalendarAlt />
                         Manage Public Holidays
                     </h2>
-                    <button className="close-button" onClick={handleCloseAttempt}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <div className="modal-body">
@@ -257,14 +256,15 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
                                         Check this if employees should be paid for this holiday
                                     </p>
                                 </div>
-                                <button
-                                    className="btn-add"
+                                <Button
+                                    variant="primary"
+                                    outline
                                     onClick={handleAddToList}
                                     disabled={loading}
                                 >
                                     <FaPlus />
                                     Add to List
-                                </button>
+                                </Button>
                             </div>
 
                             {/* Holidays List */}
@@ -303,13 +303,13 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
                                                         </span>
                                                 </td>
                                                 <td>
-                                                    <button
-                                                        className="btn-delete"
+                                                    <IconButton
+                                                        variant="danger"
+                                                        size="sm"
+                                                        icon={<FaTrash />}
                                                         onClick={() => handleRemoveFromList(index)}
                                                         title="Remove"
-                                                    >
-                                                        <FaTrash />
-                                                    </button>
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
@@ -322,20 +322,22 @@ const PublicHolidaysModal = ({ payrollId, onClose, minDate, maxDate }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        className="btn-cancel"
+                    <Button
+                        variant="ghost"
                         onClick={handleCloseAttempt}
                         disabled={loading}
                     >
                         Cancel
-                    </button>
-                    <button
-                        className="btn-submit"
+                    </Button>
+                    <Button
+                        variant="primary"
                         onClick={handleSubmit}
-                        disabled={loading || holidays.length === 0}
+                        disabled={holidays.length === 0}
+                        loading={loading}
+                        loadingText="Saving..."
                     >
-                        {loading ? 'Saving...' : `Save ${holidays.length} Holiday${holidays.length !== 1 ? 's' : ''}`}
-                    </button>
+                        Save {holidays.length} Holiday{holidays.length !== 1 ? 's' : ''}
+                    </Button>
                 </div>
             </div>
         </div>

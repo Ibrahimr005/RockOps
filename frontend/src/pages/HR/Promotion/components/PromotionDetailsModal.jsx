@@ -5,6 +5,7 @@ import {
     Clock, CheckCircle, XCircle, FileText, TrendingUp,
     AlertTriangle, Star, Award
 } from 'lucide-react';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './PromotionDetailsModal.scss'
 
 const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
@@ -135,14 +136,7 @@ const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
                             Complete details for promotion request #{promotion.id}
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        className="modal-close"
-                        onClick={onClose}
-                        aria-label="Close modal"
-                    >
-                        ×
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">
@@ -571,14 +565,13 @@ const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
+                    <Button
+                        variant="primary"
                         onClick={onClose}
-                        className="btn-primary"
                     >
                         <FileText size={18} />
                         Close
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

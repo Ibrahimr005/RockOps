@@ -19,6 +19,7 @@ import {
     FaRedo,
     FaEye
 } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
 import EmployeePayrollsTable from './EmployeePayrollsTable';
@@ -248,9 +249,9 @@ const ConfirmedLockedPhase = ({ payroll, onTransition, onRefresh, processing, op
                     <div className="section-header">
                         <h4><FaLayerGroup /> Payment Batches</h4>
                         {batches.length > 0 && (
-                            <button className="btn-preview" onClick={() => setShowBatchPreview(true)}>
+                            <Button variant="link" size="sm" onClick={() => setShowBatchPreview(true)}>
                                 <FaEye /> View Details
-                            </button>
+                            </Button>
                         )}
                     </div>
 
@@ -302,61 +303,37 @@ const ConfirmedLockedPhase = ({ payroll, onTransition, onRefresh, processing, op
                 {/* Action Buttons */}
                 <div className="action-buttons">
                     {isRejected ? (
-                        <button
-                            className="btn-resend"
+                        <Button
+                            variant="primary"
                             onClick={handleResendToFinance}
                             disabled={sendingToFinance || employeesWithoutPaymentType.length > 0}
+                            loading={sendingToFinance}
+                            loadingText="Resending..."
                         >
-                            {sendingToFinance ? (
-                                <>
-                                    <FaSpinner className="spin" />
-                                    Resending...
-                                </>
-                            ) : (
-                                <>
-                                    <FaRedo />
-                                    Resend to Finance
-                                </>
-                            )}
-                        </button>
+                            <FaRedo /> Resend to Finance
+                        </Button>
                     ) : (
                         <>
                             {batches.length === 0 ? (
-                                <button
-                                    className="btn-create-batches"
+                                <Button
+                                    variant="primary"
                                     onClick={handleCreateBatches}
                                     disabled={creatingBatches || processing}
+                                    loading={creatingBatches}
+                                    loadingText="Creating Batches..."
                                 >
-                                    {creatingBatches ? (
-                                        <>
-                                            <FaSpinner className="spin" />
-                                            Creating Batches...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FaLayerGroup />
-                                            Create Batches by Payment Type
-                                        </>
-                                    )}
-                                </button>
+                                    <FaLayerGroup /> Create Batches by Payment Type
+                                </Button>
                             ) : (
-                                <button
-                                    className="btn-send-finance"
+                                <Button
+                                    variant="primary"
                                     onClick={handleSendToFinance}
                                     disabled={sendingToFinance || processing || employeesWithoutPaymentType.length > 0}
+                                    loading={sendingToFinance}
+                                    loadingText="Sending..."
                                 >
-                                    {sendingToFinance ? (
-                                        <>
-                                            <FaSpinner className="spin" />
-                                            Sending...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FaPaperPlane />
-                                            Send Batches to Finance
-                                        </>
-                                    )}
-                                </button>
+                                    <FaPaperPlane /> Send Batches to Finance
+                                </Button>
                             )}
                         </>
                     )}
@@ -377,7 +354,7 @@ const ConfirmedLockedPhase = ({ payroll, onTransition, onRefresh, processing, op
                     <div className="modal-content batch-preview-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3><FaLayerGroup /> Payment Batch Details</h3>
-                            <button className="close-btn" onClick={() => setShowBatchPreview(false)}>&times;</button>
+                            <CloseButton onClick={() => setShowBatchPreview(false)} />
                         </div>
                         <div className="modal-body">
                             <div className="batch-summary">
@@ -430,9 +407,9 @@ const ConfirmedLockedPhase = ({ payroll, onTransition, onRefresh, processing, op
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn-close" onClick={() => setShowBatchPreview(false)}>
+                            <Button variant="ghost" onClick={() => setShowBatchPreview(false)}>
                                 Close
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -444,7 +421,7 @@ const ConfirmedLockedPhase = ({ payroll, onTransition, onRefresh, processing, op
                     <div className="modal-content missing-payment-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header warning">
                             <h3><FaExclamationTriangle /> Employees Without Payment Type</h3>
-                            <button className="close-btn" onClick={() => setShowMissingPaymentTypeModal(false)}>&times;</button>
+                            <CloseButton onClick={() => setShowMissingPaymentTypeModal(false)} />
                         </div>
                         <div className="modal-body">
                             <p className="warning-text">
@@ -462,9 +439,9 @@ const ConfirmedLockedPhase = ({ payroll, onTransition, onRefresh, processing, op
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn-close" onClick={() => setShowMissingPaymentTypeModal(false)}>
+                            <Button variant="ghost" onClick={() => setShowMissingPaymentTypeModal(false)}>
                                 Close
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

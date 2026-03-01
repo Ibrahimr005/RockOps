@@ -17,6 +17,7 @@ import {
     FaCheckCircle,
     FaBan
 } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import PageHeader from '../../../components/common/PageHeader/index.js';
@@ -402,7 +403,7 @@ const PaymentTypes = () => {
                                 <FaCreditCard />
                                 {editingType ? 'Edit Payment Type' : 'Create Payment Type'}
                             </h3>
-                            <button className="close-btn" onClick={closeModal}>×</button>
+                            <CloseButton onClick={closeModal} />
                         </div>
 
                         <form onSubmit={handleSubmit}>
@@ -500,36 +501,26 @@ const PaymentTypes = () => {
                             </div>
 
                             <div className="modal-footer">
-                                <button
-                                    type="button"
-                                    className="cancel-btn"
+                                <Button
+                                    variant="ghost"
                                     onClick={closeModal}
                                     disabled={saving}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    className="save-btn"
+                                    variant="primary"
                                     disabled={saving || !formData.code || !formData.name}
+                                    loading={saving}
+                                    loadingText="Saving..."
                                 >
-                                    {saving ? (
-                                        <>
-                                            <FaSpinner className="spin" />
-                                            Saving...
-                                        </>
-                                    ) : editingType ? (
-                                        <>
-                                            <FaCheck />
-                                            Update
-                                        </>
+                                    {editingType ? (
+                                        <><FaCheck /> Update</>
                                     ) : (
-                                        <>
-                                            <FaPlus />
-                                            Create
-                                        </>
+                                        <><FaPlus /> Create</>
                                     )}
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

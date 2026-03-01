@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaTrash, FaEye, FaPlus, FaFileDownload, FaTimes, FaInfoCircle, FaDollarSign, FaCalendarAlt, FaChartLine, FaUser, FaClipboardList, FaFile } from 'react-icons/fa';
+import { FaTrash, FaEye, FaPlus, FaFileDownload, FaInfoCircle, FaDollarSign, FaCalendarAlt, FaChartLine, FaUser, FaClipboardList, FaFile } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../../components/common/PageHeader';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 import './DisposalManagement.css';
@@ -434,12 +435,7 @@ const DisposalManagement = () => {
                             <h3 className="disposal-management__modal-title">
                                 Disposal Details - {selectedDisposal.assetName}
                             </h3>
-                            <button
-                                className="disposal-management__modal-close"
-                                onClick={() => setShowDetailsModal(false)}
-                            >
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={() => setShowDetailsModal(false)} />
                         </div>
 
                         <div className="disposal-management__modal-body">
@@ -585,19 +581,19 @@ const DisposalManagement = () => {
                         </div>
 
                         <div className="disposal-management__modal-actions">
-                            <button
-                                className="disposal-management__btn disposal-management__btn--secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowDetailsModal(false)}
                             >
                                 Close
-                            </button>
+                            </Button>
                             {selectedDisposal.documentPath && (
-                                <button
-                                    className="disposal-management__btn disposal-management__btn--primary"
+                                <Button
+                                    variant="primary"
                                     onClick={() => handleDownloadDocument(selectedDisposal)}
                                 >
                                     <FaFileDownload /> Download Document
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -610,12 +606,7 @@ const DisposalManagement = () => {
                     <div className="disposal-management__modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="disposal-management__modal-header">
                             <h3 className="disposal-management__modal-title">Dispose Asset</h3>
-                            <button
-                                className="disposal-management__modal-close"
-                                onClick={() => setShowDisposeModal(false)}
-                            >
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={() => setShowDisposeModal(false)} />
                         </div>
 
                         <div className="disposal-management__modal-body">
@@ -745,20 +736,21 @@ const DisposalManagement = () => {
                         </div>
 
                         <div className="disposal-management__modal-actions">
-                            <button
-                                className="disposal-management__btn disposal-management__btn--secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowDisposeModal(false)}
                                 disabled={formLoading}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="disposal-management__btn disposal-management__btn--primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleDisposeAsset}
-                                disabled={formLoading}
+                                loading={formLoading}
+                                loadingText="Disposing..."
                             >
-                                {formLoading ? 'Disposing...' : 'Dispose Asset'}
-                            </button>
+                                Dispose Asset
+                            </Button>
                         </div>
                     </div>
                 </div>

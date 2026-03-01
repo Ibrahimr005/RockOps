@@ -10,6 +10,7 @@ import { maintenanceTypeService } from "../../../services/maintenanceTypeService
 import { equipmentService } from "../../../services/equipmentService";
 import { siteService } from "../../../services/siteService";
 import { warehouseService } from "../../../services/warehouse/warehouseService.js";
+import { Button, CloseButton } from '../../../components/common/Button';
 
 const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
     const [loading, setLoading] = useState(false);
@@ -521,13 +522,7 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
                     <div className="accept-reject-modal">
                         <div className="modal-header">
                             <h2>Accept Transaction</h2>
-                            <button
-                                className="btn-close"
-                                onClick={() => setIsAcceptModalOpen(false)}
-                                disabled={processingAction}
-                            >
-                                ×
-                            </button>
+                            <CloseButton onClick={() => setIsAcceptModalOpen(false)} disabled={processingAction} />
                         </div>
 
                         <div className="modal-content">
@@ -744,20 +739,22 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
                         </div>
 
                         <div className="modal-footer">
-                            <button
-                                className="btn-secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setIsAcceptModalOpen(false)}
                                 disabled={processingAction}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="btn-primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleAcceptSubmit}
                                 disabled={processingAction}
+                                loading={processingAction}
+                                loadingText="Processing..."
                             >
-                                {processingAction ? "Processing..." : "Accept"}
-                            </button>
+                                Accept
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -769,13 +766,7 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
                     <div className="accept-reject-modal">
                         <div className="modal-header">
                             <h2>Reject Transaction</h2>
-                            <button
-                                className="btn-close"
-                                onClick={() => setIsRejectModalOpen(false)}
-                                disabled={processingAction}
-                            >
-                                ×
-                            </button>
+                            <CloseButton onClick={() => setIsRejectModalOpen(false)} disabled={processingAction} />
                         </div>
 
                         <div className="modal-content">
@@ -809,20 +800,22 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
                         </div>
 
                         <div className="modal-footer">
-                            <button
-                                className="btn-secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setIsRejectModalOpen(false)}
                                 disabled={processingAction}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="btn-danger"
+                            </Button>
+                            <Button
+                                variant="danger"
                                 onClick={handleRejectSubmit}
                                 disabled={processingAction}
+                                loading={processingAction}
+                                loadingText="Processing..."
                             >
-                                {processingAction ? "Processing..." : "Reject"}
-                            </button>
+                                Reject
+                            </Button>
                         </div>
                     </div>
                 </div>

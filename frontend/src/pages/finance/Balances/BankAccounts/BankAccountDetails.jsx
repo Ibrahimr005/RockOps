@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { FaTimes, FaEdit, FaUniversity, FaCalendarAlt, FaUser } from 'react-icons/fa';
+import { FaEdit, FaUniversity, FaCalendarAlt, FaUser } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './BankAccountDetails.css';
 
 const BankAccountDetails = ({ account, onClose, onEdit }) => {
@@ -48,9 +49,7 @@ const BankAccountDetails = ({ account, onClose, onEdit }) => {
                         <FaUniversity />
                         <h2>Bank Account Details</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">
@@ -137,13 +136,13 @@ const BankAccountDetails = ({ account, onClose, onEdit }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button className="btn-secondary" onClick={onClose}>
+                    <Button variant="ghost" onClick={onClose}>
                         Close
-                    </button>
-                    <button className="btn-primary" onClick={onEdit}>
+                    </Button>
+                    <Button variant="primary" onClick={onEdit}>
                         <FaEdit />
                         <span>Edit Account</span>
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

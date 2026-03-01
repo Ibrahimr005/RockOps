@@ -4,7 +4,8 @@
 // ========================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaTimes, FaSave, FaCalculator, FaSpinner, FaUserTie } from 'react-icons/fa';
+import { FaSave, FaCalculator, FaUserTie } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import EmployeeSelector from '../../../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 import { loanService } from '../../../../../services/payroll/loanService.js';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext.jsx';
@@ -265,15 +266,7 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                 {/* Header */}
                 <div className="create-loan-modal-header">
                     <h2>Create New Loan</h2>
-                    <button
-                        className="create-loan-modal-close-btn"
-                        onClick={handleCloseAttempt}
-                        type="button"
-                        aria-label="Close modal"
-                        disabled={loading}
-                    >
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} disabled={loading} />
                 </div>
 
                 {/* Content */}
@@ -513,31 +506,22 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
 
                         {/* Form Actions */}
                         <div className="create-loan-form-actions">
-                            <button
-                                type="button"
-                                className="create-loan-cancel-btn"
+                            <Button
+                                variant="ghost"
                                 onClick={handleCloseAttempt}
                                 disabled={loading}
                             >
                                 Cancel
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 type="submit"
-                                className="create-loan-submit-btn"
-                                disabled={loading || !formData.employeeId || !formData.loanAmount}
+                                variant="primary"
+                                disabled={!formData.employeeId || !formData.loanAmount}
+                                loading={loading}
+                                loadingText="Creating..."
                             >
-                                {loading ? (
-                                    <>
-                                        <FaSpinner className="create-loan-spinner" />
-                                        Creating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <FaSave />
-                                        Create Loan
-                                    </>
-                                )}
-                            </button>
+                                <FaSave /> Create Loan
+                            </Button>
                         </div>
                     </form>
                 </div>

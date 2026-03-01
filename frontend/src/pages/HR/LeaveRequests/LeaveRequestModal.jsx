@@ -1,6 +1,7 @@
 // LeaveRequestModal.jsx
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaUser, FaSave, FaTimes } from 'react-icons/fa';
+import { FaCalendarAlt, FaUser, FaSave } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import EmployeeSelector from '../../../components/common/EmployeeSelector/EmployeeSelector';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { leaveRequestService } from '../../../services/hr/leaveRequestService';
@@ -332,9 +333,7 @@ const LeaveRequestModal = ({
                         <FaCalendarAlt className="header-icon" />
                         Submit Leave Request
                     </h2>
-                    <button className="close-btn" onClick={handleClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleClose} />
                 </div>
 
                 {/* Modal Body */}
@@ -544,31 +543,22 @@ const LeaveRequestModal = ({
 
                 {/* Modal Footer */}
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn-cancel"
+                    <Button
+                        variant="ghost"
                         onClick={handleClose}
                         disabled={loading}
                     >
-                        <FaTimes /> Cancel
-                    </button>
-                    <button
-                        type="button"
-                        className="btn-primary"
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="primary"
                         onClick={handleSubmit}
                         disabled={loading}
+                        loading={loading}
+                        loadingText="Submitting..."
                     >
-                        {loading ? (
-                            <>
-                                <div className="spinner"></div>
-                                Submitting...
-                            </>
-                        ) : (
-                            <>
-                                <FaSave /> Submit Request
-                            </>
-                        )}
-                    </button>
+                        <FaSave /> Submit Request
+                    </Button>
                 </div>
             </div>
         </div>

@@ -1,6 +1,7 @@
 // src/pages/HR/Promotion/components/AddPromotionForm.jsx
 import React, {useEffect, useState} from 'react';
 import {Building, Calendar, DollarSign, FileText, TrendingUp, User, ArrowUp, AlertTriangle} from 'lucide-react';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import {useSnackbar} from '../../../../contexts/SnackbarContext';
 import {employeeService} from '../../../../services/hr/employeeService';
 import {jobPositionService} from '../../../../services/hr/jobPositionService';
@@ -394,14 +395,7 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
                                 Submit a new promotion request for employee advancement within organizational hierarchy
                             </p>
                         </div>
-                        <button
-                            type="button"
-                            className="btn-close"
-                            onClick={onClose}
-                            aria-label="Close modal"
-                        >
-                            ×
-                        </button>
+                        <CloseButton onClick={onClose} />
                     </div>
 
                     <div className="modal-body">
@@ -751,32 +745,23 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
                     </div>
 
                     <div className="modal-footer">
-                        <button
-                            type="button"
+                        <Button
+                            variant="ghost"
                             onClick={onClose}
-                            className="modal-btn-secondary"
                             disabled={loading}
                         >
                             Cancel
-                        </button>
-                        <button
-                            type="submit"
+                        </Button>
+                        <Button
+                            variant="primary"
                             onClick={handleSubmit}
-                            className="btn-primary"
                             disabled={loading || !formData.employeeId || availablePromotionTargets.length === 0}
+                            loading={loading}
+                            loadingText="Creating..."
                         >
-                            {loading ? (
-                                <>
-                                    <div className="btn-loading-spinner"></div>
-                                    Creating...
-                                </>
-                            ) : (
-                                <>
-                                    <TrendingUp size={18}/>
-                                    Create Promotion Request
-                                </>
-                            )}
-                        </button>
+                            <TrendingUp size={18}/>
+                            Create Promotion Request
+                        </Button>
                     </div>
                 </div>
             </div>

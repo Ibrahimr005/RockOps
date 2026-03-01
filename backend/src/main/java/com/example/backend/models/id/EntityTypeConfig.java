@@ -43,6 +43,10 @@ public enum EntityTypeConfig {
     SITE("SITE", 6),
     TRANSACTION("TXN", 6),
 
+    // HR - Salary & Demotion
+    SALARY_INCREASE_REQUEST("SIR", 6),
+    DEMOTION_REQUEST("DEM", 6),
+
     // Finance - Company Loans
     FINANCIAL_INSTITUTION("FI", 6),
     COMPANY_LOAN("LOAN", 6);

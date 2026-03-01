@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import contactService from '../../../../../services/contactService';
 import contactTypeService from '../../../../../services/contactTypeService';
 import './ContactModal.scss';
@@ -194,13 +194,7 @@ const ContactModal = ({
             <div className="contact-modal-content">
                 <div className="contact-modal-header">
                     <h3>{contactToEdit ? 'Edit Contact' : 'Add New Contact'}</h3>
-                    <button
-                        className="contact-modal-close"
-                        onClick={handleCloseAttempt}
-                        disabled={loading}
-                    >
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} disabled={loading} />
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -440,21 +434,21 @@ const ContactModal = ({
                     </div>
 
                     <div className="contact-modal-footer">
-                        <button
-                            type="button"
-                            className="btn-cancel"
+                        <Button
+                            variant="ghost"
                             onClick={handleCloseAttempt}
                             disabled={loading}
                         >
                             Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="primary"
                             type="submit"
-                            className="btn-submit"
-                            disabled={loading}
+                            loading={loading}
+                            loadingText="Saving..."
                         >
-                            {loading ? 'Saving...' : (contactToEdit ? 'Update Contact' : 'Add Contact')}
-                        </button>
+                            {contactToEdit ? 'Update Contact' : 'Add Contact'}
+                        </Button>
                     </div>
                 </form>
             </div>

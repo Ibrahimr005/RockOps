@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {BsCalendar2Week, BsClockHistory, BsExclamationTriangle, BsPersonCheck, BsPlusCircle, BsSearch} from 'react-icons/bs';
 import {FaAward} from 'react-icons/fa';
+import { Button, IconButton } from '../../../components/common/Button';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 import ContentLoader from '../../../components/common/ContentLoader/ContentLoader.jsx';
 import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards.jsx';
@@ -299,16 +300,16 @@ const VacationBalancePage = () => {
             header: 'Actions',
             render: (balance) => (
                 <div className="vacation-balance-action-buttons">
-                    <button
-                        className="btn btn-sm vacation-balance-bonus-btn"
+                    <IconButton
+                        variant="primary"
+                        size="sm"
+                        icon={<FaAward/>}
                         onClick={() => {
                             setSelectedEmployee(balance);
                             setShowBonusModal(true);
                         }}
                         title="Award Bonus Days"
-                    >
-                        <FaAward/>
-                    </button>
+                    />
                 </div>
             )
         }
@@ -335,18 +336,18 @@ const VacationBalancePage = () => {
                             <option key={year} value={year}>{year}</option>
                         ))}
                     </select>
-                    <button
-                        className="btn btn-primary vacation-balance-init-btn"
+                    <Button
+                        variant="primary"
                         onClick={() => setShowInitializeModal(true)}
                     >
                         <BsPlusCircle/> Initialize Year
-                    </button>
-                    <button
-                        className="btn btn-secondary vacation-balance-carry-forward-btn"
+                    </Button>
+                    <Button
+                        variant="ghost"
                         onClick={() => setShowCarryForwardModal(true)}
                     >
                         <BsClockHistory/> Carry Forward
-                    </button>
+                    </Button>
                 </div>
 
             </div>
@@ -505,12 +506,12 @@ const BonusModal = ({employee, currentYear, onSubmit, onClose}) => {
                         </div>
                     </div>
                     <div className="modal-footer">
-                        <button type="button" onClick={onClose} className="btn btn-secondary">
+                        <Button variant="ghost" onClick={onClose}>
                             Cancel
-                        </button>
-                        <button type="submit" className="btn btn-primary">
+                        </Button>
+                        <Button variant="primary" type="submit">
                             Award Bonus
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div>
@@ -580,12 +581,12 @@ const CarryForwardModal = ({currentYear, onSubmit, onClose}) => {
                         </div>
                     </div>
                     <div className="modal-footer">
-                        <button type="button" onClick={onClose} className="btn btn-secondary">
+                        <Button variant="ghost" onClick={onClose}>
                             Cancel
-                        </button>
-                        <button type="submit" className="btn btn-primary">
+                        </Button>
+                        <Button variant="primary" type="submit">
                             Carry Forward
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div>

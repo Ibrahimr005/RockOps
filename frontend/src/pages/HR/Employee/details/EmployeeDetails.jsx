@@ -18,6 +18,7 @@ const VacationTab = lazy(() => import('../tabs/VacationTab.jsx'));
 import IntroCard from "../../../../components/common/IntroCard/IntroCard.jsx";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 import {FaBuilding, FaEdit, FaFileDownload, FaMapMarkerAlt, FaUser} from "react-icons/fa";
+import { Button } from '../../../../components/common/Button';
 import {FiBriefcase, FiHome, FiUsers} from "react-icons/fi";
 import {hrEmployeeService} from "../../../../services/hr/hrEmployeeService.js";
 
@@ -102,7 +103,7 @@ const EmployeeDetails = () => {
                 <div className="error-message">
                     <h2>Error Loading Employee</h2>
                     <p>{error}</p>
-                    <button onClick={() => navigate('/hr/employees')}>Back to Employees List</button>
+                    <Button variant="primary" onClick={() => navigate('/hr/employees')}>Back to Employees List</Button>
                 </div>
             </div>
         );
@@ -114,7 +115,7 @@ const EmployeeDetails = () => {
                 <div className="error-message">
                     <h2>Employee Not Found</h2>
                     <p>The requested employee could not be found.</p>
-                    <button onClick={() => navigate('/hr/employees')}>Back to Employees List</button>
+                    <Button variant="primary" onClick={() => navigate('/hr/employees')}>Back to Employees List</Button>
                 </div>
             </div>
         );

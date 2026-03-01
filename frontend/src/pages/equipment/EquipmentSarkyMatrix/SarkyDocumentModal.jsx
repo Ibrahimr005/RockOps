@@ -3,6 +3,7 @@ import { documentService } from '../../../services/documentService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
+import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import {
     SARKY_DOCUMENT_TYPES,
@@ -311,7 +312,7 @@ const SarkyDocumentModal = ({
                     {/* Header */}
                     <div className="sarky-modal-header">
                         <h2>Documents for {equipmentName} - {getMonthLabel(selectedMonth)} {selectedYear}</h2>
-                        <button className="btn-close" onClick={handleCloseAttempt} aria-label="Close"></button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                     {/* Controls */}
@@ -421,13 +422,15 @@ const SarkyDocumentModal = ({
                                         />
                                     </div>
 
-                                    <button
-                                        className="btn-primary"
+                                    <Button
+                                        variant="primary"
                                         onClick={handleUpload}
-                                        disabled={uploading || !customName.trim()}
+                                        loading={uploading}
+                                        loadingText="Uploading..."
+                                        disabled={!customName.trim()}
                                     >
-                                        {uploading ? 'Uploading...' : 'Upload Document'}
-                                    </button>
+                                        Upload Document
+                                    </Button>
                                 </div>
                             )}
                         </div>
@@ -549,9 +552,9 @@ const SarkyDocumentModal = ({
                         <div className="sarky-modal-footer-info">
                             {filteredDocuments.length} of {monthlyDocuments.length} documents
                         </div>
-                        <button className="btn-primary" onClick={handleCloseAttempt}>
+                        <Button variant="primary" onClick={handleCloseAttempt}>
                             Close
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

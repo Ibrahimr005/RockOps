@@ -16,7 +16,6 @@ import {
     FaFileAlt,
     FaPaperPlane,
     FaUniversity,
-    FaSpinner,
     FaPercent,
     FaClock,
     FaCheckCircle,
@@ -26,6 +25,7 @@ import {
     FaInfoCircle,
     FaGavel
 } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { loanService, LOAN_STATUS, LOAN_STATUS_CONFIG } from '../../../../services/payroll/loanService.js';
 import { loanResolutionService, RESOLUTION_STATUS_CONFIG } from '../../../../services/payroll/loanResolutionService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
@@ -288,12 +288,12 @@ const LoanDetails = () => {
                     <FaTimesCircle className="loan-details-error-icon" />
                     <h3>Error Loading Loan</h3>
                     <p>{error || 'Loan not found'}</p>
-                    <button
-                        className="loan-details-btn loan-details-btn-primary"
+                    <Button
+                        variant="primary"
                         onClick={() => navigate('/payroll/loans')}
                     >
                         <FaArrowLeft /> Back to Loans
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -309,12 +309,12 @@ const LoanDetails = () => {
                 subtitle={`Employee: ${loan.employeeName || 'N/A'}`}
                 actions={
                     <div className="loan-details-header-actions">
-                        <button
-                            className="loan-details-btn loan-details-btn-secondary"
+                        <Button
+                            variant="ghost"
                             onClick={() => navigate('/payroll/loans')}
                         >
                             <FaArrowLeft /> Back
-                        </button>
+                        </Button>
                     </div>
                 }
             />
@@ -335,42 +335,46 @@ const LoanDetails = () => {
                 <div className="loan-details-actions">
                     {canHRApprove && (
                         <>
-                            <button
-                                className="loan-details-btn loan-details-btn-success"
+                            <Button
+                                variant="success"
                                 onClick={handleHRApprove}
                                 disabled={actionLoading}
+                                loading={actionLoading === 'hr-approve'}
+                                loadingText="Approve"
                             >
-                                {actionLoading === 'hr-approve' ? <FaSpinner className="loan-details-spinner" /> : <FaCheck />}
-                                Approve
-                            </button>
-                            <button
-                                className="loan-details-btn loan-details-btn-danger"
+                                <FaCheck /> Approve
+                            </Button>
+                            <Button
+                                variant="danger"
                                 onClick={() => setShowRejectModal(true)}
                                 disabled={actionLoading}
                             >
                                 <FaTimes /> Reject
-                            </button>
+                            </Button>
                         </>
                     )}
                     {canSendToFinance && (
-                        <button
-                            className="loan-details-btn loan-details-btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={handleSendToFinance}
                             disabled={actionLoading}
+                            loading={actionLoading === 'send-finance'}
+                            loadingText="Send to Finance"
                         >
-                            {actionLoading === 'send-finance' ? <FaSpinner className="loan-details-spinner" /> : <FaPaperPlane />}
-                            Send to Finance
-                        </button>
+                            <FaPaperPlane /> Send to Finance
+                        </Button>
                     )}
                     {canCancel && (
-                        <button
-                            className="loan-details-btn loan-details-btn-outline-danger"
+                        <Button
+                            variant="danger"
+                            outline
                             onClick={handleCancelLoan}
                             disabled={actionLoading}
+                            loading={actionLoading === 'cancel'}
+                            loadingText="Cancel Loan"
                         >
-                            {actionLoading === 'cancel' ? <FaSpinner className="loan-details-spinner" /> : <FaTimes />}
-                            Cancel Loan
-                        </button>
+                            <FaTimes /> Cancel Loan
+                        </Button>
                     )}
                 </div>
             </div>
@@ -674,13 +678,12 @@ const LoanDetails = () => {
                             <p style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
                                 Request to close this loan before all installments are paid. Requires HR and Finance approval.
                             </p>
-                            <button
-                                className="loan-details-btn loan-details-btn-warning"
+                            <Button
+                                variant="warning"
                                 onClick={() => setShowResolutionModal(true)}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                             >
                                 <FaGavel /> Request Early Resolution
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
@@ -784,15 +787,12 @@ const LoanDetails = () => {
                     <div className="loan-details-modal">
                         <div className="loan-details-modal-header">
                             <h3>Reject Loan</h3>
-                            <button
-                                className="loan-details-modal-close"
+                            <CloseButton
                                 onClick={() => {
                                     setShowRejectModal(false);
                                     setRejectReason('');
                                 }}
-                            >
-                                <FaTimes />
-                            </button>
+                            />
                         </div>
                         <div className="loan-details-modal-content">
                             <p>Please provide a reason for rejecting this loan request:</p>
@@ -805,23 +805,24 @@ const LoanDetails = () => {
                             />
                         </div>
                         <div className="loan-details-modal-actions">
-                            <button
-                                className="loan-details-btn loan-details-btn-secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => {
                                     setShowRejectModal(false);
                                     setRejectReason('');
                                 }}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="loan-details-btn loan-details-btn-danger"
+                            </Button>
+                            <Button
+                                variant="danger"
                                 onClick={handleHRReject}
                                 disabled={actionLoading === 'hr-reject'}
+                                loading={actionLoading === 'hr-reject'}
+                                loadingText="Reject Loan"
                             >
-                                {actionLoading === 'hr-reject' ? <FaSpinner className="loan-details-spinner" /> : <FaTimes />}
-                                Reject Loan
-                            </button>
+                                <FaTimes /> Reject Loan
+                            </Button>
                         </div>
                     </div>
                 </div>

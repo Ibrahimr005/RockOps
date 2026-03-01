@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaExclamationTriangle, FaPlus, FaUser, FaCheck, FaTimes, FaEdit, FaFileExcel } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -351,7 +352,7 @@ const DiscrepancyManagement = () => {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Add New Discrepancy</h3>
-                            <button className="modal-close" onClick={() => setShowAddModal(false)}>×</button>
+                            <CloseButton onClick={() => setShowAddModal(false)} />
                         </div>
                         <div className="modal-body">
                             <form className="bank-reconciliation-form">
@@ -415,19 +416,19 @@ const DiscrepancyManagement = () => {
                             </form>
                         </div>
                         <div className="modal-footer">
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowAddModal(false)}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleAddDiscrepancy}
                                 disabled={!formData.description || !formData.reason}
                             >
                                 Create Discrepancy
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -439,7 +440,7 @@ const DiscrepancyManagement = () => {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Assign Discrepancy</h3>
-                            <button className="modal-close" onClick={() => setShowAssignModal(false)}>×</button>
+                            <CloseButton onClick={() => setShowAssignModal(false)} />
                         </div>
                         <div className="modal-body">
                             <div className="bank-reconciliation-form">
@@ -466,19 +467,19 @@ const DiscrepancyManagement = () => {
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowAssignModal(false)}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleAssignDiscrepancy}
                                 disabled={!assignmentData.assignee}
                             >
                                 Assign Discrepancy
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -490,7 +491,7 @@ const DiscrepancyManagement = () => {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Resolve Discrepancy</h3>
-                            <button className="modal-close" onClick={() => setShowResolveModal(false)}>×</button>
+                            <CloseButton onClick={() => setShowResolveModal(false)} />
                         </div>
                         <div className="modal-body">
                             <div className="bank-reconciliation-form">
@@ -527,19 +528,19 @@ const DiscrepancyManagement = () => {
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowResolveModal(false)}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-success"
+                            </Button>
+                            <Button
+                                variant="success"
                                 onClick={handleResolveDiscrepancy}
                                 disabled={!resolutionData.resolution}
                             >
                                 Resolve Discrepancy
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

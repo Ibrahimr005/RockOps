@@ -1,7 +1,8 @@
 // DriverManagementModal.jsx
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUserTimes, FaUserPlus, FaExchangeAlt } from 'react-icons/fa';
+import { FaUserTimes, FaUserPlus, FaExchangeAlt } from 'react-icons/fa';
 import { equipmentService } from '../../../services/equipmentService';
+import { CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './DriverManagementModal.scss';
@@ -259,9 +260,7 @@ const DriverManagementModal = ({ isOpen, onClose, equipmentId, equipmentData, on
                             {viewMode === 'assign' && `Assign ${selectedDriverType === 'main' ? 'Main' : 'Sub'} Driver`}
                             {viewMode === 'replace' && `Replace ${selectedDriverType === 'main' ? 'Main' : 'Sub'} Driver`}
                         </h2>
-                        <button className="btn-close" onClick={handleCloseAttempt}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                     <div className="modal-body">

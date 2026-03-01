@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTruck, FaUser, FaBuilding, FaCheckCircle } from 'react-icons/fa';
 import { siteService } from '../../../services/siteService';
 import directPurchaseService from '../../../services/directPurchaseService';
+import { Button } from '../../../components/common/Button';
 
 const Step4TransportingForm = ({ ticketId, ticketData, onSave, onComplete, isLoading }) => {
     const [formData, setFormData] = useState({
@@ -340,22 +341,18 @@ const Step4TransportingForm = ({ ticketId, ticketData, onSave, onComplete, isLoa
 
             {/* Actions */}
             <div className="form-actions">
-                <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={handleSave}
-                    disabled={isLoading}
-                >
+                <Button variant="secondary" onClick={handleSave} disabled={isLoading}>
                     Save Progress
-                </button>
-                <button
-                    type="button"
-                    className="btn-primary btn-success"
+                </Button>
+                <Button
+                    variant="success"
                     onClick={handleComplete}
                     disabled={isLoading}
+                    loading={isLoading}
+                    loadingText="Completing..."
                 >
-                    {isLoading ? 'Completing...' : 'Complete Ticket'}
-                </button>
+                    Complete Ticket
+                </Button>
             </div>
         </div>
     );

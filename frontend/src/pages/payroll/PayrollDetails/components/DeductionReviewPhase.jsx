@@ -19,6 +19,7 @@ import {
     FaUserMinus,
     FaCreditCard
 } from 'react-icons/fa';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
 import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
@@ -259,32 +260,25 @@ const DeductionReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDia
                 </div>
 
                 <div className="review-actions">
-                    <button
-                        className="btn-primary btn-large"
+                    <Button
+                        variant="primary"
+                        size="lg"
                         onClick={handleProcessDeductionReview}
                         disabled={processingDeduction}
+                        loading={processingDeduction}
+                        loadingText="Processing..."
                     >
-                        {processingDeduction ? (
-                            <>
-                                <FaClock className="spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <FaMoneyBillWave />
-                                Process Deduction Review
-                            </>
-                        )}
-                    </button>
+                        <FaMoneyBillWave /> Process Deduction Review
+                    </Button>
 
-                    <button
-                        className="btn-secondary-outline"
+                    <Button
+                        variant="secondary"
+                        outline
                         onClick={handleNotifyHR}
                         disabled={notifying}
                     >
-                        <FaBell />
-                        Notify HR to Review
-                    </button>
+                        <FaBell /> Notify HR to Review
+                    </Button>
                 </div>
 
                 <div className="review-info">
@@ -403,50 +397,35 @@ const DeductionReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDia
 
             {/* Actions */}
             <div className="review-actions">
-                <button
-                    className="btn-secondary"
+                <Button
+                    variant="secondary"
                     onClick={handleProcessDeductionReview}
                     disabled={processingDeduction || finalizing}
+                    loading={processingDeduction}
+                    loadingText="Re-processing..."
                 >
-                    {processingDeduction ? (
-                        <>
-                            <FaClock className="spin" />
-                            Re-processing...
-                        </>
-                    ) : (
-                        <>
-                            <FaRedo />
-                            Re-Process Deduction Review
-                        </>
-                    )}
-                </button>
+                    <FaRedo /> Re-Process Deduction Review
+                </Button>
 
-                <button
-                    className="btn-secondary-outline"
+                <Button
+                    variant="secondary"
+                    outline
                     onClick={handleNotifyHR}
                     disabled={notifying || deductionStatus.hrNotificationSent}
                 >
-                    <FaBell />
-                    {deductionStatus.hrNotificationSent ? 'HR Notified ✓' : 'Notify HR'}
-                </button>
+                    <FaBell /> {deductionStatus.hrNotificationSent ? 'HR Notified' : 'Notify HR'}
+                </Button>
 
-                <button
-                    className="btn-success btn-large"
+                <Button
+                    variant="success"
+                    size="lg"
                     onClick={confirmFinalize}
                     disabled={finalizing || processingDeduction}
+                    loading={finalizing}
+                    loadingText="Finalizing..."
                 >
-                    {finalizing ? (
-                        <>
-                            <FaClock className="spin" />
-                            Finalizing...
-                        </>
-                    ) : (
-                        <>
-                            <FaLock />
-                            Finalize Deduction Review
-                        </>
-                    )}
-                </button>
+                    <FaLock /> Finalize Deduction Review
+                </Button>
             </div>
 
             {/* Employee Deduction Summaries Table */}

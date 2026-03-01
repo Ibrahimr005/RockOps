@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTimes } from 'react-icons/fa';
 import { warehouseEmployeeService } from '../../../../services/warehouse/warehouseEmployeeService';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import EmployeeSelector from '../../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 import './AssignmentModal.scss';
 
@@ -217,7 +218,7 @@ const AssignmentModal = ({
             <div className="warehouse-modal-content warehouse-modal-large">
                 <div className="warehouse-modal-header">
                     <h2>Assign Employees to {selectedWarehouse?.name}</h2>
-                    <button className="warehouse-modal-close-button" onClick={handleCloseModal}>×</button>
+                    <CloseButton onClick={handleCloseModal} />
                 </div>
 
                 <div className="warehouse-modal-body">
@@ -273,19 +274,16 @@ const AssignmentModal = ({
 
                             {/* Actions */}
                             <div className="warehouse-modal-actions">
-                                <button
-                                    onClick={handleCloseModal}
-                                    className="warehouse-cancel-button"
-                                >
+                                <Button variant="ghost" onClick={handleCloseModal}>
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    variant="primary"
                                     onClick={handleApplyChanges}
-                                    className="warehouse-submit-button"
                                     disabled={!hasUnsavedChanges}
                                 >
                                     {hasUnsavedChanges ? 'Apply Changes' : 'Close'}
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     )}

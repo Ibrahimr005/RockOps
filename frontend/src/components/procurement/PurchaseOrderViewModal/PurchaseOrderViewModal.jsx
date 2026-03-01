@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { CloseButton } from '../../../components/common/Button';
 import "./PurchaseOrderViewModal.scss";
 
 const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
@@ -109,9 +110,7 @@ const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
                             {purchaseOrder.status || 'Unknown'}
                         </div>
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        ×
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Content */}

@@ -8,6 +8,7 @@ import { itemCategoryService } from '../../../services/warehouse/itemCategorySer
 import { employeeService } from '../../../services/hr/employeeService.js';
 import { requestOrderService } from '../../../services/procurement/requestOrderService.js';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { Button, CloseButton } from '../../../components/common/Button';
 import './RequestOrderModal.scss';
 
 const RequestOrderModal = ({
@@ -683,13 +684,10 @@ const RequestOrderModal = ({
                         <h2 className="modal-title">
                             {isEditMode ? 'Update Request Order' : 'Create New Request Order'}
                         </h2>
-                        <button
-                            className="btn-close"
+                        <CloseButton
                             onClick={handleCloseAttempt}
                             disabled={isSubmitting}
-                        >
-                            <FaTimes />
-                        </button>
+                        />
                     </div>
 
                     {/* Step Indicator */}
@@ -779,15 +777,15 @@ const RequestOrderModal = ({
                                 <div className="modal-section">
                                     <div className="section-header">
                                         <h3 className="modal-section-title">Request Items</h3>
-                                        <button
-                                            type="button"
-                                            className="btn-add-item"
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
                                             onClick={handleAddItem}
                                             disabled={isSubmitting}
                                         >
                                             <FaPlus />
                                             Add Another Item
-                                        </button>
+                                        </Button>
                                     </div>
 
                                     <div className="items-container">
@@ -796,15 +794,15 @@ const RequestOrderModal = ({
                                                 <div className="item-header">
                                                     <span className="item-number">Item {index + 1}</span>
                                                     {formData.items.length > 1 && (
-                                                        <button
-                                                            type="button"
-                                                            className="btn-remove-item"
+                                                        <Button
+                                                            variant="danger"
+                                                            size="sm"
                                                             onClick={() => handleRemoveItem(index)}
                                                             disabled={isSubmitting}
                                                         >
                                                             <FaTimes />
                                                             Remove
-                                                        </button>
+                                                        </Button>
                                                     )}
                                                 </div>
 
@@ -1027,59 +1025,46 @@ const RequestOrderModal = ({
                     <div className="modal-footer">
                         <div className="footer-left">
                             {currentStep > 1 && (
-                                <button
-                                    type="button"
-                                    className="modal-btn-secondary"
+                                <Button
+                                    variant="ghost"
                                     onClick={handlePreviousStep}
                                     disabled={isSubmitting}
                                 >
                                     Previous
-                                </button>
+                                </Button>
                             )}
                         </div>
 
                         <div className="footer-right">
-                            <button
-                                type="button"
-                                className="btn-draft"
+                            <Button
+                                variant="ghost"
                                 onClick={handleSaveAsDraft}
                                 disabled={isSubmitting}
+                                loading={isSubmitting}
+                                loadingText="Saving..."
                             >
-                                {isSubmitting ? (
-                                    <>
-                                        <span className="spinner"></span>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    'Save as Draft'
-                                )}
-                            </button>
+                                Save as Draft
+                            </Button>
 
                             {currentStep < 3 ? (
-                                <button
-                                    type="button"
-                                    className="btn-primary"
+                                <Button
+                                    variant="primary"
                                     onClick={handleNextStep}
                                     disabled={isSubmitting}
                                 >
                                     Next
-                                </button>
+                                </Button>
                             ) : (
-                                <button
+                                <Button
+                                    variant="success"
                                     type="submit"
-                                    className="btn-success"
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
+                                    loading={isSubmitting}
+                                    loadingText="Submitting..."
                                 >
-                                    {isSubmitting ? (
-                                        <>
-                                            <span className="spinner"></span>
-                                            Submitting...
-                                        </>
-                                    ) : (
-                                        isEditMode ? 'Create Request' : 'Submit Request'
-                                    )}
-                                </button>
+                                    {isEditMode ? 'Create Request' : 'Submit Request'}
+                                </Button>
                             )}
                         </div>
                     </div>

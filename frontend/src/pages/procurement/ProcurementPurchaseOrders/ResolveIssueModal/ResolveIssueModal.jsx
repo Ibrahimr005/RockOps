@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ResolveIssueModal.scss';
 
@@ -225,9 +226,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
                             </div>
                         </div>
                     </div>
-                    <button className="btn-close" onClick={handleCloseAttempt} disabled={isSubmitting}>
-                        ×
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} disabled={isSubmitting} />
                 </div>
 
                 {/* Content */}
@@ -579,34 +578,20 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
                             </span>
                         </div>
                         <div className="footer-actions">
-                            <button
-                                type="button"
-                                className="btn-cancel"
-                                onClick={handleCloseAttempt}
-                                disabled={isSubmitting}
-                            >
+                            <Button variant="ghost" onClick={handleCloseAttempt} disabled={isSubmitting}>
                                 Cancel
-                            </button>
-                            <button
-                                type="button"
-                                className="btn-primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting}
+                                loading={isSubmitting}
+                                loadingText="Resolving..."
                             >
-                                {isSubmitting ? (
-                                    <>
-                                        <div className="spinner-small"></div>
-                                        Resolving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        Resolve All Issues
-                                    </>
-                                )}
-                            </button>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                Resolve All Issues
+                            </Button>
                         </div>
                     </div>
                 )}

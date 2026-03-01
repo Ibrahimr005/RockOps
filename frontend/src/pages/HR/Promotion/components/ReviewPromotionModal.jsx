@@ -1,6 +1,7 @@
 // src/pages/HR/Promotion/components/ReviewPromotionModal.jsx
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, MessageSquare, User, Building, DollarSign, Calendar, AlertTriangle } from 'lucide-react';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ReviewPromotionModal.scss'
@@ -192,14 +193,7 @@ const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
                             Review and approve/reject promotion request for {promotion.employeeName}
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        className="modal-close"
-                        onClick={handleCloseAttempt}
-                        aria-label="Close modal"
-                    >
-                        ×
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <div className="modal-body">
@@ -464,52 +458,35 @@ const ReviewPromotionModal = ({ isOpen, onClose, promotion, onSubmit }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
+                    <Button
+                        variant="ghost"
                         onClick={handleCloseAttempt}
-                        className="modal-btn-secondary"
                         disabled={loading}
                     >
                         Cancel
-                    </button>
+                    </Button>
 
-                    <button
-                        type="button"
+                    <Button
+                        variant="danger"
                         onClick={handleReject}
-                        className="modal-btn-danger"
                         disabled={loading}
+                        loading={loading}
+                        loadingText="Processing..."
                     >
-                        {loading ? (
-                            <>
-                                <div className="btn-loading-spinner"></div>
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <XCircle size={18} />
-                                Reject Request
-                            </>
-                        )}
-                    </button>
+                        <XCircle size={18} />
+                        Reject Request
+                    </Button>
 
-                    <button
-                        type="button"
+                    <Button
+                        variant="success"
                         onClick={handleApprove}
-                        className="btn-success"
                         disabled={loading}
+                        loading={loading}
+                        loadingText="Processing..."
                     >
-                        {loading ? (
-                            <>
-                                <div className="btn-loading-spinner"></div>
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle size={18} />
-                                Approve Request
-                            </>
-                        )}
-                    </button>
+                        <CheckCircle size={18} />
+                        Approve Request
+                    </Button>
                 </div>
             </div>
         </div>

@@ -8,6 +8,7 @@ import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { siteService } from "../../../../services/siteService";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
+import { Button, CloseButton } from '../../../../components/common/Button';
 
 const SiteEquipmentTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -68,15 +69,16 @@ const SiteEquipmentTab = ({siteId}) => {
             sortable: false,
             render: (row) => (
                 isSiteAdmin && (
-                    <button
-                        className="btn-danger"
+                    <Button
+                        variant="danger"
+                        size="sm"
                         onClick={(e) => {
                             e.stopPropagation(); // Prevent row click
                             handleUnassignEquipment(row.equipmentID);
                         }}
                     >
                         Unassign
-                    </button>
+                    </Button>
                 )
             )
         }
@@ -286,12 +288,7 @@ const SiteEquipmentTab = ({siteId}) => {
                     <div className="assign-equipment-modal-content">
                         <div className="assign-equipment-modal-header">
                             <h2>{t('site.assignEquipment')}</h2>
-                            <button
-                                className="assign-equipment-modal-close-button"
-                                onClick={handleCloseModal}
-                            >
-                                ×
-                            </button>
+                            <CloseButton onClick={handleCloseModal} />
                         </div>
 
                         <div className="assign-equipment-modal-body">
@@ -340,12 +337,13 @@ const SiteEquipmentTab = ({siteId}) => {
                                                         </span>
                                                     </td>
                                                     <td data-label={t('common.action')}>
-                                                        <button
-                                                            className="assign-equipment-btn"
+                                                        <Button
+                                                            variant="primary"
+                                                            size="sm"
                                                             onClick={() => handleAssignEquipment(equipmentId)}
                                                         >
                                                             {t('site.assign')}
-                                                        </button>
+                                                        </Button>
                                                     </td>
                                                 </tr>
                                             );

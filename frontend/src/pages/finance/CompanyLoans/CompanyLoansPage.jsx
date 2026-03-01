@@ -6,6 +6,7 @@ import { financeService } from '../../../services/financeService';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import Tabs from '../../../components/common/Tabs/Tabs';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import { Button } from '../../../components/common/Button';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './CompanyLoansPage.scss';
 
@@ -329,12 +330,13 @@ const CompanyLoansPage = () => {
                         You have <strong>{dashboardData.overdueInstallments}</strong> overdue installments
                         totaling <strong>{formatCurrency(dashboardData.totalOverdueAmount)}</strong>
                     </span>
-                    <button
-                        className="alerts-banner__action"
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setActiveTab('overdue')}
                     >
                         View Overdue
-                    </button>
+                    </Button>
                 </div>
             )}
 
@@ -353,12 +355,12 @@ const CompanyLoansPage = () => {
             {activeTab === 'loans' && (
                 <div className="tab-content tab-content--with-actions">
                     <div className="tab-content__extra-actions">
-                        <button
-                            className="btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={() => navigate('/finance/company-loans/institutions')}
                         >
                             <FaUniversity /> Institutions
-                        </button>
+                        </Button>
                     </div>
                     <DataTable
                         data={loans}

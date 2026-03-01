@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { FaTimes, FaEdit, FaPiggyBank } from 'react-icons/fa';
+import { FaEdit, FaPiggyBank } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './CashSafeDetails.css';
 
 const CashSafeDetails = ({ safe, onClose, onEdit }) => {
@@ -39,9 +40,7 @@ const CashSafeDetails = ({ safe, onClose, onEdit }) => {
                         <FaPiggyBank />
                         <h2>Cash Safe Details</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">
@@ -98,13 +97,13 @@ const CashSafeDetails = ({ safe, onClose, onEdit }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button className="btn-secondary" onClick={onClose}>
+                    <Button variant="ghost" onClick={onClose}>
                         Close
-                    </button>
-                    <button className="btn-primary" onClick={onEdit}>
+                    </Button>
+                    <Button variant="primary" onClick={onEdit}>
                         <FaEdit />
                         <span>Edit Safe</span>
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

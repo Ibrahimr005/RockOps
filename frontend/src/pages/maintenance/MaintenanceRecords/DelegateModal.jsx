@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUserCheck } from 'react-icons/fa';
+import { FaUserCheck } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import maintenanceService from '../../../services/maintenanceService.js';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/primary-button.scss';
@@ -90,14 +91,7 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
                         <h2 className="modal-title">
                             <FaUserCheck /> Delegate Maintenance Record
                         </h2>
-                        <button
-                            type="button"
-                            className="btn-close"
-                            onClick={handleCloseAttempt}
-                            disabled={loading}
-                        >
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} disabled={loading} />
                     </div>
 
                 {/* Body */}
@@ -149,22 +143,19 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
 
                 {/* Footer */}
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="cancel-modal-button"
-                        onClick={handleCloseAttempt}
-                        disabled={loading}
-                    >
+                    <Button variant="ghost" onClick={handleCloseAttempt} disabled={loading}>
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        variant="primary"
                         type="submit"
                         form="delegate-form"
-                        className="primary-button"
-                        disabled={loading || !selectedUserId}
+                        disabled={!selectedUserId}
+                        loading={loading}
+                        loadingText="Delegating..."
                     >
-                        {loading ? 'Delegating...' : 'Delegate'}
-                    </button>
+                        Delegate
+                    </Button>
                 </div>
             </div>
         </div>

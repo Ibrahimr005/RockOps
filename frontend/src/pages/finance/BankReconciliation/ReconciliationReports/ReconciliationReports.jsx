@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaChartLine, FaDownload, FaCalendarAlt, FaUniversity, FaFileExcel, FaFilePdf } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -211,14 +212,14 @@ const ReconciliationReports = () => {
                             </option>
                         ))}
                     </select>
-                    <button
-                        className="bank-reconciliation-btn bank-reconciliation-btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={handleExportCSV}
                         disabled={!selectedAccountId}
                     >
                         <FaFilePdf />
                         Export CSV
-                    </button>
+                    </Button>
                 </div>
             </div>
 

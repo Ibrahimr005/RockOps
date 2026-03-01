@@ -21,6 +21,7 @@ import {
     FaSpinner,
     FaMoneyBillWave
 } from 'react-icons/fa';
+import { Button } from '../../../../components/common/Button';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import CreateLoanModal from '../components/CreateLoanModal/CreateLoanModal';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
@@ -451,8 +452,8 @@ const LoanManagement = () => {
                             rows={4}
                         />
                         <div className="modal-actions">
-                            <button
-                                className="btn-cancel"
+                            <Button
+                                variant="ghost"
                                 onClick={() => {
                                     setShowRejectModal(false);
                                     setRejectionReason('');
@@ -460,15 +461,16 @@ const LoanManagement = () => {
                                 }}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="btn-reject"
+                            </Button>
+                            <Button
+                                variant="danger"
                                 onClick={confirmRejectLoan}
                                 disabled={!rejectionReason.trim() || processingId}
+                                loading={!!processingId}
+                                loadingText="Reject Loan"
                             >
-                                {processingId ? <FaSpinner className="spin" /> : null}
                                 Reject Loan
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

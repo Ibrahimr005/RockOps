@@ -5,13 +5,12 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    FaTimes,
     FaGift,
-    FaSpinner,
     FaCheckCircle
 } from 'react-icons/fa';
 import { bonusService } from '../../../../../services/payroll/bonusService';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext';
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../CreateBonusModal/CreateBonusModal.scss';
 
@@ -129,9 +128,7 @@ const BonusTypeModal = ({ bonusType, onClose, onSuccess }) => {
                 <div className="bonus-modal-content type-modal" onClick={(e) => e.stopPropagation()}>
                     <div className="bonus-modal-header">
                         <h3><FaGift /> {isEditing ? 'Edit Bonus Type' : 'Create Bonus Type'}</h3>
-                        <button className="btn-close" onClick={handleCloseAttempt}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                     <div className="bonus-modal-body">
@@ -170,20 +167,17 @@ const BonusTypeModal = ({ bonusType, onClose, onSuccess }) => {
                     </div>
 
                     <div className="bonus-modal-footer">
-                        <button className="btn-cancel" onClick={handleCloseAttempt}>
+                        <Button variant="ghost" onClick={handleCloseAttempt}>
                             Cancel
-                        </button>
-                        <button
-                            className="btn-save"
+                        </Button>
+                        <Button
+                            variant="primary"
                             onClick={handleSubmit}
-                            disabled={saving}
+                            loading={saving}
+                            loadingText="Saving..."
                         >
-                            {saving ? (
-                                <><FaSpinner className="spin" /> Saving...</>
-                            ) : (
-                                <><FaCheckCircle /> {isEditing ? 'Update Type' : 'Create Type'}</>
-                            )}
-                        </button>
+                            <FaCheckCircle /> {isEditing ? 'Update Type' : 'Create Type'}
+                        </Button>
                     </div>
                 </div>
             </div>

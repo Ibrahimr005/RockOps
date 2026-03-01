@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiUsers, FiPlus, FiEye, FiEdit, FiUserCheck, FiUserX, FiRefreshCw } from 'react-icons/fi';
 import DataTable from '../../../../../components/common/DataTable/DataTable';
 import StatisticsCards from '../../../../../components/common/StatisticsCards/StatisticsCards';
+import { Button } from '../../../../../components/common/Button/Button';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext';
 import { jobPositionService } from '../../../../../services/hr/jobPositionService.js';
 
@@ -279,12 +280,12 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
                         <FiUsers className="empty-icon" />
                         <h4>No Employees Assigned</h4>
                         <p>This position doesn't have any employees assigned yet.</p>
-                        <button
-                            className="btn btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={handleAssignEmployee}
                         >
                             <FiPlus /> Assign First Employee
-                        </button>
+                        </Button>
                     </div>
                 }
             />

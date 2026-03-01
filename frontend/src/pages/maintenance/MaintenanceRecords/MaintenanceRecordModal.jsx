@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaTimes, FaSave, FaTools, FaUser } from 'react-icons/fa';
+import { FaTools, FaUser } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import contactService from '../../../services/contactService.js';
 import { equipmentService } from '../../../services/equipmentService.js';
 import { siteService } from '../../../services/siteService.js';
@@ -275,9 +276,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                             <FaTools />
                             {editingRecord ? 'Edit Maintenance Record' : 'New Maintenance Record'}
                         </div>
-                        <button className="btn-close" onClick={handleCloseAttempt}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
                 <div className="modal-body">
                     {editingRecord && editingRecord.status === 'REJECTED' && editingRecord.rejectionReason && (
@@ -516,13 +515,12 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={handleCloseAttempt}>
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" form="maintenance-record-form">
-
+                    </Button>
+                    <Button variant="primary" type="submit" form="maintenance-record-form">
                         {editingRecord ? 'Update Record' : 'Create Record'}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

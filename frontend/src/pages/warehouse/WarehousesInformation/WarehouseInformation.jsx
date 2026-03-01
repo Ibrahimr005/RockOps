@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 import { BsPrinter } from "react-icons/bs";
 import { IoDocumentOutline } from "react-icons/io5";
 import warehouseimg1 from "../../../assets/imgs/warehouse1.jpg";
+import { Button } from '../../../components/common/Button';
 import "./WarehouseInformation.scss";
 import { warehouseService } from "../../../services/warehouse/warehouseService";
 
@@ -83,9 +84,9 @@ const WarehouseInformation = () => {
           <div className="error-state">
             <h3>Error Loading Warehouse</h3>
             <p>{error}</p>
-            <button onClick={() => window.location.reload()} className="retry-btn">
+            <Button onClick={() => window.location.reload()} variant="primary" className="retry-btn">
               Try Again
-            </button>
+            </Button>
           </div>
         </div>
     );
@@ -107,10 +108,10 @@ const WarehouseInformation = () => {
             </div>
             <div className="header-actions">
 
-              <button onClick={handlePrint} className="btn-primary">
+              <Button onClick={handlePrint} variant="primary">
                 <BsPrinter />
                 Print
-              </button>
+              </Button>
             </div>
           </div>
 

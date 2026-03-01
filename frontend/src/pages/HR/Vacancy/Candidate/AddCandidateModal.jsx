@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './CandidateModals.scss';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
@@ -298,7 +299,7 @@ const AddCandidateModal = ({ onClose, onSave, vacancyId }) => {
             <div className="candidate-modal">
                 <div className="modal-header">
                     <h2>Add New Candidate</h2>
-                    <button className="btn-close" onClick={handleCloseAttempt}>×</button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -324,19 +325,19 @@ const AddCandidateModal = ({ onClose, onSave, vacancyId }) => {
 
                     <div className="modal-footer">
                         {currentStep > 1 && (
-                            <button type="button" className="back-btn" onClick={prevStep}>
+                            <Button variant="ghost" onClick={prevStep}>
                                 Back
-                            </button>
+                            </Button>
                         )}
 
                         {currentStep < totalSteps ? (
-                            <button type="button" className="next-btn" onClick={nextStep}>
+                            <Button variant="primary" onClick={nextStep}>
                                 Next
-                            </button>
+                            </Button>
                         ) : (
-                            <button type="submit" className="save-btn">
+                            <Button type="submit" variant="primary">
                                 Submit Application
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </form>

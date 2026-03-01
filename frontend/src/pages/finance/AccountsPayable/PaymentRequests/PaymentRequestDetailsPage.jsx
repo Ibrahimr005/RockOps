@@ -17,6 +17,7 @@ import IntroCard from '../../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import ContentLoader from '../../../../components/common/ContentLoader/ContentLoader';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
 import './PaymentRequestDetailsPage.scss';
@@ -315,12 +316,12 @@ const PaymentRequestDetailsPage = () => {
                     <FiFileText size={48} />
                     <h3>Payment Request Not Found</h3>
                     <p>The payment request you're looking for doesn't exist or has been deleted.</p>
-                    <button
-                        className="btn-primary"
+                    <Button
+                        variant="primary"
                         onClick={() => navigate('/finance/accounts-payable')}
                     >
                         Back to Accounts Payable
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -709,22 +710,26 @@ const PaymentRequestDetailsPage = () => {
                                 )}
                             </div>
                             <div className="review-actions">
-                                <button
-                                    className="btn-danger"
+                                <Button
+                                    variant="danger"
                                     onClick={handleRejectClick}
                                     disabled={actionLoading}
+                                    loading={actionLoading}
+                                    loadingText="Processing..."
                                 >
                                     <FiXCircle />
-                                    <span>{actionLoading ? 'Processing...' : 'Reject Request'}</span>
-                                </button>
-                                <button
-                                    className="btn-success"
+                                    <span>Reject Request</span>
+                                </Button>
+                                <Button
+                                    variant="success"
                                     onClick={handleApproveClick}
                                     disabled={actionLoading}
+                                    loading={actionLoading}
+                                    loadingText="Processing..."
                                 >
                                     <FiCheckCircle />
-                                    <span>{actionLoading ? 'Processing...' : 'Approve Request'}</span>
-                                </button>
+                                    <span>Approve Request</span>
+                                </Button>
                             </div>
                         </div>
                     </div>

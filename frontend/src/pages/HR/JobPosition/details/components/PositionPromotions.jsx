@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FiTrendingUp, FiPlus, FiEye, FiCheck, FiX, FiClock, FiUser, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import DataTable from '../../../../../components/common/DataTable/DataTable';
 import StatisticsCards from '../../../../../components/common/StatisticsCards/StatisticsCards';
+import { Button } from '../../../../../components/common/Button/Button';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext';
 
 const PositionPromotions = ({ position, positionId, onRefresh }) => {
@@ -248,16 +249,16 @@ const PositionPromotions = ({ position, positionId, onRefresh }) => {
                         <FiTrendingUp /> Promotion History
                     </h3>
                     <div className="table-actions">
-                        <button
-                            className="btn btn-secondary"
+                        <Button
+                            variant="secondary"
                             onClick={fetchPromotions}
                             disabled={loading}
                         >
                             Refresh
-                        </button>
-                        <button className="btn btn-primary">
+                        </Button>
+                        <Button variant="primary">
                             <FiPlus /> Create Promotion Request
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
@@ -277,9 +278,9 @@ const PositionPromotions = ({ position, positionId, onRefresh }) => {
                             <FiTrendingUp className="empty-icon" />
                             <h4>No Promotion History</h4>
                             <p>This position doesn't have any promotion records yet.</p>
-                            <button className="btn btn-primary">
+                            <Button variant="primary">
                                 <FiPlus /> Create First Promotion Request
-                            </button>
+                            </Button>
                         </div>
                     }
                 />

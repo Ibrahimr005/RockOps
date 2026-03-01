@@ -13,6 +13,7 @@ import DirectPurchaseWizardModal from '../DirectPurchaseDetail/DirectPurchaseWiz
 import DelegateModal from './DelegateModal';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import LoadingSpinner from '../../../components/common/LoadingSpinner/LoadingSpinner';
+import { Button } from '../../../components/common/Button';
 import '../../../styles/status-badges.scss';
 import './MaintenanceRecords.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
@@ -724,9 +725,9 @@ const MaintenanceRecords = () => {
                 <div className="error-message">
                     <h3>Error Loading Maintenance Records</h3>
                     <p>{error}</p>
-                    <button onClick={loadMaintenanceRecords} className="retry-btn">
+                    <Button variant="primary" onClick={loadMaintenanceRecords}>
                         Try Again
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -755,9 +756,9 @@ const MaintenanceRecords = () => {
                     <div className="filters-panel-header">
                         <h3>Filters</h3>
                         {getActiveFilterCount() > 0 && (
-                            <button className="clear-filters-btn" onClick={clearAllFilters}>
+                            <Button variant="ghost" size="sm" onClick={clearAllFilters}>
                                 <FaTimes /> Clear All
-                            </button>
+                            </Button>
                         )}
                     </div>
                     <div className="filters-grid">
@@ -903,9 +904,9 @@ const MaintenanceRecords = () => {
                         <div className="error-icon">⚠</div>
                         <h3>Unable to Load Maintenance Records</h3>
                         <p>{error}</p>
-                        <button className="btn-primary" onClick={() => loadMaintenanceRecords()}>
+                        <Button variant="primary" onClick={() => loadMaintenanceRecords()}>
                             Try Again
-                        </button>
+                        </Button>
                     </div>
                 ) : filteredRecords.length === 0 ? (
                     <div className="empty-state">
@@ -917,9 +918,9 @@ const MaintenanceRecords = () => {
                                 : 'Get started by creating your first maintenance ticket'}
                         </p>
                         {hasMaintenanceAccess(currentUser) && (
-                            <button className="btn-primary" onClick={() => setIsTicketTypeSelectionOpen(true)}>
+                            <Button variant="primary" onClick={() => setIsTicketTypeSelectionOpen(true)}>
                                 <FaPlus /> Create New Ticket
-                            </button>
+                            </Button>
                         )}
                     </div>
                 ) : (

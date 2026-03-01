@@ -9,6 +9,7 @@ import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import "../SiteDetails.scss";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
+import { Button, CloseButton } from '../../../../components/common/Button';
 
 
 const SiteEmployeesTab = ({ siteId }) => {
@@ -83,15 +84,16 @@ const SiteEmployeesTab = ({ siteId }) => {
             sortable: false,
             render: (row) => (
                 isSiteAdmin && (
-                    <button
-                        className="btn-danger"
+                    <Button
+                        variant="danger"
+                        size="sm"
                         onClick={(e) => {
                             e.stopPropagation(); // Prevent row click
                             handleUnassignEmployee(row.employeeID);
                         }}
                     >
                         Unassign
-                    </button>
+                    </Button>
                 )
             )
         }
@@ -322,7 +324,7 @@ const SiteEmployeesTab = ({ siteId }) => {
             {error ? (
                 <div className="error-message">
                     <p>{error}</p>
-                    <button className="btn-secondary" onClick={fetchEmployees}>Retry</button>
+                    <Button variant="primary" outline onClick={fetchEmployees}>Retry</Button>
                 </div>
             ) : (
                 <div className="table-container">
@@ -354,12 +356,7 @@ const SiteEmployeesTab = ({ siteId }) => {
                     <div className="assign-employee-modal-content">
                         <div className="assign-employee-modal-header">
                             <h2>{t('site.assignEmployee')}</h2>
-                            <button
-                                className="assign-employee-modal-close-button"
-                                onClick={handleCloseModal}
-                            >
-                                ×
-                            </button>
+                            <CloseButton onClick={handleCloseModal} />
                         </div>
                         
                         <div className="assign-employee-modal-body">
@@ -391,13 +388,16 @@ const SiteEmployeesTab = ({ siteId }) => {
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <button
-                                                            className="assign-employee-btn"
+                                                        <Button
+                                                            variant="primary"
+                                                            size="sm"
                                                             onClick={() => handleAssignEmployee(employee.id)}
                                                             disabled={assigningEmployee === employee.id}
+                                                            loading={assigningEmployee === employee.id}
+                                                            loadingText="Assigning..."
                                                         >
-                                                            {assigningEmployee === employee.id ? 'Assigning...' : t('site.assign')}
-                                                        </button>
+                                                            {t('site.assign')}
+                                                        </Button>
                                                     </td>
                                                 </tr>
                                             ))}

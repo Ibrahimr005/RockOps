@@ -5,6 +5,7 @@ import AddVacancyModal from './modals/AddVacancyModal.jsx';
 import EditVacancyModal from './modals/EditVacancyModal.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
+import { Button } from '../../../components/common/Button/Button';
 import {FaEdit, FaTrashAlt, FaUserPlus} from "react-icons/fa";
 import {useSnackbar} from '../../../contexts/SnackbarContext';
 import {vacancyService} from '../../../services/hr/vacancyService.js';
@@ -387,13 +388,15 @@ const VacancyList = () => {
                 <div className="error-container">
                     <h2>Error Loading Vacancies</h2>
                     <p>{error}</p>
-                    <button
+                    <Button
+                        variant="primary"
                         onClick={fetchVacancies}
-                        className="primary-button"
                         disabled={loading}
+                        loading={loading}
+                        loadingText="Retrying..."
                     >
-                        {loading ? 'Retrying...' : 'Try Again'}
-                    </button>
+                        Try Again
+                    </Button>
                 </div>
             </div>
         );

@@ -16,6 +16,7 @@ import {
     FaClock,
     FaCheckCircle
 } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button/Button';
 import './CandidateDetailsModal.scss';
 
 const CandidateDetailsModal = ({
@@ -87,9 +88,7 @@ const CandidateDetailsModal = ({
                             </div>
                         </div>
                     </div>
-                    <button className="modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Modal Body - Using global modal body */}
@@ -197,13 +196,13 @@ const CandidateDetailsModal = ({
                                 Resume/CV
                             </h3>
                             <div className="candidate-resume-section">
-                                <button
-                                    className="btn btn-primary"
+                                <Button
+                                    variant="primary"
                                     onClick={() => window.open(candidate.resumeUrl, '_blank')}
                                 >
                                     <FaFilePdf />
                                     View Resume/CV
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     )}
@@ -250,32 +249,32 @@ const CandidateDetailsModal = ({
 
                 {/* Modal Footer - Using global modal footer with space between */}
                 <div className="candidate-modal-footer modal-footer-between">
-                    <button
-                        className="modal-btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={onClose}
                     >
                         Close
-                    </button>
+                    </Button>
 
                     <div className="candidate-primary-actions">
                         {!isHired && (
-                            <button
-                                className="btn btn-primary"
+                            <Button
+                                variant="primary"
                                 onClick={onEdit}
                             >
                                 <FaEdit />
                                 Edit
-                            </button>
+                            </Button>
                         )}
 
                         {canHire && (
-                            <button
-                                className={`btn ${isPendingHire ? 'modal-btn-warning' : 'btn-success'}`}
+                            <Button
+                                variant={isPendingHire ? 'warning' : 'success'}
                                 onClick={onHire}
                             >
                                 {isPendingHire ? <FaClock /> : <FaUserCheck />}
                                 {isPendingHire ? 'Complete Hiring' : 'Hire'}
-                            </button>
+                            </Button>
                         )}
 
                         {isHired && (

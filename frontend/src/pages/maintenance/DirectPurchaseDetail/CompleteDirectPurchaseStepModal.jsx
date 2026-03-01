@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaCheckCircle } from 'react-icons/fa';
+import { FaCheckCircle } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
@@ -159,9 +160,7 @@ const CompleteDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) =>
                             <FaCheckCircle />
                             Complete Step: {step?.stepName}
                         </div>
-                        <button className="btn-close" onClick={handleCloseAttempt}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
                 <div className="modal-body">
                     <div className="step-info-display">
@@ -266,13 +265,12 @@ const CompleteDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) =>
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={handleCloseAttempt}>
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" form="complete-step-form">
-                        <FaCheckCircle />
-                        Mark as Completed
-                    </button>
+                    </Button>
+                    <Button variant="primary" type="submit" form="complete-step-form">
+                        <FaCheckCircle /> Mark as Completed
+                    </Button>
                 </div>
             </div>
         </div>

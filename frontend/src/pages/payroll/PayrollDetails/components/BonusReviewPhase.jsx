@@ -18,6 +18,7 @@ import {
     FaUsers,
     FaMoneyBillWave
 } from 'react-icons/fa';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
 import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
@@ -204,23 +205,16 @@ const BonusReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
                 </div>
 
                 <div className="review-actions">
-                    <button
-                        className="btn-primary btn-large"
+                    <Button
+                        variant="primary"
+                        size="lg"
                         onClick={handleProcessBonusReview}
                         disabled={processingBonus}
+                        loading={processingBonus}
+                        loadingText="Processing..."
                     >
-                        {processingBonus ? (
-                            <>
-                                <FaClock className="spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <FaGift />
-                                Process Bonus Review
-                            </>
-                        )}
-                    </button>
+                        <FaGift /> Process Bonus Review
+                    </Button>
                 </div>
 
                 <div className="review-info">
@@ -309,41 +303,26 @@ const BonusReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
 
                 {/* Actions */}
                 <div className="review-actions">
-                    <button
-                        className="btn-secondary"
+                    <Button
+                        variant="secondary"
                         onClick={handleProcessBonusReview}
                         disabled={processingBonus || finalizing}
+                        loading={processingBonus}
+                        loadingText="Re-processing..."
                     >
-                        {processingBonus ? (
-                            <>
-                                <FaClock className="spin" />
-                                Re-processing...
-                            </>
-                        ) : (
-                            <>
-                                <FaRedo />
-                                Re-Process Bonus Review
-                            </>
-                        )}
-                    </button>
+                        <FaRedo /> Re-Process Bonus Review
+                    </Button>
 
-                    <button
-                        className="btn-success btn-large"
+                    <Button
+                        variant="success"
+                        size="lg"
                         onClick={confirmFinalize}
                         disabled={finalizing || processingBonus}
+                        loading={finalizing}
+                        loadingText="Finalizing..."
                     >
-                        {finalizing ? (
-                            <>
-                                <FaClock className="spin" />
-                                Finalizing...
-                            </>
-                        ) : (
-                            <>
-                                <FaLock />
-                                Finalize Bonus Review
-                            </>
-                        )}
-                    </button>
+                        <FaLock /> Finalize Bonus Review
+                    </Button>
                 </div>
 
                 {/* Employee Bonus Summaries Table */}

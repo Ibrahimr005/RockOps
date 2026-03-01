@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaCalendarAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { FaCalendarAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { payrollService } from '../../../../services/payroll/payrollService'; // Ensure import path is correct
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './CreatePayrollModal.scss';
@@ -140,9 +141,7 @@ const CreatePayrollModal = ({ onClose, onSubmit }) => {
                         <FaCalendarAlt />
                         Create New Payroll Cycle
                     </h2>
-                    <button className="close-btn" onClick={handleCloseAttempt}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <form id="create-payroll-form" onSubmit={handleSubmit} className="modal-body">
@@ -215,17 +214,19 @@ const CreatePayrollModal = ({ onClose, onSubmit }) => {
                 </form>
 
                 <div className="modal-footer">
-                    <button type="button" onClick={handleCloseAttempt} className="btn-cancel">
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="submit"
                         form="create-payroll-form"
-                        className="btn-submit"
+                        variant="primary"
                         disabled={loading || calculatingDates}
+                        loading={loading}
+                        loadingText="Creating..."
                     >
-                        {loading ? 'Creating...' : 'Create Payroll'}
-                    </button>
+                        Create Payroll
+                    </Button>
                 </div>
             </div>
         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaTimes, FaSave, FaTools, FaUser, FaMapMarkerAlt, FaCalendarAlt, FaDollarSign, FaPlus, FaEnvelope, FaPhone } from 'react-icons/fa';
+import { FaTools, FaUser, FaMapMarkerAlt, FaCalendarAlt, FaDollarSign, FaPlus, FaEnvelope, FaPhone } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import contactService from '../../../services/contactService.js';
@@ -736,9 +737,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                             <FaTools />
                             {editingStep ? 'Edit Maintenance Step' : 'New Maintenance Step'}
                         </div>
-                        <button className="btn-close" onClick={handleCloseAttempt}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                 <div className="modal-body">
@@ -1191,13 +1190,12 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={handleCloseAttempt}>
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" form="maintenance-step-form">
-                        <FaSave />
+                    </Button>
+                    <Button variant="primary" type="submit" form="maintenance-step-form">
                         {editingStep ? 'Update Step' : 'Create Step'}
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -1210,9 +1208,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                 <FaUser />
                                 Add New Contact
                             </div>
-                            <button className="btn-close" onClick={() => setShowAddContactModal(false)}>
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={() => setShowAddContactModal(false)} />
                         </div>
 
                         <div className="modal-body">
@@ -1328,13 +1324,12 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                         </div>
 
                         <div className="modal-footer">
-                            <button type="button" className="btn-cancel" onClick={() => setShowAddContactModal(false)}>
+                            <Button variant="ghost" onClick={() => setShowAddContactModal(false)}>
                                 Cancel
-                            </button>
-                            <button type="submit" className="btn-primary" form="add-contact-form">
-                                <FaSave />
+                            </Button>
+                            <Button variant="primary" type="submit" form="add-contact-form">
                                 Create Contact
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

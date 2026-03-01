@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Package, Users, Warehouse, AlertTriangle, TrendingUp, Search, RefreshCw, Activity, MapPin, CheckCircle, ArrowUp, ArrowDown, Eye, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards';
+import { Button } from '../../../components/common/Button';
 import './WarehouseDashboard.scss';
 
 // Import services
@@ -194,10 +195,10 @@ const WarehouseManagerDashboard = () => {
                                     <option key={w.id} value={w.id}>{w.name}</option>
                                 ))}
                             </select>
-                            <button onClick={loadAllData} disabled={loading} className="wh-refresh-btn">
+                            <Button onClick={loadAllData} disabled={loading} variant="primary" className="wh-refresh-btn">
                                 <RefreshCw className={loading ? "wh-spinning" : ""} />
                                 Refresh
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -238,10 +239,10 @@ const WarehouseManagerDashboard = () => {
                                         <p>Inventory levels and capacity utilization</p>
                                     </div>
                                 </div>
-                                <button className="wh-view-details-btn">
+                                <Button variant="ghost" className="wh-view-details-btn">
                                     <Eye size={16} />
                                     View Details
-                                </button>
+                                </Button>
                             </div>
                             <div className="wh-chart-container">
                                 <ResponsiveContainer width="100%" height={320}>

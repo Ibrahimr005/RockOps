@@ -11,6 +11,7 @@ import DirectPurchaseWizardModal from './DirectPurchaseWizardModal';
 import DirectPurchaseTimeline from './DirectPurchaseTimeline';
 import DirectPurchaseSteps from './DirectPurchaseSteps';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import { Button } from '../../../components/common/Button';
 import directPurchaseService from '../../../services/directPurchaseService';
 import '../../../styles/status-badges.scss';
 import './DirectPurchaseDetailView.scss';
@@ -207,9 +208,9 @@ const DirectPurchaseDetailView = () => {
                     <FaExclamationCircle style={{ fontSize: '4rem', color: 'var(--color-error)', marginBottom: '1rem' }} />
                     <h2>Error Loading Ticket</h2>
                     <p>{error || 'Ticket not found'}</p>
-                    <button className="btn-primary" onClick={() => navigate('/maintenance/records')}>
+                    <Button variant="primary" onClick={() => navigate('/maintenance/records')}>
                         <FaArrowLeft /> Back to Records
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

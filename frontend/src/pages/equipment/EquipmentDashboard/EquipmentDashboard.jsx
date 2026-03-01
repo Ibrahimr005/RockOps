@@ -1,6 +1,7 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Clock, Package, Wrench, TrendingUp, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Button } from '../../../components/common/Button';
 import axios from 'axios';
 import PageHeader from '../../../components/common/PageHeader';
 import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards';
@@ -237,10 +238,10 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 <AlertTriangle size={48} className="error-icon" />
                 <h3>Unable to Load Dashboard</h3>
                 <p>{error}</p>
-                <button onClick={fetchDashboardData} className="btn-primary">
+                <Button variant="primary" onClick={fetchDashboardData}>
                     <Activity size={16} />
                     Retry
-                </button>
+                </Button>
             </div>
         );
     }

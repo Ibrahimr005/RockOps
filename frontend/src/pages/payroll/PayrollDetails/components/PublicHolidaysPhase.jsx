@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaChevronRight } from 'react-icons/fa';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import payrollService from '../../../../services/payroll/payrollService';
 import PublicHolidaysModal from '../modals/PublicHolidaysModal';
@@ -107,12 +108,12 @@ const PublicHolidaysPhase = ({ payroll, onTransition, onRefresh, processing, ope
                         </div>
 
                         <div className="holidays-actions">
-                            <button className="btn-secondary" onClick={() => setShowHolidaysModal(true)} disabled={processing}>
+                            <Button variant="secondary" onClick={() => setShowHolidaysModal(true)} disabled={processing}>
                                 <FaCalendarAlt /> Edit Holidays
-                            </button>
-                            <button className="btn-primary" onClick={handleProceed} disabled={processing}>
+                            </Button>
+                            <Button variant="primary" onClick={handleProceed} disabled={processing}>
                                 <FaChevronRight /> Proceed to Import Attendance
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 ) : (
@@ -123,12 +124,12 @@ const PublicHolidaysPhase = ({ payroll, onTransition, onRefresh, processing, ope
                         <p>You can add single-day or multi-day public holidays for this period, or proceed without any if there are none.</p>
 
                         <div className="empty-state-actions">
-                            <button className="btn-primary" onClick={() => setShowHolidaysModal(true)} disabled={processing}>
+                            <Button variant="primary" onClick={() => setShowHolidaysModal(true)} disabled={processing}>
                                 <FaCalendarAlt /> Add Holidays
-                            </button>
-                            <button className="btn-secondary-outline" onClick={handleProceedWithoutHolidays} disabled={processing}>
+                            </Button>
+                            <Button variant="secondary" outline onClick={handleProceedWithoutHolidays} disabled={processing}>
                                 <FaChevronRight /> No Holidays - Proceed
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
