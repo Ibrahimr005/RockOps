@@ -372,7 +372,35 @@ CREATE TABLE IF NOT EXISTS payment_requests (
 );
 
 -- ============================================
--- 13. Create indexes for new tables
+-- 13. BONUS_TYPES table (referenced by V2026021603)
+-- ============================================
+CREATE TABLE IF NOT EXISTS bonus_types (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(20) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    site_id UUID NOT NULL,
+    created_by VARCHAR(100),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by VARCHAR(100),
+    updated_at TIMESTAMP,
+    CONSTRAINT fk_bonus_type_site FOREIGN KEY (site_id) REFERENCES sites(id),
+    CONSTRAINT uq_bonus_type_code_site UNIQUE (code, site_id)
+);
+
+-- ============================================
+-- 14. JOB_POSITIONS table (referenced by salary/demotion requests)
+-- ============================================
+CREATE TABLE IF NOT EXISTS job_positions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255),
+    site_id UUID,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================
+-- 15. Create indexes for new tables
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_payroll_dates ON payrolls(start_date, end_date);
 CREATE INDEX IF NOT EXISTS idx_payroll_status ON payrolls(status);
@@ -384,4 +412,7 @@ CREATE INDEX IF NOT EXISTS idx_deduction_types_site ON deduction_types(site_id);
 CREATE INDEX IF NOT EXISTS idx_employee_deductions_employee ON employee_deductions(employee_id);
 CREATE INDEX IF NOT EXISTS idx_employee_deductions_type ON employee_deductions(deduction_type_id);
 
-RAISE NOTICE 'V20260125_2: Core tables ensured for fresh deploy compatibility.';
+DO $$
+BEGIN
+    RAISE NOTICE 'V20260125_2: Core tables ensured for fresh deploy compatibility.';
+END $$;
