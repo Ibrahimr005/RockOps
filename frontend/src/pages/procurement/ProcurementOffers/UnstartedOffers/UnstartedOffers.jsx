@@ -227,8 +227,8 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                                                             <FiPackage className="procurement-unstarted-offers-item-icon" size={20} />
                                                         </div>
                                                         <div className="procurement-unstarted-offers-item-title-container">
-                                                            <div className="procurement-unstarted-offers-item-name">{item.itemType?.name || item.equipmentSpec?.name || 'Unknown'}</div>
-                                                            <div className="procurement-unstarted-offers-item-category">{item.itemType?.category || item.equipmentSpec?.equipmentType?.name || 'Item'}</div>
+                                                            <div className="procurement-unstarted-offers-item-name">{item.itemType?.name || item.equipmentName || item.equipmentSpec?.name || 'Unknown'}</div>
+                                                            <div className="procurement-unstarted-offers-item-category">{(item.equipmentSpecId || item.equipmentSpec) ? 'Equipment' : (item.itemType?.category || 'Item')}</div>
                                                         </div>
                                                         <div className="procurement-unstarted-offers-item-badge">
                                                             {item.quantity} {(item.equipmentSpecId || item.equipmentSpec) ? 'unit' : (item.itemType?.measuringUnit || 'units')}
