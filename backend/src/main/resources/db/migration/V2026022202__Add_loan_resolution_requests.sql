@@ -24,9 +24,9 @@ CREATE TABLE IF NOT EXISTS loan_resolution_requests (
 );
 
 -- Indexes for common queries
-CREATE INDEX idx_loan_resolution_status ON loan_resolution_requests(status);
-CREATE INDEX idx_loan_resolution_loan_id ON loan_resolution_requests(loan_id);
-CREATE INDEX idx_loan_resolution_employee_id ON loan_resolution_requests(employee_id);
-CREATE INDEX idx_loan_resolution_site_id ON loan_resolution_requests(site_id);
+CREATE INDEX IF NOT EXISTS idx_loan_resolution_status ON loan_resolution_requests(status);
+CREATE INDEX IF NOT EXISTS idx_loan_resolution_loan_id ON loan_resolution_requests(loan_id);
+CREATE INDEX IF NOT EXISTS idx_loan_resolution_employee_id ON loan_resolution_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_loan_resolution_site_id ON loan_resolution_requests(site_id);
 
 -- Add RESOLVED status support to loans (existing status column is VARCHAR, no enum change needed)

@@ -20,7 +20,9 @@
       "Bash(echo:*)",
       "Bash(read f:*)",
       "Bash(xargs sh:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
