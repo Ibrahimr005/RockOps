@@ -19,7 +19,8 @@
       "Bash(/tmp/organize.sh:*)",
       "Bash(echo:*)",
       "Bash(read f:*)",
-      "Bash(xargs sh:*)"
+      "Bash(xargs sh:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
