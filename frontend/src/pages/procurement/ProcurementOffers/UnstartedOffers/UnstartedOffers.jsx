@@ -212,7 +212,11 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                                 {/* Show list of request items that will need procurement with updated class names */}
                                 {activeOffer.requestOrder.requestItems && activeOffer.requestOrder.requestItems.length > 0 && (
                                     <div className="procurement-unstarted-offers-items-preview">
-                                        <h4>Items That Will Need Procurement</h4>
+                                        <h4>
+                                            {activeOffer.requestOrder.requestItems.some(item => item.equipmentSpecId || item.equipmentSpec)
+                                                ? 'Equipment That Will Need Procurement'
+                                                : 'Items That Will Need Procurement'}
+                                        </h4>
 
                                         {/* Updated Item Cards with specific class names */}
                                         <div className="procurement-unstarted-offers-items-grid">
@@ -223,11 +227,11 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                                                             <FiPackage className="procurement-unstarted-offers-item-icon" size={20} />
                                                         </div>
                                                         <div className="procurement-unstarted-offers-item-title-container">
-                                                            <div className="procurement-unstarted-offers-item-name">{item.itemType?.name || 'Unknown'}</div>
-                                                            <div className="procurement-unstarted-offers-item-category">{item.itemType.category || 'Item'}</div>
+                                                            <div className="procurement-unstarted-offers-item-name">{item.itemType?.name || item.equipmentSpec?.name || 'Unknown'}</div>
+                                                            <div className="procurement-unstarted-offers-item-category">{item.itemType?.category || item.equipmentSpec?.equipmentType?.name || 'Item'}</div>
                                                         </div>
                                                         <div className="procurement-unstarted-offers-item-badge">
-                                                            {item.quantity} {item.itemType.measuringUnit || 'units'}
+                                                            {item.quantity} {(item.equipmentSpecId || item.equipmentSpec) ? 'unit' : (item.itemType?.measuringUnit || 'units')}
                                                         </div>
                                                     </div>
 
