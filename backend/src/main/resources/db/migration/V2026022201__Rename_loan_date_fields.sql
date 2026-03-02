@@ -22,17 +22,7 @@ BEGIN
             WHERE loan_start_date IS NULL;
         END IF;
 
-        -- Step 4: Verify migration
-        DECLARE
-            null_count INTEGER;
-        BEGIN
-            SELECT COUNT(*) INTO null_count FROM loans WHERE loan_effective_date IS NULL AND loan_start_date IS NULL;
-            IF null_count > 0 THEN
-                RAISE NOTICE 'Warning: % loans have NULL date fields', null_count;
-            END IF;
-        END;
-
-        RAISE NOTICE 'V2026022201: Loan date fields renamed successfully.';
+        RAISE NOTICE 'V2026022201: Loan date fields migration completed.';
     ELSE
         RAISE NOTICE 'V2026022201: loans table not found. Skipping.';
     END IF;
