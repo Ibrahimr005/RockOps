@@ -93,30 +93,28 @@ const RequestOrderDetailsPage = () => {
 
     // Get item name
     const getItemName = (item) => {
-        return item.itemType?.name || item.itemTypeName || "Unknown Item";
+        return item.itemType?.name || item.itemTypeName || item.equipmentName || item.equipmentSpec?.name || "Unknown Item";
     };
 
     // Get item category
     const getItemCategory = (item) => {
-        // Log the item structure to debug
-        console.log('Item structure:', item);
-        console.log('Item type:', item.itemType);
-        console.log('Item category from itemType:', item.itemType?.itemCategory);
-
-        // Try different possible paths
+        // Equipment items
+        if (item.equipmentSpecId || item.equipmentSpec) {
+            return item.equipmentSpec?.equipmentTypeName || 'Equipment';
+        }
+        // Warehouse items
         const category =
             item.itemType?.itemCategory?.name ||
             item.itemType?.itemCategoryName ||
             item.itemCategory?.name ||
             item.itemCategoryName ||
             null;
-
-        console.log('Resolved category:', category);
         return category;
     };
 
     // Get measuring unit
     const getMeasuringUnit = (item) => {
+        if (item.equipmentSpecId || item.equipmentSpec) return 'unit';
         return item.itemType?.measuringUnit || item.measuringUnit || 'units';
     };
 
@@ -196,11 +194,11 @@ const RequestOrderDetailsPage = () => {
                 <div className="ro-details-section">
                     <h3 className="section-title">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14,2 14,8 20,8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10,9 9,9 8,9"/>
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14,2 14,8 20,8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10,9 9,9 8,9" />
                         </svg>
                         Request Order Details
                     </h3>
@@ -208,8 +206,8 @@ const RequestOrderDetailsPage = () => {
                         <div className="overview-item">
                             <div className="overview-icon">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                    <polyline points="14,2 14,8 20,8"/>
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14,2 14,8 20,8" />
                                 </svg>
                             </div>
                             <div className="overview-content">
@@ -222,8 +220,8 @@ const RequestOrderDetailsPage = () => {
                             <div className="overview-item">
                                 <div className="overview-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12,6 12,12 16,14"/>
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12,6 12,12 16,14" />
                                     </svg>
                                 </div>
                                 <div className="overview-content">
@@ -237,8 +235,8 @@ const RequestOrderDetailsPage = () => {
                             <div className="overview-item">
                                 <div className="overview-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12,6 12,12 16,14"/>
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12,6 12,12 16,14" />
                                     </svg>
                                 </div>
                                 <div className="overview-content">
@@ -252,8 +250,8 @@ const RequestOrderDetailsPage = () => {
                             <div className="overview-item">
                                 <div className="overview-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="12" cy="7" r="4"/>
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                        <circle cx="12" cy="7" r="4" />
                                     </svg>
                                 </div>
                                 <div className="overview-content">
@@ -267,8 +265,8 @@ const RequestOrderDetailsPage = () => {
                             <div className="overview-item">
                                 <div className="overview-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="12" cy="7" r="4"/>
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                        <circle cx="12" cy="7" r="4" />
                                     </svg>
                                 </div>
                                 <div className="overview-content">
@@ -282,8 +280,8 @@ const RequestOrderDetailsPage = () => {
                             <div className="overview-item">
                                 <div className="overview-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                                        <polyline points="9,22 9,12 15,12 15,22"/>
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                        <polyline points="9,22 9,12 15,12 15,22" />
                                     </svg>
                                 </div>
                                 <div className="overview-content">
@@ -297,8 +295,8 @@ const RequestOrderDetailsPage = () => {
                             <div className="overview-item">
                                 <div className="overview-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                                        <polyline points="9,22 9,12 15,12 15,22"/>
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                        <polyline points="9,22 9,12 15,12 15,22" />
                                     </svg>
                                 </div>
                                 <div className="overview-content">
@@ -315,11 +313,11 @@ const RequestOrderDetailsPage = () => {
                     <div className="ro-details-section">
                         <h3 className="section-title">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14,2 14,8 20,8"/>
-                                <line x1="16" y1="13" x2="8" y2="13"/>
-                                <line x1="16" y1="17" x2="8" y2="17"/>
-                                <polyline points="10,9 9,9 8,9"/>
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14,2 14,8 20,8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                                <polyline points="10,9 9,9 8,9" />
                             </svg>
                             Description
                         </h3>
@@ -333,9 +331,9 @@ const RequestOrderDetailsPage = () => {
                 <div className="ro-details-section">
                     <h3 className="section-title">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                            <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
-                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            <polyline points="3.27,6.96 12,12.01 20.73,6.96" />
+                            <line x1="12" y1="22.08" x2="12" y2="12" />
                         </svg>
                         Request Items ({(requestOrder.requestItems || requestOrder.items || []).length})
                     </h3>
@@ -347,9 +345,9 @@ const RequestOrderDetailsPage = () => {
                                     <div className="item-header">
                                         <div className="item-icon-container">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                                                <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
-                                                <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                                <polyline points="3.27,6.96 12,12.01 20.73,6.96" />
+                                                <line x1="12" y1="22.08" x2="12" y2="12" />
                                             </svg>
                                         </div>
                                         <div className="item-title-container">
@@ -360,6 +358,68 @@ const RequestOrderDetailsPage = () => {
                                         </div>
                                         <div className="item-quantity">{formatQuantity(item)}</div>
                                     </div>
+
+                                    {/* Equipment Spec Details — only for equipment items */}
+                                    {item.equipmentSpec && (
+                                        <>
+                                            <div className="item-divider"></div>
+                                            <div className="equipment-spec-section">
+                                                <div className="equipment-spec-title">Equipment Specifications</div>
+                                                <div className="equipment-spec-grid">
+                                                    {item.equipmentSpec.equipmentTypeName && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Equipment Type</span>
+                                                            <span className="spec-value">{item.equipmentSpec.equipmentTypeName}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.equipmentBrandName && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Brand</span>
+                                                            <span className="spec-value">{item.equipmentSpec.equipmentBrandName}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.model && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Model</span>
+                                                            <span className="spec-value">{item.equipmentSpec.model}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.manufactureYear && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Year</span>
+                                                            <span className="spec-value">{item.equipmentSpec.manufactureYear}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.countryOfOrigin && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Country of Origin</span>
+                                                            <span className="spec-value">{item.equipmentSpec.countryOfOrigin}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.estimatedBudget != null && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Estimated Budget</span>
+                                                            <span className="spec-value budget">
+                                                                EGP {Number(item.equipmentSpec.estimatedBudget).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {item.equipmentSpec.specifications && (
+                                                    <div className="spec-item full-width">
+                                                        <span className="spec-label">Specifications</span>
+                                                        <span className="spec-value specifications-text">{item.equipmentSpec.specifications}</span>
+                                                    </div>
+                                                )}
+                                                {item.equipmentSpec.description && (
+                                                    <div className="spec-item full-width">
+                                                        <span className="spec-label">Description</span>
+                                                        <span className="spec-value">{item.equipmentSpec.description}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
 
                                     {item.comment && (
                                         <>
@@ -377,8 +437,8 @@ const RequestOrderDetailsPage = () => {
                         <div className="empty-state">
                             <div className="empty-icon">
                                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M8 12h8"/>
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M8 12h8" />
                                 </svg>
                             </div>
                             <div className="empty-content">
@@ -394,7 +454,7 @@ const RequestOrderDetailsPage = () => {
                     <div className="ro-details-section">
                         <h3 className="section-title">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M20 6L9 17l-5-5"/>
+                                <path d="M20 6L9 17l-5-5" />
                             </svg>
                             Approval Details
                         </h3>
@@ -403,8 +463,8 @@ const RequestOrderDetailsPage = () => {
                                 <div className="overview-item">
                                     <div className="overview-icon">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                            <circle cx="12" cy="7" r="4"/>
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                            <circle cx="12" cy="7" r="4" />
                                         </svg>
                                     </div>
                                     <div className="overview-content">
@@ -417,8 +477,8 @@ const RequestOrderDetailsPage = () => {
                                 <div className="overview-item">
                                     <div className="overview-icon">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <polyline points="12,6 12,12 16,14"/>
+                                            <circle cx="12" cy="12" r="10" />
+                                            <polyline points="12,6 12,12 16,14" />
                                         </svg>
                                     </div>
                                     <div className="overview-content">
