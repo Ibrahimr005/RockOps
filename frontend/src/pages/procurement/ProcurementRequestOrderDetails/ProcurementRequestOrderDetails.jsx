@@ -45,7 +45,7 @@ const ProcurementRequestOrderDetails = () => {
     const getStatusConfig = (status) => {
         if (!status) return { color: '#6b7280', bg: '#f3f4f6', icon: '○' };
 
-        switch(status.toLowerCase()) {
+        switch (status.toLowerCase()) {
             case 'pending':
                 return {
                     color: '#d97706',
@@ -257,14 +257,16 @@ const ProcurementRequestOrderDetails = () => {
                                         <span className="label">Requester</span>
                                         <span className="value">
                                             <div className="requester-info">
-                                                <div className="avatar">{requestOrder.requesterName?.charAt(0) || 'U'}</div>
-                                                {requestOrder.requesterName || 'Unknown'}
+                                                <div className="avatar">{requestOrder.partyType === 'EQUIPMENT' ? '🔧' : (requestOrder.requesterName?.charAt(0) || 'U')}</div>
+                                                {requestOrder.partyType === 'EQUIPMENT' ? 'Equipment Department' : (requestOrder.requesterName || 'Unknown')}
                                             </div>
                                         </span>
                                     </div>
                                     <div className="info-row">
                                         <span className="label">Request Type</span>
-                                        <span className="value type-badge">{requestOrder.partyType || "Standard"}</span>
+                                        <span className={`value type-badge ${requestOrder.partyType?.toLowerCase() || 'warehouse'}`}>
+                                            {requestOrder.partyType === 'EQUIPMENT' ? '🔧 Equipment Purchase' : '📦 Warehouse Restock'}
+                                        </span>
                                     </div>
                                     <div className="info-row">
                                         <span className="label">Created Date</span>
@@ -370,12 +372,12 @@ const ProcurementRequestOrderDetails = () => {
                                                 </svg>
                                             </div>
                                             <div className="item-info">
-                                                <h4 className="item-name">{item.itemType.name}</h4>
-                                                <p className="item-id">ID: {item.itemType.id}</p>
+                                                <h4 className="item-name">{item.itemType?.name || item.equipmentSpec?.name || 'Unknown'}</h4>
+                                                <p className="item-id">ID: {item.itemType?.id || item.equipmentSpec?.id || 'N/A'}</p>
                                             </div>
                                             <div className="quantity-badge">
                                                 <span className="quantity">{item.quantity}</span>
-                                                <span className="unit">{item.itemType.measuringUnit}</span>
+                                                <span className="unit">{item.equipmentSpecId ? 'unit' : (item.itemType?.measuringUnit || 'units')}</span>
                                             </div>
                                         </div>
 
@@ -391,9 +393,46 @@ const ProcurementRequestOrderDetails = () => {
                                         <div className="item-details">
                                             <div className="detail-item">
                                                 <span className="detail-label">Category</span>
-                                                <span className="detail-value">{item.itemType.category || 'Standard'}</span>
+                                                <span className="detail-value">{item.itemType?.category || item.itemType?.itemCategoryName || item.equipmentSpec?.equipmentTypeName || 'General'}</span>
                                             </div>
                                         </div>
+
+                                        {item.equipmentSpec && (
+                                            <div className="equipment-spec-details">
+                                                {item.equipmentSpec.equipmentTypeName && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Type</span>
+                                                        <span className="detail-value">{item.equipmentSpec.equipmentTypeName}</span>
+                                                    </div>
+                                                )}
+                                                {item.equipmentSpec.equipmentBrandName && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Brand</span>
+                                                        <span className="detail-value">{item.equipmentSpec.equipmentBrandName}</span>
+                                                    </div>
+                                                )}
+                                                {item.equipmentSpec.model && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Model</span>
+                                                        <span className="detail-value">{item.equipmentSpec.model}</span>
+                                                    </div>
+                                                )}
+                                                {item.equipmentSpec.estimatedBudget != null && (
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Est. Budget</span>
+                                                        <span className="detail-value budget">
+                                                            EGP {Number(item.equipmentSpec.estimatedBudget).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {item.equipmentSpec.specifications && (
+                                                    <div className="detail-item full-width">
+                                                        <span className="detail-label">Specifications</span>
+                                                        <span className="detail-value">{item.equipmentSpec.specifications}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

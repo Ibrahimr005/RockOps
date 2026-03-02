@@ -235,6 +235,32 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                                                         </div>
                                                     </div>
 
+                                                    {/* Equipment Details — only show for equipment items */}
+                                                    {(item.equipmentSpecId || item.equipmentSpec) && item.equipmentSpec && (
+                                                        <div className="procurement-unstarted-offers-equipment-details">
+                                                            {item.equipmentSpec.equipmentTypeName && (
+                                                                <div className="equip-detail">
+                                                                    <span className="equip-label">Type:</span> {item.equipmentSpec.equipmentTypeName}
+                                                                </div>
+                                                            )}
+                                                            {item.equipmentSpec.equipmentBrandName && (
+                                                                <div className="equip-detail">
+                                                                    <span className="equip-label">Brand:</span> {item.equipmentSpec.equipmentBrandName}
+                                                                </div>
+                                                            )}
+                                                            {item.equipmentSpec.model && (
+                                                                <div className="equip-detail">
+                                                                    <span className="equip-label">Model:</span> {item.equipmentSpec.model}
+                                                                </div>
+                                                            )}
+                                                            {item.equipmentSpec.estimatedBudget != null && (
+                                                                <div className="equip-detail budget">
+                                                                    <span className="equip-label">Budget:</span> EGP {Number(item.equipmentSpec.estimatedBudget).toLocaleString()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
                                                     {item.comment && (
                                                         <div className="procurement-unstarted-offers-item-notes">
                                                             <div className="procurement-unstarted-offers-item-notes-title">Notes</div>
