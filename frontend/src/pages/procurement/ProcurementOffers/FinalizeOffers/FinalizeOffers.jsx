@@ -9,22 +9,22 @@ import RequestOrderDetails from '../../../../components/procurement/RequestOrder
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
-import  {financeService} from '../../../../services/financeService';
+import { financeService } from '../../../../services/financeService';
 import "../ProcurementOffers.scss";
 import "./FinalizeOffers.scss";
 
 const FinalizeOffers = ({
-                            offers,
-                            activeOffer,
-                            setActiveOffer,
-                            getTotalPrice,
-                            setError,
-                            setSuccess,
-                            onOfferFinalized, // This should switch to completed tab
-                            onOfferCompleted, // New callback for completed offers
-                            onRetryOffer, // Callback for retry functionality
-                            onDeleteOffer // Callback for delete functionality
-                        }) => {
+    offers,
+    activeOffer,
+    setActiveOffer,
+    getTotalPrice,
+    setError,
+    setSuccess,
+    onOfferFinalized, // This should switch to completed tab
+    onOfferCompleted, // New callback for completed offers
+    onRetryOffer, // Callback for retry functionality
+    onDeleteOffer // Callback for delete functionality
+}) => {
     const [loading, setLoading] = useState(false);
     const [finalizedItems, setFinalizedItems] = useState({});
     const [purchaseOrder, setPurchaseOrder] = useState(null);
@@ -281,7 +281,7 @@ const FinalizeOffers = ({
             // ✅ NEW CODE - Check multiple possible locations for PO ID
             console.log('🔵 Full responseData:', responseData);
 
-// Try different possible locations for the PO ID
+            // Try different possible locations for the PO ID
             const purchaseOrderId = responseData.id ||
                 responseData.purchaseOrderId ||
                 responseData.data?.id ||
@@ -443,8 +443,8 @@ const FinalizeOffers = ({
                                 key={offer.id}
                                 className={`procurement-item-card-finalize ${activeOffer?.id === offer.id ? 'selected' : ''}
                        ${offer.status === 'FINANCE_ACCEPTED' || offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'card-accepted' :
-                                    offer.status === 'FINALIZING' ? 'card-partial' :
-                                        offer.status === 'FINALIZED' ? 'card-success' : ''}`}
+                                        offer.status === 'FINALIZING' ? 'card-partial' :
+                                            offer.status === 'FINALIZED' ? 'card-success' : ''}`}
                                 onClick={() => {
                                     if (offer.status === 'FINALIZED') return;
                                     setActiveOffer(offer);
@@ -456,9 +456,9 @@ const FinalizeOffers = ({
                                     <h4>{offer.title}</h4>
                                 </div>
                                 <div className="procurement-item-footer">
-                <span className="procurement-item-date">
-                    <FiClock />{new Date(offer.createdAt).toLocaleDateString()}
-                </span>
+                                    <span className="procurement-item-date">
+                                        <FiClock />{new Date(offer.createdAt).toLocaleDateString()}
+                                    </span>
                                 </div>
                                 <div className="procurement-item-footer">
 
@@ -603,51 +603,51 @@ const FinalizeOffers = ({
                                                             <div className="item-icon-container-finalize">
                                                                 <FiPackage size={22} />
                                                             </div>
-                                                            <h5>{requestItem.itemType?.name || 'Item'}</h5>
+                                                            <h5>{requestItem.itemTypeName || requestItem.itemType?.name || requestItem.equipmentName || requestItem.equipmentSpec?.name || 'Item'}</h5>
                                                         </div>
                                                         <div className="submitted-item-quantity-finalize">
-                                                            {requestItem.quantity} {requestItem.itemType?.measuringUnit}
+                                                            {requestItem.quantity} {(requestItem.equipmentSpecId || requestItem.equipmentSpec) ? 'unit' : (requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units')}
                                                         </div>
                                                     </div>
 
                                                     <div className="submitted-offer-solutions-finalize">
                                                         <table className="procurement-offer-entries-table-finalize">
                                                             <thead>
-                                                            <tr>
-                                                                <th>Merchant</th>
-                                                                <th>Quantity</th>
-                                                                <th>Unit Price</th>
-                                                                <th>Total</th>
-                                                                <th>Finalize</th>
-                                                            </tr>
+                                                                <tr>
+                                                                    <th>Merchant</th>
+                                                                    <th>Quantity</th>
+                                                                    <th>Unit Price</th>
+                                                                    <th>Total</th>
+                                                                    <th>Finalize</th>
+                                                                </tr>
                                                             </thead>
                                                             <tbody>
-                                                            {offerItems.map((offerItem) => (
-                                                                <tr
-                                                                    key={offerItem.id}
-                                                                    className={finalizedItems[offerItem.id] ? 'item-finalized-finalize' : ''}
-                                                                >
-                                                                    <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                    <td>{offerItem.quantity} {requestItem.itemType?.measuringUnit}</td>
-                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice || 0).toFixed(2)}</td>
-                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice || 0).toFixed(2)}</td>
-                                                                    <td>
-                                                                        <label className="finalize-checkbox-container-finalize">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={!!finalizedItems[offerItem.id]}
-                                                                                onChange={() => handleFinalizeItem(offerItem.id)}
-                                                                                disabled={
-                                                                                    activeOffer.status === 'FINALIZED' ||
-                                                                                    purchaseOrder !== null ||
-                                                                                    loading
-                                                                                }
-                                                                            />
-                                                                            <span className="finalize-checkmark-finalize"></span>
-                                                                        </label>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
+                                                                {offerItems.map((offerItem) => (
+                                                                    <tr
+                                                                        key={offerItem.id}
+                                                                        className={finalizedItems[offerItem.id] ? 'item-finalized-finalize' : ''}
+                                                                    >
+                                                                        <td>{offerItem.merchant?.name || 'Unknown'}</td>
+                                                                        <td>{offerItem.quantity} {(requestItem.equipmentSpecId || requestItem.equipmentSpec) ? 'unit' : (requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units')}</td>
+                                                                        <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice || 0).toFixed(2)}</td>
+                                                                        <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice || 0).toFixed(2)}</td>
+                                                                        <td>
+                                                                            <label className="finalize-checkbox-container-finalize">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={!!finalizedItems[offerItem.id]}
+                                                                                    onChange={() => handleFinalizeItem(offerItem.id)}
+                                                                                    disabled={
+                                                                                        activeOffer.status === 'FINALIZED' ||
+                                                                                        purchaseOrder !== null ||
+                                                                                        loading
+                                                                                    }
+                                                                                />
+                                                                                <span className="finalize-checkmark-finalize"></span>
+                                                                            </label>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
                                                             </tbody>
                                                         </table>
                                                     </div>
@@ -662,7 +662,7 @@ const FinalizeOffers = ({
                                 <div className="procurement-submitted-summary-finalize">
                                     <div className="summary-item-finalize">
                                         <FiCheck size={16} />
-                                        <span className="summary-label-finalize">Total Items Finalized:</span>
+                                        <span className="summary-label-finalize">{activeOffer.requestOrder?.requestItems?.some(item => item.equipmentSpecId || item.equipmentSpec) ? 'Total Equipment Finalized:' : 'Total Items Finalized:'}</span>
                                         <span className="summary-value-finalize">
                                             {totalFinalizedItems}
                                         </span>
@@ -672,13 +672,13 @@ const FinalizeOffers = ({
                                         <FiDollarSign size={18} />
                                         <span className="summary-label-finalize">Total Value to be Finalized:</span>
                                         <span className="summary-value-finalize total-finalize">
-        {Object.entries(getFinalizedTotalValue()).map(([currency, total], idx) => (
-            <span key={currency} style={{ marginLeft: idx > 0 ? '8px' : '0' }}>
-                {idx > 0 && '+ '}
-                {currency} {total.toFixed(2)}
-            </span>
-        ))}
-    </span>
+                                            {Object.entries(getFinalizedTotalValue()).map(([currency, total], idx) => (
+                                                <span key={currency} style={{ marginLeft: idx > 0 ? '8px' : '0' }}>
+                                                    {idx > 0 && '+ '}
+                                                    {currency} {total.toFixed(2)}
+                                                </span>
+                                            ))}
+                                        </span>
                                     </div>
                                 </div>
                                 {/* End of Total Summary */}
