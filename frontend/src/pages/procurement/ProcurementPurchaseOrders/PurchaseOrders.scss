@@ -115,7 +115,8 @@
   white-space: nowrap;
   font-size: 12px;
   text-align: left;
-  padding-top: 15px; /* Added more vertical padding */
+  padding-top: 15px;
+  /* Added more vertical padding */
   padding-bottom: 15px;
 }
 
@@ -144,6 +145,7 @@
   padding-top: 15px;
   padding-bottom: 15px;
 }
+
 .purchase-orders-table-cell:last-child {
 
   padding-top: 15px;
@@ -196,33 +198,61 @@
 }
 
 .status-created {
-  background-color: #E0E7FF; /* Light blue */
+  background-color: #E0E7FF;
+  /* Light blue */
   color: #4338CA;
 }
 
 .status-pending {
-  background-color: #FEF3C7; /* Yellow */
+  background-color: #FEF3C7;
+  /* Yellow */
   color: #92400E;
 }
 
 .status-partially_received {
-  background-color: #DBEAFE; /* Lighter blue */
+  background-color: #DBEAFE;
+  /* Lighter blue */
   color: #1E40AF;
 }
 
 .status-completed {
-  background-color: #D1FAE5; /* Green */
+  background-color: #D1FAE5;
+  /* Green */
   color: #065F46;
 }
 
 .status-cancelled {
-  background-color: #FEE2E2; /* Red */
+  background-color: #FEE2E2;
+  /* Red */
   color: #B91C1C;
 }
 
 .status-default {
-  background-color: #E2E8F0; /* Gray */
+  background-color: #E2E8F0;
+  /* Gray */
   color: #475569;
+}
+
+/* Party Type Badge */
+.party-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.warehouse {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+  }
+
+  &.equipment {
+    background-color: #FEF3C7;
+    color: #92400E;
+  }
 }
 
 /* Loading State Styles */

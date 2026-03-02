@@ -1,7 +1,5 @@
 package com.example.backend.services.procurement;
 
-
-
 import com.example.backend.models.PartyType;
 import com.example.backend.models.RequestStatus;
 import com.example.backend.models.notification.NotificationType;
@@ -27,7 +25,7 @@ import java.util.*;
 public class RequestOrderService {
 
     @Autowired
-   private ItemTypeRepository itemTypeRepository;
+    private ItemTypeRepository itemTypeRepository;
     @Autowired
     private RequestOrderRepository requestOrderRepository;
 
@@ -65,8 +63,13 @@ public class RequestOrderService {
                 }
             } else {
                 if (title == null || description == null || createdBy == null ||
-                        status == null || partyTypeStr == null || requesterIdStr == null) {
+                        status == null || partyTypeStr == null) {
                     throw new RuntimeException("Missing required fields");
+                }
+                // requesterId is only required for WAREHOUSE requests, not EQUIPMENT
+                if (!"EQUIPMENT".equalsIgnoreCase(partyTypeStr) && requesterIdStr == null) {
+                    throw new RuntimeException(
+                            "Missing required fields: requesterId is required for warehouse requests");
                 }
             }
 
@@ -83,7 +86,8 @@ public class RequestOrderService {
             // Check for duplicate title only if not draft and requesterId exists
             if (!"DRAFT".equalsIgnoreCase(status) && requesterId != null) {
                 if (requestOrderRepository.existsByTitleAndRequesterIdAndStatusPending(title.trim(), requesterId)) {
-                    throw new RuntimeException("A request order with the title '" + title + "' already exists for this requester. Please use a different title or change the requester.");
+                    throw new RuntimeException("A request order with the title '" + title
+                            + "' already exists for this requester. Please use a different title or change the requester.");
                 }
             }
 
@@ -182,10 +186,12 @@ public class RequestOrderService {
                         try {
                             quantity = quantityObj != null ? Double.parseDouble(quantityObj.toString()) : 1.0;
                             if (quantity <= 0) {
-                                throw new RuntimeException("Item " + (itemIndex + 1) + ": Quantity must be greater than 0");
+                                throw new RuntimeException(
+                                        "Item " + (itemIndex + 1) + ": Quantity must be greater than 0");
                             }
                         } catch (NumberFormatException e) {
-                            throw new RuntimeException("Item " + (itemIndex + 1) + ": Invalid quantity format: " + quantityObj);
+                            throw new RuntimeException(
+                                    "Item " + (itemIndex + 1) + ": Invalid quantity format: " + quantityObj);
                         }
 
                         RequestOrderItem item;
@@ -194,11 +200,14 @@ public class RequestOrderService {
                             // Equipment items reference EquipmentPurchaseSpec
                             String equipmentSpecIdStr = (String) itemData.get("equipmentSpecId");
                             if (equipmentSpecIdStr == null) {
-                                throw new RuntimeException("Item " + (itemIndex + 1) + ": equipmentSpecId is required for equipment requests");
+                                throw new RuntimeException("Item " + (itemIndex + 1)
+                                        + ": equipmentSpecId is required for equipment requests");
                             }
                             UUID equipmentSpecId = UUID.fromString(equipmentSpecIdStr);
-                            EquipmentPurchaseSpec equipmentSpec = equipmentPurchaseSpecRepository.findById(equipmentSpecId)
-                                    .orElseThrow(() -> new RuntimeException("Item " + (itemIndex + 1) + ": Equipment spec not found: " + equipmentSpecId));
+                            EquipmentPurchaseSpec equipmentSpec = equipmentPurchaseSpecRepository
+                                    .findById(equipmentSpecId)
+                                    .orElseThrow(() -> new RuntimeException("Item " + (itemIndex + 1)
+                                            + ": Equipment spec not found: " + equipmentSpecId));
 
                             item = RequestOrderItem.builder()
                                     .equipmentSpec(equipmentSpec)
@@ -214,7 +223,8 @@ public class RequestOrderService {
                             }
                             UUID itemTypeId = UUID.fromString(itemTypeIdStr);
                             ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                                    .orElseThrow(() -> new RuntimeException("Item " + (itemIndex + 1) + ": ItemType not found: " + itemTypeId));
+                                    .orElseThrow(() -> new RuntimeException(
+                                            "Item " + (itemIndex + 1) + ": ItemType not found: " + itemTypeId));
 
                             item = RequestOrderItem.builder()
                                     .itemType(itemType)
@@ -246,7 +256,8 @@ public class RequestOrderService {
                             String itemsSummary;
                             if (partyType == PartyType.EQUIPMENT) {
                                 itemsSummary = savedOrder.getRequestItems().stream()
-                                        .map(item -> item.getEquipmentSpec() != null ? item.getEquipmentSpec().getName() : "Equipment")
+                                        .map(item -> item.getEquipmentSpec() != null ? item.getEquipmentSpec().getName()
+                                                : "Equipment")
                                         .collect(java.util.stream.Collectors.joining(", "));
                             } else {
                                 itemsSummary = savedOrder.getRequestItems().stream()
@@ -262,8 +273,7 @@ public class RequestOrderService {
 
                                 List<Role> warehouseRoles = Arrays.asList(
                                         Role.WAREHOUSE_MANAGER,
-                                        Role.WAREHOUSE_EMPLOYEE
-                                );
+                                        Role.WAREHOUSE_EMPLOYEE);
 
                                 notificationService.sendNotificationToUsersByRoles(
                                         warehouseRoles,
@@ -271,12 +281,12 @@ public class RequestOrderService {
                                         warehouseNotificationMessage,
                                         NotificationType.INFO,
                                         "/warehouses/" + savedOrder.getRequesterId(),
-                                        "REQUEST_" + savedOrder.getId()
-                                );
+                                        "REQUEST_" + savedOrder.getId());
                             } else if (partyType == PartyType.EQUIPMENT) {
                                 // Notify equipment users
                                 String equipmentNotificationTitle = "Equipment Purchase Request Created";
-                                String equipmentNotificationMessage = "Equipment purchase request '" + savedOrder.getTitle() +
+                                String equipmentNotificationMessage = "Equipment purchase request '"
+                                        + savedOrder.getTitle() +
                                         "' has been created: " + itemsSummary;
 
                                 List<Role> equipmentRoles = Arrays.asList(Role.EQUIPMENT_MANAGER);
@@ -287,8 +297,7 @@ public class RequestOrderService {
                                         equipmentNotificationMessage,
                                         NotificationType.INFO,
                                         "/procurement/request-orders",
-                                        "REQUEST_" + savedOrder.getId()
-                                );
+                                        "REQUEST_" + savedOrder.getId());
                             }
 
                             // Notify ALL procurement users (for both warehouse and equipment)
@@ -304,8 +313,7 @@ public class RequestOrderService {
                                     procurementNotificationMessage,
                                     NotificationType.WARNING,
                                     "/procurement/request-orders",
-                                    "REQUEST_" + savedOrder.getId()
-                            );
+                                    "REQUEST_" + savedOrder.getId());
 
                             System.out.println("✅ Request order creation notifications sent successfully");
                         }
@@ -336,7 +344,8 @@ public class RequestOrderService {
             // Retrieve all request orders from the repository
             List<RequestOrder> requestOrders = requestOrderRepository.findAll();
 
-            // Optional: You can filter, sort, or perform any other operations on the requestOrders list
+            // Optional: You can filter, sort, or perform any other operations on the
+            // requestOrders list
 
             return requestOrders;
 
@@ -380,8 +389,13 @@ public class RequestOrderService {
                 }
             } else {
                 if (title == null || description == null || statusStr == null ||
-                        partyTypeStr == null || requesterIdStr == null) {
+                        partyTypeStr == null) {
                     throw new RuntimeException("Missing required fields");
+                }
+                // requesterId is only required for WAREHOUSE requests, not EQUIPMENT
+                if (!"EQUIPMENT".equalsIgnoreCase(partyTypeStr) && requesterIdStr == null) {
+                    throw new RuntimeException(
+                            "Missing required fields: requesterId is required for warehouse requests");
                 }
             }
 
@@ -496,7 +510,8 @@ public class RequestOrderService {
                         }
                         UUID equipmentSpecId = UUID.fromString(equipmentSpecIdStr);
                         EquipmentPurchaseSpec equipmentSpec = equipmentPurchaseSpecRepository.findById(equipmentSpecId)
-                                .orElseThrow(() -> new RuntimeException("Equipment spec not found: " + equipmentSpecId));
+                                .orElseThrow(
+                                        () -> new RuntimeException("Equipment spec not found: " + equipmentSpecId));
 
                         item = RequestOrderItem.builder()
                                 .equipmentSpec(equipmentSpec)
@@ -532,7 +547,8 @@ public class RequestOrderService {
                         String itemsSummary;
                         if (partyType == PartyType.EQUIPMENT) {
                             itemsSummary = updatedOrder.getRequestItems().stream()
-                                    .map(item -> item.getEquipmentSpec() != null ? item.getEquipmentSpec().getName() : "Equipment")
+                                    .map(item -> item.getEquipmentSpec() != null ? item.getEquipmentSpec().getName()
+                                            : "Equipment")
                                     .collect(java.util.stream.Collectors.joining(", "));
                         } else {
                             itemsSummary = updatedOrder.getRequestItems().stream()
@@ -548,8 +564,7 @@ public class RequestOrderService {
 
                             List<Role> warehouseRoles = Arrays.asList(
                                     Role.WAREHOUSE_MANAGER,
-                                    Role.WAREHOUSE_EMPLOYEE
-                            );
+                                    Role.WAREHOUSE_EMPLOYEE);
 
                             notificationService.sendNotificationToUsersByRoles(
                                     warehouseRoles,
@@ -557,12 +572,12 @@ public class RequestOrderService {
                                     warehouseNotificationMessage,
                                     NotificationType.INFO,
                                     "/warehouses/" + updatedOrder.getRequesterId(),
-                                    "REQUEST_" + updatedOrder.getId()
-                            );
+                                    "REQUEST_" + updatedOrder.getId());
                         } else if (partyType == PartyType.EQUIPMENT) {
                             // Notify equipment users
                             String equipmentNotificationTitle = "Equipment Purchase Request Updated";
-                            String equipmentNotificationMessage = "Equipment purchase request '" + updatedOrder.getTitle() +
+                            String equipmentNotificationMessage = "Equipment purchase request '"
+                                    + updatedOrder.getTitle() +
                                     "' has been updated: " + itemsSummary;
 
                             List<Role> equipmentRoles = Arrays.asList(Role.EQUIPMENT_MANAGER);
@@ -573,8 +588,7 @@ public class RequestOrderService {
                                     equipmentNotificationMessage,
                                     NotificationType.INFO,
                                     "/procurement/request-orders",
-                                    "REQUEST_" + updatedOrder.getId()
-                            );
+                                    "REQUEST_" + updatedOrder.getId());
                         }
 
                         // Notify ALL procurement users (for both warehouse and equipment)
@@ -590,8 +604,7 @@ public class RequestOrderService {
                                 procurementNotificationMessage,
                                 NotificationType.INFO,
                                 "/procurement/request-orders",
-                                "REQUEST_" + updatedOrder.getId()
-                        );
+                                "REQUEST_" + updatedOrder.getId());
 
                         System.out.println("✅ Request order update notifications sent successfully");
                     }
@@ -609,38 +622,40 @@ public class RequestOrderService {
         }
     }
 
-//    public RequestOrder updateStatus(UUID requestOrderId, String newStatus) {
-//        try {
-//            System.out.println("Updating request order status: " + requestOrderId + " -> " + newStatus);
-//
-//            RequestOrder requestOrder = requestOrderRepository.findById(requestOrderId)
-//                    .orElseThrow(() -> new RuntimeException("Request order not found with ID: " + requestOrderId));
-//
-//            requestOrder.setStatus(newStatus);
-//            requestOrder.setUpdatedAt(LocalDateTime.now());
-//
-//            // Get username if available from SecurityContext, otherwise use system
-//            String username = "system";
-//            try {
-//                org.springframework.security.core.Authentication authentication =
-//                        org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-//                if (authentication != null && authentication.isAuthenticated()) {
-//                    username = authentication.getName();
-//                }
-//            } catch (Exception e) {
-//                System.err.println("Error getting authenticated user: " + e.getMessage());
-//            }
-//
-//            requestOrder.setApprovedBy(username);
-//            requestOrder.setApprovedAt(LocalDateTime.now());
-//
-//            return requestOrderRepository.save(requestOrder);
-//        } catch (Exception e) {
-//            System.err.println("Error updating request order status: " + e.getMessage());
-//            e.printStackTrace();
-//            throw new RuntimeException("Failed to update request order status", e);
-//        }
-//    }
+    // public RequestOrder updateStatus(UUID requestOrderId, String newStatus) {
+    // try {
+    // System.out.println("Updating request order status: " + requestOrderId + " ->
+    // " + newStatus);
+    //
+    // RequestOrder requestOrder = requestOrderRepository.findById(requestOrderId)
+    // .orElseThrow(() -> new RuntimeException("Request order not found with ID: " +
+    // requestOrderId));
+    //
+    // requestOrder.setStatus(newStatus);
+    // requestOrder.setUpdatedAt(LocalDateTime.now());
+    //
+    // // Get username if available from SecurityContext, otherwise use system
+    // String username = "system";
+    // try {
+    // org.springframework.security.core.Authentication authentication =
+    // org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+    // if (authentication != null && authentication.isAuthenticated()) {
+    // username = authentication.getName();
+    // }
+    // } catch (Exception e) {
+    // System.err.println("Error getting authenticated user: " + e.getMessage());
+    // }
+    //
+    // requestOrder.setApprovedBy(username);
+    // requestOrder.setApprovedAt(LocalDateTime.now());
+    //
+    // return requestOrderRepository.save(requestOrder);
+    // } catch (Exception e) {
+    // System.err.println("Error updating request order status: " + e.getMessage());
+    // e.printStackTrace();
+    // throw new RuntimeException("Failed to update request order status", e);
+    // }
+    // }
 
     public RequestOrder updateStatus(UUID requestOrderId, String newStatus) {
         try {
@@ -656,8 +671,8 @@ public class RequestOrderService {
             // Get username if available from SecurityContext, otherwise use system
             String username = "system";
             try {
-                org.springframework.security.core.Authentication authentication =
-                        org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
                 if (authentication != null && authentication.isAuthenticated()) {
                     username = authentication.getName();
                 }
@@ -678,7 +693,8 @@ public class RequestOrderService {
                         String itemsSummary;
                         if (PartyType.EQUIPMENT.name().equals(orderPartyType)) {
                             itemsSummary = updatedOrder.getRequestItems().stream()
-                                    .map(item -> item.getEquipmentSpec() != null ? item.getEquipmentSpec().getName() : "Equipment")
+                                    .map(item -> item.getEquipmentSpec() != null ? item.getEquipmentSpec().getName()
+                                            : "Equipment")
                                     .collect(java.util.stream.Collectors.joining(", "));
                         } else {
                             itemsSummary = updatedOrder.getRequestItems().stream()
@@ -704,8 +720,7 @@ public class RequestOrderService {
 
                             List<Role> warehouseRoles = Arrays.asList(
                                     Role.WAREHOUSE_MANAGER,
-                                    Role.WAREHOUSE_EMPLOYEE
-                            );
+                                    Role.WAREHOUSE_EMPLOYEE);
 
                             notificationService.sendNotificationToUsersByRoles(
                                     warehouseRoles,
@@ -713,12 +728,12 @@ public class RequestOrderService {
                                     warehouseNotificationMessage,
                                     notificationType,
                                     "/warehouses/" + updatedOrder.getRequesterId(),
-                                    "REQUEST_" + updatedOrder.getId()
-                            );
+                                    "REQUEST_" + updatedOrder.getId());
                         } else if (PartyType.EQUIPMENT.name().equals(orderPartyType)) {
                             // Notify equipment users
                             String equipmentNotificationTitle = "Equipment Purchase Request " + newStatus;
-                            String equipmentNotificationMessage = "Equipment purchase request '" + updatedOrder.getTitle() +
+                            String equipmentNotificationMessage = "Equipment purchase request '"
+                                    + updatedOrder.getTitle() +
                                     "' status changed from " + oldStatus + " to " + newStatus + ": " + itemsSummary;
 
                             List<Role> equipmentRoles = Arrays.asList(Role.EQUIPMENT_MANAGER);
@@ -729,8 +744,7 @@ public class RequestOrderService {
                                     equipmentNotificationMessage,
                                     notificationType,
                                     "/procurement/request-orders",
-                                    "REQUEST_" + updatedOrder.getId()
-                            );
+                                    "REQUEST_" + updatedOrder.getId());
                         }
 
                         // Notify ALL procurement users (for both warehouse and equipment)
@@ -746,13 +760,13 @@ public class RequestOrderService {
                                 procurementNotificationMessage,
                                 notificationType,
                                 "/procurement/request-orders",
-                                "REQUEST_" + updatedOrder.getId()
-                        );
+                                "REQUEST_" + updatedOrder.getId());
 
                         System.out.println("✅ Request order status change notifications sent successfully");
                     }
                 } catch (Exception e) {
-                    System.err.println("⚠️ Failed to send request order status change notifications: " + e.getMessage());
+                    System.err
+                            .println("⚠️ Failed to send request order status change notifications: " + e.getMessage());
                 }
             }
 
@@ -772,8 +786,7 @@ public class RequestOrderService {
 
             // Find all request orders by warehouse and status
             return requestOrderRepository.findByRequesterIdAndStatusAndPartyType(
-                    warehouseId, status.name(), PartyType.WAREHOUSE.name()
-            );
+                    warehouseId, status.name(), PartyType.WAREHOUSE.name());
 
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid status value: " + statusStr, e);
@@ -797,8 +810,7 @@ public class RequestOrderService {
                             warehouseId,
                             itemTypeId,
                             Arrays.asList("PENDING", "APPROVED"),
-                            threeDaysAgo
-                    );
+                            threeDaysAgo);
 
             Map<String, Object> itemInfo = new HashMap<>();
             itemInfo.put("hasRecentRequest", !recentRequests.isEmpty());
@@ -845,6 +857,4 @@ public class RequestOrderService {
         }
     }
 
-    }
-
-
+}

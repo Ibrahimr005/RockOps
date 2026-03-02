@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaFilter, FaSearch, FaExclamationCircle, FaChevronDown } from "react-icons/fa";
 import EquipmentModal from "./components/EquipmentModal/EquipmentModal.jsx";
+import EquipmentEntryTypeModal from "./components/EquipmentEntryTypeModal/EquipmentEntryTypeModal.jsx";
+import RequestOrderModal from "../../../components/procurement/RequestOrderModal/RequestOrderModal.jsx";
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
 import "./EquipmentMain.scss";
@@ -14,6 +16,7 @@ import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 import PageHeader from "../../../components/common/PageHeader/index.js";
 import equipmentimg from "../../../assets/imgs/equipmentimg.jpg"
 import { FaTools } from 'react-icons/fa';
+import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 
 // Default placeholder for equipment image
 const equipmentPlaceholder = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eEquipment%3c/text%3e%3c/svg%3e";
@@ -84,8 +87,11 @@ const EquipmentMain = () => {
     const [selectedModel, setSelectedModel] = useState("");
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState("");
+    const [snackbar, setSnackbar] = useState({ show: false, type: 'success', message: '' });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [equipmentToEdit, setEquipmentToEdit] = useState(null);
+    const [showEntryTypeModal, setShowEntryTypeModal] = useState(false);
+    const [showRequestOrderModal, setShowRequestOrderModal] = useState(false);
 
     const equipmentCardsRefs = useRef([]);
     const actionsSetFlags = useRef({});
@@ -227,8 +233,27 @@ const EquipmentMain = () => {
     }, [equipmentData, searchTerm, selectedType, selectedBrand, selectedSite, selectedStatus, filterName, selectedModel]);
 
     const handleAddEquipment = () => {
+        setShowEntryTypeModal(true);
+    };
+
+    const handleManualEntry = () => {
+        setShowEntryTypeModal(false);
         setEquipmentToEdit(null);
         setIsModalOpen(true);
+    };
+
+    const handleProcurementRequest = () => {
+        setShowEntryTypeModal(false);
+        setShowRequestOrderModal(true);
+    };
+
+    const handleRequestOrderSaved = () => {
+        setShowRequestOrderModal(false);
+        setSnackbar({ show: true, type: 'success', message: 'Equipment procurement request submitted successfully!' });
+    };
+
+    const handleRequestOrderError = (errorMsg) => {
+        setSnackbar({ show: true, type: 'error', message: errorMsg || 'Failed to submit procurement request. Please try again.' });
     };
 
     const handleEditEquipment = (equipmentId) => {
@@ -601,8 +626,6 @@ const EquipmentMain = () => {
                                 }
                             ]}
 
-                            // Performance: Enable lazy loading for images in the grid
-                            lazyImageFetch={true}
                             actions={[
                                 ...(permissions.canEdit ? [{
                                     label: 'Edit',
@@ -642,12 +665,40 @@ const EquipmentMain = () => {
                 </div>
             )}
 
-            {/* Equipment Modal */}
+            {/* Entry Type Selection Modal */}
+            <EquipmentEntryTypeModal
+                isOpen={showEntryTypeModal}
+                onClose={() => setShowEntryTypeModal(false)}
+                onSelectManualEntry={handleManualEntry}
+                onSelectProcurementRequest={handleProcurementRequest}
+            />
+
+            {/* Equipment Modal (Manual Entry) */}
             <EquipmentModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveEquipment}
                 equipmentToEdit={equipmentToEdit}
+            />
+
+            {/* Procurement Request Order Modal */}
+            {showRequestOrderModal && (
+                <RequestOrderModal
+                    isOpen={showRequestOrderModal}
+                    onClose={() => setShowRequestOrderModal(false)}
+                    onSuccess={handleRequestOrderSaved}
+                    onError={handleRequestOrderError}
+                    initialPartyType="EQUIPMENT"
+                />
+            )}
+
+            {/* Snackbar for procurement request feedback */}
+            <Snackbar
+                type={snackbar.type}
+                message={snackbar.message}
+                show={snackbar.show}
+                onClose={() => setSnackbar(prev => ({ ...prev, show: false }))}
+                duration={4000}
             />
         </main>
     );

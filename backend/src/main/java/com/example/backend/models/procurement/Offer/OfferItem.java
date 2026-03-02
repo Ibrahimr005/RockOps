@@ -43,6 +43,10 @@ public class OfferItem {
     // REMOVED @JsonManagedReference - ManyToOne doesn't need it!
     private ItemType itemType;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "equipment_purchase_spec_id")
+    private com.example.backend.models.procurement.EquipmentPurchaseSpec equipmentSpec;
+
     private Integer estimatedDeliveryDays;
     private String deliveryNotes;
     private String comment;

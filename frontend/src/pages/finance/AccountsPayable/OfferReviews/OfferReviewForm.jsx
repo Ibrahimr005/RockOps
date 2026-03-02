@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import { FiCheck, FiX, FiDollarSign, FiAlertTriangle, FiPackage, FiMapPin, FiUser } from 'react-icons/fi';
+import { FiCheck, FiX, FiDollarSign, FiAlertTriangle, FiPackage, FiMapPin, FiUser, FiTool } from 'react-icons/fi';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
 import { offerService } from '../../../../services/procurement/offerService';
@@ -54,6 +54,8 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
                     } catch (err) {
                         console.error('Error fetching warehouse details:', err);
                     }
+                } else if (offerData.requestOrder?.partyType === 'EQUIPMENT') {
+                    offerData.equipmentRequest = true;
                 }
 
                 setFullOfferData(offerData);
@@ -246,15 +248,16 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
     const summary = calculateSummary();
     const merchants = getMerchants();
     const totalItems = fullOfferData.offerItems?.length || 0;
-    const warehouseName = fullOfferData?.requestOrder?.requesterName || 'N/A';
-    const siteName = fullOfferData?.warehouseDetails?.site?.name || 'N/A';
+    const isEquipment = fullOfferData?.equipmentRequest || fullOfferData?.requestOrder?.partyType === 'EQUIPMENT';
+    const warehouseName = isEquipment ? 'Equipment Department' : (fullOfferData?.requestOrder?.requesterName || 'N/A');
+    const siteName = isEquipment ? 'Equipment Purchase' : (fullOfferData?.warehouseDetails?.site?.name || 'N/A');
 
     return (
         <div className="modal-overlay">
             <div className="modal-container offer-review-modal offer-review-modal-large">
                 <div className="modal-header">
                     <div className="modal-title">
-                        <FiPackage />
+                        {isEquipment ? <FiTool /> : <FiPackage />}
                         <h2>Review Offer Items - {fullOfferData.title || offer.offerNumber}</h2>
                     </div>
                     <button className="modern-modal-close" onClick={onClose}>
@@ -336,10 +339,16 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
                                             <div className="item-details">
                                                 <div className="item-info">
                                                     <strong className="item-name">
-                                                        {item.requestOrderItem?.itemType?.name || 'Item'}
+                                                        {item.requestOrderItem?.itemType?.name || item.requestOrderItem?.equipmentSpec?.name || item.requestOrderItem?.equipmentSpec?.equipmentName || 'Item'}
                                                     </strong>
                                                     <div className="item-specs">
                                                         <span>Qty: {item.quantity} {item.requestOrderItem?.itemType?.measuringUnit || 'units'}</span>
+                                                        {item.requestOrderItem?.equipmentSpec && (
+                                                            <>
+                                                                {item.requestOrderItem.equipmentSpec.manufacturer && <span>• {item.requestOrderItem.equipmentSpec.manufacturer}</span>}
+                                                                {item.requestOrderItem.equipmentSpec.model && <span>• {item.requestOrderItem.equipmentSpec.model}</span>}
+                                                            </>
+                                                        )}
                                                         <span>•</span>
                                                         <span>Unit Price: {formatCurrency(item.unitPrice)}</span>
                                                     </div>

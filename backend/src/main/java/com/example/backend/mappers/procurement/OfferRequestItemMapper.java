@@ -12,15 +12,23 @@ import java.util.stream.Collectors;
 public class OfferRequestItemMapper {
 
     public OfferRequestItemDTO toDTO(OfferRequestItem entity) {
-        if (entity == null) return null;
+        if (entity == null)
+            return null;
 
         return OfferRequestItemDTO.builder()
                 .id(entity.getId())
                 .offerId(entity.getOffer() != null ? entity.getOffer().getId() : null)
                 .itemTypeId(entity.getItemType() != null ? entity.getItemType().getId() : null)
                 .itemTypeName(entity.getItemType() != null ? entity.getItemType().getName() : null)
-                .itemTypeMeasuringUnit(entity.getItemType() != null && entity.getItemType().getMeasuringUnit() != null ?
-                        entity.getItemType().getMeasuringUnit().getName() : null)
+                .itemTypeMeasuringUnit(entity.getItemType() != null && entity.getItemType().getMeasuringUnit() != null
+                        ? entity.getItemType().getMeasuringUnit().getName()
+                        : null)
+                .equipmentSpecId(entity.getEquipmentSpec() != null ? entity.getEquipmentSpec().getId() : null)
+                .equipmentName(entity.getEquipmentSpec() != null ? entity.getEquipmentSpec().getName() +
+                        (entity.getEquipmentSpec().getModel() != null && !entity.getEquipmentSpec().getModel().isEmpty()
+                                ? " " + entity.getEquipmentSpec().getModel()
+                                : "")
+                        : null)
                 .quantity(entity.getQuantity())
                 .comment(entity.getComment())
                 .originalRequestOrderItemId(entity.getOriginalRequestOrderItemId())
@@ -32,7 +40,8 @@ public class OfferRequestItemMapper {
     }
 
     public List<OfferRequestItemDTO> toDTOList(List<OfferRequestItem> entities) {
-        if (entities == null) return null;
+        if (entities == null)
+            return null;
         return entities.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());

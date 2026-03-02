@@ -1,8 +1,8 @@
-import React, {useEffect, useState, createContext, useContext} from 'react';
-import {NavLink, useLocation, useNavigate} from 'react-router-dom';
-import {useAuth} from '../../../contexts/AuthContext.jsx';
-import {useTheme} from '../../../contexts/ThemeContext.jsx';
-import {useTranslation} from 'react-i18next';
+import React, { useEffect, useState, createContext, useContext } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext.jsx';
+import { useTheme } from '../../../contexts/ThemeContext.jsx';
+import { useTranslation } from 'react-i18next';
 import {
     FaBars,
     FaBoxes,
@@ -49,7 +49,7 @@ import {
     FaAddressBook,
     FaDatabase,
     FaUserClock,
-    FaMoneyCheckAlt,FaRulerCombined
+    FaMoneyCheckAlt, FaRulerCombined
 } from 'react-icons/fa';
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE } from '../../../utils/roles';
@@ -57,7 +57,7 @@ import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPL
 import './Sidebar.css';
 import logoDarkImage from "../../../assets/logos/Logo-dark.png";
 import logoImage from "../../../assets/logos/Logo.png";
-import {FiDollarSign} from "react-icons/fi";
+import { FiDollarSign } from "react-icons/fi";
 
 // Create Sidebar Context
 const SidebarContext = createContext();
@@ -128,12 +128,12 @@ export const SidebarProvider = ({ children }) => {
 };
 
 const Sidebar = () => {
-    const {currentUser, logout} = useAuth();
-    const {theme, toggleTheme} = useTheme();
-    const {t} = useTranslation();
+    const { currentUser, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
+    const { t } = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
-    const {isExpanded, setIsExpanded, isMobile, toggleSidebar} = useSidebar();
+    const { isExpanded, setIsExpanded, isMobile, toggleSidebar } = useSidebar();
     const [expandedMenus, setExpandedMenus] = useState({});
     const [navigationHistory, setNavigationHistory] = useState(['/login']);
 
@@ -192,7 +192,7 @@ const Sidebar = () => {
     // Auto-expand submenus when on submenu pages
     useEffect(() => {
         const currentPath = location.pathname;
-        const newExpandedMenus = {...expandedMenus};
+        const newExpandedMenus = { ...expandedMenus };
 
         menuItems.forEach(item => {
             if (item.hasSubmenu && item.submenuItems) {
@@ -227,32 +227,32 @@ const Sidebar = () => {
     const menuItems = [
         {
             title: 'Admin',
-            icon: <FaUser/>,
+            icon: <FaUser />,
             path: '/admin',
             roles: [ADMIN]
         },
         {
             title: 'Dashboard',
-            icon: <FaChartLine/>,
+            icon: <FaChartLine />,
             path: '/dashboard',
             roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
         },
         {
             title: 'Sites',
-            icon: <FaMapMarkerAlt/>,
+            icon: <FaMapMarkerAlt />,
             path: '/sites',
             roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Dashboard',
-                    icon: <FaChartLine/>,
+                    icon: <FaChartLine />,
                     path: '/dashboards/site-admin',
                     roles: [ADMIN]
                 },
                 {
                     title: 'All Sites',
-                    icon: <FaMapMarkerAlt/>,
+                    icon: <FaMapMarkerAlt />,
                     path: '/sites',
                     roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
                 }
@@ -260,50 +260,50 @@ const Sidebar = () => {
         },
         {
             title: 'Partners',
-            icon: <FaUsers/>,
+            icon: <FaUsers />,
             path: '/partners',
             roles: [ADMIN, SITE_ADMIN]
         },
         {
             title: 'Equipment',
-            icon: <FaTruck/>,
+            icon: <FaTruck />,
             path: '/equipment',
             roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Dashboard',
-                    icon: <FaChartLine/>,
+                    icon: <FaChartLine />,
                     path: '/dashboards/equipment-manager',
                     roles: [ADMIN]
                 },
                 {
                     title: 'Equipment List',
-                    icon: <FaTruck/>,
+                    icon: <FaTruck />,
                     path: '/equipment',
                     roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
                 },
                 {
                     title: 'Equipment Types',
-                    icon: <FaTags/>,
+                    icon: <FaTags />,
                     path: '/equipment/type-management',
                     roles: [ADMIN, EQUIPMENT_MANAGER]
                 },
                 {
                     title: 'Equipment Brands',
-                    icon: <FaTags/>,
+                    icon: <FaTags />,
                     path: '/equipment/brand-management',
                     roles: [ADMIN, EQUIPMENT_MANAGER]
                 },
                 {
                     title: 'Work Types',
-                    icon: <FaListAlt/>,
+                    icon: <FaListAlt />,
                     path: '/equipment/work-type-management',
                     roles: [ADMIN, EQUIPMENT_MANAGER]
                 },
                 {
                     title: 'Maintenance Types',
-                    icon: <FaTools/>,
+                    icon: <FaTools />,
                     path: '/equipment/maintenance-type-management',
                     roles: [ADMIN, EQUIPMENT_MANAGER]
                 }
@@ -311,38 +311,38 @@ const Sidebar = () => {
         },
         {
             title: 'Warehouses',
-            icon: <FaWarehouse/>,
+            icon: <FaWarehouse />,
             path: '/warehouses',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER','WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER','MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE'],
+            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE'],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Dashboard',
-                    icon: <FaChartLine/>,
+                    icon: <FaChartLine />,
                     path: '/dashboards/warehouse-manager',
                     roles: [ADMIN]
                 },
                 {
                     title: 'Warehouses',
-                    icon: <FaWarehouse/>,
+                    icon: <FaWarehouse />,
                     path: '/warehouses',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
                 },
                 {
                     title: 'Item Categories',
-                    icon: <FaBoxes/>,
+                    icon: <FaBoxes />,
                     path: '/warehouses/item-categories',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER','WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
                 },
                 {
                     title: 'Item Types',
-                    icon: <FaTags/>,
+                    icon: <FaTags />,
                     path: '/warehouses/item-types',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
                 },
                 {
                     title: 'Measuring Units',
-                    icon: <FaRulerCombined/>,
+                    icon: <FaRulerCombined />,
                     path: '/warehouses/measuring-units',
                     roles: ['ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE']
                 }
@@ -350,38 +350,38 @@ const Sidebar = () => {
         },
         {
             title: 'Merchants',
-            icon: <FaStore/>,
+            icon: <FaStore />,
             path: '/merchants',
             roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
         },
         {
             title: 'HR',
-            icon: <FaUsers/>,
+            icon: <FaUsers />,
             path: '/hr',
             roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Dashboard',
-                    icon: <FaChartLine/>,
+                    icon: <FaChartLine />,
                     path: '/dashboards/hr-manager',
                     roles: [ADMIN]
                 },
                 {
                     title: 'Departments',
-                    icon: <FaBuilding/>,
+                    icon: <FaBuilding />,
                     path: '/hr/departments',
                     roles: [USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
                     title: 'Employees',
-                    icon: <FaIdCard/>,
+                    icon: <FaIdCard />,
                     path: '/hr/employees',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
                     title: 'Vacancies',
-                    icon: <FaBriefcase/>,
+                    icon: <FaBriefcase />,
                     path: '/hr/vacancies',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
@@ -393,31 +393,31 @@ const Sidebar = () => {
                 },
                 {
                     title: 'Positions',
-                    icon: <FaSitemap/>,
+                    icon: <FaSitemap />,
                     path: '/hr/positions',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
                     title: 'Leave Requests',
-                    icon: <FaCalendarTimes/>,
+                    icon: <FaCalendarTimes />,
                     path: '/hr/leave-requests',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE]
                 },
                 {
                     title: 'Vacation Balances',
-                    icon: <FaCalendarCheck/>,
+                    icon: <FaCalendarCheck />,
                     path: '/hr/vacation-balances',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE]
                 },
                 {
                     title: 'Attendance',
-                    icon: <FaTasks/>,
+                    icon: <FaTasks />,
                     path: '/hr/attendance',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
                     title: 'Promotions',
-                    icon: <FaArrowUp/>,
+                    icon: <FaArrowUp />,
                     path: '/hr/promotions',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE],
                 },
@@ -426,38 +426,38 @@ const Sidebar = () => {
 
         {
             title: 'Payroll',
-            icon: <FaMoneyBillWave/>,
+            icon: <FaMoneyBillWave />,
             path: '/payroll',
             roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Dashboard',
-                    icon: <FaChartBar/>,
+                    icon: <FaChartBar />,
                     path: '/payroll',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
                     title: 'Payslip Management',
-                    icon: <FaReceipt/>,
+                    icon: <FaReceipt />,
                     path: '/payroll/payslips',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
                     title: 'Deduction Management',
-                    icon: <FaMinusCircle/>,
+                    icon: <FaMinusCircle />,
                     path: '/payroll/deductions',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
                     title: 'Loan Management',
-                    icon: <FaPiggyBank/>,
+                    icon: <FaPiggyBank />,
                     path: '/payroll/loans',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
                     title: 'Reports & History',
-                    icon: <FaFileAlt/>,
+                    icon: <FaFileAlt />,
                     path: '/payroll/reports',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
@@ -466,14 +466,14 @@ const Sidebar = () => {
 
         {
             title: 'Finance',
-            icon: <FaFileInvoiceDollar/>,
+            icon: <FaFileInvoiceDollar />,
             path: '/finance',
             roles: [ADMIN, USER, FINANCE_MANAGER, FINANCE_EMPLOYEE, SITE_ADMIN],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Dashboard',
-                    icon: <FaChartLine/>,
+                    icon: <FaChartLine />,
                     path: '/dashboards/finance-manager',
                     roles: [ADMIN]
                 },
@@ -491,7 +491,7 @@ const Sidebar = () => {
                 // },
                 {
                     title: 'Sites Valuation',
-                    icon: <FaBuilding/>,
+                    icon: <FaBuilding />,
                     path: '/finance/inventory-valuation',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
@@ -503,13 +503,13 @@ const Sidebar = () => {
                 // },
                 {
                     title: 'Balances',
-                    icon: <FaPiggyBank/>,
+                    icon: <FaPiggyBank />,
                     path: '/finance/balances',
                     roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
                     title: 'Accounts Payable',
-                    icon: <FaFileInvoiceDollar/>,
+                    icon: <FaFileInvoiceDollar />,
                     path: '/finance/accounts-payable',
                     roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
@@ -518,37 +518,38 @@ const Sidebar = () => {
                     title: 'Company Loans',
                     path: '/finance/company-loans',
                     icon: <FiDollarSign />,
-                    roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],}
+                    roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                }
             ]
         },
         {
             title: 'Procurement',
-            icon: <FaShoppingCart/>,
+            icon: <FaShoppingCart />,
             path: '/procurement',
-            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT],
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, EQUIPMENT_MANAGER],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Dashboard',
-                    icon: <FaChartLine/>,
+                    icon: <FaChartLine />,
                     path: '/dashboards/procurement',
                     roles: [ADMIN]
                 },
                 {
                     title: 'Request Orders',
-                    icon: <FaFileContract/>,
+                    icon: <FaFileContract />,
                     path: '/procurement/request-orders',
-                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, EQUIPMENT_MANAGER]
                 },
                 {
                     title: 'Offers',
-                    icon: <FaFileInvoice/>,
+                    icon: <FaFileInvoice />,
                     path: '/procurement/offers',
                     roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 },
                 {
                     title: 'Purchase Orders',
-                    icon: <FaFileInvoice/>,
+                    icon: <FaFileInvoice />,
                     path: '/procurement/purchase-orders',
                     roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 },
@@ -568,39 +569,39 @@ const Sidebar = () => {
         },
         {
             title: 'Maintenance',
-            icon: <FaTools/>,
+            icon: <FaTools />,
             path: '/maintenance',
             roles: [ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Dashboard',
-                    icon: <FaChartLine/>,
+                    icon: <FaChartLine />,
                     path: '/maintenance',
                     roles: [ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
                 },
                 {
                     title: 'Maintenance Records',
-                    icon: <FaClipboard/>,
+                    icon: <FaClipboard />,
                     path: '/maintenance/records',
                     roles: [ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
                 },
                 {
                     title: 'Step Types',
-                    icon: <FaTools/>,
+                    icon: <FaTools />,
                     path: '/maintenance/step-types',
                     roles: [ADMIN, MAINTENANCE_MANAGER]
                 },
                 {
                     title: 'Contacts',
-                    icon: <FaAddressBook/>,
+                    icon: <FaAddressBook />,
                     path: '/maintenance/contacts',
                     roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'EQUIPMENT_MANAGER', 'MAINTENANCE_EMPLOYEE', 'MAINTENANCE_MANAGER']
                 },
 
                 {
                     title: 'Contact Types',
-                    icon: <FaUsers/>,
+                    icon: <FaUsers />,
                     path: '/maintenance/contact-types',
                     roles: [ADMIN, MAINTENANCE_MANAGER]
                 }
@@ -608,13 +609,13 @@ const Sidebar = () => {
         },
         {
             title: 'Secretary',
-            icon: <FaClipboard/>,
+            icon: <FaClipboard />,
             path: '/secretary',
             roles: [ADMIN, USER, SITE_ADMIN, SECRETARY]
         },
         {
             title: 'Settings',
-            icon: <FaCog/>,
+            icon: <FaCog />,
             path: '/settings',
             roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
         }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
+import { useAuth } from '../../../contexts/AuthContext.jsx';
+import { ROLES } from '../../../utils/roles.js';
 import "./ProcurementRequestOrder.scss";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"
 import DraftRequestOrders from './DraftRequests/DraftRequestOrders.jsx';
@@ -12,6 +14,7 @@ import { requestOrderService } from '../../../services/procurement/requestOrderS
 
 const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
     const { theme } = useTheme();
+    const { currentUser } = useAuth();
     const [requestOrders, setRequestOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -20,6 +23,12 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
 
+    // Check if user is EQUIPMENT_MANAGER (should only see EQUIPMENT requests)
+    const isEquipmentManager = useMemo(() => {
+        if (!currentUser) return false;
+        const userRoles = currentUser.roles || (currentUser.role ? [currentUser.role] : []);
+        return userRoles.includes(ROLES.EQUIPMENT_MANAGER) && !userRoles.includes(ROLES.ADMIN) && !userRoles.includes(ROLES.PROCUREMENT);
+    }, [currentUser]);
 
     // Tab state
     const [activeTab, setActiveTab] = useState('incoming'); // 'drafts', 'incoming', or 'approved'
@@ -42,19 +51,27 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
         }
     };
 
+    // Apply role-based filtering: EQUIPMENT_MANAGER only sees EQUIPMENT orders
+    const filteredOrders = useMemo(() => {
+        if (isEquipmentManager) {
+            return requestOrders.filter(order => order.partyType === 'EQUIPMENT');
+        }
+        return requestOrders;
+    }, [requestOrders, isEquipmentManager]);
+
     const draftOrders = useMemo(() =>
-            requestOrders.filter(order => order.status === 'DRAFT'),
-        [requestOrders]
+        filteredOrders.filter(order => order.status === 'DRAFT'),
+        [filteredOrders]
     );
 
     const pendingOrders = useMemo(() =>
-            requestOrders.filter(order => order.status === 'PENDING'),
-        [requestOrders]
+        filteredOrders.filter(order => order.status === 'PENDING'),
+        [filteredOrders]
     );
 
     const approvedOrders = useMemo(() =>
-            requestOrders.filter(order => order.status === 'APPROVED'),
-        [requestOrders]
+        filteredOrders.filter(order => order.status === 'APPROVED'),
+        [filteredOrders]
     );
 
     return (

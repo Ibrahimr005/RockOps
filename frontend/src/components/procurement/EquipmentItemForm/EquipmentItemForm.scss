@@ -1,0 +1,9 @@
+/* EquipmentItemForm.scss — styles for equipment purchase spec item cards.
+   Reuses the existing .item-card / .item-body patterns from RequestOrderModal.scss
+   and adds only equipment-specific overrides. */
+
+.equipment-item-form {
+    .equipment-item-card {
+        border-left: 3px solid #8B5CF6; /* Purple accent for equipment */
+    }
+}

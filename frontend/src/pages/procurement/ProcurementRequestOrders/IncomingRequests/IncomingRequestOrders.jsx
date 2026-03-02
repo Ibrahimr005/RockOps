@@ -11,10 +11,10 @@ import RequestOrderModal from "../../../../components/procurement/RequestOrderMo
 import './IncomingRequestOrders.scss';
 
 const IncomingRequestOrders = ({
-                                   onDataChange,
-                                   requestOrders,
-                                   loading
-                               }) => {
+    onDataChange,
+    requestOrders,
+    loading
+}) => {
     const navigate = useNavigate();
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
@@ -138,6 +138,19 @@ Original request description: ${selectedRowForApproval.description}`,
             minWidth: '250px'
         },
         {
+            id: 'partyType',
+            header: 'TYPE',
+            accessor: 'partyType',
+            sortable: true,
+            filterable: true,
+            minWidth: '140px',
+            render: (row) => (
+                <span className={`pro-roi-party-badge ${row.partyType?.toLowerCase() || 'warehouse'}`}>
+                    {row.partyType === 'EQUIPMENT' ? '🔧 Equipment' : '📦 Warehouse'}
+                </span>
+            )
+        },
+        {
             id: 'requesterName',
             header: 'REQUESTER',
             accessor: 'requesterName',
@@ -187,7 +200,7 @@ Original request description: ${selectedRowForApproval.description}`,
                     <path d="M20 6L9 17l-5-5" />
                 </svg>
             ),
-            onClick: (row) => handleApproveClick(row, { stopPropagation: () => {} }),
+            onClick: (row) => handleApproveClick(row, { stopPropagation: () => { } }),
             className: 'approve'
         },
         {
@@ -198,7 +211,7 @@ Original request description: ${selectedRowForApproval.description}`,
                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
             ),
-            onClick: (row) => handleEditClick(row, { stopPropagation: () => {} }),
+            onClick: (row) => handleEditClick(row, { stopPropagation: () => { } }),
             className: 'edit'
         }
     ];

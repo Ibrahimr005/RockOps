@@ -1101,3 +1101,9 @@ export const LOGISTICS_ENDPOINTS = {
     UPDATE: (id) => `/api/procurement/logistics/${id}`,
     DELETE: (id) => `/api/procurement/logistics/${id}`,
 };
+
+// Procurement - Equipment Purchase Spec Endpoints
+export const EQUIPMENT_PURCHASE_SPEC_ENDPOINTS = {
+    BASE: '/api/procurement/equipment-purchase-specs',
+    BY_ID: (id) => `/api/procurement/equipment-purchase-specs/${id}`,
+};
