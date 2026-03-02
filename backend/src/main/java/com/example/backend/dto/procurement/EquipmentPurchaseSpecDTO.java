@@ -13,7 +13,9 @@ public class EquipmentPurchaseSpecDTO {
     private String name;
     private String description;
     private UUID equipmentTypeId;
+    private String equipmentTypeName;
     private UUID equipmentBrandId;
+    private String equipmentBrandName;
     private String model;
     private Integer manufactureYear;
     private String countryOfOrigin;

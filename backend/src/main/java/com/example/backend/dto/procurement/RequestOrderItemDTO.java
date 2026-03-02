@@ -23,4 +23,9 @@ public class RequestOrderItemDTO {
     // Item type information (full DTO)
     private UUID itemTypeId;
     private ItemTypeDTO itemType;
+
+    // Equipment specific fields
+    private UUID equipmentSpecId;
+    private String equipmentName;
+    private EquipmentPurchaseSpecDTO equipmentSpec;
 }

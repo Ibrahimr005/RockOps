@@ -1,6 +1,7 @@
 // RequestOrderItemMapper.java
 package com.example.backend.mappers.procurement;
 
+import com.example.backend.dto.procurement.EquipmentPurchaseSpecDTO;
 import com.example.backend.dto.procurement.RequestOrderItemDTO;
 import com.example.backend.mappers.warehouse.ItemTypeMapper;
 import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
@@ -46,6 +47,25 @@ public class RequestOrderItemMapper {
                                     && !requestOrderItem.getEquipmentSpec().getModel().isEmpty()
                                             ? " " + requestOrderItem.getEquipmentSpec().getModel()
                                             : ""));
+
+            // Map full equipment spec details for frontend visibility
+            EquipmentPurchaseSpecDTO specDTO = new EquipmentPurchaseSpecDTO();
+            specDTO.setName(requestOrderItem.getEquipmentSpec().getName());
+            specDTO.setDescription(requestOrderItem.getEquipmentSpec().getDescription());
+            specDTO.setModel(requestOrderItem.getEquipmentSpec().getModel());
+            specDTO.setManufactureYear(requestOrderItem.getEquipmentSpec().getManufactureYear());
+            specDTO.setCountryOfOrigin(requestOrderItem.getEquipmentSpec().getCountryOfOrigin());
+            specDTO.setSpecifications(requestOrderItem.getEquipmentSpec().getSpecifications());
+            specDTO.setEstimatedBudget(requestOrderItem.getEquipmentSpec().getEstimatedBudget());
+            if (requestOrderItem.getEquipmentSpec().getEquipmentType() != null) {
+                specDTO.setEquipmentTypeId(requestOrderItem.getEquipmentSpec().getEquipmentType().getId());
+                specDTO.setEquipmentTypeName(requestOrderItem.getEquipmentSpec().getEquipmentType().getName());
+            }
+            if (requestOrderItem.getEquipmentSpec().getBrand() != null) {
+                specDTO.setEquipmentBrandId(requestOrderItem.getEquipmentSpec().getBrand().getId());
+                specDTO.setEquipmentBrandName(requestOrderItem.getEquipmentSpec().getBrand().getName());
+            }
+            builder.equipmentSpec(specDTO);
         }
 
         return builder.build();
