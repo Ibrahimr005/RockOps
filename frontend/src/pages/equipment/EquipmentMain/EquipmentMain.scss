@@ -20,12 +20,12 @@ $scrapped-color: var(--color-danger);
 
 // Status colors
 $status-colors: (
-        "AVAILABLE": $available-color,
-        "RUNNING": $available-color,
-        "RENTED": $rented-color,
-        "IN_MAINTENANCE": $maintenance-color,
-        "SOLD": $sold-color,
-        "SCRAPPED": $scrapped-color,
+  "AVAILABLE": $available-color,
+  "RUNNING": $available-color,
+  "RENTED": $rented-color,
+  "IN_MAINTENANCE": $maintenance-color,
+  "SOLD": $sold-color,
+  "SCRAPPED": $scrapped-color,
 );
 
 // Mixins
@@ -70,7 +70,8 @@ $status-colors: (
   padding: 20px;
   background-color: var(--main-background-color);
   color: var(--text-color);
-  position: relative; /* For modal positioning */
+  position: relative;
+  /* For modal positioning */
 }
 
 // Intro Card - Using common IntroCard component
@@ -84,7 +85,7 @@ $status-colors: (
   @include card-shadow;
   overflow: hidden;
   transition: all 0.3s ease;
-  
+
   &:hover {
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
   }
@@ -155,7 +156,7 @@ $status-colors: (
         padding: 12px 20px;
         border-radius: 8px;
         background-color: var(--color-primary);
-        color: white;
+        color: var(--color-text-inverse);
         border: none;
         font-weight: 500;
         font-size: 14px;
@@ -307,7 +308,7 @@ $status-colors: (
   min-height: 400px;
   transition: all 0.3s ease;
   margin: 0 auto;
-  
+
   &:hover {
     box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
   }
@@ -335,7 +336,9 @@ $status-colors: (
     }
 
     @keyframes equipment-spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
   }
 
@@ -373,7 +376,7 @@ $status-colors: (
     padding: 0;
     justify-content: center;
     align-items: start;
-    
+
     // Ensure proper distribution when there are few cards
     &:has(.equipment-card:nth-child(-n+3)) {
       justify-content: start;
@@ -432,14 +435,15 @@ $status-colors: (
   margin-bottom: 1.25rem;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border-radius: 14px;
   background: var(--color-surface);
   border: 1px solid var(--border-color);
   transition: box-shadow 0.2s;
 }
+
 .equipment-card:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   border-color: var(--color-primary);
 }
 
@@ -476,6 +480,7 @@ $status-colors: (
       transform: translate(-50%, -20px);
       opacity: 0;
     }
+
     to {
       transform: translate(-50%, 0);
       opacity: 1;
@@ -487,6 +492,7 @@ $status-colors: (
       transform: translate(-50%, 0);
       opacity: 1;
     }
+
     to {
       transform: translate(-50%, -20px);
       opacity: 0;
@@ -501,26 +507,26 @@ body.sidebar-collapsed .equipment-main-container {
   .equipment-cards-container {
     padding: 2rem 2rem;
   }
-  
+
   .equipment-grid {
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: 24px;
-    
+
     @media (min-width: 1200px) {
       grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
       gap: 28px;
     }
-    
+
     @media (min-width: 1400px) {
       grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
       gap: 32px;
     }
-    
+
     @media (min-width: 1600px) {
       grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
       gap: 36px;
     }
-    
+
     @media (min-width: 1800px) {
       grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
       gap: 40px;
@@ -532,7 +538,7 @@ body.sidebar-collapsed .equipment-main-container {
   .equipment-cards-container {
     padding: 1.5rem 1rem;
   }
-  
+
   .equipment-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 18px;
@@ -545,17 +551,17 @@ body.sidebar-collapsed .equipment-main-container {
       flex-direction: column;
       gap: 1rem;
       align-items: stretch;
-      
+
       .equipment-search-section {
         max-width: none;
       }
-      
+
       .equipment-actions-section {
         justify-content: center;
       }
     }
   }
-  
+
   .equipment-filters-section {
     .equipment-filters-panel {
       .equipment-filter-controls {
@@ -566,22 +572,22 @@ body.sidebar-collapsed .equipment-main-container {
       }
     }
   }
-  
+
   .equipment-cards-container {
     padding: 1rem 0.75rem;
   }
-  
+
   .equipment-grid {
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 16px;
   }
-  
+
   // Override sidebar collapsed styles on smaller screens
   body.sidebar-collapsed .equipment-main-container {
     .equipment-cards-container {
       padding: 1rem 1rem;
     }
-    
+
     .equipment-grid {
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 20px;
@@ -594,16 +600,16 @@ body.sidebar-collapsed .equipment-main-container {
     padding: 0.75rem;
     gap: 0.75rem;
   }
-  
+
   .equipment-toolbar {
     .equipment-toolbar-header {
       padding: 1rem;
     }
-    
+
     .equipment-filters-section {
       .equipment-filters-panel {
         padding: 1rem;
-        
+
         .equipment-filter-controls {
           .equipment-filter-row {
             grid-template-columns: 1fr;
@@ -613,11 +619,11 @@ body.sidebar-collapsed .equipment-main-container {
       }
     }
   }
-  
+
   .equipment-cards-container {
     padding: 0.75rem 0.5rem;
   }
-  
+
   .equipment-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 12px;
@@ -628,11 +634,11 @@ body.sidebar-collapsed .equipment-main-container {
   .equipment-main-container {
     padding: 0.5rem;
   }
-  
+
   .equipment-toolbar {
     .equipment-toolbar-header {
       padding: 0.75rem;
-      
+
       .equipment-search-section {
         .equipment-search-container {
           .equipment-search-input {
@@ -642,7 +648,7 @@ body.sidebar-collapsed .equipment-main-container {
           }
         }
       }
-      
+
       .equipment-actions-section {
         .equipment-add-button {
           padding: 10px 16px;
@@ -650,18 +656,18 @@ body.sidebar-collapsed .equipment-main-container {
         }
       }
     }
-    
+
     .equipment-filters-section {
       .equipment-filters-panel {
         padding: 0.75rem;
       }
     }
   }
-  
+
   .equipment-cards-container {
     padding: 0.75rem 0.5rem;
   }
-  
+
   .equipment-grid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 10px;

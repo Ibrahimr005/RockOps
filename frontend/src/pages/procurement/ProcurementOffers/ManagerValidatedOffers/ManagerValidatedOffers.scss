@@ -357,6 +357,7 @@
       border: none;
     }
   }
+
   .submitted-offer-solutions-manager {
     padding: 1.5rem;
 
@@ -457,6 +458,7 @@
     }
   }
 }
+
 // Finance status badge in the table
 .submitted-offer-finance-status-badge {
   display: inline-block;
@@ -468,7 +470,7 @@
 
   &.pending {
     background-color: rgba(107, 114, 128, 0.1);
-    color: #6b7280;
+    color: var(--color-text-secondary);
   }
 
   &.accepted {
@@ -512,12 +514,12 @@
     }
 
     &::-webkit-scrollbar-track {
-      background: #f1f5f9;
+      background: var(--color-surface-secondary);
       border-radius: 3px;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
+      background: var(--border-color);
       border-radius: 3px;
     }
   }

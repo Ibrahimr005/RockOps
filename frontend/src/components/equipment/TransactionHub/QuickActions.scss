@@ -334,7 +334,7 @@
                         }
                     }
 
-                                        .quick-actions-no-items {
+                    .quick-actions-no-items {
                         display: flex;
                         align-items: center;
                         justify-content: center;
@@ -458,7 +458,7 @@
                                         padding: 0.5rem;
                                         border: none;
                                         background: var(--color-danger);
-                                        color: white;
+                                        color: var(--color-text-inverse);
                                         border-radius: 6px;
                                         cursor: pointer;
                                         transition: all 0.2s ease;
@@ -496,13 +496,13 @@
             margin: 0 1.5rem;
             padding: 0.75rem 1rem;
             background: var(--color-danger-light);
-            color: white;
+            color: var(--color-text-inverse);
             border: 1px solid var(--color-danger);
             border-radius: 6px;
             font-size: 0.875rem;
 
             svg {
-                color: white;
+                color: var(--color-text-inverse);
                 flex-shrink: 0;
             }
         }
@@ -516,7 +516,7 @@
             background-color: var(--color-surface);
 
             // Direct button children (like Cancel button)
-            > .quick-actions-btn {
+            >.quick-actions-btn {
                 display: inline-flex;
                 align-items: center;
                 gap: 0.5rem;
@@ -679,7 +679,8 @@
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
-} 
+}

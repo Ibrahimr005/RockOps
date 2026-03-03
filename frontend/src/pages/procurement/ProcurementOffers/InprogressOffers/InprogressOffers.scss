@@ -362,8 +362,13 @@
   }
 
   @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
   }
 }
 
@@ -687,7 +692,8 @@
   .procurement-offer-entries-table-inprogress {
     font-size: 12px;
 
-    th, td {
+    th,
+    td {
       padding: 8px 12px;
     }
   }
@@ -695,10 +701,13 @@
 
 // Enhanced Animation
 @keyframes statPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.02);
     opacity: 0.9;
@@ -735,12 +744,8 @@
     margin: 0;
   }
 }
-// Add this in the dark mode section at the bottom
-[data-theme="dark"] {
-  .item-notes-info-inprogress {
-    border-top-color: var(--border-color-medium);
-  }
-}
+
+
 .procurement-request-items-summary {
   padding: 2rem;
 

@@ -357,25 +357,3 @@
     }
   }
 }
-
-// ===================================
-// 5. DARK MODE SPECIFIC ADJUSTMENTS
-// ===================================
-
-[data-theme="dark"] {
-  .procurement-unstarted-offers-item-notes {
-    border-top-color: var(--border-color-medium);
-  }
-
-  .procurement-unstarted-offers-item-preview-card {
-    &:hover {
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-  }
-
-  .request-detail-item {
-    &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-  }
-}

@@ -39,7 +39,7 @@
     align-items: center;
     padding: 1.5rem 2rem;
     background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-    color: white;
+    color: var(--color-text-inverse);
 
     h1 {
       margin: 0;
@@ -52,7 +52,8 @@
       display: flex;
       gap: 0.75rem;
 
-      a, button {
+      a,
+      button {
         background: rgba(255, 255, 255, 0.2);
         border: none;
         color: var(--color-text-inverse);
@@ -177,7 +178,7 @@
   /* Loading animation */
   .loading-message {
     position: relative;
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -194,8 +195,13 @@
   }
 
   @keyframes spin {
-    0% { transform: translateY(-50%) rotate(0deg); }
-    100% { transform: translateY(-50%) rotate(360deg); }
+    0% {
+      transform: translateY(-50%) rotate(0deg);
+    }
+
+    100% {
+      transform: translateY(-50%) rotate(360deg);
+    }
   }
 
   /* Print styles */
@@ -213,7 +219,7 @@
     }
 
     .info-header {
-      background: white !important;
+      background: var(--section-background-color) !important;
       color: black !important;
       border-bottom: 1px solid #eee;
     }
@@ -283,10 +289,11 @@
 
   /* Focus and accessibility */
   .header-actions {
+
     a:focus,
     button:focus {
       outline: 2px solid rgba(255, 255, 255, 0.5);
       outline-offset: 2px;
     }
   }
-} 
+}

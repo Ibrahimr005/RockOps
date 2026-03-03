@@ -360,23 +360,8 @@
   }
 }
 
-// Dark mode adjustments
-[data-theme="dark"] {
-  .modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.8);
-  }
 
-  .modal-content {
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  }
 
-  select {
-    option {
-      background: var(--color-surface);
-      color: var(--color-text-dark);
-    }
-  }
-}
 
 // Responsive design
 @media (max-width: 768px) {

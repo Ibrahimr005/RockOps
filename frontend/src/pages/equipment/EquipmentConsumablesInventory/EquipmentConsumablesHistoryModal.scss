@@ -110,12 +110,7 @@
     font-weight: 500;
     text-transform: uppercase;
     background-color: rgba(33, 150, 243, 0.1);
-    color: rgb(33, 150, 243);
-
-    [data-theme="dark"] & {
-        background-color: rgba(33, 150, 243, 0.1);
-        color: var(--color-info);
-    }
+    color: var(--color-info);
 }
 
 .consumable-history-batch-number {
@@ -125,12 +120,7 @@
     font-size: 13px;
     font-weight: 500;
     background-color: rgba(72, 128, 255, 0.1);
-    color: rgb(72, 128, 255);
-
-    [data-theme="dark"] & {
-        background-color: rgba(72, 128, 255, 0.1);
-        color: var(--color-primary);
-    }
+    color: var(--color-primary);
 }
 
 .type-badge {
@@ -167,133 +157,68 @@
 
     &.completed {
         background-color: rgba(16, 185, 129, 0.1);
-        color: rgb(16, 185, 129);
-
-        [data-theme="dark"] & {
-            background-color: rgba(92, 188, 96, 0.1);
-            color: var(--color-success);
-        }
+        color: var(--color-success);
     }
 
     &.accepted {
         background-color: rgba(16, 185, 129, 0.1);
-        color: rgb(16, 185, 129);
-
-        [data-theme="dark"] & {
-            background-color: rgba(92, 188, 96, 0.1);
-            color: var(--color-success);
-        }
+        color: var(--color-success);
     }
 
     &.partially-accepted {
         background-color: rgba(255, 193, 7, 0.1);
-        color: rgb(255, 193, 7);
-
-        [data-theme="dark"] & {
-            background-color: rgba(255, 193, 7, 0.1);
-            color: var(--color-warning);
-        }
+        color: var(--color-warning);
     }
 
     &.delivering {
         background-color: rgba(33, 150, 243, 0.1);
-        color: rgb(33, 150, 243);
-
-        [data-theme="dark"] & {
-            background-color: rgba(33, 150, 243, 0.1);
-            color: var(--color-info);
-        }
+        color: var(--color-info);
     }
 
     &.pending {
         background-color: rgba(255, 152, 0, 0.1);
-        color: rgb(255, 152, 0);
-
-        [data-theme="dark"] & {
-            background-color: rgba(255, 152, 0, 0.1);
-            color: var(--color-warning);
-        }
+        color: var(--color-warning);
     }
 
     &.rejected {
         background-color: rgba(239, 68, 68, 0.1);
-        color: rgb(239, 68, 68);
-
-        [data-theme="dark"] & {
-            background-color: rgba(255, 82, 82, 0.1);
-            color: var(--color-danger);
-        }
+        color: var(--color-danger);
     }
 
     &.regular {
         background-color: rgba(158, 158, 158, 0.1);
-        color: rgb(158, 158, 158);
-
-        [data-theme="dark"] & {
-            background-color: rgba(158, 158, 158, 0.1);
-            color: var(--color-text-secondary);
-        }
+        color: var(--color-text-secondary);
     }
 
     // Resolution status badges
     &.resolved-loss {
         background-color: rgba(239, 68, 68, 0.1);
-        color: rgb(239, 68, 68);
-
-        [data-theme="dark"] & {
-            background-color: rgba(255, 82, 82, 0.1);
-            color: var(--color-danger);
-        }
+        color: var(--color-danger);
     }
 
     &.counting-error {
         background-color: rgba(255, 152, 0, 0.1);
-        color: rgb(255, 152, 0);
-
-        [data-theme="dark"] & {
-            background-color: rgba(255, 152, 0, 0.1);
-            color: var(--color-warning);
-        }
+        color: var(--color-warning);
     }
 
     &.found-items {
         background-color: rgba(16, 185, 129, 0.1);
-        color: rgb(16, 185, 129);
-
-        [data-theme="dark"] & {
-            background-color: rgba(92, 188, 96, 0.1);
-            color: var(--color-success);
-        }
+        color: var(--color-success);
     }
 
     &.surplus-accepted {
         background-color: rgba(16, 185, 129, 0.1);
-        color: rgb(16, 185, 129);
-
-        [data-theme="dark"] & {
-            background-color: rgba(92, 188, 96, 0.1);
-            color: var(--color-success);
-        }
+        color: var(--color-success);
     }
 
     &.return-sender {
         background-color: rgba(33, 150, 243, 0.1);
-        color: rgb(33, 150, 243);
-
-        [data-theme="dark"] & {
-            background-color: rgba(33, 150, 243, 0.1);
-            color: var(--color-info);
-        }
+        color: var(--color-info);
     }
 
     &.resolved {
         background-color: rgba(16, 185, 129, 0.1);
-        color: rgb(16, 185, 129);
-
-        [data-theme="dark"] & {
-            background-color: rgba(92, 188, 96, 0.1);
-            color: var(--color-success);
-        }
+        color: var(--color-success);
     }
 }
 
@@ -417,7 +342,7 @@
         .comment-label {
             color: var(--color-danger);
         }
-        
+
         .comment-value {
             color: var(--color-danger);
             font-weight: 500;
@@ -500,11 +425,11 @@
     display: flex;
     gap: 8px;
     font-size: 13px;
-    
+
     .received-label {
         color: var(--color-text-secondary);
     }
-    
+
     .received-value {
         color: var(--color-warning);
         font-weight: 500;
@@ -518,39 +443,39 @@
     padding: 8px 12px;
     border-radius: 6px;
     font-size: 13px;
-    
+
     .resolution-message-label,
     .discrepancy-message-label {
         display: block;
         font-weight: 600;
         margin-bottom: 2px;
     }
-    
+
     .resolution-message-details,
     .discrepancy-message-details {
         display: block;
         font-size: 12px;
         opacity: 0.8;
     }
-    
+
     &.success {
         background-color: rgba(16, 185, 129, 0.1);
         color: rgb(16, 185, 129);
         border-left: 3px solid rgb(16, 185, 129);
     }
-    
+
     &.info {
         background-color: rgba(33, 150, 243, 0.1);
         color: rgb(33, 150, 243);
         border-left: 3px solid rgb(33, 150, 243);
     }
-    
+
     &.warning {
         background-color: rgba(255, 152, 0, 0.1);
         color: rgb(255, 152, 0);
         border-left: 3px solid rgb(255, 152, 0);
     }
-    
+
     &.danger {
         background-color: rgba(239, 68, 68, 0.1);
         color: rgb(239, 68, 68);

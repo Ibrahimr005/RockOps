@@ -65,7 +65,7 @@
 
       &:hover {
         background: var(--color-danger);
-        color: white;
+        color: var(--color-text-inverse);
         transform: scale(1.1);
       }
     }
@@ -182,7 +182,8 @@
         transition: left 0.6s ease;
       }
 
-      &:hover, &.drag-active {
+      &:hover,
+      &.drag-active {
         border-color: var(--color-primary);
         background: rgba(var(--color-primary-rgb, 72, 128, 255), 0.05);
         transform: scale(1.02);
@@ -240,7 +241,8 @@
           font-size: 14px;
         }
 
-        select, input[type="text"] {
+        select,
+        input[type="text"] {
           width: 100%;
           padding: 12px 16px;
           border: 2px solid var(--border-color);
@@ -284,7 +286,7 @@
         width: 100%;
         padding: 14px 24px;
         background: var(--color-success);
-        color: white;
+        color: var(--color-text-inverse);
         border: none;
         border-radius: 10px;
         cursor: pointer;
@@ -519,7 +521,7 @@
 
       &.sarky-modal-view-btn:hover {
         background: var(--color-info);
-        color: white;
+        color: var(--color-text-inverse);
         border-color: var(--color-info);
       }
 
@@ -527,13 +529,13 @@
 
       &.sarky-modal-unassign-btn:hover {
         background: var(--color-warning);
-        color: white;
+        color: var(--color-text-inverse);
         border-color: var(--color-warning);
       }
 
       &.sarky-modal-delete-btn:hover {
         background: var(--color-danger);
-        color: white;
+        color: var(--color-text-inverse);
         border-color: var(--color-danger);
       }
     }
@@ -619,6 +621,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -629,6 +632,7 @@
     opacity: 0;
     transform: scale(0.9) translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -636,14 +640,22 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -670,7 +682,7 @@
 
       .sarky-modal-search-filter {
         width: 100%;
-        
+
         .sarky-modal-search-input {
           max-width: none;
         }

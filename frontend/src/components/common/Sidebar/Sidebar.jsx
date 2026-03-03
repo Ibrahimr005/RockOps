@@ -1,7 +1,6 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext.jsx';
-import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import { useTranslation } from 'react-i18next';
 import {
     FaBars,
@@ -139,7 +138,6 @@ const Sidebar = () => {
     const userRole = currentUser?.role || 'USER';
 
     // Get the appropriate logo based on theme
-    const currentLogo = theme === 'dark' ? logoDarkImage : logoImage;
 
     // Helper function to check if a path is active
     const isPathActive = (itemPath, currentPath) => {

@@ -87,7 +87,8 @@
         font-family: var(--font-family);
       }
 
-      input, select {
+      input,
+      select {
         padding: 12px 16px;
         border: 1px solid var(--border-color);
         border-radius: var(--radius-sm);
@@ -146,17 +147,17 @@
 
     .add-consumables-batch-input-group {
       position: relative;
-      
+
       input.error {
         border-color: var(--color-error);
         background-color: rgba(244, 67, 54, 0.05);
-        
+
         &:focus {
           border-color: var(--color-error);
           box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
         }
       }
-      
+
       .batch-checking-indicator {
         position: absolute;
         right: 12px;
@@ -167,11 +168,11 @@
         gap: 6px;
         font-size: 0.8rem;
         color: var(--color-text-secondary);
-        
+
         span {
           font-style: italic;
         }
-        
+
         &::before {
           content: '';
           width: 12px;
@@ -423,33 +424,11 @@
 
 // Animations
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
-
-// Dark theme adjustments for Add Consumables Modal
-[data-theme="dark"] {
-  .add-consumables-modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.7);
-  }
-
-  .add-consumables-batch-verification-result {
-    &.add-consumables-success {
-      background-color: rgba(92, 188, 96, 0.15);
-    }
-
-    &.add-consumables-warning {
-      background-color: rgba(255, 183, 77, 0.15);
-    }
-  }
-
-  .add-consumables-form-transaction {
-    .add-consumables-form-group {
-      input, select {
-        &:focus {
-          box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.2);
-        }
-      }
-    }
-  }
-} 

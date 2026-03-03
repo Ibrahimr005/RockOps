@@ -10,14 +10,14 @@
 
     .validation-header {
         margin-bottom: 20px;
-        
+
         h4 {
             color: var(--color-text-primary);
             font-size: 18px;
             font-weight: 600;
             margin: 0 0 8px 0;
         }
-        
+
         p {
             color: var(--color-text-secondary);
             font-size: 14px;
@@ -31,23 +31,23 @@
         border-radius: var(--radius-sm);
         padding: 16px;
         margin-bottom: 24px;
-        
+
         .summary-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
-            
+
             &:last-child {
                 margin-bottom: 0;
             }
-            
+
             .label {
                 font-weight: 500;
                 color: var(--color-text-secondary);
                 font-size: 14px;
             }
-            
+
             .value {
                 font-weight: 600;
                 color: var(--color-text-primary);
@@ -65,7 +65,7 @@
             background: var(--color-surface);
             border-radius: var(--radius-sm);
             border: 1px solid var(--border-color-light);
-            
+
             .radio-option {
                 display: flex;
                 align-items: center;
@@ -73,12 +73,12 @@
                 cursor: pointer;
                 font-weight: 500;
                 color: var(--color-text-primary);
-                
+
                 input[type="radio"] {
                     margin: 0;
                     accent-color: var(--color-primary);
                 }
-                
+
                 &:hover {
                     color: var(--color-primary);
                 }
@@ -87,14 +87,14 @@
 
         .items-validation {
             margin-bottom: 24px;
-            
+
             h5 {
                 color: var(--color-text-primary);
                 font-size: 16px;
                 font-weight: 600;
                 margin: 0 0 16px 0;
             }
-            
+
             .items-list {
                 .item-validation-row {
                     background: var(--color-surface);
@@ -102,27 +102,27 @@
                     border-radius: var(--radius-sm);
                     padding: 16px;
                     margin-bottom: 12px;
-                    
+
                     &:last-child {
                         margin-bottom: 0;
                     }
-                    
+
                     .item-info {
                         margin-bottom: 16px;
-                        
+
                         strong {
                             color: var(--color-text-primary);
                             font-size: 15px;
                             display: block;
                             margin-bottom: 4px;
                         }
-                        
+
                         .item-details {
                             display: flex;
                             gap: 16px;
                             font-size: 13px;
                             color: var(--color-text-secondary);
-                            
+
                             span {
                                 background: var(--main-background-color);
                                 padding: 2px 8px;
@@ -131,13 +131,13 @@
                             }
                         }
                     }
-                    
+
                     .validation-controls {
                         display: flex;
                         align-items: center;
                         gap: 20px;
                         flex-wrap: wrap;
-                        
+
                         .not-received-control {
                             label {
                                 display: flex;
@@ -146,25 +146,25 @@
                                 cursor: pointer;
                                 font-weight: 500;
                                 color: var(--color-text-primary);
-                                
+
                                 input[type="checkbox"] {
                                     margin: 0;
                                     accent-color: var(--color-warning);
                                 }
                             }
                         }
-                        
+
                         .quantity-control {
                             display: flex;
                             align-items: center;
                             gap: 8px;
-                            
+
                             label {
                                 font-weight: 500;
                                 color: var(--color-text-primary);
                                 font-size: 14px;
                             }
-                            
+
                             input[type="number"] {
                                 width: 80px;
                                 padding: 8px 12px;
@@ -173,25 +173,25 @@
                                 background: var(--section-background-color);
                                 color: var(--color-text-primary);
                                 font-size: 14px;
-                                
+
                                 &:focus {
                                     outline: none;
                                     border-color: var(--color-primary);
                                     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                                 }
-                                
+
                                 &.error {
                                     border-color: var(--color-danger);
                                     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
                                 }
                             }
-                            
+
                             .unit {
                                 font-size: 13px;
                                 color: var(--color-text-secondary);
                                 font-weight: 500;
                             }
-                            
+
                             .error-message {
                                 color: var(--color-danger);
                                 font-size: 12px;
@@ -201,10 +201,10 @@
                     }
                 }
             }
-            
+
             .comments-section {
                 margin-top: 20px;
-                
+
                 label {
                     display: block;
                     font-weight: 500;
@@ -212,7 +212,7 @@
                     margin-bottom: 8px;
                     font-size: 14px;
                 }
-                
+
                 textarea {
                     width: 100%;
                     padding: 12px;
@@ -224,13 +224,13 @@
                     font-family: inherit;
                     resize: vertical;
                     min-height: 80px;
-                    
+
                     &:focus {
                         outline: none;
                         border-color: var(--color-primary);
                         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                     }
-                    
+
                     &::placeholder {
                         color: var(--color-text-tertiary);
                     }
@@ -240,7 +240,7 @@
 
         .rejection-section {
             margin-bottom: 24px;
-            
+
             label {
                 display: block;
                 font-weight: 500;
@@ -248,7 +248,7 @@
                 margin-bottom: 8px;
                 font-size: 14px;
             }
-            
+
             textarea {
                 width: 100%;
                 padding: 12px;
@@ -260,23 +260,23 @@
                 font-family: inherit;
                 resize: vertical;
                 min-height: 100px;
-                
+
                 &:focus {
                     outline: none;
                     border-color: var(--color-primary);
                     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                 }
-                
+
                 &.error {
                     border-color: var(--color-danger);
                     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
                 }
-                
+
                 &::placeholder {
                     color: var(--color-text-tertiary);
                 }
             }
-            
+
             .error-message {
                 color: var(--color-danger);
                 font-size: 12px;
@@ -290,7 +290,7 @@
             justify-content: flex-end;
             padding-top: 20px;
             border-top: 1px solid var(--border-color-light);
-            
+
             .cancel-button {
                 padding: 10px 20px;
                 border: 1px solid var(--border-color);
@@ -301,18 +301,18 @@
                 font-weight: 500;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                
+
                 &:hover:not(:disabled) {
                     background: var(--color-surface);
                     border-color: var(--color-text-secondary);
                 }
-                
+
                 &:disabled {
                     opacity: 0.6;
                     cursor: not-allowed;
                 }
             }
-            
+
             .submit-button {
                 padding: 10px 20px;
                 border: none;
@@ -321,29 +321,29 @@
                 font-weight: 500;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                
+
                 &.accept {
                     background: var(--color-success);
-                    color: white;
-                    
+                    color: var(--color-text-inverse);
+
                     &:hover:not(:disabled) {
                         background: var(--color-success-hover);
                         transform: translateY(-1px);
                         box-shadow: var(--shadow-md);
                     }
                 }
-                
+
                 &.reject {
                     background: var(--color-danger);
-                    color: white;
-                    
+                    color: var(--color-text-inverse);
+
                     &:hover:not(:disabled) {
                         background: var(--color-danger-hover);
                         transform: translateY(-1px);
                         box-shadow: var(--shadow-md);
                     }
                 }
-                
+
                 &:disabled {
                     opacity: 0.6;
                     cursor: not-allowed;
@@ -359,13 +359,13 @@
 @media (max-width: 768px) {
     .inline-transaction-validation {
         padding: 16px;
-        
+
         .validation-form {
             .action-selector {
                 flex-direction: column;
                 gap: 12px;
             }
-            
+
             .items-validation {
                 .items-list {
                     .item-validation-row {
@@ -377,10 +377,10 @@
                     }
                 }
             }
-            
+
             .validation-actions {
                 flex-direction: column;
-                
+
                 .cancel-button,
                 .submit-button {
                     width: 100%;
@@ -397,17 +397,17 @@
         .transaction-summary {
             background: rgba(255, 255, 255, 0.02);
         }
-        
+
         .validation-form {
             .action-selector {
                 background: rgba(255, 255, 255, 0.02);
             }
-            
+
             .items-validation {
                 .items-list {
                     .item-validation-row {
                         background: rgba(255, 255, 255, 0.02);
-                        
+
                         .item-info {
                             .item-details {
                                 span {
@@ -420,4 +420,4 @@
             }
         }
     }
-} 
+}
