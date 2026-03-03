@@ -73,16 +73,12 @@ const RequestOrderModal = ({
         };
     }, [isOpen]);
 
-// Update the useEffect to fetch warehouses and set the site properly
     useEffect(() => {
         if (isOpen) {
             const initializeModal = async () => {
-                // First fetch all initial data
                 await fetchInitialData();
 
-                // Then set form data for WAREHOUSE mode
                 if (userType === 'WAREHOUSE' && currentWarehouseId && currentSiteId) {
-                    // Wait a tiny bit for warehouses state to update
                     setTimeout(() => {
                         setFormData(prev => ({
                             ...prev,
@@ -112,10 +108,9 @@ const RequestOrderModal = ({
         }
     }, [warehouses, formData.requesterId]);
 
-// Add this new function to fetch all warehouses
     const fetchAllWarehouses = async () => {
         try {
-            const data = await warehouseService.getAll(); // Assuming this method exists
+            const data = await warehouseService.getAll();
             setWarehouses(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching all warehouses:', err);
@@ -123,7 +118,6 @@ const RequestOrderModal = ({
         }
     };
 
-// Update fetchInitialData to include all warehouses
     const fetchInitialData = async () => {
         try {
             await Promise.all([
@@ -131,7 +125,7 @@ const RequestOrderModal = ({
                 fetchItemTypes(),
                 fetchEmployees(),
                 fetchParentCategories(),
-                fetchAllWarehouses()  // Add this line
+                fetchAllWarehouses()
             ]);
         } catch (error) {
             console.error('Error fetching initial data:', error);
@@ -139,11 +133,6 @@ const RequestOrderModal = ({
         }
     };
 
-
-
-// Update handleSiteChange to filter warehouses instead of replacing them
-
-// Add this new function
     const fetchWarehouseDetails = async (warehouseId) => {
         try {
             const warehouse = await warehouseService.getById(warehouseId);
@@ -151,7 +140,6 @@ const RequestOrderModal = ({
                 ...prev,
                 requesterName: warehouse.name || ''
             }));
-            // Also set it in warehouses array so the banner can find it
             setWarehouses([warehouse]);
         } catch (err) {
             console.error('Error fetching warehouse details:', err);
@@ -255,7 +243,6 @@ const RequestOrderModal = ({
         }
     };
 
-
     const fetchSites = async () => {
         try {
             const response = await siteService.getAllSites();
@@ -337,7 +324,6 @@ const RequestOrderModal = ({
         }));
 
         if (siteId) {
-            // Filter warehouses by site
             try {
                 const data = await warehouseService.getBySite(siteId);
                 setWarehouses(Array.isArray(data) ? data : []);
@@ -345,7 +331,6 @@ const RequestOrderModal = ({
                 console.error('Error fetching warehouses:', err);
             }
         } else {
-            // If no site selected, show all warehouses again
             await fetchAllWarehouses();
         }
     };
@@ -605,16 +590,13 @@ const RequestOrderModal = ({
 
     const isStepCompleted = (step) => {
         if (step === 1) {
-            // Step 1: Basic Information + partyType
             return formData.title && formData.description && formData.deadline && formData.partyType;
         } else if (step === 2) {
-            // Step 2: Request Items — depends on partyType
             if (formData.partyType === 'EQUIPMENT') {
                 return equipmentItems.some(item => item.name && item.equipmentTypeId && item.quantity);
             }
             return formData.items.some(item => item.itemTypeId && item.quantity);
         } else if (step === 3) {
-            // Step 3: Requester Information — equipment doesn't need warehouse
             if (formData.partyType === 'EQUIPMENT') return true;
             return formData.requesterId;
         }
@@ -652,7 +634,6 @@ const RequestOrderModal = ({
             let itemsPayload = [];
 
             if (formData.partyType === 'EQUIPMENT') {
-                // Create equipment specs first, then reference by ID
                 for (const eqItem of equipmentItems.filter(item => item.name && item.quantity)) {
                     const specDto = {
                         name: eqItem.name,
@@ -1009,7 +990,7 @@ const RequestOrderModal = ({
                                                                         {getAvailableItemTypes(index).map(type => (
                                                                             <option key={type.id} value={type.id}>
                                                                                 {type.name || 'Unknown Item Type'}
-                                                                                {type.measuringUnit ? ` (${type.measuringUnit})` : ''}
+                                                                                {type.measuringUnit ? ` (${type.measuringUnit.name})` : ''}
                                                                             </option>
                                                                         ))}
                                                                     </select>
@@ -1033,7 +1014,7 @@ const RequestOrderModal = ({
                                                                         />
                                                                         {item.itemTypeId && (
                                                                             <span className="unit-badge">
-                                                                                {itemTypes.find(type => type.id === item.itemTypeId)?.measuringUnit || 'units'}
+                                                                                {itemTypes.find(t => t.id === item.itemTypeId)?.measuringUnit?.name || 'units'}
                                                                             </span>
                                                                         )}
                                                                     </div>
@@ -1127,7 +1108,6 @@ const RequestOrderModal = ({
                                                     </select>
                                                 </div>
 
-                                                {/* REMOVED THE CONDITIONAL - Always show warehouse dropdown */}
                                                 <div className="form-group">
                                                     <label htmlFor="requesterId" className="form-label">
                                                         Warehouse <span className="required">*</span>
