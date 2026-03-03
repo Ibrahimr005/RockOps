@@ -1,5 +1,6 @@
 import React from 'react';
-import { FiAlertTriangle, FiCheckCircle, FiXCircle, FiInfo, FiTrash2, FiSend, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiCheckCircle, FiXCircle, FiInfo, FiTrash2, FiSend } from 'react-icons/fi';
+import { Button, CloseButton } from '../Button';
 import './ConfirmationDialog.scss';
 
 const ConfirmationDialog = ({
@@ -122,14 +123,11 @@ const ConfirmationDialog = ({
         >
             <div className={`confirmation-dialog confirmation-dialog--${type} confirmation-dialog--${size} ${showInput ? 'confirmation-dialog--with-input' : ''}`}>
                 {/* X Close Button */}
-                <button
+                <CloseButton
                     className="confirmation-dialog-close"
-                    onClick={handleClose} // CHANGED: Use handleClose instead of handleCancel
+                    onClick={handleClose}
                     disabled={isLoading}
-                    aria-label="Close dialog"
-                >
-                    <FiX size={20} />
-                </button>
+                />
 
                 {/* Header with Icon and Title */}
                 <div className="confirmation-dialog-header">
@@ -177,29 +175,24 @@ const ConfirmationDialog = ({
 
                 {/* Action Buttons */}
                 <div className="confirmation-dialog-actions">
-                    <button
-                        type="button"
-                        className="btn-secondary2 confirmation-dialog-cancel"
+                    <Button
+                        variant="ghost"
+                        className="confirmation-dialog-cancel"
                         onClick={handleCancel}
                         disabled={isLoading}
                     >
                         {cancelText}
-                    </button>
-                    <button
-                        type="button"
-                        className={`btn-primary2 confirmation-dialog-confirm confirmation-dialog-confirm--${type}`}
+                    </Button>
+                    <Button
+                        variant={type === 'danger' || type === 'delete' ? 'danger' : type === 'success' ? 'success' : 'primary'}
+                        className={`confirmation-dialog-confirm confirmation-dialog-confirm--${type}`}
                         onClick={handleConfirm}
                         disabled={isLoading || (showInput && inputRequired && !inputValue.trim())}
+                        loading={isLoading}
+                        loadingText="Loading..."
                     >
-                        {isLoading ? (
-                            <>
-                                <span className="confirmation-dialog-spinner"></span>
-                                Loading...
-                            </>
-                        ) : (
-                            confirmText
-                        )}
-                    </button>
+                        {confirmText}
+                    </Button>
                 </div>
             </div>
         </div>

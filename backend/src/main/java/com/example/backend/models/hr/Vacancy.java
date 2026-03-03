@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
+@Table(name = "vacancies")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,6 +21,9 @@ public class Vacancy {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+
+    @Column(name = "vacancy_number", unique = true, length = 20)
+    private String vacancyNumber;
 
     @Column(nullable = false)
     private String title;

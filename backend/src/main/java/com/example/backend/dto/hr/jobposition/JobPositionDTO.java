@@ -18,6 +18,7 @@ import java.util.UUID;
 public class JobPositionDTO {
 
     private UUID id;
+    private String positionNumber;
     private String positionName;
     private String department;
     private String head;
@@ -45,6 +46,7 @@ public class JobPositionDTO {
     private String shifts;
     private Integer workingHours;
     private String vacations;
+    private Integer vacationDays;
 
     // NEW: Time fields for MONTHLY contracts
     private LocalTime startTime;

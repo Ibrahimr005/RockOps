@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { employeeService } from '../../../services/hr/employeeService.js';
 import { maintenanceTypeService } from '../../../services/maintenanceTypeService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { Button, CloseButton } from '../../../components/common/Button';
 import './InlineMaintenanceCreation.scss';
 
 const InlineMaintenanceCreation = ({
@@ -327,34 +328,22 @@ const InlineMaintenanceCreation = ({
                 </div>
 
                 <div className="form-actions">
-                    <button
-                        type="button"
-                        className="cancel-btn"
+                    <Button
+                        variant="ghost"
                         onClick={onCancel}
                         disabled={loading}
                     >
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        variant="primary"
                         type="submit"
-                        className="create-btn"
                         disabled={loading}
+                        loading={loading}
+                        loadingText="Creating..."
                     >
-                        {loading ? (
-                            <>
-                                <div className="loading-spinner"></div>
-                                Creating...
-                            </>
-                        ) : (
-                            <>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M9 12l2 2 4-4" />
-                                    <circle cx="12" cy="12" r="10" />
-                                </svg>
-                                Create & Link Maintenance
-                            </>
-                        )}
-                    </button>
+                        Create & Link Maintenance
+                    </Button>
                 </div>
             </form>
 
@@ -364,13 +353,10 @@ const InlineMaintenanceCreation = ({
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>Add Maintenance Type</h2>
-                            <button
-                                className="modal-close"
+                            <CloseButton
                                 onClick={handleCancelMaintenanceTypeCreation}
                                 disabled={creatingMaintenanceType}
-                            >
-                                &times;
-                            </button>
+                            />
                         </div>
                         <form onSubmit={handleCreateMaintenanceType}>
                             <div className="form-group">
@@ -417,20 +403,22 @@ const InlineMaintenanceCreation = ({
                                 </small>
                             </div>
                             <div className="modal-actions">
-                                <button
-                                    type="button"
+                                <Button
+                                    variant="ghost"
                                     onClick={handleCancelMaintenanceTypeCreation}
                                     disabled={creatingMaintenanceType}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    variant="primary"
                                     type="submit"
-                                    className="save-button"
                                     disabled={creatingMaintenanceType || !newMaintenanceTypeData.name.trim()}
+                                    loading={creatingMaintenanceType}
+                                    loadingText="Creating..."
                                 >
-                                    {creatingMaintenanceType ? 'Creating...' : 'Create Maintenance Type'}
-                                </button>
+                                    Create Maintenance Type
+                                </Button>
                             </div>
                         </form>
                     </div>

@@ -6,6 +6,7 @@ import { createErrorHandlers } from '../../../utils/errorHandler';
 import { useAuth } from '../../../contexts/AuthContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader';
+import { Button, CloseButton } from '../../../components/common/Button';
 import '../../../styles/modal-styles.scss';
 import '../../../styles/form-validation.scss';
 import './StepTypeManagement.scss';
@@ -270,9 +271,7 @@ const StepTypeManagement = () => {
                     <div className="modal-content step-type-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingStepType ? 'Edit Step Type' : 'Add Step Type'}</h2>
-                            <button className="btn-close" onClick={() => setShowModal(false)}>
-                                &times;
-                            </button>
+                            <CloseButton onClick={() => setShowModal(false)} />
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
@@ -322,12 +321,12 @@ const StepTypeManagement = () => {
                                 </small>
                             </div>
                             <div className="modal-actions">
-                                <button type="button" onClick={() => setShowModal(false)}>
+                                <Button variant="ghost" onClick={() => setShowModal(false)}>
                                     Cancel
-                                </button>
-                                <button type="submit" className="btn-primary">
+                                </Button>
+                                <Button variant="primary" type="submit">
                                     {editingStepType ? 'Update' : 'Add'}
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

@@ -56,16 +56,6 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
             @Param("endDate") LocalDate endDate
     );
 
-    // Get attendance summary by contract type for a specific date and site
-    @Query("SELECT e.jobPosition.contractType as contractType, " +
-            "COUNT(DISTINCT e.id) as totalEmployees, " +
-            "COUNT(DISTINCT CASE WHEN a.status = 'PRESENT' THEN a.employee.id END) as presentCount, " +
-            "SUM(CASE WHEN a.hoursWorked IS NOT NULL THEN a.hoursWorked ELSE 0 END) as totalHours " +
-            "FROM Employee e " +
-            "LEFT JOIN Attendance a ON e.id = a.employee.id AND a.date = :date " +
-            "WHERE e.site.id = :siteId " +
-            "GROUP BY e.jobPosition.contractType")
-    List<Object[]> getAttendanceSummaryBySiteAndDate(@Param("siteId") UUID siteId, @Param("date") LocalDate date);
 
     // Find all attendance for an employee in a specific month
     @Query("SELECT a FROM Attendance a WHERE a.employee.id = :employeeId AND YEAR(a.date) = :year AND MONTH(a.date) = :month ORDER BY a.date")
@@ -85,4 +75,38 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
     // Bulk operations support
     @Query("SELECT a FROM Attendance a WHERE a.employee.id IN :employeeIds AND a.date = :date")
     List<Attendance> findByEmployeeIdsAndDate(@Param("employeeIds") List<UUID> employeeIds, @Param("date") LocalDate date);
+
+
+    /**
+     * Find attendance records for an employee within a date range
+     * Used by PayrollSnapshotService for attendance import
+     */
+    List<Attendance> findByEmployeeIdAndDateBetween(
+            UUID employeeId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    /**
+     * Fixes: "Cannot resolve method findByDateBetweenAndOvertimeHoursGreaterThan"
+     * Fetches all attendance records in a date range where overtime > 0.
+     * Useful for bulk updating overtime without fetching every single attendance record.
+     */
+    List<Attendance> findByDateBetweenAndOvertimeHoursGreaterThan(
+            LocalDate startDate,
+            LocalDate endDate,
+            Double minOvertimeHours
+    );
+
+    /**
+     * Supports the Bulk Fetch optimization (N+1 fix)
+     * Fetches attendance for a LIST of employees within a date range.
+     */
+    List<Attendance> findByEmployeeIdInAndDateBetween(
+            List<UUID> employeeIds,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+
 }

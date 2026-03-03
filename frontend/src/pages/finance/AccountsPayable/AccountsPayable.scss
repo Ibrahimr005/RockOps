@@ -4,9 +4,9 @@
 }
 
 .accounts-payable-content-container {
-  background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--section-background-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
   margin-top: 20px;
 }
@@ -27,27 +27,27 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
-  color: var(--text-secondary);
-  transition: all 0.3s ease;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-normal) ease;
   border-bottom: 3px solid transparent;
   white-space: nowrap;
 }
 
 .tab-button:hover {
-  color: var(--primary-color);
-  background: rgba(var(--primary-rgb), 0.05);
+  color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb), 0.05);
 }
 
 .tab-button.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb), 0.1);
 }
 
 .tab-button svg {
-  font-size: 16px;
+  font-size: var(--font-size-md);
 }
 
 .accounts-payable-content {

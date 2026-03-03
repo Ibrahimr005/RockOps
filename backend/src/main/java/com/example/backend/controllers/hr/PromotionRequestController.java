@@ -6,18 +6,12 @@ import com.example.backend.services.hr.PromotionRequestService;
 import com.example.backend.services.hr.PromotionRequestMapperService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-// Removed javax.validation.Valid import
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -41,28 +35,11 @@ public class PromotionRequestController {
             @RequestBody PromotionRequestCreateDTO createDTO,
             Authentication authentication) {
         try {
-            // Validate input
             mapperService.validateCreateDTO(createDTO);
 
             String requestedBy = authentication.getName();
 
-            // Convert DTO to map for service layer (maintaining backward compatibility)
-            Map<String, Object> requestData = new HashMap<>();
-            requestData.put("employeeId", createDTO.getEmployeeId().toString());
-            requestData.put("promotedToJobPositionId", createDTO.getPromotedToJobPositionId().toString());
-            requestData.put("requestTitle", createDTO.getRequestTitle());
-            requestData.put("justification", createDTO.getJustification() != null ? createDTO.getJustification() : "");
-            requestData.put("proposedEffectiveDate", createDTO.getProposedEffectiveDate().toString());
-            requestData.put("proposedSalary", createDTO.getProposedSalary() != null ? createDTO.getProposedSalary() : 0);
-            requestData.put("priority", createDTO.getPriority() != null ? createDTO.getPriority() : "NORMAL");
-            requestData.put("hrComments", createDTO.getHrComments() != null ? createDTO.getHrComments() : "");
-            requestData.put("performanceRating", createDTO.getPerformanceRating() != null ? createDTO.getPerformanceRating() : "");
-            requestData.put("educationalQualifications", createDTO.getEducationalQualifications() != null ? createDTO.getEducationalQualifications() : "");
-            requestData.put("additionalCertifications", createDTO.getAdditionalCertifications() != null ? createDTO.getAdditionalCertifications() : "");
-            requestData.put("requiresAdditionalTraining", createDTO.getRequiresAdditionalTraining() != null ? createDTO.getRequiresAdditionalTraining() : false);
-            requestData.put("trainingPlan", createDTO.getTrainingPlan() != null ? createDTO.getTrainingPlan() : "");
-
-            PromotionRequest createdRequest = promotionRequestService.createPromotionRequest(requestData, requestedBy);
+            PromotionRequest createdRequest = promotionRequestService.createPromotionRequest(createDTO, requestedBy);
             PromotionRequestResponseDTO responseDTO = mapperService.toResponseDTO(createdRequest);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
@@ -152,20 +129,11 @@ public class PromotionRequestController {
             @RequestBody PromotionRequestReviewDTO reviewDTO,
             Authentication authentication) {
         try {
-            // Validate review data
             mapperService.validateReviewDTO(reviewDTO);
 
             String reviewedBy = authentication.getName();
 
-            // Convert DTO to map for service layer
-            Map<String, Object> reviewData = new HashMap<>();
-            reviewData.put("action", reviewDTO.getAction());
-            reviewData.put("managerComments", reviewDTO.getManagerComments() != null ? reviewDTO.getManagerComments() : "");
-            reviewData.put("rejectionReason", reviewDTO.getRejectionReason() != null ? reviewDTO.getRejectionReason() : "");
-            reviewData.put("approvedSalary", reviewDTO.getApprovedSalary() != null ? reviewDTO.getApprovedSalary() : 0);
-            reviewData.put("actualEffectiveDate", reviewDTO.getActualEffectiveDate() != null ? reviewDTO.getActualEffectiveDate().toString() : "");
-
-            PromotionRequest reviewedRequest = promotionRequestService.reviewPromotionRequest(id, reviewData, reviewedBy);
+            PromotionRequest reviewedRequest = promotionRequestService.reviewPromotionRequest(id, reviewDTO, reviewedBy);
             PromotionRequestResponseDTO responseDTO = mapperService.toResponseDTO(reviewedRequest);
 
             return ResponseEntity.ok(Map.of(

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaBuilding, FaBriefcase, FaCog, FaClock, FaExclamationTriangle, FaStore } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaBriefcase, FaCog, FaClock, FaExclamationTriangle, FaStore } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/modal-styles.scss';
 import '../../../styles/cancel-modal-button.scss';
 import './ContactModal.scss';
@@ -8,6 +10,8 @@ import contactTypeService from '../../../services/contactTypeService';
 
 const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
     console.log('ContactModal rendered:', { isOpen, editingContact });
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState(() => {
         try {
             return {
@@ -161,6 +165,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
     };
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value, type, checked } = e.target;
 
         let processedValue = type === 'checkbox' ? checked : value;
@@ -234,6 +239,14 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -266,17 +279,16 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
     // Error boundary pattern - if anything fails, show a basic modal
     try {
         return (
-            <div className="modal-backdrop">
-                <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
-                    <div className="modal-header">
-                        <div className="modal-title">
-                            <FaUser />
-                            {editingContact ? 'Edit Contact' : 'New Contact'}
+            <>
+                <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) handleCloseAttempt(); }}>
+                    <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="modal-title">
+                                <FaUser />
+                                {editingContact ? 'Edit Contact' : 'New Contact'}
+                            </div>
+                            <CloseButton onClick={handleCloseAttempt} />
                         </div>
-                        <button className="modal-close btn-cancel" onClick={onClose}>
-                            <FaTimes />
-                        </button>
-                    </div>
 
                     <div className="modal-body">
                         <form onSubmit={handleSubmit} className="contact-form" id="contact-form">
@@ -561,15 +573,27 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                         </form>
                     </div>
                     <div className="modal-footer">
-                        <button type="button" className="btn-cancel" onClick={onClose}>
+                        <Button variant="ghost" onClick={handleCloseAttempt}>
                             Cancel
-                        </button>
-                        <button type="submit" className="btn-primary" form="contact-form" disabled={isSubmitting}>
-                            {isSubmitting ? 'Saving...' : (editingContact ? 'Update Contact' : 'Create Contact')}
-                        </button>
+                        </Button>
+                        <Button variant="primary" type="submit" form="contact-form" loading={isSubmitting} loadingText="Saving...">
+                            {editingContact ? 'Update Contact' : 'Create Contact'}
+                        </Button>
                     </div>
                 </div>
             </div>
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
+            />
+            </>
         );
     } catch (error) {
         console.error('Error rendering ContactModal:', error);
@@ -579,18 +603,16 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                 <div className="modal-container" onClick={e => e.stopPropagation()}>
                     <div className="modal-header">
                         <div className="modal-title">Contact Form Error</div>
-                        <button className="modal-close btn-cancel" onClick={onClose}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={onClose} />
                     </div>
                     <div className="modal-body">
                         <p>There was an error loading the contact form. Please try again.</p>
                         <p>Error: {error.message}</p>
                     </div>
                     <div className="modal-footer">
-                        <button type="button" className="btn-cancel" onClick={onClose}>
+                        <Button variant="ghost" onClick={onClose}>
                             Close
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

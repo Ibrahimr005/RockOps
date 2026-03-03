@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Button, CloseButton } from '../../../components/common/Button';
 import './MerchantModal.scss';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const MerchantModal = ({
                            showAddModal,
@@ -14,9 +16,24 @@ const MerchantModal = ({
                            handleUpdateMerchant
                        }) => {
     const [errors, setErrors] = useState({});
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Scroll lock
+    useEffect(() => {
+        if (showAddModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal]);
 
     // Handle form input changes
     const handleChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         handleInputChange(e);
 
@@ -31,6 +48,7 @@ const MerchantModal = ({
 
     // Handle number input changes (for financial fields)
     const handleNumberChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         // Allow empty value or valid number
         if (value === '' || !isNaN(parseFloat(value))) {
@@ -43,6 +61,7 @@ const MerchantModal = ({
 
     // Handle file input change
     const handleFileInputChange = (e) => {
+        setIsFormDirty(true);
         // Clear any previous errors for photo
         if (errors.photo) {
             setErrors({
@@ -104,6 +123,14 @@ const MerchantModal = ({
     const handleOverlayClick = (e) => {
         // Only close if clicking on the overlay itself, not on the modal content
         if (e.target === e.currentTarget) {
+            handleCloseAttempt();
+        }
+    };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
             handleCloseModals();
         }
     };
@@ -111,11 +138,23 @@ const MerchantModal = ({
     if (!showAddModal) return null;
 
     return (
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); handleCloseModals(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
         <div className="proc-merchant-modal-overlay"  onClick={handleOverlayClick}>
             <div className="proc-merchant-employee-modal">
                 <div className="proc-merchant-modal-header">
                     <h2>{modalMode === 'add' ? 'Add New Merchant' : 'Edit Merchant'}</h2>
-                    <button className="proc-merchant-close-button" onClick={handleCloseModals}>×</button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -430,14 +469,15 @@ const MerchantModal = ({
                     </div>
 
                     <div className="proc-merchant-modal-footer">
-                        <button type="button" className="proc-merchant-cancel-btn" onClick={handleCloseModals}>Cancel</button>
-                        <button type="submit" className="proc-merchant-save-btn">
+                        <Button variant="ghost" onClick={handleCloseAttempt}>Cancel</Button>
+                        <Button variant="primary" type="submit">
                             {modalMode === 'add' ? 'Save Merchant' : 'Update Merchant'}
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div>
         </div>
+        </>
     );
 };
 

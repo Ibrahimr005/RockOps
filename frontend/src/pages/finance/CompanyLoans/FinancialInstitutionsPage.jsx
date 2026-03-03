@@ -4,19 +4,17 @@ import { FiHome, FiPlus, FiEye, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight }
 import { financeService } from '../../../services/financeService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../components/common/DataTable/DataTable';
-import Snackbar from '../../../components/common/Snackbar/Snackbar';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './FinancialInstitutionsPage.scss';
 
 const FinancialInstitutionsPage = () => {
     const navigate = useNavigate();
+    const { showSuccess, showError } = useSnackbar();
 
     // State
     const [institutions, setInstitutions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-
-    // Snackbar
-    const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
 
     // Confirmation Dialog
     const [confirmDialog, setConfirmDialog] = useState({
@@ -39,14 +37,10 @@ const FinancialInstitutionsPage = () => {
             setInstitutions(response.data || response || []);
         } catch (error) {
             console.error('Error fetching institutions:', error);
-            showSnackbar('Failed to load institutions', 'error');
+            showError('Failed to load institutions');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const showSnackbar = (message, type = 'success') => {
-        setSnackbar({ show: true, message, type });
     };
 
     // Handle deactivate
@@ -59,10 +53,10 @@ const FinancialInstitutionsPage = () => {
             onConfirm: async () => {
                 try {
                     await financeService.companyLoans.institutions.deactivate(institution.id);
-                    showSnackbar('Institution deactivated successfully', 'success');
+                    showSuccess('Institution deactivated successfully');
                     fetchInstitutions();
                 } catch (error) {
-                    showSnackbar(error.response?.data?.message || 'Failed to deactivate institution', 'error');
+                    showError(error.response?.data?.message || 'Failed to deactivate institution');
                 }
                 setConfirmDialog({ ...confirmDialog, isOpen: false });
             }
@@ -79,10 +73,10 @@ const FinancialInstitutionsPage = () => {
             onConfirm: async () => {
                 try {
                     await financeService.companyLoans.institutions.delete(institution.id);
-                    showSnackbar('Institution deleted successfully', 'success');
+                    showSuccess('Institution deleted successfully');
                     fetchInstitutions();
                 } catch (error) {
-                    showSnackbar(error.response?.data?.message || 'Failed to delete institution', 'error');
+                    showError(error.response?.data?.message || 'Failed to delete institution');
                 }
                 setConfirmDialog({ ...confirmDialog, isOpen: false });
             }
@@ -227,14 +221,6 @@ const FinancialInstitutionsPage = () => {
                 addButtonIcon={<FiPlus />}
                 onAddClick={()=> navigate('/finance/company-loans/institutions/new')}
 
-            />
-
-            {/* Snackbar */}
-            <Snackbar
-                show={snackbar.show}
-                message={snackbar.message}
-                type={snackbar.type}
-                onClose={() => setSnackbar({ ...snackbar, show: false })}
             />
 
             {/* Confirmation Dialog */}

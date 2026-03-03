@@ -59,6 +59,7 @@ class EquipmentWarehouseTransactionRealWorldTest {
     @Autowired private ConsumableRepository consumableRepository;
     @Autowired private InSiteMaintenanceRepository inSiteMaintenanceRepository;
     @Autowired private MaintenanceTypeRepository maintenanceTypeRepository;
+    @Autowired private MeasuringUnitRepository measuringUnitRepository;
 
     // Test entities
     private Site miningSite;
@@ -120,25 +121,39 @@ class EquipmentWarehouseTransactionRealWorldTest {
         hardwareCategory.setDescription("Parts and consumables for equipment");
         hardwareCategory = itemCategoryRepository.save(hardwareCategory);
         
+        MeasuringUnit piecesUnit = new MeasuringUnit();
+        piecesUnit.setName("pieces");
+        piecesUnit.setDisplayName("Pieces");
+        piecesUnit.setAbbreviation("pcs");
+        piecesUnit.setIsActive(true);
+        piecesUnit = measuringUnitRepository.save(piecesUnit);
+
+        MeasuringUnit litersUnit = new MeasuringUnit();
+        litersUnit.setName("liters");
+        litersUnit.setDisplayName("Liters");
+        litersUnit.setAbbreviation("L");
+        litersUnit.setIsActive(true);
+        litersUnit = measuringUnitRepository.save(litersUnit);
+
         boltsType = new ItemType();
         boltsType.setName("Heavy Duty Bolts");
-        boltsType.setMeasuringUnit("pieces");
+        boltsType.setMeasuringUnit(piecesUnit);
         boltsType.setItemCategory(hardwareCategory);
         boltsType.setMinQuantity(20);
         boltsType.setStatus("ACTIVE");
         boltsType = itemTypeRepository.save(boltsType);
-        
+
         oilType = new ItemType();
         oilType.setName("Hydraulic Oil");
-        oilType.setMeasuringUnit("liters");
+        oilType.setMeasuringUnit(litersUnit);
         oilType.setItemCategory(hardwareCategory);
         oilType.setMinQuantity(50);
         oilType.setStatus("ACTIVE");
         oilType = itemTypeRepository.save(oilType);
-        
+
         filtersType = new ItemType();
         filtersType.setName("Oil Filters");
-        filtersType.setMeasuringUnit("pieces");
+        filtersType.setMeasuringUnit(piecesUnit);
         filtersType.setItemCategory(hardwareCategory);
         filtersType.setMinQuantity(10);
         filtersType.setStatus("ACTIVE");

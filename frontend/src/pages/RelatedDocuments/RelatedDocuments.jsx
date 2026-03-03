@@ -34,6 +34,7 @@ import {
     MONTH_OPTIONS,
     generateYearOptions 
 } from '../../constants/documentTypes';
+import { Button, CloseButton } from '../../components/common/Button';
 import './RelatedDocuments.scss';
 
 const RelatedDocuments = () => {
@@ -481,28 +482,29 @@ const RelatedDocuments = () => {
                                 <FolderOpen size={64} className="rockops-documents-empty-icon" />
                                 <h3>No documents found</h3>
                                 <p>Upload your first document to get started</p>
-                                <button
-                                    className="btn-primary"
+                                <Button
+                                    variant="primary"
                                     onClick={() => setShowUploadModal(true)}
                                 >
                                     <Upload size={16} />
                                     Upload Document
-                                </button>
+                                </Button>
                             </>
                         ) : (
                             <>
                                 <Search size={64} className="rockops-documents-empty-icon" />
                                 <h3>No matching documents</h3>
                                 <p>Try adjusting your search criteria</p>
-                                <button
-                                    className="rockops-btn rockops-btn--outline"
+                                <Button
+                                    variant="primary"
+                                    outline
                                     onClick={() => {
                                         setSearchTerm('');
                                         setFilterType('all');
                                     }}
                                 >
                                     Clear Filters
-                                </button>
+                                </Button>
                             </>
                         )}
                     </div>
@@ -616,15 +618,12 @@ const RelatedDocuments = () => {
                                 <Upload size={20} />
                                 Upload New Document
                             </h2>
-                            <button
-                                className="btn-close"
+                            <CloseButton
                                 onClick={() => {
                                     setShowUploadModal(false);
                                     setUploadData({ name: '', type: '', file: null });
                                 }}
-                            >
-                                <X size={20} />
-                            </button>
+                            />
                         </div>
 
                         <form onSubmit={handleUpload} className="rockops-documents-modal-form">
@@ -684,23 +683,25 @@ const RelatedDocuments = () => {
                             </div>
 
                             <div className="rockops-documents-modal-actions">
-                                <button
-                                    type="button"
-                                    className="rockops-btn rockops-btn--outline"
+                                <Button
+                                    variant="primary"
+                                    outline
                                     onClick={() => {
                                         setShowUploadModal(false);
                                         setUploadData({ name: '', type: '', file: null });
                                     }}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    className="btn-primary"
+                                    variant="primary"
                                     disabled={loading}
+                                    loading={loading}
+                                    loadingText="Uploading..."
                                 >
-                                    {loading ? 'Uploading...' : 'Upload Document'}
-                                </button>
+                                    Upload Document
+                                </Button>
                             </div>
                         </form>
                     </div>
@@ -716,15 +717,12 @@ const RelatedDocuments = () => {
                                 <Edit size={20} />
                                 Edit Document
                             </h2>
-                            <button
-                                className="btn-close"
+                            <CloseButton
                                 onClick={() => {
                                     setShowEditModal(false);
                                     setSelectedDocument(null);
                                 }}
-                            >
-                                <X size={20} />
-                            </button>
+                            />
                         </div>
 
                         <form onSubmit={handleEdit} className="rockops-documents-modal-form">
@@ -763,23 +761,25 @@ const RelatedDocuments = () => {
                             </div>
 
                             <div className="rockops-documents-modal-actions">
-                                <button
-                                    type="button"
-                                    className="rockops-btn rockops-btn--outline"
+                                <Button
+                                    variant="primary"
+                                    outline
                                     onClick={() => {
                                         setShowEditModal(false);
                                         setSelectedDocument(null);
                                     }}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    className="rockops-btn rockops-btn--primary"
+                                    variant="primary"
                                     disabled={loading}
+                                    loading={loading}
+                                    loadingText="Updating..."
                                 >
-                                    {loading ? 'Updating...' : 'Update Document'}
-                                </button>
+                                    Update Document
+                                </Button>
                             </div>
                         </form>
                     </div>
@@ -794,15 +794,12 @@ const RelatedDocuments = () => {
                             <h2>
                                 📅 Assign to Monthly Sarky
                             </h2>
-                            <button
-                                className="btn-close"
+                            <CloseButton
                                 onClick={() => {
                                     setShowPromoteModal(false);
                                     setDocumentToPromote(null);
                                 }}
-                            >
-                                <X size={20} />
-                            </button>
+                            />
                         </div>
 
                         <div className="rockops-documents-modal-form">
@@ -843,24 +840,25 @@ const RelatedDocuments = () => {
                             </div>
 
                             <div className="rockops-documents-modal-actions">
-                                <button
-                                    type="button"
-                                    className="rockops-btn rockops-btn--outline"
+                                <Button
+                                    variant="primary"
+                                    outline
                                     onClick={() => {
                                         setShowPromoteModal(false);
                                         setDocumentToPromote(null);
                                     }}
                                 >
                                     Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn-primary"
+                                </Button>
+                                <Button
+                                    variant="primary"
                                     onClick={confirmPromoteToSarky}
                                     disabled={loading}
+                                    loading={loading}
+                                    loadingText="Assigning..."
                                 >
-                                    {loading ? 'Assigning...' : 'Assign to Month'}
-                                </button>
+                                    Assign to Month
+                                </Button>
                             </div>
                         </div>
                     </div>

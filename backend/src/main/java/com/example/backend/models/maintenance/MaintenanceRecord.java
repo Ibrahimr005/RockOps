@@ -34,6 +34,9 @@ public class MaintenanceRecord {
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
     private UUID id;
 
+    @Column(name = "record_number", unique = true, length = 20)
+    private String recordNumber;
+
     @NotNull(message = "Equipment ID is required")
     @Column(name = "equipment_id", nullable = false)
     private UUID equipmentId;

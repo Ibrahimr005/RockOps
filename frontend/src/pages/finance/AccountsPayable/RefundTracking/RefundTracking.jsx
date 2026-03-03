@@ -4,6 +4,7 @@ import DataTable from '../../../../components/common/DataTable/DataTable';
 import ConfirmRefundModal from './ConfirmRefundModal';
 import ViewRefundDetailsModal from './ViewRefundDetailsModal';
 import { financeService } from '../../../../services/financeService';
+import { Button } from '../../../../components/common/Button';
 import './RefundTracking.scss';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
 
@@ -210,7 +211,7 @@ const RefundTracking = () => {
                 {error ? (
                     <div className="error-message">
                         <p>{error}</p>
-                        <button onClick={fetchRefunds} className="btn-retry">Retry</button>
+                        <Button variant="primary" onClick={fetchRefunds}>Retry</Button>
                     </div>
                 ) : (
                     <DataTable

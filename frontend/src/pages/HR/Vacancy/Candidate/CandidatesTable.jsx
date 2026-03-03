@@ -6,6 +6,7 @@ import CandidateDetailsModal from './CandidateDetailsModal';
 import EditCandidateModal from './EditCandidateModal';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { Button } from '../../../../components/common/Button/Button';
 import { candidateService } from '../../../../services/hr/candidateService.js';
 import { vacancyService } from "../../../../services/hr/vacancyService.js";
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
@@ -429,9 +430,9 @@ const CandidatesTable = ({ vacancyId }) => {
                 <div className="error-alert">
                     <h3>Error Loading Candidates</h3>
                     <p>{error}</p>
-                    <button className="retry-button" onClick={fetchCandidatesAndStats}>
+                    <Button variant="primary" onClick={fetchCandidatesAndStats}>
                         Try Again
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

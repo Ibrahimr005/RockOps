@@ -180,23 +180,46 @@ public class VacationBalanceService {
     }
 
     private int calculateAllocatedVacationDays(Employee employee) {
-        // Extract vacation days from JobPosition.vacations field
-        if (employee.getJobPosition() == null || employee.getJobPosition().getVacations() == null) {
+        if (employee.getJobPosition() == null) {
             return 21; // Default
         }
 
-        String vacationText = employee.getJobPosition().getVacations();
-        
-        // Try to extract number from vacation text (e.g., "21 days annual leave" -> 21)
-        Pattern pattern = Pattern.compile("(\\d+)\\s*days?", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(vacationText);
-        
-        if (matcher.find()) {
-            return Integer.parseInt(matcher.group(1));
+        // Use the numeric vacationDays field (preferred)
+        if (employee.getJobPosition().getVacationDays() != null) {
+            return employee.getJobPosition().getVacationDays();
         }
 
-        // Default if can't parse
+        // Fallback: try to extract from legacy vacations text field
+        String vacationText = employee.getJobPosition().getVacations();
+        if (vacationText != null) {
+            Pattern pattern = Pattern.compile("(\\d+)\\s*days?", Pattern.CASE_INSENSITIVE);
+            Matcher matcher = pattern.matcher(vacationText);
+            if (matcher.find()) {
+                return Integer.parseInt(matcher.group(1));
+            }
+        }
+
+        // Default if nothing is set
         return 21;
+    }
+
+    /**
+     * Update vacation allocation for an employee based on their current job position.
+     * Called when an employee's job position changes.
+     */
+    public void updateAllocationForEmployee(UUID employeeId) {
+        int currentYear = LocalDate.now().getYear();
+        Employee employee = employeeRepository.findById(employeeId)
+            .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        int newAllocation = calculateAllocatedVacationDays(employee);
+
+        VacationBalance balance = getOrCreateBalance(employeeId, currentYear);
+        balance.setTotalAllocated(newAllocation);
+        vacationBalanceRepository.save(balance);
+
+        log.info("Updated vacation allocation for employee {} to {} days (from job position)",
+            employeeId, newAllocation);
     }
 
     private VacationBalanceResponseDTO mapToResponseDTO(VacationBalance balance) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { itemService } from '../../../../services/warehouse/itemService';
 import "./DiscrepancyModal.scss";
 
@@ -228,11 +229,7 @@ const DiscrepancyItems= ({
                     <div className="discrepancy-item-modal">
                         <div className="discrepancy-item-modal-header">
                             <h2>Resolve Inventory Discrepancy</h2>
-                            <button
-                                className="btn-close"
-                                onClick={() => setIsResolutionModalOpen(false)}
-                            >
-                            </button>
+                            <CloseButton onClick={() => setIsResolutionModalOpen(false)} />
                         </div>
 
                         <div className="discrepancy-item-modal-body">
@@ -312,19 +309,19 @@ const DiscrepancyItems= ({
                                 )}
 
                                 <div className="discrepancy-item-modal-footer">
-                                    <button
+                                    <Button
                                         type="button"
-                                        className="btn-cancel"
+                                        variant="ghost"
                                         onClick={() => setIsResolutionModalOpen(false)}
                                     >
                                         Cancel
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         type="submit"
-                                        className="btn-primary"
+                                        variant="primary"
                                     >
                                         Resolve Discrepancy
-                                    </button>
+                                    </Button>
                                 </div>
                             </form>
                         </div>

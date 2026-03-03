@@ -2,6 +2,7 @@ package com.example.backend.dto.finance.loans;
 
 import com.example.backend.models.finance.accountsPayable.enums.AccountType;
 import com.example.backend.models.finance.loans.enums.InterestType;
+import com.example.backend.models.finance.loans.enums.LenderType;
 import com.example.backend.models.finance.loans.enums.LoanType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
@@ -23,8 +24,16 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CreateCompanyLoanRequestDTO {
 
-    @NotNull(message = "Financial institution is required")
-    private UUID financialInstitutionId;
+//    @NotNull(message = "Financial institution is required")
+//    private UUID financialInstitutionId;
+
+    // ADD these:
+    @NotNull(message = "Lender type is required")
+    private LenderType lenderType;
+
+    private UUID financialInstitutionId;  // required when lenderType = FINANCIAL_INSTITUTION
+
+    private UUID merchantId;
 
     @NotNull(message = "Loan type is required")
     private LoanType loanType;

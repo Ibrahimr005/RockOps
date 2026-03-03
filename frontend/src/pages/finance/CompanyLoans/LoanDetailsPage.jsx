@@ -4,20 +4,21 @@ import {
     FiDollarSign, FiEdit2, FiArrowLeft, FiCalendar, FiPercent,
     FiCreditCard, FiFileText, FiAlertCircle, FiCheckCircle
 } from 'react-icons/fi';
+import { FaUniversity, FaStore } from 'react-icons/fa';
 import { financeService } from '../../../services/financeService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../components/common/DataTable/DataTable';
-import Snackbar from '../../../components/common/Snackbar/Snackbar';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './LoanDetailsPage.scss';
 
 const LoanDetailsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { showSuccess, showError } = useSnackbar();
 
     // State
     const [loan, setLoan] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
 
     // Fetch loan data
     useEffect(() => {
@@ -31,14 +32,10 @@ const LoanDetailsPage = () => {
             setLoan(response.data || response);
         } catch (error) {
             console.error('Error fetching loan:', error);
-            showSnackbar('Failed to load loan details', 'error');
+            showError('Failed to load loan details');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const showSnackbar = (message, type = 'success') => {
-        setSnackbar({ show: true, message, type });
     };
 
     // Format currency
@@ -143,6 +140,10 @@ const LoanDetailsPage = () => {
         );
     }
 
+    // Determine lender info
+    const isMerchantLender = loan.lenderType === 'MERCHANT';
+    const lenderDisplayName = loan.lenderName || loan.financialInstitutionName || loan.merchantName || '-';
+
     // Breadcrumbs
     const breadcrumbs = [
         { label: 'Company Loans', onClick: () => navigate('/finance/company-loans') },
@@ -164,21 +165,7 @@ const LoanDetailsPage = () => {
                 icon={<FiDollarSign />}
                 breadcrumbs={breadcrumbs}
                 stats={stats}
-                actionButtons={[
-                    // {
-                    //     text: 'Back',
-                    //     icon: <FiArrowLeft />,
-                    //     onClick: () => navigate('/finance/company-loans'),
-                    //     className: 'secondary'
-                    // },
-                    // {
-                    //     text: 'Edit',
-                    //     icon: <FiEdit2 />,
-                    //     onClick: () => navigate(`/finance/company-loans/${id}/edit`),
-                    //     className: 'primary',
-                    //     disabled: loan.status !== 'ACTIVE'
-                    // }
-                ]}
+                actionButtons={[]}
             />
 
             {/* Loan Status Banner */}
@@ -190,20 +177,32 @@ const LoanDetailsPage = () => {
 
             {/* Details Grid */}
             <div className="details-grid">
-                {/* Institution Card */}
+                {/* Lender Card — UPDATED to handle both types */}
                 <div className="detail-card">
                     <h3 className="detail-card__title">
-                        <FiCreditCard /> Financial Institution
+                        {isMerchantLender ? <FaStore /> : <FiCreditCard />}
+                        {' '}
+                        {isMerchantLender ? 'Merchant Lender' : 'Financial Institution'}
                     </h3>
                     <div className="detail-card__content">
                         <div className="detail-row">
-                            <span className="detail-label">Name</span>
-                            <span className="detail-value">{loan.financialInstitutionName}</span>
+                            <span className="detail-label">Lender Type</span>
+                            <span className="detail-value">
+                                <span className={`lender-type-badge lender-type-badge--${(loan.lenderType || 'FINANCIAL_INSTITUTION').toLowerCase()}`}>
+                                    {isMerchantLender ? 'Merchant' : 'Financial Institution'}
+                                </span>
+                            </span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Institution Number</span>
-                            <span className="detail-value">{loan.financialInstitutionNumber}</span>
+                            <span className="detail-label">Name</span>
+                            <span className="detail-value">{lenderDisplayName}</span>
                         </div>
+                        {!isMerchantLender && loan.financialInstitutionNumber && (
+                            <div className="detail-row">
+                                <span className="detail-label">Institution Number</span>
+                                <span className="detail-value">{loan.financialInstitutionNumber}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -349,13 +348,6 @@ const LoanDetailsPage = () => {
                 />
             </div>
 
-            {/* Snackbar */}
-            <Snackbar
-                show={snackbar.show}
-                message={snackbar.message}
-                type={snackbar.type}
-                onClose={() => setSnackbar({ ...snackbar, show: false })}
-            />
         </div>
     );
 };

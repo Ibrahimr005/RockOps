@@ -2,6 +2,7 @@ package com.example.backend.dto.finance.loans;
 
 import com.example.backend.models.finance.loans.CompanyLoan;
 import com.example.backend.models.finance.loans.enums.CompanyLoanStatus;
+import com.example.backend.models.finance.loans.enums.LenderType;
 import com.example.backend.models.finance.loans.enums.LoanInstallmentStatus;
 import com.example.backend.models.finance.loans.enums.LoanType;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,9 @@ public class CompanyLoanSummaryDTO {
     private UUID id;
     private String loanNumber;
     private String financialInstitutionName;
+    // ADD after financialInstitutionName:
+    private LenderType lenderType;
+    private String lenderName;
     private LoanType loanType;
     private BigDecimal principalAmount;
     private BigDecimal remainingPrincipal;
@@ -40,7 +44,10 @@ public class CompanyLoanSummaryDTO {
         CompanyLoanSummaryDTO dto = CompanyLoanSummaryDTO.builder()
                 .id(entity.getId())
                 .loanNumber(entity.getLoanNumber())
+//                .financialInstitutionName(entity.getFinancialInstitution() != null ? entity.getFinancialInstitution().getName() : null)
                 .financialInstitutionName(entity.getFinancialInstitution() != null ? entity.getFinancialInstitution().getName() : null)
+                .lenderType(entity.getLenderType())
+                .lenderName(entity.getLenderName())
                 .loanType(entity.getLoanType())
                 .principalAmount(entity.getPrincipalAmount())
                 .remainingPrincipal(entity.getRemainingPrincipal())

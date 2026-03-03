@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaCheckCircle } from 'react-icons/fa';
 import { FiCheck, FiX, FiDollarSign, FiAlertTriangle, FiPackage, FiMapPin, FiUser } from 'react-icons/fi';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
 import { offerService } from '../../../../services/procurement/offerService';
 import { warehouseService } from '../../../../services/warehouseService';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './OfferReviewForm.scss';
 
 const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
@@ -35,6 +36,14 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         return userInfo?.username || userInfo?.name || 'Unknown User';
     };
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     // Fetch full offer details from procurement API
     useEffect(() => {
@@ -235,7 +244,7 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
                 <div className="modal-container offer-review-modal">
                     <div className="error-container">
                         <p>Failed to load offer details</p>
-                        <button className="btn-secondary" onClick={onClose}>Close</button>
+                        <Button variant="ghost" onClick={onClose}>Close</Button>
                     </div>
                 </div>
             </div>
@@ -257,9 +266,7 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
                         <FiPackage />
                         <h2>Review Offer Items - {fullOfferData.title || offer.offerNumber}</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">
@@ -434,30 +441,24 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={onClose}
                         disabled={loading}
                     >
                         Cancel
-                    </button>
+                    </Button>
 
-                    <button
-                        type="button"
-                        className="btn-primary"
+                    <Button
+                        variant="primary"
                         onClick={handleSubmit}
                         disabled={loading || summary.pending > 0}
+                        loading={loading}
+                        loadingText="Submitting..."
                     >
-                        {loading ? (
-                            <span>Submitting...</span>
-                        ) : (
-                            <>
-                                <FaCheckCircle />
-                                <span>Submit Review ({summary.accepted} Accepted, {summary.rejected} Rejected)</span>
-                            </>
-                        )}
-                    </button>
+                        <FaCheckCircle />
+                        <span>Submit Review ({summary.accepted} Accepted, {summary.rejected} Rejected)</span>
+                    </Button>
                 </div>
             </div>
         </div>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronRight, ChevronLeft, CheckCircle, AlertTriangle, Package, Wrench } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle, AlertTriangle, Package, Wrench } from 'lucide-react';
 import './TransactionProcessor.scss';
 import MaintenanceRecordSelector from './MaintenanceRecordSelector';
 import TransactionDiscrepancyResolver from './TransactionDiscrepancyResolver';
 import { equipmentService } from '../../../services/equipmentService';
 import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 import { transactionService } from '../../../services/transaction/transactionService';
+import { Button, CloseButton } from '../../../components/common/Button';
 
 const UnifiedTransactionProcessor = ({ 
     equipmentId, 
@@ -470,12 +471,7 @@ const UnifiedTransactionProcessor = ({
                         <h2>Process Transaction</h2>
                         <p>Batch #{transaction.batchNumber}</p>
                     </div>
-                    <button 
-                        className="transaction-processor-close"
-                        onClick={onCancel}
-                    >
-                        <X size={24} />
-                    </button>
+                    <CloseButton onClick={onCancel} />
                 </div>
 
                 <div className="transaction-processor-progress">
@@ -517,23 +513,25 @@ const UnifiedTransactionProcessor = ({
 
                 <div className="transaction-processor-footer">
                     <div className="transaction-processor-nav">
-                        <button 
-                            className="transaction-processor-btn secondary"
+                        <Button
+                            variant="ghost"
                             onClick={handlePrevious}
                             disabled={currentStep === visibleSteps[0].id}
                         >
                             <ChevronLeft size={16} />
                             Previous
-                        </button>
-                        
-                        <button 
-                            className="transaction-processor-btn primary"
+                        </Button>
+
+                        <Button
+                            variant="primary"
                             onClick={handleNext}
                             disabled={loading || (currentStepData && !currentStepData.canProceed())}
+                            loading={loading}
+                            loadingText="Processing..."
                         >
                             {currentStep === visibleSteps[visibleSteps.length - 1].id ? 'Complete Transaction' : 'Next'}
                             {currentStep !== visibleSteps[visibleSteps.length - 1].id && <ChevronRight size={16} />}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

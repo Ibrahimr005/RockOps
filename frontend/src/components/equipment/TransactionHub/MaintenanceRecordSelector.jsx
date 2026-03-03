@@ -3,6 +3,7 @@ import { Search, Plus, Calendar, User, AlertCircle, CheckCircle } from 'lucide-r
 import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 import { maintenanceTypeService } from '../../../services/maintenanceTypeService';
 import { employeeService } from '../../../services/hr/employeeService';
+import { Button } from '../../../components/common/Button';
 
 const MaintenanceRecordSelector = ({
     equipmentId,
@@ -204,13 +205,14 @@ const MaintenanceRecordSelector = ({
                             <AlertCircle className="maintenance-selector-empty-icon" />
                             <h4>No Suitable Records Found</h4>
                             <p>No active or recent maintenance records found for this equipment.</p>
-                            <button
+                            <Button
+                                variant="primary"
                                 className="maintenance-selector-empty-action"
                                 onClick={() => handleMaintenanceOptionChange('create')}
                             >
                                 <Plus size={16} />
                                 Create New Record Instead
-                            </button>
+                            </Button>
                         </div>
                     ) : (
                         <div className="maintenance-selector-records">
@@ -330,13 +332,14 @@ const MaintenanceRecordSelector = ({
                                 rows={3}
                             />
                             {!newMaintenance.description && (
-                                <button
-                                    type="button"
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
                                     className="maintenance-selector-auto-fill"
                                     onClick={() => handleNewMaintenanceChange('description', generateMaintenanceDescription())}
                                 >
                                     Use auto-generated description
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>

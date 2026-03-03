@@ -8,6 +8,7 @@ import {
 import "../ProcurementOffers.scss"
 import "./InprogressOffers.scss"
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx"
+import { Button, IconButton } from '../../../../components/common/Button';
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import ProcurementSolutionModal from './ProcurementSolutionModal/ProcurementSolutionModal.jsx';
@@ -695,23 +696,24 @@ const InProgressOffers = ({
 
 
                                 <div className="action-buttons-group">
-                                    <button
-                                        className="btn-primary"
+                                    <Button
+                                        variant="primary"
                                         onClick={() => submitOffer(activeOffer)}
                                         disabled={!isOfferComplete(activeOffer)}
                                         style={{ marginRight: '10px' }}
                                     >
                                         <FiSend /> {isOfferComplete(activeOffer) ? 'Submit Offer' : 'Complete All Items to Submit'}
-                                    </button>
-                                    <button
-                                        className="btn-primary"
+                                    </Button>
+                                    <Button
+                                        variant="danger"
                                         onClick={handleDeleteOfferClick}
                                         disabled={isDeletingOffer}
+                                        loading={isDeletingOffer}
+                                        loadingText="Deleting..."
                                         title="Delete this offer permanently"
                                     >
-                                        <FiTrash2 />
-                                        {isDeletingOffer ? 'Deleting...' : 'Delete Offer'}
-                                    </button>
+                                        <FiTrash2 /> Delete Offer
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -893,26 +895,26 @@ const InProgressOffers = ({
                                                                     <td>{offerItem.estimatedDeliveryDays || 'N/A'} days</td>
                                                                     <td>
                                                                         <div className="procurement-action-buttons">
-                                                                            <button
-                                                                                className="procurement-action-button edit"
+                                                                            <IconButton
+                                                                                variant="primary"
+                                                                                size="sm"
+                                                                                icon={<FiEdit size={16} />}
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
                                                                                     handleEditOfferItem(offerItem, requestItem);
                                                                                 }}
                                                                                 title="Edit this solution"
-                                                                            >
-                                                                                <FiEdit size={16} />
-                                                                            </button>
-                                                                            <button
-                                                                                className="procurement-action-button delete"
+                                                                            />
+                                                                            <IconButton
+                                                                                variant="danger"
+                                                                                size="sm"
+                                                                                icon={<FiTrash2 size={16} />}
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
                                                                                     handleDeleteOfferItem(offerItem.id, offerItem);
                                                                                 }}
                                                                                 title="Remove this solution"
-                                                                            >
-                                                                                <FiTrash2 size={16} />
-                                                                            </button>
+                                                                            />
                                                                         </div>
                                                                     </td>
                                                                 </tr>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { equipmentService } from '../../../services/equipmentService';
 import { employeeService } from '../../../services/hr/employeeService.js';
 import { maintenanceTypeService } from '../../../services/maintenanceTypeService';
+import { Button } from '../../../components/common/Button';
 import './MaintenanceLookup.scss';
 
 const MaintenanceLookup = ({
@@ -172,14 +173,15 @@ const MaintenanceLookup = ({
                         >
                             {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
                         </button>
-                        <button
-                            type="button"
-                            className="search-btn"
+                        <Button
+                            variant="primary"
                             onClick={handleSearch}
                             disabled={loading}
+                            loading={loading}
+                            loadingText="Searching..."
                         >
-                            {loading ? 'Searching...' : 'Search'}
-                        </button>
+                            Search
+                        </Button>
                     </div>
 
                     {showAdvancedFilters && (
@@ -312,16 +314,14 @@ const MaintenanceLookup = ({
             </div>
 
             <div className="maintenance-lookup-actions">
-                <button
-                    type="button"
-                    className="cancel-btn"
+                <Button
+                    variant="ghost"
                     onClick={onCancel}
                 >
                     Cancel
-                </button>
-                <button
-                    type="button"
-                    className="confirm-btn"
+                </Button>
+                <Button
+                    variant="primary"
                     onClick={() => {
                         const selectedMaintenance = maintenanceRecords.find(m => m.id === selectedMaintenanceId);
                         if (selectedMaintenance) {
@@ -331,7 +331,7 @@ const MaintenanceLookup = ({
                     disabled={!selectedMaintenanceId}
                 >
                     Link Selected Maintenance
-                </button>
+                </Button>
             </div>
         </div>
     );

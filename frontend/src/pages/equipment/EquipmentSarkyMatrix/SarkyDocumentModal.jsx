@@ -3,6 +3,7 @@ import { documentService } from '../../../services/documentService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
+import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import {
     SARKY_DOCUMENT_TYPES,
@@ -50,7 +51,22 @@ const SarkyDocumentModal = ({
         onConfirm: null
     });
 
+    // Dirty state tracking
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
     // Document viewer state removed - no longer needed
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     // Load monthly documents when modal opens or month/year changes
     useEffect(() => {
@@ -100,6 +116,7 @@ const SarkyDocumentModal = ({
 
     // Handle file selection
     const handleFileSelect = (file) => {
+        setIsFormDirty(true);
         setSelectedFile(file);
         if (!useAutoNaming && !customName) {
             setCustomName(file.name);
@@ -240,6 +257,14 @@ const SarkyDocumentModal = ({
 
 
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     // Format file size
     const formatFileSize = (bytes) => {
         if (bytes === 0) return '0 Bytes';
@@ -282,12 +307,12 @@ const SarkyDocumentModal = ({
 
     return (
         <>
-            <div className="sarky-document-modal-overlay" onClick={onClose}>
+            <div className="sarky-document-modal-overlay" onClick={handleCloseAttempt}>
                 <div className="sarky-document-modal" onClick={(e) => e.stopPropagation()}>
                     {/* Header */}
                     <div className="sarky-modal-header">
                         <h2>Documents for {equipmentName} - {getMonthLabel(selectedMonth)} {selectedYear}</h2>
-                        <button className="btn-close" onClick={onClose} aria-label="Close"></button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                     {/* Controls */}
@@ -397,13 +422,15 @@ const SarkyDocumentModal = ({
                                         />
                                     </div>
 
-                                    <button
-                                        className="btn-primary"
+                                    <Button
+                                        variant="primary"
                                         onClick={handleUpload}
-                                        disabled={uploading || !customName.trim()}
+                                        loading={uploading}
+                                        loadingText="Uploading..."
+                                        disabled={!customName.trim()}
                                     >
-                                        {uploading ? 'Uploading...' : 'Upload Document'}
-                                    </button>
+                                        Upload Document
+                                    </Button>
                                 </div>
                             )}
                         </div>
@@ -525,9 +552,9 @@ const SarkyDocumentModal = ({
                         <div className="sarky-modal-footer-info">
                             {filteredDocuments.length} of {monthlyDocuments.length} documents
                         </div>
-                        <button className="btn-primary" onClick={onClose}>
+                        <Button variant="primary" onClick={handleCloseAttempt}>
                             Close
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -542,6 +569,18 @@ const SarkyDocumentModal = ({
                 cancelText="Cancel"
                 onConfirm={confirmDialog.onConfirm}
                 onCancel={() => setConfirmDialog({ ...confirmDialog, isVisible: false })}
+            />
+
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
             />
         </>
     );

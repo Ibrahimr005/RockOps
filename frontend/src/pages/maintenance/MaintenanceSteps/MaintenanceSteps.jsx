@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar, FaTools, FaTimes, FaEllipsisV, FaPlus, FaSearch, FaFilter, FaClipboardList, FaHourglassHalf } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar, FaTools, FaEllipsisV, FaPlus, FaSearch, FaFilter, FaClipboardList, FaHourglassHalf } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import MaintenanceStepModal from './MaintenanceStepModal';
 import CompleteStepModal from './CompleteStepModal';
+import { Button, CloseButton } from '../../../components/common/Button';
 import '../../../styles/status-badges.scss';
 import './MaintenanceSteps.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
@@ -360,9 +361,9 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 <div className="error-message">
                     <h3>Error Loading Maintenance Steps</h3>
                     <p>{error}</p>
-                    <button onClick={loadMaintenanceSteps} className="retry-btn">
+                    <Button variant="primary" onClick={loadMaintenanceSteps}>
                         Try Again
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -422,8 +423,9 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                         </div>
                         <div className="header-right">
                             {(!maintenanceRecord?.status || maintenanceRecord.status !== 'COMPLETED') && (
-                                <button
-                                    className={`add-step-btn ${maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL' || maintenanceRecord?.status === 'REJECTED' ? 'pending-state' : ''}`}
+                                <Button
+                                    variant="primary"
+                                    className={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL' || maintenanceRecord?.status === 'REJECTED' ? 'pending-state' : ''}
                                     onClick={() => handleOpenModal()}
                                     disabled={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL' || maintenanceRecord?.status === 'REJECTED'}
                                     title={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
@@ -436,7 +438,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                                     {maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
                                         ? " Pending Approval"
                                         : " New Step"}
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -670,9 +672,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>Step Details: {selectedStep.stepType}</h2>
-                            <button className="btn-close" onClick={() => setViewModalOpen(false)}>
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={() => setViewModalOpen(false)} />
                         </div>
 
                         <div className="modal-body">
@@ -740,7 +740,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                         </div>
 
                         <div className="modal-footer">
-                            <button className="btn-cancel" onClick={() => setViewModalOpen(false)}>Close</button>
+                            <Button variant="ghost" onClick={() => setViewModalOpen(false)}>Close</Button>
                         </div>
                     </div>
                 </div>

@@ -831,6 +831,18 @@ const FinanceValidatedOffers = ({
     const [selectedMerchantName, setSelectedMerchantName] = useState('');
     const [selectedItemName, setSelectedItemName] = useState('');
 
+    // Scroll lock for rejection modal
+    useEffect(() => {
+        if (showRejectionModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showRejectionModal]);
+
     // Show notification
     const showNotification = (message, type = 'success') => {
         setSnackbarMessage(message);

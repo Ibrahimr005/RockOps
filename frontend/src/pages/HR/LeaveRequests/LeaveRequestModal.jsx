@@ -1,11 +1,13 @@
 // LeaveRequestModal.jsx
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaUser, FaSave, FaTimes } from 'react-icons/fa';
+import { FaCalendarAlt, FaUser, FaSave } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import EmployeeSelector from '../../../components/common/EmployeeSelector/EmployeeSelector';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { leaveRequestService } from '../../../services/hr/leaveRequestService';
 import { vacationBalanceService } from '../../../services/hr/vacationBalanceService';
 import {employeeService} from "../../../services/hr/employeeService.js";
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './LeaveRequestModal.scss';
 
 const LeaveRequestModal = ({
@@ -15,6 +17,8 @@ const LeaveRequestModal = ({
                                initialEmployeeId = null
                            }) => {
     const { showSnackbar } = useSnackbar();
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -36,6 +40,16 @@ const LeaveRequestModal = ({
     const [vacationBalance, setVacationBalance] = useState(null);
     const [calculatedDays, setCalculatedDays] = useState(0);
     const [employees, setEmployees] = useState([])
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
 
     // Leave type options
     const leaveTypes = [
@@ -141,6 +155,7 @@ const LeaveRequestModal = ({
 
     // Handle form input changes
     const handleInputChange = (field, value) => {
+        setIsFormDirty(true);
         // FIX #105: Phone number validation - only allow numbers, spaces, dashes, parentheses, and + sign
         if (field === 'emergencyPhone') {
             // Remove any characters that are not digits, spaces, dashes, parentheses, or +
@@ -274,7 +289,15 @@ const LeaveRequestModal = ({
     };
 
     // Handle modal close
-    const handleClose = () => {
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            handleForceClose();
+        }
+    };
+
+    const handleForceClose = () => {
         setFormData({
             employeeId: initialEmployeeId || '',
             leaveType: 'VACATION',
@@ -290,13 +313,19 @@ const LeaveRequestModal = ({
         setSelectedEmployee(null);
         setVacationBalance(null);
         setCalculatedDays(0);
+        setIsFormDirty(false);
         onClose();
+    };
+
+    const handleClose = () => {
+        handleCloseAttempt();
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay" onClick={handleClose}>
+        <>
+        <div className="modal-overlay" onClick={handleCloseAttempt}>
             <div className="leave-request-modal" onClick={(e) => e.stopPropagation()}>
                 {/* Modal Header */}
                 <div className="modal-header">
@@ -304,9 +333,7 @@ const LeaveRequestModal = ({
                         <FaCalendarAlt className="header-icon" />
                         Submit Leave Request
                     </h2>
-                    <button className="close-btn" onClick={handleClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleClose} />
                 </div>
 
                 {/* Modal Body */}
@@ -516,34 +543,38 @@ const LeaveRequestModal = ({
 
                 {/* Modal Footer */}
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn-cancel"
+                    <Button
+                        variant="ghost"
                         onClick={handleClose}
                         disabled={loading}
                     >
-                        <FaTimes /> Cancel
-                    </button>
-                    <button
-                        type="button"
-                        className="btn-primary"
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="primary"
                         onClick={handleSubmit}
                         disabled={loading}
+                        loading={loading}
+                        loadingText="Submitting..."
                     >
-                        {loading ? (
-                            <>
-                                <div className="spinner"></div>
-                                Submitting...
-                            </>
-                        ) : (
-                            <>
-                                <FaSave /> Submit Request
-                            </>
-                        )}
-                    </button>
+                        <FaSave /> Submit Request
+                    </Button>
                 </div>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); handleForceClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

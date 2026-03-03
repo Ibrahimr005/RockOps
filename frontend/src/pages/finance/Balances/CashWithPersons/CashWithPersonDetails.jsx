@@ -1,8 +1,17 @@
-import React from 'react';
-import { FaTimes, FaEdit, FaUserTie } from 'react-icons/fa';
+import React, { useEffect } from 'react';
+import { FaEdit, FaUserTie } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './CashWithPersonDetails.css';
 
 const CashWithPersonDetails = ({ person, onClose, onEdit }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const formatCurrency = (amount) => {
         if (!amount || isNaN(amount)) return 'EGP 0.00';
         return new Intl.NumberFormat('en-EG', {
@@ -31,9 +40,7 @@ const CashWithPersonDetails = ({ person, onClose, onEdit }) => {
                         <FaUserTie />
                         <h2>Cash Holder Details</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">
@@ -112,13 +119,13 @@ const CashWithPersonDetails = ({ person, onClose, onEdit }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button className="btn-secondary" onClick={onClose}>
+                    <Button variant="ghost" onClick={onClose}>
                         Close
-                    </button>
-                    <button className="btn-primary" onClick={onEdit}>
+                    </Button>
+                    <Button variant="primary" onClick={onEdit}>
                         <FaEdit />
                         <span>Edit</span>
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

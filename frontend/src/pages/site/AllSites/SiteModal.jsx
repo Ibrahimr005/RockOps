@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button, CloseButton } from '../../../components/common/Button';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 /**
  * SiteModal Component
@@ -45,6 +47,20 @@ const SiteModal = ({
 
     // Track which fields have been touched
     const [touched, setTouched] = useState({});
+
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     // Reset form when modal opens with initial data
     useEffect(() => {
@@ -145,6 +161,7 @@ const SiteModal = ({
 
     // Handle input change
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
 
         setFormData(prev => ({
@@ -180,6 +197,7 @@ const SiteModal = ({
 
     // Handle file change
     const handleFileChange = (e) => {
+        setIsFormDirty(true);
         const file = e.target.files[0];
         if (file) {
             // Validate file type
@@ -257,7 +275,11 @@ const SiteModal = ({
     const handleClose = () => {
         // Prevent closing while loading
         if (!isLoading) {
-            onClose();
+            if (isFormDirty) {
+                setShowDiscardDialog(true);
+            } else {
+                onClose();
+            }
         }
     };
 
@@ -273,18 +295,23 @@ const SiteModal = ({
     const isEditMode = mode === 'edit' || initialData !== null;
 
     return (
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
         <div className="modern-modal-overlay" onClick={handleOverlayClick}>
             <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modern-modal-header">
                     <h2>{isEditMode ? t('site.editSite') : t('site.addSite')}</h2>
-                    <button
-                        className="modern-modal-close"
-                        onClick={handleClose}
-                        disabled={isLoading}
-                        aria-label="Close modal"
-                    >
-                        ×
-                    </button>
+                    <CloseButton onClick={handleClose} disabled={isLoading} />
                 </div>
 
                 <form onSubmit={handleSubmit} noValidate>
@@ -411,32 +438,26 @@ const SiteModal = ({
                     </div>
 
                     <div className="modern-modal-footer">
-                        <button
-                            type="button"
-                            className="modern-btn modern-btn-cancel"
+                        <Button
+                            variant="ghost"
                             onClick={handleClose}
                             disabled={isLoading}
                         >
                             {t('common.cancel')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="primary"
                             type="submit"
-                            className="modern-btn modern-btn-primary"
-                            disabled={isLoading}
+                            loading={isLoading}
+                            loadingText={t('common.saving') || 'Saving...'}
                         >
-                            {isLoading ? (
-                                <>
-                                    <span className="spinner"></span>
-                                    {t('common.saving') || 'Saving...'}
-                                </>
-                            ) : (
-                                isEditMode ? t('common.save') : t('site.addSite')
-                            )}
-                        </button>
+                            {isEditMode ? t('common.save') : t('site.addSite')}
+                        </Button>
                     </div>
                 </form>
             </div>
         </div>
+        </>
     );
 };
 

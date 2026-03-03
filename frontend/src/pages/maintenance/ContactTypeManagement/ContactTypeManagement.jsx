@@ -8,6 +8,7 @@ import { ROLES } from '../../../utils/roles';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import { Button, CloseButton, IconButton } from '../../../components/common/Button';
 import '../../../styles/modal-styles.scss';
 import '../../../styles/form-validation.scss';
 import './ContactTypeManagement.scss';
@@ -269,24 +270,24 @@ const ContactTypeManagement = () => {
                 <div className="action-buttons">
                     {hasManagementAccess && (
                         <>
-                            <button
-                                className="rockops-table__action-button primary"
+                            <IconButton
+                                variant="primary"
+                                size="sm"
+                                icon={<FaEdit />}
                                 onClick={() => handleEdit(row)}
-                                title={undefined}
                                 data-tooltip="Edit Contact Type"
                                 aria-label="Edit Contact Type"
-                            >
-                                <FaEdit />
-                            </button>
-                            <button
-                                className="rockops-table__action-button danger"
+                                title="Edit Contact Type"
+                            />
+                            <IconButton
+                                variant="danger"
+                                size="sm"
+                                icon={<FaTrash />}
                                 onClick={() => handleDelete(row)}
-                                title={undefined}
                                 data-tooltip="Delete Contact Type"
                                 aria-label="Delete Contact Type"
-                            >
-                                <FaTrash />
-                            </button>
+                                title="Delete Contact Type"
+                            />
                         </>
                     )}
                 </div>
@@ -377,9 +378,7 @@ const ContactTypeManagement = () => {
                                 <FaUsers />
                                 <span>{editingContactType ? 'Edit Contact Type' : 'New Contact Type'}</span>
                             </div>
-                            <button className="modal-close" onClick={handleCloseModal}>
-                                ×
-                            </button>
+                            <CloseButton onClick={handleCloseModal} />
                         </div>
 
                         <div className="modal-body">
@@ -425,12 +424,12 @@ const ContactTypeManagement = () => {
                         </div>
 
                         <div className="modal-footer">
-                            <button type="button" className="btn-cancel" onClick={handleCloseModal}>
+                            <Button variant="ghost" onClick={handleCloseModal}>
                                 Cancel
-                            </button>
-                            <button type="submit" className="btn-primary" form="contact-type-form">
+                            </Button>
+                            <Button variant="primary" type="submit" form="contact-type-form">
                                 {editingContactType ? 'Update Contact Type' : 'Create Contact Type'}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

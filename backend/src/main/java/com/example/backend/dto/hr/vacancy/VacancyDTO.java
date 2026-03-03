@@ -15,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class VacancyDTO {
     private UUID id;
+    private String vacancyNumber;
     private String title;
     private String description;
     private String status;

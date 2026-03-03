@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { CloseButton } from '../../../components/common/Button';
 import "./EquipmentConsumablesHistoryModal.scss";
 
 const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, consumableResolutions, itemDetails }) => {
@@ -302,7 +303,7 @@ const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, 
     };
 
     return (
-        <div className="modal-backdrop consumables-history-modal-backdrop">
+        <div className="modal-backdrop consumables-history-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="modal-container modal-lg consumables-history-modal">
                 <div className="modal-header consumables-history-modal-header">
                     <div className="header-content">
@@ -322,7 +323,7 @@ const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, 
                             </div>
                         </div>
                     </div>
-                                    <button className="btn-close" onClick={onClose} aria-label="Close"></button>
+                                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body consumables-history-modal-body">

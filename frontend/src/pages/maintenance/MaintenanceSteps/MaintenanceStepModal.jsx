@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave, FaTools, FaUser, FaMapMarkerAlt, FaCalendarAlt, FaDollarSign, FaPlus, FaEnvelope, FaPhone } from 'react-icons/fa';
+import React, { useState, useEffect, useMemo } from 'react';
+import { FaTools, FaUser, FaMapMarkerAlt, FaCalendarAlt, FaDollarSign, FaPlus, FaEnvelope, FaPhone } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import contactService from '../../../services/contactService.js';
@@ -8,6 +9,8 @@ import { equipmentService } from '../../../services/equipmentService.js';
 import { siteService } from '../../../services/siteService.js';
 import contactTypeService from '../../../services/contactTypeService.js';
 import maintenanceService from '../../../services/maintenanceService.js';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import EmployeeSelector from '../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
 
 import apiClient from '../../../utils/apiClient.js';
 import '../../../styles/modal-styles.scss';
@@ -20,6 +23,8 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const location = useLocation();
     const { showError } = useSnackbar();
 
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState({
         stepTypeId: '',
         description: '',
@@ -64,6 +69,22 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const [merchants, setMerchants] = useState([]);
     const [merchantContacts, setMerchantContacts] = useState([]);
     const [merchantItems, setMerchantItems] = useState([{ description: '', cost: '' }]);
+
+    // Map site employees to EmployeeSelector-compatible format
+    const mappedEmployees = useMemo(() => {
+        if (!Array.isArray(availableEmployees)) return [];
+        return availableEmployees.map(emp => ({
+            ...emp,
+            firstName: emp.firstName || emp.fullName?.split(' ')[0] || 'Unknown',
+            lastName: emp.lastName || emp.fullName?.split(' ').slice(1).join(' ') || '',
+            jobPositionName: emp.jobPositionName || emp.jobPosition?.positionName || '',
+        }));
+    }, [availableEmployees]);
+
+    const selectedResponsibleEmployee = useMemo(() => {
+        if (!formData.responsibleEmployeeId) return null;
+        return mappedEmployees.find(e => e.id === formData.responsibleEmployeeId) || null;
+    }, [mappedEmployees, formData.responsibleEmployeeId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -337,6 +358,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     };
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
 
         // Numeric fields that need thousands separator
@@ -420,6 +442,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     };
 
     const handleResponsibleTypeChange = (e) => {
+        setIsFormDirty(true);
         const type = e.target.value;
         setResponsiblePersonType(type);
         // Clear other fields
@@ -545,6 +568,14 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
+    };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -698,17 +729,16 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <div className="modal-title">
-                        <FaTools />
-                        {editingStep ? 'Edit Maintenance Step' : 'New Maintenance Step'}
+        <>
+            <div className="modal-backdrop">
+                <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <div className="modal-title">
+                            <FaTools />
+                            {editingStep ? 'Edit Maintenance Step' : 'New Maintenance Step'}
+                        </div>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
-                </div>
 
                 <div className="modal-body">
                     <form onSubmit={handleSubmit} className="maintenance-step-form" id="maintenance-step-form">
@@ -794,22 +824,21 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                     <label htmlFor="responsibleEmployeeId">
                                         Responsible Employee <span className="required">*</span>
                                     </label>
-                                    <select
-                                        id="responsibleEmployeeId"
-                                        name="responsibleEmployeeId"
-                                        value={formData.responsibleEmployeeId}
-                                        onChange={handleInputChange}
-                                        className={errors.responsibleEmployeeId ? 'error' : ''}
-                                    >
-                                        <option value="">Select Employee</option>
-                                        {Array.isArray(availableEmployees) && availableEmployees.map(employee => (
-                                            <option key={employee?.id || Math.random()} value={employee?.id}>
-                                                {employee?.fullName || 'Unknown Name'} {employee?.jobPosition?.positionName ? `- ${employee.jobPosition.positionName}` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <EmployeeSelector
+                                        employees={mappedEmployees}
+                                        selectedEmployee={selectedResponsibleEmployee}
+                                        onSelect={(employee) => {
+                                            setIsFormDirty(true);
+                                            setFormData(prev => ({ ...prev, responsibleEmployeeId: employee?.id || '' }));
+                                            if (errors.responsibleEmployeeId) {
+                                                setErrors(prev => ({ ...prev, responsibleEmployeeId: '' }));
+                                            }
+                                        }}
+                                        placeholder="Search and select an employee..."
+                                        error={errors.responsibleEmployeeId}
+                                    />
                                     {errors.responsibleEmployeeId && <span className="error-message">{errors.responsibleEmployeeId}</span>}
-                                    {(!Array.isArray(availableEmployees) || availableEmployees.length === 0) && (
+                                    {mappedEmployees.length === 0 && (
                                         <span className="info-text">No employees available from equipment site</span>
                                     )}
                                 </div>
@@ -1161,13 +1190,12 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose}>
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" form="maintenance-step-form">
-                        <FaSave />
+                    </Button>
+                    <Button variant="primary" type="submit" form="maintenance-step-form">
                         {editingStep ? 'Update Step' : 'Create Step'}
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -1180,9 +1208,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                 <FaUser />
                                 Add New Contact
                             </div>
-                            <button className="btn-close" onClick={() => setShowAddContactModal(false)}>
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={() => setShowAddContactModal(false)} />
                         </div>
 
                         <div className="modal-body">
@@ -1298,18 +1324,29 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                         </div>
 
                         <div className="modal-footer">
-                            <button type="button" className="btn-cancel" onClick={() => setShowAddContactModal(false)}>
+                            <Button variant="ghost" onClick={() => setShowAddContactModal(false)}>
                                 Cancel
-                            </button>
-                            <button type="submit" className="btn-primary" form="add-contact-form">
-                                <FaSave />
+                            </Button>
+                            <Button variant="primary" type="submit" form="add-contact-form">
                                 Create Contact
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
+            />
+        </>
     );
 };
 

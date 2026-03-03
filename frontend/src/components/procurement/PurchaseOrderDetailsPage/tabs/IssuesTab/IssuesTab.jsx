@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiCheckCircle, FiAlertCircle, FiChevronDown, FiChevronUp, FiPackage, FiTruck, FiPhone, FiMail, FiMapPin, FiBox, FiClock, FiFilter } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../../../services/procurement/purchaseOrderService';
+import { Button } from '../../../../../components/common/Button';
 import './IssuesTab.scss';
 
 const IssuesTab = ({ purchaseOrder, issues, onRefresh, onResolveSuccess, onError }) => {
@@ -345,9 +346,9 @@ const IssuesTab = ({ purchaseOrder, issues, onRefresh, onResolveSuccess, onError
                         <FiTruck />
                         Merchant Information
                     </h3>
-                    <button className="btn-back" onClick={() => setSelectedMerchant(null)}>
+                    <Button variant="ghost" onClick={() => setSelectedMerchant(null)}>
                         ← Back to Merchants
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="merchant-info-card">
@@ -873,23 +874,16 @@ const IssuesTab = ({ purchaseOrder, issues, onRefresh, onResolveSuccess, onError
                         )}
 
                         <div className="submit-actions">
-                            <button
-                                className="btn-primary"
+                            <Button
+                                variant="primary"
                                 onClick={handleSubmit}
                                 disabled={isSubmitting || !canSubmit()}
+                                loading={isSubmitting}
+                                loadingText="Resolving..."
                             >
-                                {isSubmitting ? (
-                                    <>
-                                        <span className="spinner"></span>
-                                        Resolving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <FiCheckCircle />
-                                        Resolve All Issues ({currentMerchant.issues.length})
-                                    </>
-                                )}
-                            </button>
+                                <FiCheckCircle />
+                                Resolve All Issues ({currentMerchant.issues.length})
+                            </Button>
                         </div>
                     </div>
                 </div>

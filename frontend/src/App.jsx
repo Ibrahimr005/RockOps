@@ -7,7 +7,6 @@ import {AuthProvider, useAuth} from "./contexts/AuthContext.jsx";
 import Login from "./pages/login/Login.jsx";
 import Sidebar, {SidebarProvider} from "./components/common/Sidebar/Sidebar.jsx";
 import AdminPage from "./pages/admin/AdminPage.jsx";
-import Navbar from "./components/common/Navbar/Navbar.jsx";
 import DashboardPage from "./pages/dashboards/DashboardPage.jsx";
 import AdminDashboard from "./pages/dashboards/AdminDashboard.jsx";
 import SiteAdminDashboard from "./pages/dashboards/SiteAdminDashboard.jsx";
@@ -99,13 +98,21 @@ import PayrollReports from "./pages/payroll/PayrollReports/PayrollReports.jsx";
 import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
 import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
 import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
+import SalaryIncreaseList from "./pages/HR/SalaryIncrease/SalaryIncreaseList.jsx";
+import DemotionList from "./pages/HR/Demotion/DemotionList.jsx";
 import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetails.jsx";
 import PayslipManagement from "./pages/payroll/payslip/PayslipManagement.jsx";
 import PayslipEdit from "./pages/payroll/payslip/PayslipEdit.jsx";
 import DeductionManagement from "./pages/payroll/deduction/DeductionManagement.jsx";
+import BonusManagement from "./pages/payroll/Bonuses/BonusManagement/BonusManagement.jsx";
+import PaymentTypes from "./pages/payroll/PaymentTypes/PaymentTypes.jsx";
 import DepartmentDetails from "./pages/HR/Departments/DepartmentDetails.jsx";
 import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
 import PotentialCandidates from "./pages/HR/PotentialCandidates/PotentialCandidates.jsx";
+import PayrollCycles from "./pages/payroll/PayrollCycles/PayrollCycles.jsx";
+import PayrollDetails from "./pages/payroll/PayrollDetails/PayrollDetails.jsx";
+import EmployeePayrollList from "./pages/payroll/EmployeePayrolls/EmployeePayrollList.jsx";
+import EmployeePayrollDetails from './pages/payroll/EmployeePayrolls/EmployeePayrollDetails/EmployeePayrollDetails.jsx';
 
 // ===================== Maintenance Team Imports =====================
 import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
@@ -164,7 +171,6 @@ const MainLayout = () => (
         <div className="app-container">
             <Sidebar />
             <div className="main-content-wrapper">
-                <Navbar />
                 <main className="main-content">
                     <Outlet />
                 </main>
@@ -234,12 +240,13 @@ function App() {
                                         {/* ===================== Procurement Routes ===================== */}
                                         <Route path="/procurement" element={<RoleRoute allowedRoles={[PROCUREMENT, SITE_ADMIN, ADMIN]}><SitesLayout/></RoleRoute>}>
                                             <Route path="request-orders" element={<ProcurementRequestOrders/>}/>
+                                            <Route path="request-orders/:id" element={<ProcurementRequestOrderDetails/>}/>
+                                            <Route path="request-orders/:requestOrderId" element={<RequestOrderDetailsPage/>}/>
                                             <Route path="offers" element={<ProcurementOffers/>}/>
                                             <Route path="purchase-orders" element={<PurchaseOrders/>}/>
                                             <Route path="purchase-orders/:id" element={<PurchaseOrderDetails/>}/>
                                             <Route path="purchase-orders/:id/resolve-issues" element={<ResolveIssuesPage/>}/>
                                             <Route path="purchase-orders/details/:id/" element={<PurchaseOrderDetailsPage/>}/>
-                                            <Route path="request-orders/:requestOrderId" element={<RequestOrderDetailsPage/>}/>
                                             <Route path="price-approvals" element={<PriceApprovals/>}/>
                                             <Route path="logistics" element={<ProcurementLogistics/>}/>
                                             <Route path="logistics/:id" element={<LogisticsDetailsPage/>}/>
@@ -262,21 +269,44 @@ function App() {
                                             <Route path="departments" element={<DepartmentsList/>}/>
                                             <Route path="departments/:id" element={<DepartmentDetails/>}/>
                                             <Route path="promotions/*" element={<PromotionList/>}/>
+                                            <Route path="salary-increases" element={<SalaryIncreaseList/>}/>
+                                            <Route path="demotions" element={<DemotionList/>}/>
                                             <Route path="leave-requests/:id" element={<LeaveRequestDetailPage />} />
                                             <Route path="leave-requests" element={<LeaveRequestList />} />
                                             <Route path="vacation-balances" element={<VacationBalancePage />} />
                                         </Route>
 
                                         {/* ===================== Payroll Routes ===================== */}
-                                        <Route path="/payroll" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ADMIN]}><PayrollLayout/></RoleRoute>}>
-                                            <Route index element={<PayrollDashboard/>}/>
-                                            <Route path="payslips" element={<PayslipManagement/>}/>
-                                            <Route path="payslips/:id" element={<PayslipDetails/>}/>
-                                            <Route path="payslips/:id/edit" element={<PayslipEdit/>}/>
-                                            <Route path="deductions" element={<DeductionManagement/>}/>
-                                            <Route path="loans" element={<LoanManagement/>}/>
-                                            <Route path="loans/:id" element={<LoanDetails/>}/>
-                                            <Route path="reports" element={<PayrollReports/>}/>
+                                        <Route path="/payroll">
+                                            {/* NEW Payroll Cycles - Main Lifecycle Page */}
+                                            <Route path="cycles" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayrollCycles/></RoleRoute>}/>
+
+                                            {/* NEW Payroll Details - View specific payroll */}
+                                            <Route path="cycles/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayrollDetails/></RoleRoute>}/>
+
+                                            {/* NEW Employee Payrolls - View all employee payroll records */}
+                                            <Route path="employee-payrolls" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><EmployeePayrollList/></RoleRoute>}/>
+                                            <Route
+                                                path="cycles/:payrollId/employee/:employeeId"
+                                                element={
+                                                    <RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}>
+                                                        <EmployeePayrollDetails/>
+                                                    </RoleRoute>
+                                                }
+                                            />
+                                            {/* Keep existing loan management routes */}
+                                            <Route path="loans" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><LoanManagement/></RoleRoute>}/>
+                                            <Route path="loans/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><LoanDetails/></RoleRoute>}/>
+
+                                            {/* Bonus Management */}
+                                            <Route path="bonuses" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><BonusManagement/></RoleRoute>}/>
+
+                                            {/* Keep existing deduction and payslip routes */}
+                                            <Route path="deductions" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><DeductionManagement/></RoleRoute>}/>
+                                            <Route path="payment-types" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PaymentTypes/></RoleRoute>}/>
+                                            <Route path="payslips" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayslipManagement/></RoleRoute>}/>
+                                            <Route path="payslips/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayslipEdit/></RoleRoute>}/>
+                                            <Route path="reports" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayrollReports/></RoleRoute>}/>
                                         </Route>
 
                                         {/* ===================== Equipment Management Routes ===================== */}
@@ -318,7 +348,6 @@ function App() {
                                         <Route path="/finance/company-loans/institutions/new" element={<CreateInstitutionPage />} />
                                         <Route path="/finance/company-loans/institutions/:id/edit" element={<CreateInstitutionPage />} />
                                         <Route path="/finance/company-loans/institutions/:id" element={<CreateInstitutionPage />} />
-                                        <Route path="/finance/company-loans/:id/edit" element={<CreateLoanPage />} />
                                         <Route path="/finance/company-loans/:id" element={<LoanDetailsPage />} />
                                         {/* ===================== Generic Related Documents Route ===================== */}
                                         <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>

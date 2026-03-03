@@ -26,6 +26,8 @@ public class MaintenanceRecordDto {
 
     private UUID id;
 
+    private String recordNumber;
+
     @NotNull(message = "Equipment ID is required")
     private UUID equipmentId;
 

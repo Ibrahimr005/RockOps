@@ -4,6 +4,7 @@ import './MerchantDetails.scss';
 import { FaBuilding, FaArrowLeft } from 'react-icons/fa';
 import { FiInfo, FiTrendingUp, FiFileText, FiDollarSign, FiUsers } from 'react-icons/fi';
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
+import { Button } from '../../../components/common/Button';
 import { merchantService } from '../../../services/merchant/merchantService.js';
 import Tabs from '../../../components/common/Tabs/Tabs.jsx';
 import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
@@ -119,8 +120,8 @@ const MerchantDetails = () => {
                     <h2>Error Loading Data</h2>
                     <p>{error}</p>
                     <div className="merchant-details-error-actions">
-                        <button onClick={() => fetchMerchantDetails()}>Try Again</button>
-                        <button onClick={() => navigate('/procurement/merchants')}>Back to Merchants</button>
+                        <Button variant="primary" onClick={() => fetchMerchantDetails()}>Try Again</Button>
+                        <Button variant="ghost" onClick={() => navigate('/procurement/merchants')}>Back to Merchants</Button>
                     </div>
                 </div>
             </div>
@@ -133,7 +134,7 @@ const MerchantDetails = () => {
                 <div className="merchant-details-error-message">
                     <h2>Merchant Not Found</h2>
                     <p>The requested merchant could not be found.</p>
-                    <button onClick={() => navigate('/procurement/merchants')}>Back to Merchants</button>
+                    <Button variant="primary" onClick={() => navigate('/procurement/merchants')}>Back to Merchants</Button>
                 </div>
             </div>
         );

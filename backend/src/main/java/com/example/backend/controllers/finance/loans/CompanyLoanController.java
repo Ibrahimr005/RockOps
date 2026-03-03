@@ -2,6 +2,8 @@ package com.example.backend.controllers.finance.loans;
 
 import com.example.backend.dto.finance.loans.*;
 import com.example.backend.models.finance.loans.enums.CompanyLoanStatus;
+import com.example.backend.models.merchant.Merchant;
+import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.services.finance.loans.CompanyLoanService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.UUID;
 public class CompanyLoanController {
 
     private final CompanyLoanService loanService;
+    private final MerchantRepository merchantRepository;
 
     /**
      * Create a new company loan
@@ -34,6 +37,28 @@ public class CompanyLoanController {
 //        CompanyLoanResponseDTO response = loanService.createLoan(requestDTO, username);
 //        return ResponseEntity.status(HttpStatus.CREATED).body(response);
 //    }
+
+    // ADD endpoint:
+    /**
+     * Get all merchants (for loan lender selection dropdown)
+     */
+    @GetMapping("/merchants")
+    public ResponseEntity<List<Map<String, Object>>> getMerchantsForLoan() {
+        List<Merchant> merchants = merchantRepository.findAll();
+        List<Map<String, Object>> result = merchants.stream().map(m -> {
+            Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", m.getId());
+            map.put("merchantId", m.getMerchantId());
+            map.put("name", m.getName());
+            map.put("contactPersonName", m.getContactPersonName());
+            map.put("contactPhone", m.getContactPhone());
+            map.put("contactEmail", m.getContactEmail());
+            map.put("address", m.getAddress());
+            return map;
+        }).collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping
     public ResponseEntity<CompanyLoanResponseDTO> createLoan(
             @Valid @RequestBody CreateCompanyLoanRequestDTO requestDTO,

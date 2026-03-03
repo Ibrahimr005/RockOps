@@ -12,29 +12,29 @@
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: var(--bg-secondary);
+    background: var(--color-surface-secondary);
     border: 2px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-sm);
     font-weight: 500;
-    color: var(--text-secondary);
-    transition: all 0.3s ease;
+    color: var(--color-text-secondary);
+    transition: all var(--transition-normal) ease;
 
     svg {
-      font-size: 16px;
+      font-size: var(--font-size-md);
     }
 
     &:hover {
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-      background: rgba(var(--primary-rgb), 0.05);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: rgba(var(--color-primary-rgb), 0.05);
     }
 
     &.active {
-      background: var(--primary-color);
+      background: var(--color-primary);
       color: white;
-      border-color: var(--primary-color);
+      border-color: var(--color-primary);
     }
   }
 
@@ -111,12 +111,12 @@
       }
 
       &.status-pending {
-        background: var(--color-warning-bg);
+        background: rgba(var(--color-warning-rgb), 0.1);
         color: var(--color-warning);
       }
 
       &.status-confirmed {
-        background: var(--color-success-bg);
+        background: rgba(var(--color-success-rgb), 0.1);
         color: var(--color-success);
       }
     }

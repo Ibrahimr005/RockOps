@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaMoneyBillWave, FaUsers, FaPiggyBank, FaExclamationTriangle, FaPlus, FaFileAlt, FaEye } from 'react-icons/fa';
+import { Button } from '../../../components/common/Button';
 import { payslipService } from '../../../services/payroll/payslipService.js';
 import { payrollService } from '../../../services/payroll/payrollService.js';
 import { loanService } from '../../../services/payroll/loanService.js';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
+import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards';
 import './PayrollDashboard.scss';
 
 const PayrollDashboard = () => {
@@ -85,55 +87,52 @@ const PayrollDashboard = () => {
                 <div className="rockops-header-content">
                     <h1 className="rockops-page-title">Payroll Dashboard</h1>
                     <div className="rockops-header-actions">
-                        <button
-                            className="rockops-btn rockops-btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={handleGenerateMonthlyPayroll}
                         >
                             <FaPlus /> Generate Monthly Payroll
-                        </button>
-                        <button
-                            className="rockops-btn rockops-btn-secondary"
+                        </Button>
+                        <Button
+                            variant="secondary"
                             onClick={() => navigate('/payroll/reports')}
                         >
                             <FaFileAlt /> View Reports
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="rockops-payroll-dashboard__stats">
-                <StatsCard
-                    title="Total Payroll"
-                    value={dashboardData.payrollStats?.totalPayroll || 0}
-                    format="currency"
-                    trend={dashboardData.payrollStats?.trend}
-                    icon={<FaMoneyBillWave />}
-                    className="rockops-stats-card--primary"
-                />
-                <StatsCard
-                    title="Employees Paid"
-                    value={dashboardData.payrollStats?.employeesPaid || 0}
-                    format="number"
-                    icon={<FaUsers />}
-                    className="rockops-stats-card--success"
-                />
-                <StatsCard
-                    title="Active Loans"
-                    value={dashboardData.loanStats?.activeLoans || 0}
-                    format="number"
-                    icon={<FaPiggyBank />}
-                    className="rockops-stats-card--info"
-                />
-                <StatsCard
-                    title="Pending Actions"
-                    value={dashboardData.pendingActions.length}
-                    format="number"
-                    urgent={dashboardData.pendingActions.length > 0}
-                    icon={<FaExclamationTriangle />}
-                    className="rockops-stats-card--warning"
-                />
-            </div>
+            <StatisticsCards
+                cards={[
+                    {
+                        icon: <FaMoneyBillWave />,
+                        label: "Total Payroll",
+                        value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(dashboardData.payrollStats?.totalPayroll || 0),
+                        variant: "primary"
+                    },
+                    {
+                        icon: <FaUsers />,
+                        label: "Employees Paid",
+                        value: new Intl.NumberFormat('en-US').format(dashboardData.payrollStats?.employeesPaid || 0),
+                        variant: "success"
+                    },
+                    {
+                        icon: <FaPiggyBank />,
+                        label: "Active Loans",
+                        value: new Intl.NumberFormat('en-US').format(dashboardData.loanStats?.activeLoans || 0),
+                        variant: "info"
+                    },
+                    {
+                        icon: <FaExclamationTriangle />,
+                        label: "Pending Actions",
+                        value: new Intl.NumberFormat('en-US').format(dashboardData.pendingActions.length),
+                        variant: "warning"
+                    },
+                ]}
+                columns={4}
+            />
 
             {/* Main Content Grid */}
             <div className="rockops-payroll-dashboard__content">
@@ -208,40 +207,6 @@ const PayrollDashboard = () => {
     );
 };
 
-// Stats Card Component
-const StatsCard = ({ title, value, format, trend, urgent, icon, className = '' }) => {
-    const formatValue = (val) => {
-        switch (format) {
-            case 'currency':
-                return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD'
-                }).format(val);
-            case 'number':
-                return new Intl.NumberFormat('en-US').format(val);
-            default:
-                return val;
-        }
-    };
-
-    return (
-        <div className={`rockops-stats-card ${className} ${urgent ? 'rockops-stats-card--urgent' : ''}`}>
-            <div className="rockops-stats-card__icon">
-                {icon}
-            </div>
-            <div className="rockops-stats-card__content">
-                <h4 className="rockops-stats-card__title">{title}</h4>
-                <div className="rockops-stats-card__value">{formatValue(value)}</div>
-                {trend && (
-                    <div className={`rockops-stats-card__trend ${trend > 0 ? 'rockops-positive' : 'rockops-negative'}`}>
-                        {trend > 0 ? '↗' : '↘'} {Math.abs(trend)}%
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
 // Payslip List Item Component
 const PayslipListItem = ({ payslip }) => {
     const getStatusBadge = (status) => {
@@ -300,9 +265,9 @@ const PendingActionItem = ({ action }) => {
                 <div className="rockops-action-type">{action.type}</div>
                 <div className="rockops-action-description">{action.description}</div>
             </div>
-            <button className="rockops-btn rockops-btn-sm rockops-btn-primary">
+            <Button variant="primary" size="sm">
                 Take Action
-            </button>
+            </Button>
         </div>
     );
 };

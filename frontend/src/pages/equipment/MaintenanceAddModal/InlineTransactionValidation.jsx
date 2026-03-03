@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './InlineTransactionValidation.scss';
+import { Button } from '../../../components/common/Button';
 
 const InlineTransactionValidation = ({ 
     transaction, 
@@ -256,14 +257,13 @@ const InlineTransactionValidation = ({
                 )}
 
                 <div className="validation-actions">
-                    <button 
-                        type="button" 
-                        className="cancel-button" 
+                    <Button
+                        variant="ghost"
                         onClick={onCancel}
                         disabled={isLoading}
                     >
                         Cancel Validation
-                    </button>
+                    </Button>
                     <div className="info-message">
                         <small>Complete the form above and click "Create Maintenance" to save and validate the transaction.</small>
                     </div>

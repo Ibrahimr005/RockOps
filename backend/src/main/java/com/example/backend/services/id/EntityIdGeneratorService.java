@@ -11,29 +11,27 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class EntityIdGeneratorService {
 
+    private static final String BASE36_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final long HASH_MULTIPLIER = 2654435761L; // Knuth's multiplicative hash constant
+
     @Autowired
     private EntityIdSequenceRepository sequenceRepository;
 
     /**
-     * Generate next ID for an entity type
-     * @param entityType The entity type enum
-     * @return Generated ID (e.g., "MCH000001")
+     * Generate next ID for an entity type.
+     * - Hashed types:     PREFIX-XXXXXX  (e.g., "DEPT-7WDRQP", "POS-FSRJHE")
+     * - Sequential types:  PREFIX000001   (e.g., "MCH000001", "WH000002")
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public String generateNextId(EntityTypeConfig entityType) {
-        System.out.println("🔵 Starting ID generation for: " + entityType.name());
-
         int maxRetries = 5;
         int retryCount = 0;
 
         while (retryCount < maxRetries) {
             try {
-                System.out.println("🔵 Attempt #" + (retryCount + 1));
-
                 // Find or create sequence
                 EntityIdSequence sequence = sequenceRepository.findByEntityType(entityType)
                         .orElseGet(() -> {
-                            System.out.println("⚠️ Sequence not found, creating new one");
                             EntityIdSequence newSequence = EntityIdSequence.builder()
                                     .entityType(entityType)
                                     .currentSequence(0L)
@@ -41,40 +39,31 @@ public class EntityIdGeneratorService {
                             return sequenceRepository.saveAndFlush(newSequence);
                         });
 
-                System.out.println("🔵 Current sequence: " + sequence.getCurrentSequence() + ", version: " + sequence.getVersion());
-
                 // Increment sequence
                 Long nextNumber = sequence.getCurrentSequence() + 1;
                 sequence.setCurrentSequence(nextNumber);
+                sequenceRepository.saveAndFlush(sequence);
 
-                System.out.println("🔵 Updating to sequence: " + nextNumber);
-                EntityIdSequence saved = sequenceRepository.saveAndFlush(sequence);
-                System.out.println("✅ Successfully saved! New version: " + saved.getVersion());
-
-                // Format with enum-defined padding
-                String paddedNumber = String.format(
-                        "%0" + entityType.getPaddingLength() + "d",
-                        nextNumber
-                );
-
-                String generatedId = entityType.getPrefix() + paddedNumber;
-                System.out.println("✅ Generated ID: " + generatedId);
-                return generatedId;
+                if (entityType.isHashed()) {
+                    // Hashed unique: PREFIX-XXXXXX
+                    String code = hashToBase36(nextNumber, entityType.getPaddingLength());
+                    return entityType.getPrefix() + "-" + code;
+                } else {
+                    // Sequential: PREFIX-000001
+                    String paddedNumber = String.format(
+                            "%0" + entityType.getPaddingLength() + "d",
+                            nextNumber
+                    );
+                    return entityType.getPrefix() + "-" + paddedNumber;
+                }
 
             } catch (Exception e) {
-                System.err.println("❌ Error on attempt #" + (retryCount + 1) + ": " + e.getClass().getName());
-                System.err.println("❌ Error message: " + e.getMessage());
-                e.printStackTrace();
-
                 retryCount++;
                 if (retryCount >= maxRetries) {
-                    System.err.println("❌ FAILED after " + maxRetries + " attempts");
                     throw new RuntimeException("Failed to generate ID after " + maxRetries + " attempts", e);
                 }
 
-                // Small delay before retry
                 try {
-                    System.out.println("⏳ Waiting 50ms before retry...");
                     Thread.sleep(50);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
@@ -83,8 +72,30 @@ public class EntityIdGeneratorService {
             }
         }
 
-        System.err.println("❌ Should never reach here!");
         throw new RuntimeException("Failed to generate ID for " + entityType.name());
+    }
+
+    /**
+     * Hash a sequential counter into a fixed-length base-36 alphanumeric code.
+     * Uses Knuth's multiplicative hash for a bijective (collision-free) mapping.
+     */
+    private String hashToBase36(long counter, int length) {
+        long maxValue = 1;
+        for (int i = 0; i < length; i++) {
+            maxValue *= 36;
+        }
+
+        long hashed = (counter * HASH_MULTIPLIER) % maxValue;
+        if (hashed < 0) {
+            hashed += maxValue;
+        }
+
+        char[] result = new char[length];
+        for (int i = length - 1; i >= 0; i--) {
+            result[i] = BASE36_CHARS.charAt((int) (hashed % 36));
+            hashed /= 36;
+        }
+        return new String(result);
     }
 
     /**
@@ -103,7 +114,6 @@ public class EntityIdGeneratorService {
         }
 
         sequenceRepository.save(sequence);
-        System.out.println("Initialized sequence: " + entityType.name() + " -> " + entityType.getPrefix());
     }
 
     /**

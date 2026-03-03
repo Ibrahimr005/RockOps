@@ -13,6 +13,7 @@ import {
     FaExclamationCircle
 } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { financeService } from '../../../../services/financeService.js';
@@ -46,6 +47,18 @@ const PaymentManagement = () => {
         { value: 'CASH', label: 'Cash' },
         { value: 'WIRE_TRANSFER', label: 'Wire Transfer' }
     ];
+
+    // Scroll lock for create payment modal
+    useEffect(() => {
+        if (showCreateModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showCreateModal]);
 
     useEffect(() => {
         fetchPayments();
@@ -347,13 +360,13 @@ const PaymentManagement = () => {
                     {/*    <FaDownload />*/}
                     {/*    Refresh*/}
                     {/*</button>*/}
-                    <button
-                        className="payables-btn payables-btn-primary"
+                    <Button
+                        variant="primary"
                         onClick={() => setShowCreateModal(true)}
                     >
                         <FaPlus />
                         Create Payment
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -412,15 +425,12 @@ const PaymentManagement = () => {
                     <div className="modal payment-modal">
                         <div className="modal-header">
                             <h3>Create New Payment</h3>
-                            <button
-                                className="modal-close"
+                            <CloseButton
                                 onClick={() => {
                                     setShowCreateModal(false);
                                     resetForm();
                                 }}
-                            >
-                                ×
-                            </button>
+                            />
                         </div>
                         <form onSubmit={handleCreatePayment} className="modal-body">
                             {/* Invoice Selection */}
@@ -557,23 +567,22 @@ const PaymentManagement = () => {
                             </div>
 
                             <div className="modal-actions">
-                                <button
-                                    type="button"
-                                    className="payables-btn payables-btn-secondary"
+                                <Button
+                                    variant="ghost"
                                     onClick={() => {
                                         setShowCreateModal(false);
                                         resetForm();
                                     }}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    className="payables-btn payables-btn-primary"
+                                    variant="primary"
                                     disabled={!validationResult || !validationResult.valid}
                                 >
                                     Create Payment
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

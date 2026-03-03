@@ -9,6 +9,7 @@ import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
+import { Button, CloseButton } from '../../../components/common/Button';
 
 const EquipmentBrandManagement = () => {
     const [brands, setBrands] = useState([]);
@@ -293,9 +294,7 @@ const EquipmentBrandManagement = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingBrand ? 'Edit Equipment Brand' : 'Add Equipment Brand'}</h2>
-                            <button className="btn-close" onClick={() => setShowModal(false)}>
-                                &times;
-                            </button>
+                            <CloseButton onClick={() => setShowModal(false)} />
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
@@ -327,17 +326,16 @@ const EquipmentBrandManagement = () => {
                                 </div>
                             </div>
                             <div className="form-actions">
-                                <button
-                                    type="button"
-                                    className="btn-cancel"
+                                <Button
+                                    variant="ghost"
                                     onClick={() => setShowModal(false)}
                                 >
                                     Cancel
-                                </button>
+                                </Button>
                                 {(permissions.canCreate || permissions.canEdit) && (
-                                    <button type="submit" className="btn-primary">
+                                    <Button type="submit" variant="primary">
                                         {editingBrand ? 'Update' : 'Add'} Brand
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         </form>

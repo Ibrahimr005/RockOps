@@ -4,6 +4,7 @@ import { equipmentService } from '../../../services/equipmentService';
 import { authService } from '../../../services/authService';
 import { siteService } from '../../../services/siteService';
 import maintenanceService from '../../../services/maintenanceService';
+import { Button, IconButton } from '../../../components/common/Button';
 
 const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
     const [formData, setFormData] = useState({
@@ -389,13 +390,9 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
                     /* Initial State - Show inline add form */
                     <div className="initial-item-form">
                         <p className="field-hint" style={{ marginBottom: '0.75rem' }}>Add your first item to get started</p>
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={addNewItem}
-                        >
+                        <Button variant="primary" onClick={addNewItem}>
                             <FaPlus /> Add First Item
-                        </button>
+                        </Button>
                     </div>
                 ) : (
                     /* Show Items Table */
@@ -442,14 +439,13 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
                                             )}
                                         </td>
                                         <td style={{ textAlign: 'center' }}>
-                                            <button
-                                                type="button"
-                                                className="btn-icon btn-danger"
+                                            <IconButton
+                                                variant="danger"
+                                                size="sm"
+                                                icon={<FaTrash />}
                                                 onClick={() => removeItem(index)}
                                                 title="Remove item"
-                                            >
-                                                <FaTrash />
-                                            </button>
+                                            />
                                         </td>
                                     </tr>
                                 ))}
@@ -458,22 +454,9 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
 
                         {/* Add More Items Button */}
                         <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-                            <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={addNewItem}
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    padding: '0.75rem 1.25rem',
-                                    borderRadius: 'var(--radius-sm)',
-                                    fontWeight: 'var(--bold-font-weight)',
-                                    fontSize: '0.95rem'
-                                }}
-                            >
+                            <Button variant="secondary" onClick={addNewItem}>
                                 <FaPlus /> Add Another Item
-                            </button>
+                            </Button>
                         </div>
                     </>
                 )}
@@ -481,22 +464,18 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
 
             {/* Actions */}
             <div className="form-actions">
-                <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={handleSave}
-                    disabled={isLoading}
-                >
+                <Button variant="secondary" onClick={handleSave} disabled={isLoading}>
                     Save Draft
-                </button>
-                <button
-                    type="button"
-                    className="btn-primary"
+                </Button>
+                <Button
+                    variant="primary"
                     onClick={handleComplete}
                     disabled={isLoading}
+                    loading={isLoading}
+                    loadingText="Saving..."
                 >
-                    {isLoading ? 'Saving...' : 'Complete Step 1'}
-                </button>
+                    Complete Step 1
+                </Button>
             </div>
         </div>
     );

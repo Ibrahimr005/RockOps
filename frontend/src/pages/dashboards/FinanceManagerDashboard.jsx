@@ -5,6 +5,8 @@ import { DollarSign, TrendingUp, AlertCircle, FileText, CreditCard, Building } f
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -51,87 +53,20 @@ const FinanceManagerDashboard = () => {
 
     return (
         <div className="finance-dashboard">
-            <div className="finance-dashboard-header">
-                <h1>Finance Dashboard</h1>
-                <p>Financial overview and accounting management</p>
-            </div>
+            <PageHeader title="Finance Dashboard" subtitle="Financial overview and accounting management" />
 
             {/* KPI Cards */}
-            <div className="finance-kpi-grid">
-                <div className="finance-kpi-card">
-                    <div className="finance-kpi-icon">
-                        <DollarSign />
-                    </div>
-                    <div className="finance-kpi-content">
-                        <div className="finance-kpi-value">
-                            ${(dashboardData.currentCashBalance || 0).toLocaleString()}
-                        </div>
-                        <div className="finance-kpi-label">Cash Balance</div>
-                        <div className="finance-kpi-sub">Current</div>
-                    </div>
-                </div>
-
-                <div className="finance-kpi-card">
-                    <div className="finance-kpi-icon">
-                        <FileText />
-                    </div>
-                    <div className="finance-kpi-content">
-                        <div className="finance-kpi-value">{dashboardData.totalInvoices}</div>
-                        <div className="finance-kpi-label">Total Invoices</div>
-                        <div className="finance-kpi-sub">{dashboardData.pendingInvoices} Pending</div>
-                    </div>
-                </div>
-
-                <div className="finance-kpi-card">
-                    <div className="finance-kpi-icon">
-                        <AlertCircle />
-                    </div>
-                    <div className="finance-kpi-content">
-                        <div className="finance-kpi-value">{dashboardData.overdueInvoices}</div>
-                        <div className="finance-kpi-label">Overdue Invoices</div>
-                        <div className="finance-kpi-sub">Requires Attention</div>
-                    </div>
-                </div>
-
-                <div className="finance-kpi-card">
-                    <div className="finance-kpi-icon">
-                        <CreditCard />
-                    </div>
-                    <div className="finance-kpi-content">
-                        <div className="finance-kpi-value">
-                            ${(dashboardData.totalPayables || 0).toLocaleString()}
-                        </div>
-                        <div className="finance-kpi-label">Total Payables</div>
-                        <div className="finance-kpi-sub">
-                            ${(dashboardData.overduePayables || 0).toLocaleString()} Overdue
-                        </div>
-                    </div>
-                </div>
-
-                <div className="finance-kpi-card">
-                    <div className="finance-kpi-icon">
-                        <Building />
-                    </div>
-                    <div className="finance-kpi-content">
-                        <div className="finance-kpi-value">{dashboardData.totalFixedAssets}</div>
-                        <div className="finance-kpi-label">Fixed Assets</div>
-                        <div className="finance-kpi-sub">
-                            ${(dashboardData.totalAssetValue || 0).toLocaleString()}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="finance-kpi-card">
-                    <div className="finance-kpi-icon">
-                        <TrendingUp />
-                    </div>
-                    <div className="finance-kpi-content">
-                        <div className="finance-kpi-value">{dashboardData.totalBankAccounts}</div>
-                        <div className="finance-kpi-label">Bank Accounts</div>
-                        <div className="finance-kpi-sub">{dashboardData.reconciledAccounts} Reconciled</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <DollarSign />, label: "Cash Balance", value: `$${(dashboardData.currentCashBalance || 0).toLocaleString()}`, variant: "success", subtitle: "Current" },
+                    { icon: <FileText />, label: "Total Invoices", value: dashboardData.totalInvoices, variant: "primary", subtitle: `${dashboardData.pendingInvoices} Pending` },
+                    { icon: <AlertCircle />, label: "Overdue Invoices", value: dashboardData.overdueInvoices, variant: "danger", subtitle: "Requires Attention" },
+                    { icon: <CreditCard />, label: "Total Payables", value: `$${(dashboardData.totalPayables || 0).toLocaleString()}`, variant: "warning", subtitle: `$${(dashboardData.overduePayables || 0).toLocaleString()} Overdue` },
+                    { icon: <Building />, label: "Fixed Assets", value: dashboardData.totalFixedAssets, variant: "purple", subtitle: `$${(dashboardData.totalAssetValue || 0).toLocaleString()}` },
+                    { icon: <TrendingUp />, label: "Bank Accounts", value: dashboardData.totalBankAccounts, variant: "info", subtitle: `${dashboardData.reconciledAccounts} Reconciled` },
+                ]}
+                columns={3}
+            />
 
             {/* Charts Section */}
             <div className="finance-charts">

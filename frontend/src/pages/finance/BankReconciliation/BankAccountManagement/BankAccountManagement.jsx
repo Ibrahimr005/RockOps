@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaUniversity, FaPlus, FaEdit, FaTrash, FaEye, FaFileExcel } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -21,6 +22,18 @@ const BankAccountManagement = () => {
         currentBalance: '',
         description: ''
     });
+
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showAddModal || showEditModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showEditModal]);
 
     useEffect(() => {
         fetchBankAccounts();
@@ -247,7 +260,7 @@ const BankAccountManagement = () => {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Add New Bank Account</h3>
-                            <button className="modal-close" onClick={() => setShowAddModal(false)}>×</button>
+                            <CloseButton onClick={() => setShowAddModal(false)} />
                         </div>
                         <div className="modal-body">
                             <form className="bank-reconciliation-form">
@@ -327,19 +340,19 @@ const BankAccountManagement = () => {
                             </form>
                         </div>
                         <div className="modal-footer">
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowAddModal(false)}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleAddAccount}
                                 disabled={!formData.accountName || !formData.accountNumber || !formData.bankName}
                             >
                                 Create Account
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -351,7 +364,7 @@ const BankAccountManagement = () => {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Edit Bank Account</h3>
-                            <button className="modal-close" onClick={() => setShowEditModal(false)}>×</button>
+                            <CloseButton onClick={() => setShowEditModal(false)} />
                         </div>
                         <div className="modal-body">
                             <form className="bank-reconciliation-form">
@@ -431,19 +444,19 @@ const BankAccountManagement = () => {
                             </form>
                         </div>
                         <div className="modal-footer">
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowEditModal(false)}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="bank-reconciliation-btn bank-reconciliation-btn-primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleEditAccount}
                                 disabled={!formData.accountName || !formData.accountNumber || !formData.bankName}
                             >
                                 Update Account
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

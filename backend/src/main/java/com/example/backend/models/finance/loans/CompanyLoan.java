@@ -3,7 +3,9 @@ package com.example.backend.models.finance.loans;
 import com.example.backend.models.finance.accountsPayable.enums.AccountType;
 import com.example.backend.models.finance.loans.enums.CompanyLoanStatus;
 import com.example.backend.models.finance.loans.enums.InterestType;
+import com.example.backend.models.finance.loans.enums.LenderType;
 import com.example.backend.models.finance.loans.enums.LoanType;
+import com.example.backend.models.merchant.Merchant;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -35,9 +37,22 @@ public class CompanyLoan {
     private String loanNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "financial_institution_id", nullable = false)
+    @JoinColumn(name = "financial_institution_id", nullable = true)
     @JsonBackReference("institution-loans")
     private FinancialInstitution financialInstitution;
+
+    // WITH this:
+    @Enumerated(EnumType.STRING)
+    @Column(name = "lender_type", nullable = false, length = 30)
+    private LenderType lenderType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "merchant_id", nullable = true)
+    private Merchant merchant;
+
+    // Denormalized for easy display
+    @Column(name = "lender_name", length = 255)
+    private String lenderName;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "loan_type", nullable = false, length = 50)

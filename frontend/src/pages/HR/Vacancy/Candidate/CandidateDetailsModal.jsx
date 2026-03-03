@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     FaUser,
     FaEnvelope,
@@ -16,6 +16,7 @@ import {
     FaClock,
     FaCheckCircle
 } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button/Button';
 import './CandidateDetailsModal.scss';
 
 const CandidateDetailsModal = ({
@@ -26,6 +27,14 @@ const CandidateDetailsModal = ({
                                    onDelete,
                                    vacancyStats
                                }) => {
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     // Format date helper
     const formatDate = (dateString) => {
@@ -62,7 +71,7 @@ const CandidateDetailsModal = ({
     const canHire = !isHired && !(vacancyStats?.isFull && candidate.candidateStatus !== 'POTENTIAL');
 
     return (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="modal-container modal-lg">
                 {/* Modal Header - Using global modal header with primary gradient */}
                 <div className="modal-header ">
@@ -79,9 +88,7 @@ const CandidateDetailsModal = ({
                             </div>
                         </div>
                     </div>
-                    <button className="modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Modal Body - Using global modal body */}
@@ -189,13 +196,13 @@ const CandidateDetailsModal = ({
                                 Resume/CV
                             </h3>
                             <div className="candidate-resume-section">
-                                <button
-                                    className="btn btn-primary"
+                                <Button
+                                    variant="primary"
                                     onClick={() => window.open(candidate.resumeUrl, '_blank')}
                                 >
                                     <FaFilePdf />
                                     View Resume/CV
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     )}
@@ -242,32 +249,32 @@ const CandidateDetailsModal = ({
 
                 {/* Modal Footer - Using global modal footer with space between */}
                 <div className="candidate-modal-footer modal-footer-between">
-                    <button
-                        className="modal-btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={onClose}
                     >
                         Close
-                    </button>
+                    </Button>
 
                     <div className="candidate-primary-actions">
                         {!isHired && (
-                            <button
-                                className="btn btn-primary"
+                            <Button
+                                variant="primary"
                                 onClick={onEdit}
                             >
                                 <FaEdit />
                                 Edit
-                            </button>
+                            </Button>
                         )}
 
                         {canHire && (
-                            <button
-                                className={`btn ${isPendingHire ? 'modal-btn-warning' : 'btn-success'}`}
+                            <Button
+                                variant={isPendingHire ? 'warning' : 'success'}
                                 onClick={onHire}
                             >
                                 {isPendingHire ? <FaClock /> : <FaUserCheck />}
                                 {isPendingHire ? 'Complete Hiring' : 'Hire'}
-                            </button>
+                            </Button>
                         )}
 
                         {isHired && (

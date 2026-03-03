@@ -2,18 +2,25 @@
 // frontend/src/pages/payroll/Loans/components/LoanDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
 import {
-    FaTimes, FaUser, FaMoneyBillWave, FaCalendarAlt, FaPercent,
+    FaUser, FaMoneyBillWave, FaCalendarAlt, FaPercent,
     FaFileAlt, FaCreditCard, FaCheck, FaExclamationTriangle,
     FaChartLine, FaClock, FaDollarSign
 } from 'react-icons/fa';
-import { loanService } from '../../../../services/payroll/loanService';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import './LoanModal.scss';
 
-const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
-    const { showSuccess, showError } = useSnackbar();
-    const [loading, setLoading] = useState(false);
+const LoanDetailsModal = ({ loan, onClose }) => {
+    const { showError } = useSnackbar();
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
     const [repaymentSchedule, setRepaymentSchedule] = useState([]);
     const [scheduleStats, setScheduleStats] = useState({
         totalPaid: 0,
@@ -24,24 +31,41 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
     });
 
     useEffect(() => {
-        if (loan?.id) {
-            loadRepaymentSchedule();
+        if (loan) {
+            generateRepaymentSchedule();
         }
-    }, [loan?.id]);
+    }, [loan]);
 
-    const loadRepaymentSchedule = async () => {
-        try {
-            setLoading(true);
-            const response = await loanService.getRepaymentSchedule(loan.id);
-            const schedules = response.data || [];
-            setRepaymentSchedule(schedules);
-            calculateScheduleStats(schedules);
-        } catch (error) {
-            console.error('Error loading repayment schedule:', error);
-            showError('Failed to load repayment schedule');
-        } finally {
-            setLoading(false);
+    const generateRepaymentSchedule = () => {
+        if (!loan?.installmentAmount || !loan?.numberOfInstallments) {
+            setRepaymentSchedule([]);
+            return;
         }
+
+        const schedules = [];
+        const startDate = new Date(loan.loanStartDate || loan.loanEffectiveDate || loan.effectiveDate || loan.startDate);
+        const paidCount = loan.paidInstallments || 0;
+        const today = new Date();
+
+        for (let i = 0; i < loan.numberOfInstallments; i++) {
+            const dueDate = new Date(startDate);
+            dueDate.setMonth(dueDate.getMonth() + i + 1);
+
+            const isPaid = i < paidCount;
+            const isOverdue = !isPaid && dueDate < today;
+
+            schedules.push({
+                id: i + 1,
+                installmentNumber: i + 1,
+                dueDate: dueDate.toISOString().split('T')[0],
+                scheduledAmount: loan.installmentAmount,
+                actualAmount: isPaid ? loan.installmentAmount : null,
+                status: isPaid ? 'PAID' : (isOverdue ? 'OVERDUE' : 'PENDING')
+            });
+        }
+
+        setRepaymentSchedule(schedules);
+        calculateScheduleStats(schedules);
     };
 
     const calculateScheduleStats = (schedules) => {
@@ -55,15 +79,12 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
         schedules.forEach(schedule => {
             if (schedule.status === 'PAID') {
                 totalPaid += parseFloat(schedule.actualAmount || schedule.scheduledAmount);
+            } else if (schedule.status === 'OVERDUE') {
+                totalOverdue += parseFloat(schedule.scheduledAmount);
             } else if (schedule.status === 'PENDING') {
-                const dueDate = new Date(schedule.dueDate);
-                if (dueDate < today) {
-                    totalOverdue += parseFloat(schedule.scheduledAmount);
-                } else {
-                    totalPending += parseFloat(schedule.scheduledAmount);
-                    if (!nextPayment || dueDate < new Date(nextPayment.dueDate)) {
-                        nextPayment = schedule;
-                    }
+                totalPending += parseFloat(schedule.scheduledAmount);
+                if (!nextPayment) {
+                    nextPayment = schedule;
                 }
             }
         });
@@ -247,13 +268,7 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
                         <FaMoneyBillWave className="modal-icon" />
                         Loan Details - {loan.employeeName}
                     </h3>
-                    <button
-                        type="button"
-                        className="modal-close"
-                        onClick={onClose}
-                    >
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">
@@ -391,13 +406,9 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={onClose}
-                    >
+                    <Button variant="ghost" onClick={onClose}>
                         Close
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

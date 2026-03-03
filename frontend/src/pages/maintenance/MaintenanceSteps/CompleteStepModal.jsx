@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { FaTimes, FaCheck, FaCalendarAlt, FaDollarSign } from 'react-icons/fa';
+import { FaCheck, FaCalendarAlt, FaDollarSign } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/modal-styles.scss';
 import './CompleteStepModal.scss';
 
 const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState({
         expectedEndDate: step?.expectedEndDate ? step.expectedEndDate.split('T')[0] : '',
         expectedCost: step?.expectedCost || step?.stepCost || '',
@@ -44,6 +48,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
     if (!isOpen) return null;
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -90,6 +95,14 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -106,17 +119,16 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
     };
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-container" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <div className="modal-title">
-                        <FaCheck />
-                        Complete Maintenance Step
+        <>
+            <div className="modal-backdrop">
+                <div className="modal-container" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <div className="modal-title">
+                            <FaCheck />
+                            Complete Maintenance Step
+                        </div>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
-                </div>
 
                 <div className="modal-body">
                     <div className="complete-step-info">
@@ -235,23 +247,27 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={onClose}
-                    >
-                        <FaTimes /> Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="btn btn-success"
-                        onClick={handleSubmit}
-                    >
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" onClick={handleSubmit}>
                         <FaCheck /> Complete Step
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

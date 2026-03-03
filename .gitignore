@@ -14,4 +14,6 @@ FRONTEND_DEBUGGING_GUIDE.md
 
 # AWS Pipeline configuration files
 backend-pipeline.json
-frontend-pipeline.json
+frontend-pipeline.json.
+
+.DS_Store

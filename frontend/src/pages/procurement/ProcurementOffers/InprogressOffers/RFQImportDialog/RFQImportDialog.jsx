@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
-import { FiX, FiUpload, FiFile, FiCheck, FiAlertCircle, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiUpload, FiFile, FiCheck, FiAlertCircle, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import './RFQImportDialog.scss';
 import Snackbar from '../../../../../components/common/Snackbar/Snackbar';
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import { rfqService } from '../../../../../services/procurement/rfqService';
 import { offerService } from '../../../../../services/procurement/offerService';
 
 const RFQImportDialog = ({ isVisible, onClose, offer, merchants, onSuccess, onShowSnackbar }) => {
+    // Scroll lock
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
+
     const [selectedFile, setSelectedFile] = useState(null);
     const [merchantId, setMerchantId] = useState('');
     const [previewData, setPreviewData] = useState(null);
@@ -154,9 +167,7 @@ const RFQImportDialog = ({ isVisible, onClose, offer, merchants, onSuccess, onSh
                         <FiUpload />
                         Import RFQ Response
                     </h2>
-                    <button className="btn-close" onClick={handleClose}>
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={handleClose} />
                 </div>
 
                 <div className="modal-body">
@@ -228,19 +239,15 @@ const RFQImportDialog = ({ isVisible, onClose, offer, merchants, onSuccess, onSh
                                     </div>
 
                                     {/* Upload Button */}
-                                    <button
-                                        className="btn-primary btn-upload"
+                                    <Button
+                                        variant="primary"
                                         onClick={handleUploadAndPreview}
-                                        disabled={!selectedFile || !merchantId || isUploading}
+                                        disabled={!selectedFile || !merchantId}
+                                        loading={isUploading}
+                                        loadingText="Uploading and Validating..."
                                     >
-                                        {isUploading ? (
-                                            'Uploading and Validating...'
-                                        ) : (
-                                            <>
-                                                <FiUpload /> Upload and Preview
-                                            </>
-                                        )}
-                                    </button>
+                                        <FiUpload /> Upload and Preview
+                                    </Button>
                                 </div>
                             </>
                         ) : (
@@ -357,15 +364,15 @@ const RFQImportDialog = ({ isVisible, onClose, offer, merchants, onSuccess, onSh
 
                                     {/* Actions */}
                                     <div className="preview-actions">
-                                        <button
-                                            className="btn-primary"
+                                        <Button
+                                            variant="primary"
                                             onClick={() => {
                                                 setPreviewData(null);
                                                 setSelectedRows([]);
                                             }}
                                         >
                                             Upload Different File
-                                        </button>
+                                        </Button>
                                     </div>
                                 </div>
                             </>
@@ -374,23 +381,19 @@ const RFQImportDialog = ({ isVisible, onClose, offer, merchants, onSuccess, onSh
                 </div>
 
                 <div className="modal-footer">
-                    <button className="modal-btn-secondary" onClick={handleClose} disabled={isUploading || isImporting}>
+                    <Button variant="ghost" onClick={handleClose} disabled={isUploading || isImporting}>
                         Cancel
-                    </button>
+                    </Button>
                     {previewData && (
-                        <button
-                            className="btn-success"
+                        <Button
+                            variant="success"
                             onClick={handleConfirmImport}
-                            disabled={isImporting || selectedRows.length === 0}
+                            disabled={selectedRows.length === 0}
+                            loading={isImporting}
+                            loadingText="Importing..."
                         >
-                            {isImporting ? (
-                                'Importing...'
-                            ) : (
-                                <>
-                                    <FiCheck /> Confirm Import ({selectedRows.length} items)
-                                </>
-                            )}
-                        </button>
+                            <FiCheck /> Confirm Import ({selectedRows.length} items)
+                        </Button>
                     )}
                 </div>
             </div>

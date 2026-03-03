@@ -5,6 +5,7 @@ import com.example.backend.dto.finance.accountsPayable.PaymentRequestResponseDTO
 import com.example.backend.models.user.User;
 import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/finance/payment-requests")
 @CrossOrigin(origins = "http://localhost:3000")
+@Slf4j
 public class PaymentRequestController {
 
     private final PaymentRequestService paymentRequestService;
@@ -37,6 +39,7 @@ public class PaymentRequestController {
             List<PaymentRequestResponseDTO> requests = paymentRequestService.getPendingPaymentRequests();
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
+            log.error("Error fetching pending payment requests", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -49,8 +52,10 @@ public class PaymentRequestController {
     public ResponseEntity<List<PaymentRequestResponseDTO>> getReadyToPay() {
         try {
             List<PaymentRequestResponseDTO> requests = paymentRequestService.getApprovedAndReadyToPay();
+            log.info("Found {} payment requests ready to pay", requests.size());
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
+            log.error("Error fetching ready-to-pay payment requests", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -65,6 +70,7 @@ public class PaymentRequestController {
             List<PaymentRequestResponseDTO> requests = paymentRequestService.getAllPaymentRequests();
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
+            log.error("Error fetching all payment requests", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -96,6 +102,7 @@ public class PaymentRequestController {
             List<PaymentRequestResponseDTO> requests = paymentRequestService.getPaymentRequestsByMerchant(merchantId);
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
+            log.error("Error fetching payment requests for merchant {}", merchantId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

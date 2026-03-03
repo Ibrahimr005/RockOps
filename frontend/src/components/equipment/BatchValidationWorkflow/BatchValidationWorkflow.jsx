@@ -5,6 +5,7 @@ import { batchValidationService } from '../../../services/batchValidationService
 import { siteService } from '../../../services/siteService.js';
 import { itemService } from '../../../services/warehouse/itemService.js';
 import { warehouseService } from '../../../services/warehouseService.js';
+import { Button, CloseButton } from '../../../components/common/Button';
 import './BatchValidationWorkflow.scss';
 
 const BatchValidationWorkflow = ({
@@ -474,11 +475,7 @@ const BatchValidationWorkflow = ({
         <div className="batch-validation-modal-backdrop" onClick={handleOverlayClick}>            <div className="batch-validation-modal">
                 <div className="batch-validation-modal-header">
                     <h2>{title}</h2>
-                    <button className="btn-close" onClick={onClose} aria-label="Close">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12"/>
-                        </svg>
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <form className="batch-validation-form" onSubmit={handleSubmit}>
@@ -500,14 +497,16 @@ const BatchValidationWorkflow = ({
                                         required
                                         className="batch-number-input"
                                     />
-                                    <button
-                                        type="button"
+                                    <Button
+                                        variant="primary"
                                         onClick={handleBatchValidation}
                                         disabled={isValidating || !batchNumber}
                                         className="validate-batch-button"
+                                        loading={isValidating}
+                                        loadingText="Validating..."
                                     >
-                                        {isValidating ? 'Validating...' : 'Validate'}
-                                    </button>
+                                        Validate
+                                    </Button>
                                 </div>
                                 <p className="batch-input-help">
                                     Enter the batch number to check if a transaction already exists or create a new one.
@@ -524,13 +523,13 @@ const BatchValidationWorkflow = ({
                                         <h4>Batch #{batchNumber}</h4>
                                         <p>{validationResult.message}</p>
                                     </div>
-                                    <button
-                                        type="button"
+                                    <Button
+                                        variant="ghost"
                                         onClick={handleBackToBatchInput}
                                         className="change-batch-button"
                                     >
                                         Change Batch
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
 
@@ -610,14 +609,15 @@ const BatchValidationWorkflow = ({
                                     <div className="items-section">
                                         <div className="items-header">
                                             <label>Requested Items</label>
-                                            <button
-                                                type="button"
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
                                                 onClick={addItem}
                                                 disabled={!selectedWarehouse || isLoadingItems || availableItemTypes.length === 0}
                                                 className="add-item-button"
                                             >
                                                 Add Item
-                                            </button>
+                                            </Button>
                                         </div>
 
                                         {transactionItems.map((item, index) => (
@@ -625,13 +625,14 @@ const BatchValidationWorkflow = ({
                                                 <div className="item-header">
                                                     <span>Item {index + 1}</span>
                                                     {transactionItems.length > 1 && (
-                                                        <button
-                                                            type="button"
+                                                        <Button
+                                                            variant="danger"
+                                                            size="sm"
                                                             onClick={() => removeItem(index)}
                                                             className="remove-item-button"
                                                         >
                                                             Remove
-                                                        </button>
+                                                        </Button>
                                                     )}
                                                 </div>
                                                 <div className="form-row">
@@ -730,27 +731,28 @@ const BatchValidationWorkflow = ({
 
                     <div className="modal-footer">
                         {currentStep === 'batch_input' ? (
-                            <button
-                                type="button"
+                            <Button
+                                variant="primary"
                                 onClick={handleBatchValidation}
                                 disabled={isValidating || !batchNumber}
-                                className="btn-primary"
+                                loading={isValidating}
+                                loadingText="Validating..."
                             >
-                                {isValidating ? 'Validating...' : 'Continue'}
-                            </button>
+                                Continue
+                            </Button>
                         ) : validationResult && (validationResult.scenario === 'not_found' || validationResult.scenario === 'incoming_validation') ? (
-                            <button
+                            <Button
+                                variant="primary"
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="btn-primary"
+                                loading={isSubmitting}
+                                loadingText="Processing..."
                             >
-                                {isSubmitting 
-                                    ? 'Processing...' 
-                                    : validationResult.scenario === 'incoming_validation' 
-                                        ? 'Validate Transaction' 
-                                        : 'Create Transaction'
+                                {validationResult.scenario === 'incoming_validation'
+                                    ? 'Validate Transaction'
+                                    : 'Create Transaction'
                                 }
-                            </button>
+                            </Button>
                         ) : null}
                     </div>
                 </form>

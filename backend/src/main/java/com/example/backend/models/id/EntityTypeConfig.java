@@ -23,15 +23,30 @@ public enum EntityTypeConfig {
     EQUIPMENT_BRAND("EQB", 6),
 
     // HR
-    EMPLOYEE("EMP", 6),
-    DEPARTMENT("DEPT", 6),
-    JOB_POSITION("JP", 6),
-    VACANCY("VAC", 6),
+    EMPLOYEE("EMP", 6, true),
+    DEPARTMENT("DEPT", 6, true),
+    JOB_POSITION("POS", 6, true),
+    VACANCY("VAC", 6, true),
     WORK_TYPE("WT", 6),
+
+    // Payroll
+    LOAN("ELOAN", 6),
+    BONUS("BNS", 6),
+    PAYROLL("PRL", 6),
+    EMPLOYEE_PAYROLL("EPRL", 6),
+    PAYROLL_BATCH("PB", 6),
+    PAYMENT_TYPE("PT", 6),
+
+    // Maintenance
+    MAINTENANCE_RECORD("MR", 6),
 
     // General
     SITE("SITE", 6),
     TRANSACTION("TXN", 6),
+
+    // HR - Salary & Demotion
+    SALARY_INCREASE_REQUEST("SIR", 6),
+    DEMOTION_REQUEST("DEM", 6),
 
     // Finance - Company Loans
     FINANCIAL_INSTITUTION("FI", 6),
@@ -39,10 +54,16 @@ public enum EntityTypeConfig {
 
     private final String prefix;
     private final int paddingLength;
+    private final boolean hashed;
 
     EntityTypeConfig(String prefix, int paddingLength) {
+        this(prefix, paddingLength, false);
+    }
+
+    EntityTypeConfig(String prefix, int paddingLength, boolean hashed) {
         this.prefix = prefix;
         this.paddingLength = paddingLength;
+        this.hashed = hashed;
     }
 
     public String getPrefix() {
@@ -53,6 +74,11 @@ public enum EntityTypeConfig {
         return paddingLength;
     }
 
+    public boolean isHashed() {
+        return hashed;
+    }
+
+    // Entity type is now the enum name itself
     public String getEntityType() {
         return this.name();
     }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiDollarSign, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import IntroCard from '../../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
 import ProcessPaymentModal from './ProcessPaymentModal';
@@ -163,8 +164,9 @@ const ProcessPaymentPage = () => {
             accessor: 'action',
             sortable: false,
             render: (row) => (
-                <button
-                    className="btn-pay"
+                <Button
+                    variant="primary"
+                    size="sm"
                     onClick={(e) => {
                         e.stopPropagation();
                         handleRowClick(row);
@@ -172,7 +174,7 @@ const ProcessPaymentPage = () => {
                 >
                     <FiDollarSign />
                     <span>Pay</span>
-                </button>
+                </Button>
             )
         }
     ];

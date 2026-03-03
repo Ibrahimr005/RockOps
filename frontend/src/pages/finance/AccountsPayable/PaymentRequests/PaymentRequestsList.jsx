@@ -4,6 +4,14 @@ import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
 import { useNavigate } from 'react-router-dom';
+import {
+    PAYMENT_SOURCE_TYPES,
+    PAYMENT_TARGET_TYPES,
+    getSourceTypeLabel,
+    getSourceTypeBadgeClass,
+    getTargetTypeLabel,
+    getTargetTypeBadgeClass,
+} from '../../../../utils/paymentRequestTypes';
 
 import './PaymentRequests.scss';
 
@@ -88,50 +96,30 @@ const PaymentRequestsList = () => {
         },
         {
             header: 'Source',
-            accessor: 'sourceReference',
+            accessor: 'sourceNumber',
             sortable: true,
             render: (row) => {
-                if (row.purchaseOrderNumber) {
-                    return (
-                        <span style={{
-                            color: 'var(--primary-color)',
-                            fontWeight: 500
-                        }}>
-                            {row.purchaseOrderNumber}
-                </span>
-                    );
-                } else if (row.maintenanceStepId) {
-                    return (
-                        <span style={{
-                            color: 'var(--success-color)',
-                            fontWeight: 500
-                        }}>
-                            {row.maintenanceStepId.substring(0, 8)}
-                        </span>
-                    );
-                }
-                else if (row.companyLoanNumber) {
-                    return (
-                        <span style={{
-                            color: 'var(--success-color)',
-                            fontWeight: 500
-                        }}>
-                            {row.companyLoanNumber}
-                        </span>
-                    );
-                }
-                return <span style={{ color: 'var(--text-muted)' }}>N/A</span>;
+                const badgeClass = getSourceTypeBadgeClass(row.sourceType);
+                const label = getSourceTypeLabel(row.sourceType);
+                return (
+                    <span className={`source-badge ${badgeClass}`}>
+                        {row.sourceNumber || label}
+                    </span>
+                );
             }
         },
         {
             header: 'Recipient',
-            accessor: 'merchantName',
+            accessor: 'targetName',
             sortable: true,
             render: (row) => {
-                if (row.institutionName) {
-                    return row.institutionName;
-                }
-                return row.merchantName || 'N/A';
+                const badgeClass = getTargetTypeBadgeClass(row.targetType);
+                const displayName = row.targetName || getTargetTypeLabel(row.targetType);
+                return (
+                    <span className={`recipient-badge ${badgeClass}`}>
+                        {displayName}
+                    </span>
+                );
             }
         },
         {

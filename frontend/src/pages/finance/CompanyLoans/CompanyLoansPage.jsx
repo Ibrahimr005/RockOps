@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiDollarSign, FiPlus, FiEye, FiEdit2, FiTrendingUp, FiAlertCircle, FiCalendar } from 'react-icons/fi';
-import {FaUniversity} from 'react-icons/fa';
+import {FaUniversity, FaStore} from 'react-icons/fa';
 import { financeService } from '../../../services/financeService';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import Tabs from '../../../components/common/Tabs/Tabs';
 import DataTable from '../../../components/common/DataTable/DataTable';
-import Snackbar from '../../../components/common/Snackbar/Snackbar';
+import { Button } from '../../../components/common/Button';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './CompanyLoansPage.scss';
 
 const CompanyLoansPage = () => {
     const navigate = useNavigate();
+    const { showSuccess, showError } = useSnackbar();
 
     // State
     const [loans, setLoans] = useState([]);
@@ -19,9 +21,6 @@ const CompanyLoansPage = () => {
     const [overdueInstallments, setOverdueInstallments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('loans');
-
-    // Snackbar
-    const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
 
     // Fetch data on mount
     useEffect(() => {
@@ -44,14 +43,15 @@ const CompanyLoansPage = () => {
             setOverdueInstallments(overdueRes.data || overdueRes || []);
         } catch (error) {
             console.error('Error fetching data:', error);
-            showSnackbar('Failed to load data', 'error');
+            showError('Failed to load data');
         } finally {
             setIsLoading(false);
         }
     };
 
     const showSnackbar = (message, type = 'success') => {
-        setSnackbar({ show: true, message, type });
+        if (type === 'error') showError(message);
+        else showSuccess(message);
     };
 
     // Format currency
@@ -90,7 +90,7 @@ const CompanyLoansPage = () => {
         return statusClasses[status] || 'status-badge--default';
     };
 
-    // Loan columns
+    // Loan columns — UPDATED to show lender name + type badge
     const loanColumns = [
         {
             header: 'Loan Number',
@@ -99,11 +99,19 @@ const CompanyLoansPage = () => {
             width: '120px'
         },
         {
-            header: 'Institution',
-            accessor: 'financialInstitutionName',
+            header: 'Lender',
+            accessor: 'lenderName',
             sortable: true,
             filterable: true,
-            filterType: 'select'
+            filterType: 'select',
+            render: (row) => (
+                <div className="lender-cell">
+                    <span className={`lender-type-icon lender-type-icon--${(row.lenderType || 'FINANCIAL_INSTITUTION').toLowerCase()}`}>
+                        {row.lenderType === 'MERCHANT' ? <FaStore /> : <FaUniversity />}
+                    </span>
+                    <span>{row.lenderName || row.financialInstitutionName || '-'}</span>
+                </div>
+            )
         },
         {
             header: 'Type',
@@ -322,12 +330,13 @@ const CompanyLoansPage = () => {
                         You have <strong>{dashboardData.overdueInstallments}</strong> overdue installments
                         totaling <strong>{formatCurrency(dashboardData.totalOverdueAmount)}</strong>
                     </span>
-                    <button
-                        className="alerts-banner__action"
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setActiveTab('overdue')}
                     >
                         View Overdue
-                    </button>
+                    </Button>
                 </div>
             )}
 
@@ -346,12 +355,12 @@ const CompanyLoansPage = () => {
             {activeTab === 'loans' && (
                 <div className="tab-content tab-content--with-actions">
                     <div className="tab-content__extra-actions">
-                        <button
-                            className="btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={() => navigate('/finance/company-loans/institutions')}
                         >
                             <FaUniversity /> Institutions
-                        </button>
+                        </Button>
                     </div>
                     <DataTable
                         data={loans}
@@ -402,13 +411,6 @@ const CompanyLoansPage = () => {
                 </div>
             )}
 
-            {/* Snackbar */}
-            <Snackbar
-                show={snackbar.show}
-                message={snackbar.message}
-                type={snackbar.type}
-                onClose={() => setSnackbar({ ...snackbar, show: false })}
-            />
         </div>
     );
 };

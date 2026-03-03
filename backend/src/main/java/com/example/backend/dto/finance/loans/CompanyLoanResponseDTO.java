@@ -4,6 +4,7 @@ import com.example.backend.models.finance.accountsPayable.enums.AccountType;
 import com.example.backend.models.finance.loans.CompanyLoan;
 import com.example.backend.models.finance.loans.enums.CompanyLoanStatus;
 import com.example.backend.models.finance.loans.enums.InterestType;
+import com.example.backend.models.finance.loans.enums.LenderType;
 import com.example.backend.models.finance.loans.enums.LoanType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,6 +31,12 @@ public class CompanyLoanResponseDTO {
     private UUID financialInstitutionId;
     private String financialInstitutionName;
     private String financialInstitutionNumber;
+
+    // ADD after financialInstitutionNumber:
+    private LenderType lenderType;
+    private UUID merchantId;
+    private String merchantName;
+    private String lenderName;  // unified name regardless of type
 
     // Loan details
     private LoanType loanType;
@@ -84,9 +91,17 @@ public class CompanyLoanResponseDTO {
         CompanyLoanResponseDTO dto = CompanyLoanResponseDTO.builder()
                 .id(entity.getId())
                 .loanNumber(entity.getLoanNumber())
+//                .financialInstitutionId(entity.getFinancialInstitution() != null ? entity.getFinancialInstitution().getId() : null)
+//                .financialInstitutionName(entity.getFinancialInstitution() != null ? entity.getFinancialInstitution().getName() : null)
+//                .financialInstitutionNumber(entity.getFinancialInstitution() != null ? entity.getFinancialInstitution().getInstitutionNumber() : null)
+                // WITH:
+                .lenderType(entity.getLenderType())
                 .financialInstitutionId(entity.getFinancialInstitution() != null ? entity.getFinancialInstitution().getId() : null)
                 .financialInstitutionName(entity.getFinancialInstitution() != null ? entity.getFinancialInstitution().getName() : null)
                 .financialInstitutionNumber(entity.getFinancialInstitution() != null ? entity.getFinancialInstitution().getInstitutionNumber() : null)
+                .merchantId(entity.getMerchant() != null ? entity.getMerchant().getId() : null)
+                .merchantName(entity.getMerchant() != null ? entity.getMerchant().getName() : null)
+                .lenderName(entity.getLenderName())
                 .loanType(entity.getLoanType())
                 .principalAmount(entity.getPrincipalAmount())
                 .remainingPrincipal(entity.getRemainingPrincipal())

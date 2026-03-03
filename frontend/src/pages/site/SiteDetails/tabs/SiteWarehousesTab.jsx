@@ -9,6 +9,7 @@ import ConfirmationDialog from "../../../../components/common/ConfirmationDialog
 import { siteService } from "../../../../services/siteService";
 import { warehouseService } from "../../../../services/warehouseService";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
+import { Button, CloseButton } from '../../../../components/common/Button';
 
 
 
@@ -1249,15 +1250,15 @@ const SiteWarehousesTab = ({siteId}) => {
             {error ? (
                 <div className="error-container">
                     <p>{error}</p>
-                    <button
+                    <Button
+                        variant="primary"
                         onClick={() => {
                             setError(null);
                             fetchWarehouses();
                         }}
-                        className="retry-button"
                     >
                         Try Again
-                    </button>
+                    </Button>
                 </div>
             ) : (
                 <div className="data-table-container">
@@ -1295,9 +1296,7 @@ const SiteWarehousesTab = ({siteId}) => {
                     <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modern-modal-header">
                             <h2>Add New Warehouse</h2>
-                            <button className="modern-modal-close" onClick={handleCloseAddModal}>
-                                ×
-                            </button>
+                            <CloseButton onClick={handleCloseAddModal} />
                         </div>
 
                         <div className="modern-modal-body">
@@ -1436,22 +1435,22 @@ const SiteWarehousesTab = ({siteId}) => {
                         </div>
 
                         <div className="modern-modal-footer">
-                            <button
-                                type="button"
-                                className="modern-btn modern-btn-cancel"
+                            <Button
+                                variant="ghost"
                                 onClick={handleCloseAddModal}
                                 disabled={isSubmitting}
                             >
                                 {t('common.cancel')}
-                            </button>
-                            <button
-                                type="submit"
-                                className="modern-btn modern-btn-primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleAddWarehouseClick}
                                 disabled={isSubmitting}
+                                loading={isSubmitting}
+                                loadingText="Adding..."
                             >
-                                {isSubmitting ? 'Adding...' : 'Add Warehouse'}
-                            </button>
+                                Add Warehouse
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -1463,9 +1462,7 @@ const SiteWarehousesTab = ({siteId}) => {
                     <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modern-modal-header">
                             <h2>Edit Warehouse</h2>
-                            <button className="modern-modal-close" onClick={handleCloseEditModal}>
-                                ×
-                            </button>
+                            <CloseButton onClick={handleCloseEditModal} />
                         </div>
 
                         <div className="modern-modal-body">
@@ -1603,20 +1600,18 @@ const SiteWarehousesTab = ({siteId}) => {
                         </div>
 
                         <div className="modern-modal-footer">
-                            <button
-                                type="button"
-                                className="modern-btn modern-btn-cancel"
+                            <Button
+                                variant="ghost"
                                 onClick={handleCloseEditModal}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="modern-btn modern-btn-primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleUpdateWarehouse}
                             >
                                 Update Warehouse
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -1628,7 +1623,7 @@ const SiteWarehousesTab = ({siteId}) => {
                     <div className="add-warehouse-modal-content warehouse-manage-employees-modal-content">
                         <div className="add-warehouse-modal-header">
                             <h2>Manage Employees - {managingWarehouse.name}</h2>
-                            <button className="add-warehouse-modal-close-button" onClick={handleCloseManageEmployeesModal}>×</button>
+                            <CloseButton onClick={handleCloseManageEmployeesModal} />
                         </div>
 
                         <div className="add-warehouse-modal-body warehouse-manage-employees-modal-body">
@@ -1653,13 +1648,12 @@ const SiteWarehousesTab = ({siteId}) => {
                             />
 
                             <div className="warehouse-manage-employees-modal-actions">
-                                <button
-                                    type="button"
-                                    className="add-warehouse-cancel-button"
+                                <Button
+                                    variant="ghost"
                                     onClick={handleCloseManageEmployeesModal}
                                 >
                                     Close
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </div>

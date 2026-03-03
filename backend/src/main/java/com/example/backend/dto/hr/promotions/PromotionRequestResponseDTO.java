@@ -28,6 +28,7 @@ public class PromotionRequestResponseDTO {
 
     // Employee information
     private UUID employeeId;
+    private String employeeNumber;
     private String employeeName;
     private String employeePhotoUrl;
 

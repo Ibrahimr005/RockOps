@@ -1,12 +1,19 @@
 package com.example.backend.services.finance.accountsPayable;
 
 import com.example.backend.dto.finance.accountsPayable.ApproveRejectPaymentRequestDTO;
+import com.example.backend.dto.finance.accountsPayable.BatchEmployeeDTO;
 import com.example.backend.dto.finance.accountsPayable.PaymentRequestItemResponseDTO;
 import com.example.backend.dto.finance.accountsPayable.PaymentRequestResponseDTO;
+import com.example.backend.models.payroll.PayrollBatch;
+import com.example.backend.models.payroll.EmployeePayroll;
+import com.example.backend.models.payroll.Payroll;
 import com.example.backend.models.finance.accountsPayable.OfferFinancialReview;
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
 import com.example.backend.models.finance.accountsPayable.PaymentRequestItem;
+import com.example.backend.models.finance.accountsPayable.PaymentRequestSourceProvider;
 import com.example.backend.models.finance.accountsPayable.PaymentRequestStatusHistory;
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
 import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestItemStatus;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
@@ -24,14 +31,22 @@ import com.example.backend.repositories.finance.accountsPayable.PaymentRequestIt
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestStatusHistoryRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
-import com.example.backend.models.warehouse.ItemType;
-import java.math.BigDecimal;  // ✅ ADD THIS if not present
-
+import com.example.backend.repositories.payroll.BonusRepository;
+import com.example.backend.repositories.payroll.LoanRepository;
+import com.example.backend.services.finance.loans.LoanPaymentRequestService;
+import com.example.backend.services.payroll.PayrollBatchService;
 import com.example.backend.services.procurement.LogisticsService;
+import com.example.backend.models.payroll.Bonus;
+import com.example.backend.models.payroll.Loan;
+import com.example.backend.models.payroll.PayrollStatus;
+import com.example.backend.models.warehouse.ItemType;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -45,9 +60,11 @@ public class PaymentRequestService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final OfferFinancialReviewRepository offerFinancialReviewRepository;
     private final PaymentRequestItemRepository paymentRequestItemRepository;
+    private final PayrollBatchService payrollBatchService;
+    private final LoanRepository loanRepository;
+    private final BonusRepository bonusRepository;
     private final LogisticsService logisticsService;
-
-
+    private final LoanPaymentRequestService loanPaymentRequestService;
 
     @Autowired
     public PaymentRequestService(
@@ -55,13 +72,22 @@ public class PaymentRequestService {
             PaymentRequestStatusHistoryRepository statusHistoryRepository,
             PurchaseOrderRepository purchaseOrderRepository,
             OfferFinancialReviewRepository offerFinancialReviewRepository,
-            PaymentRequestItemRepository paymentRequestItemRepository,LogisticsService logisticsService) {
+            PaymentRequestItemRepository paymentRequestItemRepository,
+            @Lazy PayrollBatchService payrollBatchService,
+            LoanRepository loanRepository,
+            BonusRepository bonusRepository,
+            LogisticsService logisticsService,
+            @Lazy LoanPaymentRequestService loanPaymentRequestService) {
         this.paymentRequestRepository = paymentRequestRepository;
         this.statusHistoryRepository = statusHistoryRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.offerFinancialReviewRepository = offerFinancialReviewRepository;
         this.paymentRequestItemRepository = paymentRequestItemRepository;
+        this.payrollBatchService = payrollBatchService;
+        this.loanRepository = loanRepository;
+        this.bonusRepository = bonusRepository;
         this.logisticsService = logisticsService;
+        this.loanPaymentRequestService = loanPaymentRequestService;
     }
 
     public List<PaymentRequestResponseDTO> getAllPaymentRequests() {
@@ -71,133 +97,10 @@ public class PaymentRequestService {
                 .collect(Collectors.toList());
     }
 
-//    /**
-//     * Auto-create payment request when PO is created (called from Procurement)
-//     */
-//    @Transactional
-//    public PaymentRequestResponseDTO createPaymentRequestFromPO(
-//            UUID purchaseOrderId,
-//            UUID offerId,
-//            String createdByUsername) {
-//
-//        System.err.println("💚 ENTERED createPaymentRequestFromPO");
-//        System.err.println("💚 PO ID: " + purchaseOrderId);
-//        System.err.println("💚 Offer ID: " + offerId);
-//
-//        // Load PO
-//        PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
-//                .orElseThrow(() -> new RuntimeException("Purchase Order not found with ID: " + purchaseOrderId));
-//        System.err.println("💚 Found PO: " + po.getPoNumber());
-//
-//        // Check if payment request already exists for this PO
-//        Optional<PaymentRequest> existingRequest = paymentRequestRepository.findByPurchaseOrderId(purchaseOrderId);
-//        if (existingRequest.isPresent()) {
-//            System.err.println("❌ Payment request already exists!");
-//            throw new RuntimeException("Payment request already exists for this Purchase Order");
-//        }
-//
-//        String requestNumber = generatePaymentRequestNumber();
-//        System.err.println("💚 Request number: " + requestNumber);
-//
-//        // Get merchant info from PO items
-//        List<PurchaseOrderItem> poItems = po.getPurchaseOrderItems();
-//        if (poItems == null || poItems.isEmpty()) {
-//            throw new RuntimeException("Purchase Order has no items");
-//        }
-//
-//        Merchant merchant = poItems.get(0).getMerchant();
-//        System.err.println("💚 Merchant: " + (merchant != null ? merchant.getName() : "null"));
-//
-//        // Load offer financial review
-//        OfferFinancialReview offerFinancialReview = null;
-//        if (offerId != null) {
-//            offerFinancialReview = offerFinancialReviewRepository
-//                    .findByOfferId(offerId)
-//                    .orElse(null);
-//            System.err.println("💚 Found Offer Financial Review: " + (offerFinancialReview != null));
-//        }
-//
-//        // Create Payment Request - Using ACTUAL field names from your model
-//        PaymentRequest paymentRequest = PaymentRequest.builder()
-//                .requestNumber(requestNumber)
-//                .purchaseOrder(po)
-//                .offerFinancialReview(offerFinancialReview)
-//                .requestedAmount(BigDecimal.valueOf(po.getTotalAmount()))
-//                .currency(po.getCurrency())
-//                .description("Payment for Purchase Order " + po.getPoNumber())
-//                .status(PaymentRequestStatus.PENDING)
-//                .requestedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000"))  // System generated
-//                .requestedByUserName(createdByUsername)  // ✅ CORRECT field name
-//                .requestedByDepartment("Procurement")
-//                .requestedAt(LocalDateTime.now())
-//                .paymentDueDate(po.getExpectedDeliveryDate() != null ? po.getExpectedDeliveryDate().toLocalDate() : null)
-//                .totalPaidAmount(BigDecimal.ZERO)
-//                .remainingAmount(BigDecimal.valueOf(po.getTotalAmount()))
-//                .merchant(merchant)  // ✅ Your model has merchant relationship
-//                .merchantName(merchant != null ? merchant.getName() : "Unknown Merchant")
-//                .merchantAccountNumber(null)
-//                .merchantBankName(null)
-//                .merchantContactPerson(merchant != null ? merchant.getContactPersonName() : null)
-//                .merchantContactPhone(merchant != null ? merchant.getContactPhone() : null)
-//                .merchantContactEmail(merchant != null ? merchant.getContactEmail() : null)
-//                .build();
-//
-//        PaymentRequest savedPaymentRequest = paymentRequestRepository.save(paymentRequest);
-//        System.err.println("💚 Payment Request saved with ID: " + savedPaymentRequest.getId());
-//
-//        // Create Payment Request Items
-//        List<PaymentRequestItem> prItems = new ArrayList<>();
-//        for (PurchaseOrderItem poItem : poItems) {
-//            // Get item details from ItemType relationship
-//            ItemType itemType = poItem.getItemType();
-//            String itemName = itemType != null ? itemType.getName() : "Unknown Item";
-//            String itemDescription = itemType != null && itemType.getComment() != null ? itemType.getComment() : "";
-//            String unit = itemType != null && itemType.getMeasuringUnit() != null ? itemType.getMeasuringUnit() : "Unit";
-//
-//            PaymentRequestItem prItem = PaymentRequestItem.builder()
-//                    .paymentRequest(savedPaymentRequest)
-//                    .itemId(poItem.getId())
-//                    .itemName(itemName)
-//                    .itemDescription(itemDescription)
-//                    .quantity(BigDecimal.valueOf(poItem.getQuantity()))
-//                    .unit(unit)
-//                    .unitPrice(BigDecimal.valueOf(poItem.getUnitPrice()))
-//                    .totalPrice(BigDecimal.valueOf(poItem.getTotalPrice()))
-//                    .paidAmount(BigDecimal.ZERO)
-//                    .remainingAmount(BigDecimal.valueOf(poItem.getTotalPrice()))
-//                    .status(PaymentRequestItemStatus.PENDING)
-//                    .build();
-//            prItems.add(prItem);
-//        }
-//
-//        List<PaymentRequestItem> savedItems = paymentRequestItemRepository.saveAll(prItems);
-//        System.err.println("💚 Saved " + savedItems.size() + " payment request items");
-//
-//        // Create status history entry - toStatus is STRING in your model
-//        PaymentRequestStatusHistory historyEntry = PaymentRequestStatusHistory.builder()
-//                .paymentRequest(savedPaymentRequest)
-//                .fromStatus(null)
-//                .toStatus(PaymentRequestStatus.PENDING.name())  // ✅ Convert to STRING with .name()
-//                .changedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
-//                .changedByUserName(createdByUsername)  // ✅ CORRECT field name
-//                .changedAt(LocalDateTime.now())
-//                .notes("Payment request created automatically from PO " + po.getPoNumber())
-//                .build();
-//
-//        statusHistoryRepository.save(historyEntry);
-//        System.err.println("💚 Status history created");
-//
-//        // Convert to DTO - Call existing method from your service
-//        PaymentRequestResponseDTO responseDTO = convertToDTO(savedPaymentRequest);
-//        System.err.println("✅ Payment request creation completed successfully");
-//
-//        return responseDTO;
-//    }
     /**
-     * FIXED VERSION - Replace in PaymentRequestService.java
-     * This creates multiple payment requests but returns the FIRST one for backward compatibility
+     * Creates one payment request per merchant from a Purchase Order.
+     * Returns the FIRST one for backward compatibility.
      */
-
     @Transactional
     public PaymentRequestResponseDTO createPaymentRequestFromPO(
             UUID purchaseOrderId,
@@ -222,7 +125,7 @@ public class PaymentRequestService {
         }
         System.err.println("💚 Total PO items: " + poItems.size());
 
-        // ✅ Group PO items by merchant
+        // Group PO items by merchant
         Map<Merchant, List<PurchaseOrderItem>> itemsByMerchant = poItems.stream()
                 .filter(item -> item.getMerchant() != null)
                 .collect(Collectors.groupingBy(PurchaseOrderItem::getMerchant));
@@ -243,7 +146,7 @@ public class PaymentRequestService {
 
         PaymentRequestResponseDTO firstPaymentRequestDTO = null;
 
-        // ✅ Create one payment request per merchant
+        // Create one payment request per merchant
         for (Map.Entry<Merchant, List<PurchaseOrderItem>> entry : itemsByMerchant.entrySet()) {
             Merchant merchant = entry.getKey();
             List<PurchaseOrderItem> merchantItems = entry.getValue();
@@ -268,6 +171,17 @@ public class PaymentRequestService {
                         .requestNumber(requestNumber)
                         .purchaseOrder(po)
                         .offerFinancialReview(offerFinancialReview)
+                        // Source polymorphism - where payment originates
+                        .sourceType(PaymentSourceType.PURCHASE_ORDER)
+                        .sourceId(po.getId())
+                        .sourceNumber(po.getPoNumber())
+                        .sourceDescription("Purchase Order: " + po.getPoNumber())
+                        // Target polymorphism - who receives payment
+                        .targetType(PaymentTargetType.MERCHANT)
+                        .targetId(merchant.getId())
+                        .targetName(merchant.getName())
+                        .targetDetails(buildMerchantTargetDetails(merchant))
+                        // Amount and currency
                         .requestedAmount(BigDecimal.valueOf(merchantTotal))
                         .currency(po.getCurrency())
                         .description(po.getPoNumber() + " - " + merchant.getName())
@@ -302,8 +216,8 @@ public class PaymentRequestService {
 
                     PaymentRequestItem prItem = PaymentRequestItem.builder()
                             .paymentRequest(savedPaymentRequest)
-                            .itemId(poItem.getId())  // Keep for backward compatibility
-                            .purchaseOrderItemId(poItem.getId())  // NEW: explicit link to PO item
+                            .itemId(poItem.getId())                    // Keep for backward compatibility
+                            .purchaseOrderItemId(poItem.getId())       // Explicit link to PO item
                             .itemName(itemName)
                             .itemDescription(itemDescription)
                             .quantity(BigDecimal.valueOf(poItem.getQuantity()))
@@ -327,13 +241,13 @@ public class PaymentRequestService {
                         PurchaseOrderItem poItem = merchantItems.get(i);
                         PaymentRequestItem prItem = savedPRItems.get(i);
                         poItem.setPaymentRequestItemId(prItem.getId());
-                        poItem.setPaymentStatus(POItemPaymentStatus.PENDING);  // Set initial status
+                        poItem.setPaymentStatus(POItemPaymentStatus.PENDING);
                     }
                     purchaseOrderRepository.save(po);
                     System.err.println("💚 ✓ Linked PO items to payment request items");
                 }
 
-                // ✅ Store first payment request DTO for return (backward compatibility)
+                // Store first payment request DTO for return (backward compatibility)
                 if (firstPaymentRequestDTO == null) {
                     firstPaymentRequestDTO = convertToDTO(savedPaymentRequest);
                 }
@@ -351,7 +265,6 @@ public class PaymentRequestService {
         System.err.println("💚 Total merchants processed: " + itemsByMerchant.size());
         System.err.println("💚 ========================================");
 
-        // ✅ FIXED: Return first payment request for backward compatibility
         if (firstPaymentRequestDTO == null) {
             throw new RuntimeException("Failed to create any payment requests");
         }
@@ -381,7 +294,7 @@ public class PaymentRequestService {
 
     /**
      * Create a payment request from a completed maintenance step.
-     * This is called when a maintenance record is completed to generate payment requests
+     * Called when a maintenance record is completed to generate payment requests
      * for Finance reconciliation.
      *
      * @param step The maintenance step to create a payment request for
@@ -434,6 +347,17 @@ public class PaymentRequestService {
                 .maintenanceRecord(record)
                 .purchaseOrder(null)  // No PO for maintenance
                 .offerFinancialReview(financialReview)
+                // Source polymorphism - where payment originates
+                .sourceType(PaymentSourceType.MAINTENANCE)
+                .sourceId(step.getId())
+                .sourceNumber(record.getRecordNumber())
+                .sourceDescription(description)
+                // Target polymorphism - who receives payment
+                .targetType(PaymentTargetType.MERCHANT)
+                .targetId(merchant.getId())
+                .targetName(merchant.getName())
+                .targetDetails(buildMerchantTargetDetails(merchant))
+                // Amount and currency
                 .requestedAmount(amount)
                 .currency("EGP")
                 .description(description)
@@ -473,6 +397,48 @@ public class PaymentRequestService {
     }
 
     /**
+     * Generic factory method: creates a PaymentRequest from any PaymentRequestSourceProvider.
+     * For complex scenarios (PO item grouping, idempotency), use the dedicated create methods instead.
+     */
+    @Transactional
+    public PaymentRequestResponseDTO createPaymentRequestFromSource(
+            PaymentRequestSourceProvider source,
+            String createdByUsername) {
+
+        String requestNumber = generatePaymentRequestNumber();
+
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+                .requestNumber(requestNumber)
+                .sourceType(source.getPaymentSourceType())
+                .sourceId(source.getPaymentSourceId())
+                .sourceNumber(source.getPaymentSourceNumber())
+                .sourceDescription(source.getPaymentSourceDescription())
+                .targetType(source.getPaymentTargetType())
+                .targetId(source.getPaymentTargetId())
+                .targetName(source.getPaymentTargetName())
+                .targetDetails(source.getPaymentTargetDetails())
+                .requestedAmount(source.getPaymentAmount())
+                .currency(source.getPaymentCurrency())
+                .description(source.getPaymentSourceDescription())
+                .status(PaymentRequestStatus.PENDING)
+                .requestedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+                .requestedByUserName(createdByUsername)
+                .requestedByDepartment(source.getPaymentDepartment())
+                .requestedAt(LocalDateTime.now())
+                .totalPaidAmount(BigDecimal.ZERO)
+                .remainingAmount(source.getPaymentAmount())
+                .build();
+
+        PaymentRequest saved = paymentRequestRepository.save(paymentRequest);
+
+        // Create initial status history
+        createStatusHistory(saved, null, PaymentRequestStatus.PENDING, null,
+                "Payment request created from " + source.getPaymentSourceType().getDisplayName());
+
+        return convertToDTO(saved);
+    }
+
+    /**
      * Get payment requests for a specific maintenance record
      */
     public List<PaymentRequestResponseDTO> getPaymentRequestsByMaintenanceRecord(UUID maintenanceRecordId) {
@@ -501,21 +467,6 @@ public class PaymentRequestService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Approve or Reject payment request
-     */
-    /**
-     * Approve or Reject payment request
-     */
-    /**
-     * Approve or Reject payment request
-     */
-    /**
-     * Approve or Reject payment request
-     */
-    /**
-     * Approve or Reject payment request
-     */
     /**
      * Approve or Reject payment request
      */
@@ -569,19 +520,86 @@ public class PaymentRequestService {
         createStatusHistory(savedRequest, oldStatus, newStatus, reviewerUserId,
                 isApproval ? request.getNotes() : request.getRejectionReason());
 
-        // ✅ Update PurchaseOrder if exists
+        // Sync with PurchaseOrder if exists
         if (savedRequest.getPurchaseOrder() != null) {
             updatePOPaymentStatus(savedRequest, isApproval);
         }
 
-        // ✅ Update Logistics if exists
+        // Sync with Logistics if exists
         if (savedRequest.getLogistics() != null) {
             updateLogisticsPaymentStatus(savedRequest, isApproval);
         }
 
+        // Sync with payroll batch if this payment request is for a payroll batch
+        syncPayrollBatchStatus(savedRequest, newStatus, reviewerUserName);
+
+        // Sync with loan if this payment request is for a loan
+        syncLoanStatus(savedRequest, newStatus, reviewerUserName);
+
+        // Sync with bonus if this payment request is for a bonus
+        syncBonusStatus(savedRequest, newStatus, reviewerUserName);
+
         return convertToDTO(savedRequest);
     }
 
+    /**
+     * Update payment request amounts after payment (called by PaymentService)
+     */
+    @Transactional
+    public void updatePaymentRequestAfterPayment(UUID paymentRequestId, BigDecimal paymentAmount) {
+        PaymentRequest paymentRequest = paymentRequestRepository.findById(paymentRequestId)
+                .orElseThrow(() -> new RuntimeException("Payment Request not found"));
+
+        BigDecimal currentPaid = paymentRequest.getTotalPaidAmount();
+        BigDecimal newTotalPaid = currentPaid.add(paymentAmount);
+        BigDecimal newRemaining = paymentRequest.getRequestedAmount().subtract(newTotalPaid);
+
+        paymentRequest.setTotalPaidAmount(newTotalPaid);
+        paymentRequest.setRemainingAmount(newRemaining);
+
+        PaymentRequestStatus oldStatus = paymentRequest.getStatus();
+        PaymentRequestStatus newStatus;
+
+        if (newRemaining.compareTo(BigDecimal.ZERO) <= 0) {
+            newStatus = PaymentRequestStatus.PAID;
+        } else if (newTotalPaid.compareTo(BigDecimal.ZERO) > 0) {
+            newStatus = PaymentRequestStatus.PARTIALLY_PAID;
+        } else {
+            newStatus = oldStatus;
+        }
+
+        if (newStatus != oldStatus) {
+            paymentRequest.setStatus(newStatus);
+            createStatusHistory(paymentRequest, oldStatus, newStatus, null, "Status updated after payment");
+
+            // Sync PO items after payment
+            if (paymentRequest.getPurchaseOrder() != null) {
+                updatePOAfterPayment(paymentRequest);
+            }
+
+            // Sync Logistics after payment
+            if (paymentRequest.getLogistics() != null) {
+                updateLogisticsAfterPayment(paymentRequest);
+            }
+
+            // Sync with payroll batch if this payment request is for a payroll batch
+            syncPayrollBatchStatus(paymentRequest, newStatus, "System");
+
+            // Sync with loan if this payment request is for a loan
+            syncLoanStatus(paymentRequest, newStatus, "System");
+
+            // Sync with bonus if this payment request is for a bonus
+            syncBonusStatus(paymentRequest, newStatus, "System");
+        }
+
+        paymentRequestRepository.save(paymentRequest);
+    }
+
+    // ================== PO & Logistics Sync Methods ==================
+
+    /**
+     * Update PO item payment statuses when a payment request is approved/rejected
+     */
     private void updatePOPaymentStatus(PaymentRequest savedRequest, boolean isApproval) {
         PurchaseOrder po = savedRequest.getPurchaseOrder();
 
@@ -629,71 +647,9 @@ public class PaymentRequestService {
                 savedRequest.getPaymentRequestItems().size() + " items payment status");
     }
 
-
-    private void updateLogisticsPaymentStatus(PaymentRequest paymentRequest, boolean isApproval) {
-        Logistics logistics = paymentRequest.getLogistics();
-
-        if (isApproval) {
-            // Approved - move to PENDING_PAYMENT
-            logistics.setStatus(LogisticsStatus.PENDING_PAYMENT);
-            logistics.setPaymentStatus(LogisticsPaymentStatus.APPROVED);
-            logistics.setApprovedAt(LocalDateTime.now());
-            logistics.setApprovedBy(paymentRequest.getApprovedByUserName());
-            System.out.println("✅ Logistics " + logistics.getLogisticsNumber() +
-                    " approved - status: PENDING_PAYMENT");
-        } else {
-            // Rejected - move to COMPLETED
-            logistics.setStatus(LogisticsStatus.COMPLETED);
-            logistics.setPaymentStatus(LogisticsPaymentStatus.REJECTED);
-            logistics.setRejectedAt(LocalDateTime.now());
-            logistics.setRejectedBy(paymentRequest.getRejectedByUserName());
-            logistics.setRejectionReason(paymentRequest.getRejectionReason());
-            System.out.println("✅ Logistics " + logistics.getLogisticsNumber() +
-                    " rejected - status: COMPLETED");
-        }
-
-        logisticsService.save(logistics);
-    }
-
     /**
-     * Update payment request amounts after payment (called by PaymentService)
+     * Update PO items to PAID after payment is completed
      */
-
-
-
-    @Transactional
-    public void updatePaymentRequestAfterPayment(UUID paymentRequestId, BigDecimal paymentAmount) {
-        PaymentRequest paymentRequest = paymentRequestRepository.findById(paymentRequestId)
-                .orElseThrow(() -> new RuntimeException("Payment Request not found"));
-
-        BigDecimal currentPaid = paymentRequest.getTotalPaidAmount();
-        BigDecimal newTotalPaid = currentPaid.add(paymentAmount);
-        BigDecimal newRemaining = paymentRequest.getRequestedAmount().subtract(newTotalPaid);
-
-        paymentRequest.setTotalPaidAmount(newTotalPaid);
-        paymentRequest.setRemainingAmount(newRemaining);
-
-        PaymentRequestStatus oldStatus = paymentRequest.getStatus();
-        PaymentRequestStatus newStatus = PaymentRequestStatus.PAID;  // Always PAID (no partial)
-
-        if (newStatus != oldStatus) {
-            paymentRequest.setStatus(newStatus);
-            createStatusHistory(paymentRequest, oldStatus, newStatus, null, "Status updated after payment");
-
-            // ✅ Update PO items to PAID when payment request is fully paid
-            if (paymentRequest.getPurchaseOrder() != null) {
-                updatePOAfterPayment(paymentRequest);
-            }
-
-            // ✅ Update Logistics to COMPLETED/PAID
-            if (paymentRequest.getLogistics() != null) {
-                updateLogisticsAfterPayment(paymentRequest);
-            }
-        }
-
-        paymentRequestRepository.save(paymentRequest);
-    }
-
     private void updatePOAfterPayment(PaymentRequest paymentRequest) {
         PurchaseOrder po = paymentRequest.getPurchaseOrder();
 
@@ -724,10 +680,38 @@ public class PaymentRequestService {
         System.out.println("✅ Updated PO items and PO payment status after payment");
     }
 
+    /**
+     * Update Logistics payment status when payment request is approved/rejected
+     */
+    private void updateLogisticsPaymentStatus(PaymentRequest paymentRequest, boolean isApproval) {
+        Logistics logistics = paymentRequest.getLogistics();
+
+        if (isApproval) {
+            logistics.setStatus(LogisticsStatus.PENDING_PAYMENT);
+            logistics.setPaymentStatus(LogisticsPaymentStatus.APPROVED);
+            logistics.setApprovedAt(LocalDateTime.now());
+            logistics.setApprovedBy(paymentRequest.getApprovedByUserName());
+            System.out.println("✅ Logistics " + logistics.getLogisticsNumber() +
+                    " approved - status: PENDING_PAYMENT");
+        } else {
+            logistics.setStatus(LogisticsStatus.COMPLETED);
+            logistics.setPaymentStatus(LogisticsPaymentStatus.REJECTED);
+            logistics.setRejectedAt(LocalDateTime.now());
+            logistics.setRejectedBy(paymentRequest.getRejectedByUserName());
+            logistics.setRejectionReason(paymentRequest.getRejectionReason());
+            System.out.println("✅ Logistics " + logistics.getLogisticsNumber() +
+                    " rejected - status: COMPLETED");
+        }
+
+        logisticsService.save(logistics);
+    }
+
+    /**
+     * Update Logistics to COMPLETED/PAID after payment
+     */
     private void updateLogisticsAfterPayment(PaymentRequest paymentRequest) {
         Logistics logistics = paymentRequest.getLogistics();
 
-        // Fully paid - move to COMPLETED
         logistics.setStatus(LogisticsStatus.COMPLETED);
         logistics.setPaymentStatus(LogisticsPaymentStatus.PAID);
 
@@ -736,13 +720,264 @@ public class PaymentRequestService {
                 " paid - status: COMPLETED, payment status: PAID");
     }
 
+    // ================== Payroll / Loan / Bonus Sync Methods ==================
+
+    /**
+     * Sync payroll batch status when payment request status changes.
+     */
+    private void syncPayrollBatchStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus, String username) {
+        PayrollBatch batch = paymentRequest.getPayrollBatch();
+        if (batch == null) {
+            return;
+        }
+
+        PayrollStatus batchStatus = mapPaymentRequestStatusToPayrollStatus(newStatus);
+        if (batchStatus != null) {
+            try {
+                payrollBatchService.updateBatchStatus(batch.getId(), batchStatus, username);
+                System.out.println("[PayrollSync] Updated batch " + batch.getBatchNumber() +
+                        " status to " + batchStatus + " from payment request " + paymentRequest.getRequestNumber());
+            } catch (Exception e) {
+                System.err.println("[PayrollSync] Failed to update batch status: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Sync loan status when payment request status changes.
+     */
+    private void syncLoanStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus, String username) {
+        if (paymentRequest.getSourceType() == PaymentSourceType.ELOAN) {
+            syncEmployeeLoanStatus(paymentRequest, newStatus, username);
+        } else if (paymentRequest.getSourceType() == PaymentSourceType.CLOAN) {
+            syncCompanyLoanStatus(paymentRequest, newStatus);
+        }
+    }
+
+    /**
+     * Sync Employee Loan (payroll module) status with PaymentRequest status.
+     * Flow: HR approves → PR PENDING → Finance approves PR → APPROVED → Payment → PAID → Loan ACTIVE
+     */
+    private void syncEmployeeLoanStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus, String username) {
+        UUID loanId = paymentRequest.getSourceId();
+        if (loanId == null) return;
+
+        try {
+            Loan loan = loanRepository.findById(loanId).orElse(null);
+            if (loan == null) {
+                System.err.println("[EmployeeLoanSync] Employee loan not found for ID: " + loanId);
+                return;
+            }
+
+            Loan.LoanStatus newLoanStatus = mapPaymentRequestStatusToLoanStatus(newStatus, loan.getStatus());
+            if (newLoanStatus != null && newLoanStatus != loan.getStatus()) {
+                Loan.LoanStatus oldStatus = loan.getStatus();
+                loan.setStatus(newLoanStatus);
+
+                // Update disbursement fields if moving to ACTIVE (payment was made)
+                if (newLoanStatus == Loan.LoanStatus.DISBURSED || newLoanStatus == Loan.LoanStatus.ACTIVE) {
+                    if (loan.getDisbursementDate() == null) {
+                        loan.setDisbursementDate(LocalDate.now());
+                    }
+                    if (loan.getDisbursedBy() == null) {
+                        loan.setDisbursedBy(username);
+                    }
+                    if (loan.getDisbursedAt() == null) {
+                        loan.setDisbursedAt(LocalDateTime.now());
+                    }
+                }
+
+                loanRepository.save(loan);
+                System.out.println("[EmployeeLoanSync] Updated employee loan " + loan.getLoanNumber() +
+                        " status from " + oldStatus + " to " + newLoanStatus +
+                        " (PR: " + paymentRequest.getRequestNumber() + ")");
+            }
+        } catch (Exception e) {
+            System.err.println("[EmployeeLoanSync] Failed to sync employee loan: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Sync Company Loan (finance module) status with PaymentRequest status.
+     * Company loans track payments via LoanInstallments — delegate to LoanPaymentRequestService.
+     */
+    private void syncCompanyLoanStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus) {
+        if (newStatus != PaymentRequestStatus.PAID && newStatus != PaymentRequestStatus.PARTIALLY_PAID) {
+            return; // Company loans only care about payment events
+        }
+
+        try {
+            BigDecimal paidAmount = paymentRequest.getTotalPaidAmount() != null
+                    ? paymentRequest.getTotalPaidAmount()
+                    : paymentRequest.getRequestedAmount();
+
+            loanPaymentRequestService.handlePaymentCompletion(paymentRequest.getId(), paidAmount);
+            System.out.println("[CompanyLoanSync] Synced company loan payment for PR: " +
+                    paymentRequest.getRequestNumber());
+        } catch (Exception e) {
+            System.err.println("[CompanyLoanSync] Failed to sync company loan: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Sync bonus status when payment request status changes.
+     */
+    private void syncBonusStatus(PaymentRequest paymentRequest, PaymentRequestStatus newStatus, String username) {
+        if (paymentRequest.getSourceType() != PaymentSourceType.BONUS) {
+            return;
+        }
+
+        UUID bonusId = paymentRequest.getSourceId();
+        if (bonusId == null) {
+            return;
+        }
+
+        try {
+            Bonus bonus = bonusRepository.findById(bonusId).orElse(null);
+            if (bonus == null) {
+                System.err.println("[BonusSync] Bonus not found for ID: " + bonusId);
+                return;
+            }
+
+            switch (newStatus) {
+                case APPROVED:
+                    System.out.println("[BonusSync] Payment request approved for bonus " +
+                            bonus.getBonusNumber() + " - status remains PENDING_PAYMENT");
+                    break;
+                case PAID:
+                    if (bonus.getStatus() == Bonus.BonusStatus.PENDING_PAYMENT) {
+                        bonus.markPaid();
+                        bonusRepository.save(bonus);
+                        System.out.println("[BonusSync] Updated bonus " + bonus.getBonusNumber() +
+                                " status to PAID from payment request " + paymentRequest.getRequestNumber());
+                    }
+                    break;
+                case REJECTED:
+                    if (bonus.getStatus() == Bonus.BonusStatus.PENDING_PAYMENT) {
+                        bonus.revertToHrApproved();
+                        bonusRepository.save(bonus);
+                        System.out.println("[BonusSync] Reverted bonus " + bonus.getBonusNumber() +
+                                " status to HR_APPROVED from payment request " + paymentRequest.getRequestNumber());
+                    }
+                    break;
+                default:
+                    break;
+            }
+        } catch (Exception e) {
+            System.err.println("[BonusSync] Failed to update bonus status: " + e.getMessage());
+        }
+    }
+
+    // ================== Status Mapping Methods ==================
+
+    /**
+     * Map PaymentRequestStatus to LoanStatus for loan synchronization
+     */
+    private Loan.LoanStatus mapPaymentRequestStatusToLoanStatus(PaymentRequestStatus prStatus, Loan.LoanStatus currentLoanStatus) {
+        if (prStatus == null) return null;
+
+        switch (prStatus) {
+            case APPROVED:
+                // Finance approves the payment request → loan becomes FINANCE_APPROVED
+                if (currentLoanStatus == Loan.LoanStatus.HR_APPROVED ||
+                        currentLoanStatus == Loan.LoanStatus.PENDING_FINANCE) {
+                    return Loan.LoanStatus.FINANCE_APPROVED;
+                }
+                return null;
+            case REJECTED:
+                // Finance rejects → loan becomes FINANCE_REJECTED
+                if (currentLoanStatus == Loan.LoanStatus.HR_APPROVED ||
+                        currentLoanStatus == Loan.LoanStatus.PENDING_FINANCE ||
+                        currentLoanStatus == Loan.LoanStatus.FINANCE_APPROVED) {
+                    return Loan.LoanStatus.FINANCE_REJECTED;
+                }
+                return null;
+            case PAID:
+                // Payment processed → loan becomes ACTIVE (repayments start)
+                if (currentLoanStatus == Loan.LoanStatus.FINANCE_APPROVED ||
+                        currentLoanStatus == Loan.LoanStatus.DISBURSED) {
+                    return Loan.LoanStatus.ACTIVE;
+                }
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Map PaymentRequestStatus to PayrollStatus for batch synchronization
+     */
+    private PayrollStatus mapPaymentRequestStatusToPayrollStatus(PaymentRequestStatus prStatus) {
+        if (prStatus == null) return null;
+
+        switch (prStatus) {
+            case PENDING:
+                return PayrollStatus.PENDING_FINANCE_REVIEW;
+            case APPROVED:
+                return PayrollStatus.FINANCE_APPROVED;
+            case REJECTED:
+                return PayrollStatus.FINANCE_REJECTED;
+            case PARTIALLY_PAID:
+                return PayrollStatus.PARTIALLY_PAID;
+            case PAID:
+                return PayrollStatus.PAID;
+            default:
+                return null;
+        }
+    }
+
     // ================== Helper Methods ==================
 
     private String generatePaymentRequestNumber() {
-        // Generate format: PR-YYYYMMDD-RANDOM
         String date = LocalDate.now().toString().replace("-", "");
         int randomNum = new java.util.Random().nextInt(10000);
         return String.format("PR-%s-%04d", date, randomNum);
+    }
+
+    /**
+     * Build target details JSON for merchant
+     */
+    private String buildMerchantTargetDetails(Merchant merchant) {
+        if (merchant == null) return null;
+
+        StringBuilder details = new StringBuilder();
+        details.append("{");
+        details.append("\"type\":\"MERCHANT\"");
+
+        if (merchant.getContactPersonName() != null) {
+            details.append(",\"contactPerson\":\"").append(merchant.getContactPersonName()).append("\"");
+        }
+        if (merchant.getContactPhone() != null) {
+            details.append(",\"phone\":\"").append(merchant.getContactPhone()).append("\"");
+        }
+        if (merchant.getContactEmail() != null) {
+            details.append(",\"email\":\"").append(merchant.getContactEmail()).append("\"");
+        }
+
+        details.append("}");
+        return details.toString();
+    }
+
+    /**
+     * Build target details JSON for employee (used in payroll payment requests)
+     */
+    private String buildEmployeeTargetDetails(String bankName, String bankAccountNumber, String walletNumber) {
+        StringBuilder details = new StringBuilder();
+        details.append("{");
+        details.append("\"type\":\"EMPLOYEE\"");
+
+        if (bankName != null && !bankName.isEmpty()) {
+            details.append(",\"bankName\":\"").append(bankName).append("\"");
+        }
+        if (bankAccountNumber != null && !bankAccountNumber.isEmpty()) {
+            details.append(",\"bankAccountNumber\":\"").append(bankAccountNumber).append("\"");
+        }
+        if (walletNumber != null && !walletNumber.isEmpty()) {
+            details.append(",\"walletNumber\":\"").append(walletNumber).append("\"");
+        }
+
+        details.append("}");
+        return details.toString();
     }
 
     private void createStatusHistory(
@@ -764,6 +999,8 @@ public class PaymentRequestService {
         statusHistoryRepository.save(history);
     }
 
+    // ================== DTO Conversion Methods ==================
+
     private PaymentRequestResponseDTO convertToDTO(PaymentRequest request) {
         // Handle nullable purchaseOrder (maintenance-sourced requests don't have PO)
         UUID purchaseOrderId = null;
@@ -772,7 +1009,6 @@ public class PaymentRequestService {
         if (request.getPurchaseOrder() != null) {
             purchaseOrderId = request.getPurchaseOrder().getId();
             purchaseOrderNumber = request.getPurchaseOrder().getPoNumber();
-            // Get title from RequestOrder if available
             if (request.getPurchaseOrder().getRequestOrder() != null) {
                 requestOrderTitle = request.getPurchaseOrder().getRequestOrder().getTitle();
             }
@@ -790,7 +1026,46 @@ public class PaymentRequestService {
             maintenanceRecordId = request.getMaintenanceRecord().getId();
         }
 
-        // Handle loan-sourced fields
+        // Handle payroll batch fields
+        UUID payrollBatchId = null;
+        String batchNumber = null;
+        String paymentTypeName = null;
+        String paymentTypeCode = null;
+        Integer batchEmployeeCount = null;
+        String payrollNumber = null;
+        UUID payrollId = null;
+        String payrollPeriod = null;
+        List<BatchEmployeeDTO> batchEmployees = null;
+
+        PayrollBatch batch = request.getPayrollBatch();
+        if (batch != null) {
+            payrollBatchId = batch.getId();
+            batchNumber = batch.getBatchNumber();
+            batchEmployeeCount = batch.getEmployeeCount();
+
+            if (batch.getPaymentType() != null) {
+                paymentTypeName = batch.getPaymentType().getName();
+                paymentTypeCode = batch.getPaymentType().getCode();
+            }
+
+            Payroll payroll = batch.getPayroll();
+            if (payroll != null) {
+                payrollId = payroll.getId();
+                payrollNumber = payroll.getPayrollNumber();
+                if (payroll.getStartDate() != null) {
+                    payrollPeriod = payroll.getStartDate().getMonth().toString() + " " +
+                            payroll.getStartDate().getYear();
+                }
+            }
+
+            if (batch.getEmployeePayrolls() != null && !batch.getEmployeePayrolls().isEmpty()) {
+                batchEmployees = batch.getEmployeePayrolls().stream()
+                        .map(this::convertEmployeePayrollToDTO)
+                        .collect(Collectors.toList());
+            }
+        }
+
+        // Handle loan installment / financial institution fields
         UUID loanInstallmentId = null;
         Integer loanInstallmentNumber = null;
         UUID companyLoanId = null;
@@ -820,6 +1095,27 @@ public class PaymentRequestService {
         return PaymentRequestResponseDTO.builder()
                 .id(request.getId())
                 .requestNumber(request.getRequestNumber())
+                // Polymorphic source fields
+                .sourceType(request.getSourceType())
+                .sourceId(request.getSourceId())
+                .sourceNumber(request.getSourceNumber())
+                .sourceDescription(request.getSourceDescription())
+                // Polymorphic target fields
+                .targetType(request.getTargetType())
+                .targetId(request.getTargetId())
+                .targetName(request.getTargetName())
+                .targetDetails(request.getTargetDetails())
+                // Payroll batch fields
+                .payrollBatchId(payrollBatchId)
+                .batchNumber(batchNumber)
+                .paymentTypeName(paymentTypeName)
+                .paymentTypeCode(paymentTypeCode)
+                .batchEmployeeCount(batchEmployeeCount)
+                .payrollNumber(payrollNumber)
+                .payrollId(payrollId)
+                .payrollPeriod(payrollPeriod)
+                .batchEmployees(batchEmployees)
+                // Legacy fields (kept for backward compatibility)
                 .purchaseOrderId(purchaseOrderId)
                 .purchaseOrderNumber(purchaseOrderNumber)
                 .requestOrderTitle(requestOrderTitle)
@@ -870,6 +1166,7 @@ public class PaymentRequestService {
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())
                 .deletedAt(request.getDeletedAt())
+                // Loan / Financial Institution fields
                 .loanInstallmentId(loanInstallmentId)
                 .loanInstallmentNumber(loanInstallmentNumber)
                 .companyLoanId(companyLoanId)
@@ -881,6 +1178,47 @@ public class PaymentRequestService {
                 .institutionContactPerson(institutionContactPerson)
                 .institutionContactPhone(institutionContactPhone)
                 .institutionContactEmail(institutionContactEmail)
+                .build();
+    }
+
+    /**
+     * Convert EmployeePayroll to BatchEmployeeDTO for display in payment request details.
+     */
+    private BatchEmployeeDTO convertEmployeePayrollToDTO(EmployeePayroll ep) {
+        BigDecimal basicSalary = ep.getMonthlyBaseSalary();
+        if (basicSalary == null && ep.getDailyRate() != null) {
+            basicSalary = ep.getDailyRate();
+        }
+        if (basicSalary == null && ep.getHourlyRate() != null) {
+            basicSalary = ep.getHourlyRate();
+        }
+
+        BigDecimal totalAllowances = BigDecimal.ZERO;
+        if (ep.getGrossPay() != null && basicSalary != null) {
+            BigDecimal overtime = ep.getOvertimePay() != null ? ep.getOvertimePay() : BigDecimal.ZERO;
+            totalAllowances = ep.getGrossPay().subtract(basicSalary).subtract(overtime);
+            if (totalAllowances.compareTo(BigDecimal.ZERO) < 0) {
+                totalAllowances = BigDecimal.ZERO;
+            }
+        }
+
+        return BatchEmployeeDTO.builder()
+                .employeePayrollId(ep.getId())
+                .employeePayrollNumber(ep.getEmployeePayrollNumber())
+                .employeeId(ep.getEmployeeId())
+                .employeeNumber(null)
+                .employeeName(ep.getEmployeeName())
+                .jobTitle(ep.getJobPositionName())
+                .department(ep.getDepartmentName())
+                .paymentTypeName(ep.getPaymentTypeName())
+                .bankName(ep.getBankName())
+                .bankAccountNumber(ep.getBankAccountNumber())
+                .walletNumber(ep.getWalletNumber())
+                .basicSalary(basicSalary)
+                .totalAllowances(totalAllowances)
+                .totalDeductions(ep.getTotalDeductions())
+                .totalOvertime(ep.getOvertimePay())
+                .netPay(ep.getNetPay())
                 .build();
     }
 

@@ -5,6 +5,8 @@ import { Package, Wrench, TrendingUp, AlertCircle, Activity, Settings } from 'lu
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -56,79 +58,20 @@ const EquipmentManagerDashboard = () => {
 
     return (
         <div className="equipment-manager-dashboard">
-            <div className="equipment-manager-dashboard-header">
-                <h1>Equipment Manager Dashboard</h1>
-                <p>Equipment inventory and maintenance management</p>
-            </div>
+            <PageHeader title="Equipment Manager Dashboard" subtitle="Equipment inventory and maintenance management" />
 
             {/* KPI Cards */}
-            <div className="equipment-manager-kpi-grid">
-                <div className="equipment-manager-kpi-card">
-                    <div className="equipment-manager-kpi-icon">
-                        <Package />
-                    </div>
-                    <div className="equipment-manager-kpi-content">
-                        <div className="equipment-manager-kpi-value">{dashboardData.totalEquipment}</div>
-                        <div className="equipment-manager-kpi-label">Total Equipment</div>
-                        <div className="equipment-manager-kpi-sub">{dashboardData.availableEquipment} Available</div>
-                    </div>
-                </div>
-
-                <div className="equipment-manager-kpi-card">
-                    <div className="equipment-manager-kpi-icon">
-                        <Activity />
-                    </div>
-                    <div className="equipment-manager-kpi-content">
-                        <div className="equipment-manager-kpi-value">{dashboardData.inUseEquipment}</div>
-                        <div className="equipment-manager-kpi-label">In Use</div>
-                        <div className="equipment-manager-kpi-sub">{dashboardData.overallUtilizationRate}% Utilization</div>
-                    </div>
-                </div>
-
-                <div className="equipment-manager-kpi-card">
-                    <div className="equipment-manager-kpi-icon">
-                        <Wrench />
-                    </div>
-                    <div className="equipment-manager-kpi-content">
-                        <div className="equipment-manager-kpi-value">{dashboardData.inMaintenanceEquipment}</div>
-                        <div className="equipment-manager-kpi-label">In Maintenance</div>
-                        <div className="equipment-manager-kpi-sub">{dashboardData.ongoingMaintenance} Ongoing</div>
-                    </div>
-                </div>
-
-                <div className="equipment-manager-kpi-card">
-                    <div className="equipment-manager-kpi-icon">
-                        <Settings />
-                    </div>
-                    <div className="equipment-manager-kpi-content">
-                        <div className="equipment-manager-kpi-value">{dashboardData.totalMaintenanceRecords}</div>
-                        <div className="equipment-manager-kpi-label">Maintenance Records</div>
-                        <div className="equipment-manager-kpi-sub">{dashboardData.scheduledMaintenance} Scheduled</div>
-                    </div>
-                </div>
-
-                <div className="equipment-manager-kpi-card">
-                    <div className="equipment-manager-kpi-icon">
-                        <AlertCircle />
-                    </div>
-                    <div className="equipment-manager-kpi-content">
-                        <div className="equipment-manager-kpi-value">{dashboardData.outOfServiceEquipment}</div>
-                        <div className="equipment-manager-kpi-label">Out of Service</div>
-                        <div className="equipment-manager-kpi-sub">{dashboardData.overdueMaintenanceCount} Overdue</div>
-                    </div>
-                </div>
-
-                <div className="equipment-manager-kpi-card">
-                    <div className="equipment-manager-kpi-icon">
-                        <TrendingUp />
-                    </div>
-                    <div className="equipment-manager-kpi-content">
-                        <div className="equipment-manager-kpi-value">{dashboardData.completedMaintenanceThisMonth}</div>
-                        <div className="equipment-manager-kpi-label">Completed Maintenance</div>
-                        <div className="equipment-manager-kpi-sub">This Month</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <Package />, label: "Total Equipment", value: dashboardData.totalEquipment, variant: "primary", subtitle: `${dashboardData.availableEquipment} Available` },
+                    { icon: <Activity />, label: "In Use", value: dashboardData.inUseEquipment, variant: "active", subtitle: `${dashboardData.overallUtilizationRate}% Utilization` },
+                    { icon: <Wrench />, label: "In Maintenance", value: dashboardData.inMaintenanceEquipment, variant: "warning", subtitle: `${dashboardData.ongoingMaintenance} Ongoing` },
+                    { icon: <Settings />, label: "Maintenance Records", value: dashboardData.totalMaintenanceRecords, variant: "info", subtitle: `${dashboardData.scheduledMaintenance} Scheduled` },
+                    { icon: <AlertCircle />, label: "Out of Service", value: dashboardData.outOfServiceEquipment, variant: "danger", subtitle: `${dashboardData.overdueMaintenanceCount} Overdue` },
+                    { icon: <TrendingUp />, label: "Completed Maintenance", value: dashboardData.completedMaintenanceThisMonth, variant: "success", subtitle: "This Month" },
+                ]}
+                columns={3}
+            />
 
             {/* Charts Section */}
             <div className="equipment-manager-charts">

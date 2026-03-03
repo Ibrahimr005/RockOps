@@ -11,6 +11,7 @@ import ConfirmationDialog from '../../../components/common/ConfirmationDialog/Co
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
 import '../../../styles/status-badges.scss';
+import { Button, CloseButton } from '../../../components/common/Button';
 
 const MaintenanceTypeManagement = () => {
     const [maintenanceTypes, setMaintenanceTypes] = useState([]);
@@ -382,9 +383,7 @@ const MaintenanceTypeManagement = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingMaintenanceType ? 'Edit Maintenance Type' : 'Add Maintenance Type'}</h2>
-                            <button className="btn-close" onClick={() => setShowModal(false)}>
-                                &times;
-                            </button>
+                            <CloseButton onClick={() => setShowModal(false)} />
                         </div>
 
                         <form onSubmit={handleSubmit}>
@@ -436,15 +435,12 @@ const MaintenanceTypeManagement = () => {
                             </div>
 
                             <div className="modal-actions">
-                                <button 
-                                    type="button" 
-                                    onClick={() => setShowModal(false)}
-                                >
+                                <Button variant="ghost" onClick={() => setShowModal(false)}>
                                     Cancel
-                                </button>
-                                <button type="submit" className="btn-primary">
+                                </Button>
+                                <Button type="submit" variant="primary">
                                     {editingMaintenanceType ? 'Update' : 'Create'} Maintenance Type
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

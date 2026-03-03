@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiX } from 'react-icons/fi';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { departmentService } from '../../../services/hr/departmentService.js';
 import {FaBuilding} from "react-icons/fa";
+import { Button, CloseButton } from '../../../components/common/Button';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const DepartmentModal = ({
                              isOpen,
@@ -14,6 +15,8 @@ const DepartmentModal = ({
     const { showSuccess, showError } = useSnackbar();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         description: ''
@@ -21,6 +24,16 @@ const DepartmentModal = ({
 
     const isEdit = department !== null;
     const modalTitle = title || (isEdit ? 'Edit Department' : 'Add Department');
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
 
     // Initialize form data when modal opens or department changes
     useEffect(() => {
@@ -41,6 +54,7 @@ const DepartmentModal = ({
     }, [isOpen, department, isEdit]);
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -89,21 +103,30 @@ const DepartmentModal = ({
         }
     };
 
-    const handleClose = () => {
+    const handleCloseAttempt = () => {
         if (!loading) {
-            onClose();
+            if (isFormDirty) {
+                setShowDiscardDialog(true);
+            } else {
+                onClose();
+            }
         }
+    };
+
+    const handleClose = () => {
+        handleCloseAttempt();
     };
 
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget && !loading) {
-            onClose();
+            handleCloseAttempt();
         }
     };
 
     if (!isOpen) return null;
 
     return (
+        <>
         <div className="modal-backdrop" onClick={handleBackdropClick}>
             <div className="modal-container modal-md">
                 {/* Modal Header */}
@@ -112,15 +135,7 @@ const DepartmentModal = ({
                         <FaBuilding/>
                         {modalTitle}
                     </h2>
-                    <button
-                        type="button"
-                        className="btn-close"
-                        onClick={handleClose}
-                        disabled={loading}
-                        aria-label="Close modal"
-                    >
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={handleClose} disabled={loading} />
                 </div>
 
                 {/* Modal Body */}
@@ -170,25 +185,39 @@ const DepartmentModal = ({
 
                 {/* Modal Footer */}
                 <div className="modal-footer modal-footer">
-                    <button
-                        type="button"
-                        className="btn-cancel"
+                    <Button
+                        variant="ghost"
                         onClick={handleClose}
                         disabled={loading}
                     >
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="submit"
                         form="department-form"
-                        className="btn-primary"
+                        variant="primary"
                         disabled={loading || !formData.name.trim()}
+                        loading={loading}
+                        loadingText={isEdit ? 'Updating...' : 'Creating...'}
                     >
-                        {loading ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Department' : 'Create Department')}
-                    </button>
+                        {isEdit ? 'Update Department' : 'Create Department'}
+                    </Button>
                 </div>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

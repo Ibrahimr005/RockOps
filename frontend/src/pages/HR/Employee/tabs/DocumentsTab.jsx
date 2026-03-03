@@ -3,6 +3,7 @@ import { FaUpload, FaTrash, FaDownload, FaEye, FaPlus, FaFileUpload, FaEdit } fr
 import { employeeDocumentService, DOCUMENT_TYPES, formatFileSize, getFileIcon, getDocumentTypeName } from '../../../../services/hr/employeeDocumentService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { Button, IconButton, CloseButton } from '../../../../components/common/Button';
 import './DocumentsTab.scss';
 
 const DocumentsTab = ({ employee, onRefresh }) => {
@@ -178,19 +179,16 @@ const DocumentsTab = ({ employee, onRefresh }) => {
                     <div className="id-card-container">
                         <div className="id-card-header">
                             <h4>ID Card - Front</h4>
-                            <button
-                                className="btn btn-sm btn-primary"
+                            <Button
+                                variant="primary"
+                                size="sm"
                                 onClick={() => idFrontInputRef.current?.click()}
                                 disabled={uploadingIdFront}
+                                loading={uploadingIdFront}
+                                loadingText="Uploading..."
                             >
-                                {uploadingIdFront ? (
-                                    <>Uploading...</>
-                                ) : (
-                                    <>
-                                        <FaUpload /> {employee.idFrontImage ? 'Update' : 'Upload'}
-                                    </>
-                                )}
-                            </button>
+                                <FaUpload /> {employee.idFrontImage ? 'Update' : 'Upload'}
+                            </Button>
                             <input
                                 ref={idFrontInputRef}
                                 type="file"
@@ -213,13 +211,13 @@ const DocumentsTab = ({ employee, onRefresh }) => {
                                         className="clickable"
                                     />
                                     <div className="preview-overlay">
-                                        <button
-                                            className="btn-icon"
+                                        <IconButton
+                                            variant="ghost"
+                                            size="sm"
+                                            icon={<FaEye />}
                                             onClick={() => handleViewDocument(employee.idFrontImage)}
                                             title="View Full Size"
-                                        >
-                                            <FaEye />
-                                        </button>
+                                        />
                                     </div>
                                 </>
                             ) : (
@@ -235,19 +233,16 @@ const DocumentsTab = ({ employee, onRefresh }) => {
                     <div className="id-card-container">
                         <div className="id-card-header">
                             <h4>ID Card - Back</h4>
-                            <button
-                                className="btn btn-sm btn-primary"
+                            <Button
+                                variant="primary"
+                                size="sm"
                                 onClick={() => idBackInputRef.current?.click()}
                                 disabled={uploadingIdBack}
+                                loading={uploadingIdBack}
+                                loadingText="Uploading..."
                             >
-                                {uploadingIdBack ? (
-                                    <>Uploading...</>
-                                ) : (
-                                    <>
-                                        <FaUpload /> {employee.idBackImage ? 'Update' : 'Upload'}
-                                    </>
-                                )}
-                            </button>
+                                <FaUpload /> {employee.idBackImage ? 'Update' : 'Upload'}
+                            </Button>
                             <input
                                 ref={idBackInputRef}
                                 type="file"
@@ -270,13 +265,13 @@ const DocumentsTab = ({ employee, onRefresh }) => {
                                         className="clickable"
                                     />
                                     <div className="preview-overlay">
-                                        <button
-                                            className="btn-icon"
+                                        <IconButton
+                                            variant="ghost"
+                                            size="sm"
+                                            icon={<FaEye />}
                                             onClick={() => handleViewDocument(employee.idBackImage)}
                                             title="View Full Size"
-                                        >
-                                            <FaEye />
-                                        </button>
+                                        />
                                     </div>
                                 </>
                             ) : (
@@ -294,12 +289,12 @@ const DocumentsTab = ({ employee, onRefresh }) => {
             <div className="documents-section">
                 <div className="section-header">
                     <h3 className="section-title">Related Documents</h3>
-                    <button
-                        className="btn btn-primary"
+                    <Button
+                        variant="primary"
                         onClick={() => setShowUploadModal(true)}
                     >
                         <FaPlus /> Add Document
-                    </button>
+                    </Button>
                 </div>
 
                 {loading ? (
@@ -308,12 +303,12 @@ const DocumentsTab = ({ employee, onRefresh }) => {
                     <div className="emp-documents-empty-state">
                         <FaFileUpload className="empty-icon" />
                         <p>No documents uploaded yet</p>
-                        <button
-                            className="btn btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={() => setShowUploadModal(true)}
                         >
                             Upload Document
-                        </button>
+                        </Button>
                     </div>
                 ) : (
                     <div className="documents-list">
@@ -336,27 +331,27 @@ const DocumentsTab = ({ employee, onRefresh }) => {
                                     )}
                                 </div>
                                 <div className="document-actions">
-                                    <button
-                                        className="btn-icon"
+                                    <IconButton
+                                        variant="ghost"
+                                        size="sm"
+                                        icon={<FaEye />}
                                         onClick={() => handleViewDocument(doc.fileUrl)}
                                         title="View"
-                                    >
-                                        <FaEye />
-                                    </button>
-                                    <button
-                                        className="btn-icon"
+                                    />
+                                    <IconButton
+                                        variant="ghost"
+                                        size="sm"
+                                        icon={<FaDownload />}
                                         onClick={() => handleDownloadDocument(doc.fileUrl, doc.fileName)}
                                         title="Download"
-                                    >
-                                        <FaDownload />
-                                    </button>
-                                    <button
-                                        className="btn-icon danger"
+                                    />
+                                    <IconButton
+                                        variant="danger"
+                                        size="sm"
+                                        icon={<FaTrash />}
                                         onClick={() => setDeleteConfirmation({ show: true, documentId: doc.id })}
                                         title="Delete"
-                                    >
-                                        <FaTrash />
-                                    </button>
+                                    />
                                 </div>
                             </div>
                         ))}
@@ -395,6 +390,14 @@ const DocumentUploadModal = ({ onClose, onUpload, uploading }) => {
     const [description, setDescription] = useState('');
     const fileInputRef = useRef(null);
 
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
+
     const handleFileSelect = (e) => {
         const files = Array.from(e.target.files);
         setSelectedFiles(files);
@@ -416,7 +419,7 @@ const DocumentUploadModal = ({ onClose, onUpload, uploading }) => {
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h3>Upload Document</h3>
-                    <button className="btn-close" onClick={onClose}>×</button>
+                    <CloseButton onClick={onClose} />
                 </div>
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
@@ -470,13 +473,7 @@ const DocumentUploadModal = ({ onClose, onUpload, uploading }) => {
                                 {selectedFiles.map((file, index) => (
                                     <div key={index} className="selected-file">
                                         <span>{file.name} ({formatFileSize(file.size)})</span>
-                                        <button
-                                            type="button"
-                                            className="btn-remove"
-                                            onClick={() => removeFile(index)}
-                                        >
-                                            ×
-                                        </button>
+                                        <CloseButton onClick={() => removeFile(index)} />
                                     </div>
                                 ))}
                             </div>
@@ -486,22 +483,22 @@ const DocumentUploadModal = ({ onClose, onUpload, uploading }) => {
 
                 </form>
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={onClose}
                         disabled={uploading}
                     >
                         Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
+                    </Button>
+                    <Button
+                        variant="primary"
                         onClick={handleSubmit}
                         disabled={selectedFiles.length === 0 || uploading}
+                        loading={uploading}
+                        loadingText="Uploading..."
                     >
-                        {uploading ? 'Uploading...' : 'Upload'}
-                    </button>
+                        Upload
+                    </Button>
                 </div>
             </div>
         </div>

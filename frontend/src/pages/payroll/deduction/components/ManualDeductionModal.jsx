@@ -2,14 +2,25 @@
 // ==================== MANUAL DEDUCTION MODAL ====================
 // frontend/src/pages/payroll/DeductionManagement/components/ManualDeductionModal.jsx
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUser, FaMinusCircle, FaCalendarAlt, FaPercent, FaDollarSign } from 'react-icons/fa';
+import { FaUser, FaMinusCircle, FaCalendarAlt, FaPercent, FaDollarSign } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { deductionService } from '../../../../services/payroll/deductionService';
 import { employeeService } from '../../../../services/hr/employeeService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ManualDeductionModal.scss';
 
 const ManualDeductionModal = ({ deduction, onClose, onSuccess }) => {
     const { showSuccess, showError } = useSnackbar();
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [loading, setLoading] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [deductionTypes, setDeductionTypes] = useState([]);
@@ -23,6 +34,8 @@ const ManualDeductionModal = ({ deduction, onClose, onSuccess }) => {
         amountType: 'fixed' // 'fixed' or 'percentage'
     });
     const [errors, setErrors] = useState({});
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     useEffect(() => {
         loadEmployees();
@@ -62,6 +75,7 @@ const ManualDeductionModal = ({ deduction, onClose, onSuccess }) => {
     };
 
     const handleInputChange = (field, value) => {
+        setIsFormDirty(true);
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -159,10 +173,19 @@ const ManualDeductionModal = ({ deduction, onClose, onSuccess }) => {
         }
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const selectedEmployee = employees.find(emp => emp.id === formData.employeeId);
     const selectedDeductionType = deductionTypes.find(type => type.id === formData.deductionTypeId);
 
     return (
+        <>
         <div className="modal-overlay">
             <div className="modal-container manual-deduction-modal">
                 <div className="modal-header">
@@ -170,13 +193,7 @@ const ManualDeductionModal = ({ deduction, onClose, onSuccess }) => {
                         <FaMinusCircle className="modal-icon" />
                         {deduction ? 'Edit' : 'Create'} Manual Deduction
                     </h3>
-                    <button
-                        type="button"
-                        className="modal-close"
-                        onClick={onClose}
-                    >
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <form onSubmit={handleSubmit} className="modal-body">
@@ -369,25 +386,37 @@ const ManualDeductionModal = ({ deduction, onClose, onSuccess }) => {
                 </form>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={onClose}
+                    <Button
+                        variant="ghost"
+                        onClick={handleCloseAttempt}
                         disabled={loading}
                     >
                         Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
+                    </Button>
+                    <Button
+                        variant="primary"
                         onClick={handleSubmit}
-                        disabled={loading}
+                        loading={loading}
+                        loadingText="Saving..."
                     >
-                        {loading ? 'Saving...' : (deduction ? 'Update' : 'Create')} Deduction
-                    </button>
+                        {deduction ? 'Update' : 'Create'} Deduction
+                    </Button>
                 </div>
             </div>
         </div>
+
+            <ConfirmationDialog
+                isVisible={showDiscardDialog}
+                type="warning"
+                title="Discard Changes?"
+                message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+                confirmText="Discard Changes"
+                cancelText="Continue Editing"
+                onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+                onCancel={() => setShowDiscardDialog(false)}
+                size="medium"
+            />
+        </>
     );
 };
 

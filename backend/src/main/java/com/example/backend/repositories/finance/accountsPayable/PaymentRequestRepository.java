@@ -1,6 +1,7 @@
 package com.example.backend.repositories.finance.accountsPayable;
 
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -85,12 +86,27 @@ List<PaymentRequest> findAllByPurchaseOrderId(UUID purchaseOrderId);
 
     // Maintenance-related queries
     Optional<PaymentRequest> findByMaintenanceStepId(UUID maintenanceStepId);
-    
+
     List<PaymentRequest> findByMaintenanceRecordId(UUID maintenanceRecordId);
-    
+
     boolean existsByMaintenanceStepId(UUID maintenanceStepId);
 
+    // Get max sequence number for payment request number generation
+    @Query("SELECT MAX(CAST(SUBSTRING(pr.requestNumber, LENGTH(:prefix) + 1) AS long)) " +
+           "FROM PaymentRequest pr WHERE pr.requestNumber LIKE :prefix")
+    Long getMaxRequestNumberSequence(@Param("prefix") String prefix);
 
+    // Find by payroll batch
+    Optional<PaymentRequest> findByPayrollBatchId(UUID payrollBatchId);
+
+    // Find all payment requests for a payroll (via batches)
+    @Query("SELECT pr FROM PaymentRequest pr WHERE pr.payrollBatch.payroll.id = :payrollId")
+    List<PaymentRequest> findByPayrollId(@Param("payrollId") UUID payrollId);
+
+
+
+    // Find by source type and source ID (e.g., ELOAN + loan UUID)
+    List<PaymentRequest> findBySourceTypeAndSourceId(PaymentSourceType sourceType, UUID sourceId);
 
     // ==================== Loan Payment Request Methods ====================
 

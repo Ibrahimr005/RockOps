@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiTruck, FiAlertCircle, FiPackage, FiDollarSign, FiCheckCircle, FiRotateCcw } from 'react-icons/fi';
 import { logisticsService } from '../../../../services/procurement/logisticsService';
 import IntroCard from '../../../../components/common/IntroCard/IntroCard';
+import { Button } from '../../../../components/common/Button';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2';
 import './LogisticsDetailsPage.scss';
 
@@ -62,9 +63,9 @@ const LogisticsDetailsPage = () => {
                     <FiAlertCircle size={48} />
                     <h3>Error Loading Logistics</h3>
                     <p>{error || 'Logistics entry not found'}</p>
-                    <button className="btn-primary" onClick={() => navigate(-1)}>
+                    <Button variant="primary" onClick={() => navigate(-1)}>
                         Go Back
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

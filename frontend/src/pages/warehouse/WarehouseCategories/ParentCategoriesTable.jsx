@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
-import { FaEdit, FaTrash } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import "./WarehouseViewItemCategories.scss";
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
 
@@ -261,11 +261,7 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                     <div className="modal-content modal-md" ref={modalRef}>
                         <div className="modal-header">
                             <h2>{categoryAction === 'update' ? 'Edit Parent Category' : 'Add Parent Category'}</h2>
-                            <button className="category-modal-close" onClick={closeModal}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M18 6L6 18M6 6l12 12"/>
-                                </svg>
-                            </button>
+                            <CloseButton onClick={closeModal} />
                         </div>
 
                             <form onSubmit={handleSubmit} className="modal-body">
@@ -301,9 +297,9 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                             </form>
 
                             <div className="modal-footer">
-                                <button onClick={handleSubmit} type="submit" className="btn-primary">
+                                <Button onClick={handleSubmit} type="submit" variant="primary">
                                     {categoryAction === 'update' ? 'Update Category' : 'Add Category'}
-                                </button>
+                                </Button>
                             </div>
                         </div>
                 </div>

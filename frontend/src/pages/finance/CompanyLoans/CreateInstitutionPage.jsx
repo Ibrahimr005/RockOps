@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiHome, FiSave, FiX } from 'react-icons/fi';
+import { FiHome, FiSave } from 'react-icons/fi';
 import { financeService } from '../../../services/financeService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
-import Snackbar from '../../../components/common/Snackbar/Snackbar';
+import { Button } from '../../../components/common/Button';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './CreateInstitutionPage.scss';
 
 const CreateInstitutionPage = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const isEdit = Boolean(id);
+    const { showSuccess, showError } = useSnackbar();
 
     // Form state
     const [formData, setFormData] = useState({
@@ -37,7 +39,6 @@ const CreateInstitutionPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(isEdit);
     const [errors, setErrors] = useState({});
-    const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
 
     // Institution types
     const institutionTypes = [
@@ -83,14 +84,10 @@ const CreateInstitutionPage = () => {
             });
         } catch (error) {
             console.error('Error fetching institution:', error);
-            showSnackbar('Failed to load institution data', 'error');
+            showError('Failed to load institution data');
         } finally {
             setIsFetching(false);
         }
-    };
-
-    const showSnackbar = (message, type = 'success') => {
-        setSnackbar({ show: true, message, type });
     };
 
     // Handle input change
@@ -129,7 +126,7 @@ const CreateInstitutionPage = () => {
         e.preventDefault();
 
         if (!validateForm()) {
-            showSnackbar('Please fix the errors before submitting', 'error');
+            showError('Please fix the errors before submitting');
             return;
         }
 
@@ -137,10 +134,10 @@ const CreateInstitutionPage = () => {
         try {
             if (isEdit) {
                 await financeService.companyLoans.institutions.update(id, formData);
-                showSnackbar('Institution updated successfully', 'success');
+                showSuccess('Institution updated successfully');
             } else {
                 await financeService.companyLoans.institutions.create(formData);
-                showSnackbar('Institution created successfully', 'success');
+                showSuccess('Institution created successfully');
             }
 
             setTimeout(() => {
@@ -148,7 +145,7 @@ const CreateInstitutionPage = () => {
             }, 1500);
         } catch (error) {
             console.error('Error saving institution:', error);
-            showSnackbar(error.response?.data?.message || 'Failed to save institution', 'error');
+            showError(error.response?.data?.message || 'Failed to save institution');
         } finally {
             setIsLoading(false);
         }
@@ -184,7 +181,7 @@ const CreateInstitutionPage = () => {
                     <h3 className="form-section__title">Basic Information</h3>
                     <div className="form-grid">
                         <div className={`form-group ${errors.name ? 'has-error' : ''}`}>
-                            <label>Institution Name *</label>
+                            <label>Institution Name <span className="required">*</span></label>
                             <input
                                 type="text"
                                 name="name"
@@ -196,7 +193,7 @@ const CreateInstitutionPage = () => {
                         </div>
 
                         <div className={`form-group ${errors.institutionType ? 'has-error' : ''}`}>
-                            <label>Institution Type *</label>
+                            <label>Institution Type <span className="required">*</span></label>
                             <select
                                 name="institutionType"
                                 value={formData.institutionType}
@@ -419,39 +416,24 @@ const CreateInstitutionPage = () => {
 
                 {/* Form Actions */}
                 <div className="form-actions">
-                    <button
-                        type="button"
-                        className="btn btn--secondary"
+                    <Button
+                        variant="ghost"
                         onClick={() => navigate('/finance/company-loans/institutions')}
                         disabled={isLoading}
                     >
-                        <FiX /> Cancel
-                    </button>
-                    <button
+                        Cancel
+                    </Button>
+                    <Button
                         type="submit"
-                        className="btn btn--primary"
-                        disabled={isLoading}
+                        variant="primary"
+                        loading={isLoading}
+                        loadingText="Saving..."
                     >
-                        {isLoading ? (
-                            <>
-                                <span className="spinner"></span> Saving...
-                            </>
-                        ) : (
-                            <>
-                                <FiSave /> {isEdit ? 'Update' : 'Create'} Institution
-                            </>
-                        )}
-                    </button>
+                        <FiSave /> {isEdit ? 'Update' : 'Create'} Institution
+                    </Button>
                 </div>
             </form>
 
-            {/* Snackbar */}
-            <Snackbar
-                show={snackbar.show}
-                message={snackbar.message}
-                type={snackbar.type}
-                onClose={() => setSnackbar({ ...snackbar, show: false })}
-            />
         </div>
     );
 };

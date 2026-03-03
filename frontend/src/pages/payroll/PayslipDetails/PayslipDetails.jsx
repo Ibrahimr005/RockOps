@@ -4,6 +4,7 @@ import { FaArrowLeft, FaDownload, FaEnvelope, FaFilePdf, FaCheck, FaUser, FaCale
 import { payslipService } from '../../../services/payroll/payslipService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import { Button } from '../../../components/common/Button';
 import './PayslipDetails.scss';
 
 const PayslipDetails = () => {
@@ -142,12 +143,12 @@ const PayslipDetails = () => {
                     <div className="error-content">
                         <h3>Error Loading Payslip</h3>
                         <p>{error || 'Payslip not found'}</p>
-                        <button
-                            className="btn btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={() => navigate('/payroll/payslips')}
                         >
                             Back to Payslips
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -160,12 +161,12 @@ const PayslipDetails = () => {
             <div className="payslip-details__header">
                 <div className="header-content">
                     <div className="header-left">
-                        <button
-                            className="btn-cancel"
+                        <Button
+                            variant="ghost"
                             onClick={() => navigate('/payroll/payslips')}
                         >
                             <FaArrowLeft /> Back to Payslips
-                        </button>
+                        </Button>
                         <div className="payslip-title">
                             <h1>Payslip Details</h1>
                             <span className="payslip-id">Payslip ID: {payslip.id}</span>
@@ -173,36 +174,36 @@ const PayslipDetails = () => {
                     </div>
                     <div className="header-actions">
                         {payslip.status === 'DRAFT' && (
-                            <button
-                                className="btn btn-warning"
+                            <Button
+                                variant="warning"
                                 onClick={handleGeneratePdf}
                             >
                                 <FaFilePdf /> Generate PDF
-                            </button>
+                            </Button>
                         )}
                         {payslip.status === 'GENERATED' && (
-                            <button
-                                className="btn btn-success"
+                            <Button
+                                variant="success"
                                 onClick={handleSendEmail}
                             >
                                 <FaEnvelope /> Send Email
-                            </button>
+                            </Button>
                         )}
                         {(payslip.status === 'SENT' || payslip.status === 'ACKNOWLEDGED') && (
-                            <button
-                                className="btn btn-secondary"
+                            <Button
+                                variant="secondary"
                                 onClick={handleDownloadPdf}
                             >
                                 <FaDownload /> Download PDF
-                            </button>
+                            </Button>
                         )}
                         {payslip.status === 'SENT' && (
-                            <button
-                                className="btn btn-primary"
+                            <Button
+                                variant="primary"
                                 onClick={handleAcknowledge}
                             >
                                 <FaCheck /> Acknowledge
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>

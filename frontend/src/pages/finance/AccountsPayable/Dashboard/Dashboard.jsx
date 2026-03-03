@@ -9,11 +9,13 @@ import {
 } from 'react-icons/fi';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import './Dashboard.scss';
 
 const Dashboard = () => {
     const [summary, setSummary] = useState(null);
     const [balances, setBalances] = useState(null);
+    const [merchants, setMerchants] = useState([]);
     const [loading, setLoading] = useState(true);
     const { showError } = useSnackbar();
 
@@ -24,13 +26,15 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const [summaryRes, balancesRes] = await Promise.all([
+            const [summaryRes, balancesRes, merchantsRes] = await Promise.all([
                 financeService.accountsPayable.dashboard.getSummary(),
-                financeService.accountsPayable.dashboard.getBalances()
+                financeService.accountsPayable.dashboard.getBalances(),
+                financeService.accountsPayable.dashboard.getMerchants().catch(() => ({ data: [] }))
             ]);
 
             setSummary(summaryRes.data);
             setBalances(balancesRes.data);
+            setMerchants(merchantsRes.data || []);
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
             showError('Failed to load dashboard data');
@@ -50,9 +54,11 @@ const Dashboard = () => {
 
     if (loading) {
         return (
-            <div className="dashboard-loading">
-                <div className="spinner"></div>
-                <p>Loading dashboard...</p>
+            <div className="ap-dashboard">
+                <div className="dashboard-loading">
+                    <div className="spinner"></div>
+                    <p>Loading dashboard...</p>
+                </div>
             </div>
         );
     }
@@ -60,71 +66,51 @@ const Dashboard = () => {
     return (
         <div className="ap-dashboard">
             {/* Summary Cards */}
-            <div className="dashboard-cards">
-                <div className="dashboard-card card-pending-offers">
-                    <div className="card-icon">
-                        <FiFileText />
-                    </div>
-                    <div className="card-content">
-                        <h3>Pending Offers</h3>
-                        <p className="card-count">{summary?.pendingOffersCount || 0}</p>
-                        <p className="card-amount">{formatCurrency(summary?.pendingOffersAmount)}</p>
-                    </div>
-                </div>
-
-                <div className="dashboard-card card-pending-requests">
-                    <div className="card-icon">
-                        <FiClock />
-                    </div>
-                    <div className="card-content">
-                        <h3>Pending Requests</h3>
-                        <p className="card-count">{summary?.pendingPaymentRequestsCount || 0}</p>
-                        <p className="card-amount">{formatCurrency(summary?.pendingPaymentRequestsAmount)}</p>
-                    </div>
-                </div>
-
-                <div className="dashboard-card card-ready-to-pay">
-                    <div className="card-icon">
-                        <FiCheckCircle />
-                    </div>
-                    <div className="card-content">
-                        <h3>Ready to Pay</h3>
-                        <p className="card-count">{summary?.readyToPayCount || 0}</p>
-                        <p className="card-amount">{formatCurrency(summary?.readyToPayAmount)}</p>
-                    </div>
-                </div>
-
-                <div className="dashboard-card card-paid-today">
-                    <div className="card-icon">
-                        <FiDollarSign />
-                    </div>
-                    <div className="card-content">
-                        <h3>Paid Today</h3>
-                        <p className="card-count">{summary?.paidTodayCount || 0}</p>
-                        <p className="card-amount">{formatCurrency(summary?.paidTodayAmount)}</p>
-                    </div>
-                </div>
-
-                <div className="dashboard-card card-available-balance">
-                    <div className="card-icon">
-                        <FiTrendingUp />
-                    </div>
-                    <div className="card-content">
-                        <h3>Available Balance</h3>
-                        <p className="card-amount large">{formatCurrency(summary?.availableBalance)}</p>
-                    </div>
-                </div>
-
-                <div className="dashboard-card card-total-balance">
-                    <div className="card-icon">
-                        <FiShoppingBag />
-                    </div>
-                    <div className="card-content">
-                        <h3>Total Balance</h3>
-                        <p className="card-amount large">{formatCurrency(summary?.totalBalance)}</p>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    {
+                        icon: <FiFileText />,
+                        label: "Pending Offers",
+                        value: summary?.pendingOffersCount || 0,
+                        variant: "warning",
+                        subtitle: formatCurrency(summary?.pendingOffersAmount)
+                    },
+                    {
+                        icon: <FiClock />,
+                        label: "Pending Requests",
+                        value: summary?.pendingPaymentRequestsCount || 0,
+                        variant: "info",
+                        subtitle: formatCurrency(summary?.pendingPaymentRequestsAmount)
+                    },
+                    {
+                        icon: <FiCheckCircle />,
+                        label: "Ready to Pay",
+                        value: summary?.readyToPayCount || 0,
+                        variant: "success",
+                        subtitle: formatCurrency(summary?.readyToPayAmount)
+                    },
+                    {
+                        icon: <FiDollarSign />,
+                        label: "Paid Today",
+                        value: summary?.paidTodayCount || 0,
+                        variant: "primary",
+                        subtitle: formatCurrency(summary?.paidTodayAmount)
+                    },
+                    {
+                        icon: <FiTrendingUp />,
+                        label: "Available Balance",
+                        value: formatCurrency(summary?.availableBalance),
+                        variant: "lime"
+                    },
+                    {
+                        icon: <FiShoppingBag />,
+                        label: "Total Balance",
+                        value: formatCurrency(summary?.totalBalance),
+                        variant: "total"
+                    }
+                ]}
+                columns={3}
+            />
 
             {/* Balances Overview */}
             {balances && (
@@ -170,6 +156,35 @@ const Dashboard = () => {
                             <span className="label">Reserved Balance:</span>
                             <span className="value">{formatCurrency(balances.reservedBalance)}</span>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Merchant Payment Summaries */}
+            {merchants.length > 0 && (
+                <div className="merchant-summaries">
+                    <h3 className="section-title">Top Merchants by Payment</h3>
+                    <div className="merchant-table-container">
+                        <table className="merchant-table">
+                            <thead>
+                                <tr>
+                                    <th>Merchant</th>
+                                    <th>Total Paid</th>
+                                    <th>Payments</th>
+                                    <th>Last Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {merchants.slice(0, 10).map((merchant) => (
+                                    <tr key={merchant.merchantId}>
+                                        <td className="merchant-name">{merchant.merchantName}</td>
+                                        <td className="merchant-amount">{formatCurrency(merchant.totalPaid)}</td>
+                                        <td>{merchant.numberOfPayments}</td>
+                                        <td>{merchant.lastPaymentDate ? new Date(merchant.lastPaymentDate).toLocaleDateString() : '-'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             )}

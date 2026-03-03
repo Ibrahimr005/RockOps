@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaTimes, FaCheck } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 
 const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -245,9 +246,7 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
                                 <h3>Edit Attendance</h3>
                                 <span className="modal-date">{formatDateForModal()}</span>
                             </div>
-                            <button className="modal-close-btn" onClick={handleCancel}>
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={handleCancel} />
                         </div>
 
                         <div className="modal-body">
@@ -324,12 +323,12 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
                         </div>
 
                         <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={handleCancel}>
+                            <Button variant="ghost" onClick={handleCancel}>
                                 <FaTimes /> Cancel
-                            </button>
-                            <button className="btn btn-primary" onClick={handleSave}>
+                            </Button>
+                            <Button variant="primary" onClick={handleSave}>
                                 <FaCheck /> Save
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

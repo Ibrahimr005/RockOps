@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaPlus, FaCalculator, FaTimes, FaCalendarAlt, FaDollarSign, FaBarcode, FaInfoCircle } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaPlus, FaCalculator, FaCalendarAlt, FaDollarSign, FaBarcode, FaInfoCircle } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../../components/common/PageHeader';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 import './AssetManagement.css';
@@ -26,6 +27,18 @@ const AssetManagement = () => {
     });
     const [formLoading, setFormLoading] = useState(false);
     const { showSuccess, showError } = useSnackbar();
+
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showAddModal || showDetailsModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showDetailsModal]);
 
     useEffect(() => {
         fetchAssets();
@@ -440,12 +453,7 @@ const AssetManagement = () => {
                             <h3 className="asset-management__modal-title">
                                 Asset Details - {selectedAsset.name}
                             </h3>
-                            <button
-                                className="asset-management__modal-close"
-                                onClick={() => setShowDetailsModal(false)}
-                            >
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={() => setShowDetailsModal(false)} />
                         </div>
 
                         <div className="asset-management__modal-body">
@@ -555,14 +563,14 @@ const AssetManagement = () => {
                         </div>
 
                         <div className="asset-management__modal-actions">
-                            <button
-                                className="asset-management__btn asset-management__btn--secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowDetailsModal(false)}
                             >
                                 Close
-                            </button>
-                            <button
-                                className="asset-management__btn asset-management__btn--primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={() => {
                                     setShowDetailsModal(false);
                                     populateForm(selectedAsset);
@@ -570,7 +578,7 @@ const AssetManagement = () => {
                                 }}
                             >
                                 Edit Asset
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -584,12 +592,7 @@ const AssetManagement = () => {
                             <h3 className="asset-management__modal-title">
                                 {selectedAsset ? 'Edit Asset' : 'Add New Asset'}
                             </h3>
-                            <button
-                                className="asset-management__modal-close"
-                                onClick={() => setShowAddModal(false)}
-                            >
-                                <FaTimes />
-                            </button>
+                            <CloseButton onClick={() => setShowAddModal(false)} />
                         </div>
 
                         <div className="asset-management__modal-body">
@@ -755,20 +758,21 @@ const AssetManagement = () => {
                         </div>
 
                         <div className="asset-management__modal-actions">
-                            <button
-                                className="asset-management__btn asset-management__btn--secondary"
+                            <Button
+                                variant="ghost"
                                 onClick={() => setShowAddModal(false)}
                                 disabled={formLoading}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                className="asset-management__btn asset-management__btn--primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleSaveAsset}
-                                disabled={formLoading}
+                                loading={formLoading}
+                                loadingText="Saving..."
                             >
-                                {formLoading ? 'Saving...' : (selectedAsset ? 'Update Asset' : 'Create Asset')}
-                            </button>
+                                {selectedAsset ? 'Update Asset' : 'Create Asset'}
+                            </Button>
                         </div>
                     </div>
                 </div>

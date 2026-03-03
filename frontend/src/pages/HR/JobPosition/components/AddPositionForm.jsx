@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import { Button, CloseButton } from '../../../../components/common/Button/Button';
 import './AddPositionForm.scss';
 import {employeeService} from "../../../../services/hr/employeeService.js";
 import {departmentService} from "../../../../services/hr/departmentService.js";
@@ -49,6 +50,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
         shifts: 'Day Shift',
         workingHours: 8,
         vacations: '21 days annual leave',
+        vacationDays: 21,
         startTime: '09:00',
         endTime: '17:00',
 
@@ -127,7 +129,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
             trackBreaks: false, breakDurationMinutes: 30,
             dailyRate: '', includesWeekends: false,
             monthlyBaseSalary: '', workingDaysPerMonth: 22, shifts: 'Day Shift', workingHours: 8,
-            vacations: '21 days annual leave', startTime: '09:00', endTime: '17:00',
+            vacations: '21 days annual leave', vacationDays: 21, startTime: '09:00', endTime: '17:00',
             absentDeduction: '', lateDeduction: '', lateForgivenessMinutes: 0,
             lateForgivenessCountPerQuarter: 0, leaveDeduction: ''
         });
@@ -245,8 +247,22 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
         // Step 3: Deductions (Only validate if Monthly)
         if (step === 3) {
             if (formData.contractType === 'MONTHLY') {
-                if (formData.absentDeduction !== '' && Number(formData.absentDeduction) < 0) errors.absentDeduction = 'Cannot be negative';
-                if (formData.lateDeduction !== '' && Number(formData.lateDeduction) < 0) errors.lateDeduction = 'Cannot be negative';
+                if (formData.absentDeduction === '' || formData.absentDeduction === null || formData.absentDeduction === undefined) {
+                    errors.absentDeduction = 'Absent penalty is required';
+                } else if (Number(formData.absentDeduction) < 0) {
+                    errors.absentDeduction = 'Cannot be negative';
+                }
+                if (formData.lateDeduction === '' || formData.lateDeduction === null || formData.lateDeduction === undefined) {
+                    errors.lateDeduction = 'Late penalty is required';
+                } else if (Number(formData.lateDeduction) < 0) {
+                    errors.lateDeduction = 'Cannot be negative';
+                }
+                if (formData.lateForgivenessMinutes === '' || formData.lateForgivenessMinutes === null || formData.lateForgivenessMinutes === undefined) {
+                    errors.lateForgivenessMinutes = 'Late forgiveness minutes is required';
+                }
+                if (formData.lateForgivenessCountPerQuarter === '' || formData.lateForgivenessCountPerQuarter === null || formData.lateForgivenessCountPerQuarter === undefined) {
+                    errors.lateForgivenessCountPerQuarter = 'Forgiveness count is required';
+                }
                 if (formData.leaveDeduction !== '' && Number(formData.leaveDeduction) < 0) errors.leaveDeduction = 'Cannot be negative';
             }
 
@@ -299,6 +315,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                 probationPeriod: Number(formData.probationPeriod),
                 parentJobPositionId: formData.parentJobPositionId || null,
                 contractType: contractType,
+                vacationDays: formData.vacationDays ? Number(formData.vacationDays) : 21,
                 // NOTE: We do NOT send calculated fields (daily, monthly, workingHours, timeRange)
                 // as they are derived on the backend and sending them may cause deserialization errors.
             };
@@ -391,7 +408,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
             <div className=" modal-content modal-lg">
                 <div className="modal-header">
                     <h2>Add New Position</h2>
-                    <button className="jp-modal-close" onClick={onClose}>×</button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
 
@@ -569,16 +586,19 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                                     <p className="jp-section-description">Set automatic penalties for attendance violations.</p>
 
                                     <div className="jp-form-row">
-                                        {renderField("Absent Penalty ($)", "absentDeduction", "number", false, { min: 0, step: "0.01" })}
-                                        {renderField("Late Penalty ($)", "lateDeduction", "number", false, { min: 0, step: "0.01" })}
+                                        {renderField("Absent Penalty ($)", "absentDeduction", "number", true, { min: 0, step: "0.01" })}
+                                        {renderField("Late Penalty ($)", "lateDeduction", "number", true, { min: 0, step: "0.01" })}
                                     </div>
 
                                     <div className="jp-form-row">
-                                        {renderField("Late Forgiveness (Mins)", "lateForgivenessMinutes", "number", false, { placeholder: "e.g. 15" })}
-                                        {renderField("Forgiveness Count (Per Qtr)", "lateForgivenessCountPerQuarter", "number", false)}
+                                        {renderField("Late Forgiveness (Mins)", "lateForgivenessMinutes", "number", true, { placeholder: "e.g. 15" })}
+                                        {renderField("Forgiveness Count (Per Qtr)", "lateForgivenessCountPerQuarter", "number", true)}
                                     </div>
 
-                                    {renderField("Vacation Policy", "vacations", "text", false, { placeholder: "e.g. 21 Days" })}
+                                    <div className="jp-form-row">
+                                        {renderField("Annual Vacation Days", "vacationDays", "number", true, { min: 0, placeholder: "e.g. 21" })}
+                                        {renderField("Vacation Policy Description", "vacations", "text", false, { placeholder: "e.g. 21 days annual leave" })}
+                                    </div>
                                 </div>
                             )}
 
@@ -612,32 +632,31 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                     )}
                 </div>
                 <div className="jp-wizard-actions modal-footer">
-                    <button
-                        type="button"
-                        className="jp-btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={currentStep === 1 ? onClose : handleBack}
                         disabled={loading}
                     >
                         {currentStep === 1 ? 'Cancel' : 'Back'}
-                    </button>
+                    </Button>
 
                     {currentStep < 3 ? (
-                        <button
-                            type="button"
-                            className="jp-submit-button"
+                        <Button
+                            variant="primary"
                             onClick={handleNext}
                         >
                             Next Step
-                        </button>
+                        </Button>
                     ) : (
-                        <button
-                            type="button"
-                            className="jp-submit-button"
+                        <Button
+                            variant="primary"
                             onClick={handleSubmit}
                             disabled={loading}
+                            loading={loading}
+                            loadingText="Creating Position..."
                         >
-                            {loading ? 'Creating Position...' : 'Create Position'}
-                        </button>
+                            Create Position
+                        </Button>
                     )}
                 </div>
             </div>

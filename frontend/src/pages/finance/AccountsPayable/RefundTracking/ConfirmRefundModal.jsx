@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiCheckCircle, FiDollarSign, FiCalendar } from 'react-icons/fi';
+import { FiCheckCircle, FiCalendar } from 'react-icons/fi';
 import { financeService } from '../../../../services/financeService';
+import { Button, CloseButton } from '../../../../components/common/Button';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ConfirmRefundModal.scss';
 
 const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
@@ -20,6 +22,16 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     useEffect(() => {
         fetchAccounts();
@@ -64,6 +76,7 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
         }
     };
     const handleBalanceTypeChange = (type) => {
+        setIsFormDirty(true);
         setFormData({
             ...formData,
             balanceType: type,
@@ -73,6 +86,7 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
     };
 
     const handleAccountChange = (accountId) => {
+        setIsFormDirty(true);
         setFormData({
             ...formData,
             balanceAccountId: accountId
@@ -81,6 +95,7 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
     };
 
     const handleDateChange = (date) => {
+        setIsFormDirty(true);
         setFormData({
             ...formData,
             dateReceived: date
@@ -89,6 +104,7 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
     };
 
     const handleNotesChange = (notes) => {
+        setIsFormDirty(true);
         setFormData({
             ...formData,
             financeNotes: notes
@@ -160,8 +176,28 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
         }).format(amount);
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        <div className="modal-overlay" onClick={handleCloseAttempt}>
             <div className="confirm-refund-modal" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="modal-header">
@@ -169,9 +205,7 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
                         <FiCheckCircle />
                         <h2>Confirm Refund Receipt</h2>
                     </div>
-                    <button className="close-button" onClick={onClose}>
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 {/* Body */}
@@ -293,23 +327,21 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
 
                 {/* Footer */}
                 <div className="modal-footer">
-                    <button
-                        className="btn-cancel"
-                        onClick={onClose}
-                        disabled={submitting}
-                    >
+                    <Button variant="ghost" onClick={handleCloseAttempt} disabled={submitting}>
                         Cancel
-                    </button>
-                    <button
-                        className="btn-confirm"
+                    </Button>
+                    <Button
+                        variant="success"
                         onClick={handleSubmit}
-                        disabled={submitting}
+                        loading={submitting}
+                        loadingText="Confirming..."
                     >
-                        {submitting ? 'Confirming...' : 'Confirm Refund'}
-                    </button>
+                        Confirm Refund
+                    </Button>
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { CloseButton } from '../../../components/common/Button';
 import "./PurchaseOrderViewModal.scss";
 
 const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
@@ -20,12 +21,15 @@ const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
     useEffect(() => {
         if (isOpen) {
             document.body.classList.add("modal-open");
+            document.body.style.overflow = 'hidden';
         } else {
             document.body.classList.remove("modal-open");
+            document.body.style.overflow = 'unset';
         }
 
         return () => {
             document.body.classList.remove("modal-open");
+            document.body.style.overflow = 'unset';
         };
     }, [isOpen]);
 
@@ -106,9 +110,7 @@ const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
                             {purchaseOrder.status || 'Unknown'}
                         </div>
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        ×
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Content */}

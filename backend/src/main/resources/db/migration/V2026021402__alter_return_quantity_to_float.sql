@@ -1,0 +1,2 @@
+ALTER TABLE purchase_order_return_items
+ALTER COLUMN return_quantity TYPE DOUBLE PRECISION;

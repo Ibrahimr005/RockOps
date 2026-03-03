@@ -6,6 +6,7 @@ import UnifiedTransactionProcessor from './UnifiedTransactionProcessor';
 import TransactionQuickActions from './TransactionQuickActions';
 import { equipmentService } from '../../../services/equipmentService';
 import Snackbar from '../../common/Snackbar2/Snackbar2';
+import { Button } from '../../../components/common/Button';
 
 const TransactionHub = forwardRef(({ 
     equipmentId,
@@ -286,22 +287,24 @@ const TransactionHub = forwardRef(({
                 </div>
                 
                 <div className="transaction-hub-actions">
-                    <button 
+                    <Button
+                        variant="ghost"
                         className="transaction-hub-refresh-btn"
                         onClick={triggerRefresh}
                         disabled={loading}
                     >
                         <RefreshCw size={16} className={loading ? 'spinning' : ''} />
                         Refresh
-                    </button>
-                    
-                    <button 
+                    </Button>
+
+                    <Button
+                        variant="primary"
                         className="transaction-hub-quick-action-btn"
                         onClick={() => setShowQuickActions(true)}
                     >
                         <Plus size={16} />
                         Quick Actions
-                    </button>
+                    </Button>
                 </div>
             </div>
 

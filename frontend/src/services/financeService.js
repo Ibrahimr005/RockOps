@@ -947,9 +947,6 @@ export const financeService = {
                 return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.APPROVE_REJECT, requestData);
             },
 
-            createFromPO: (purchaseOrderId) => {
-                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.CREATE_FROM_PO(purchaseOrderId));
-            },
             createFromPurchaseOrder: (purchaseOrderId, offerId, username) => {
                 console.log('🔵 financeService: Creating payment request');
                 console.log('🔵 PO ID:', purchaseOrderId);
@@ -1159,7 +1156,11 @@ export const financeService = {
 
             getOverdueInstallments: () => {
                 return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.OVERDUE_INSTALLMENTS);
-            }
+            },
+
+            getMerchantsForLoan: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.COMPANY_LOANS.LOANS.MERCHANTS);
+            },
         },
 
         // Dashboard

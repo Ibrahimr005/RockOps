@@ -70,6 +70,7 @@ public class JobPositionAutomationService {
                 .shifts("Day Shift")
                 .workingHours(8) // Added workingHours based on 09:00-17:00 (8 hours)
                 .vacations("21 days annual leave") // Changed from "21" to full string
+                .vacationDays(21)
                 .startTime(defaultStartTime) // Added startTime
                 .endTime(defaultEndTime)     // Added endTime
 

@@ -3,6 +3,7 @@ import { FaDownload, FaFilter, FaCalendarAlt, FaChartLine, FaFileExcel, FaFilePd
 import { payrollService } from '../../../services/payroll/payrollService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import { Button } from '../../../components/common/Button';
 import './PayrollReports.scss';
 
 const PayrollReports = () => {
@@ -81,20 +82,20 @@ const PayrollReports = () => {
                 <div className="header-content">
                     <h1 className="page-title">Payroll Reports</h1>
                     <div className="header-actions">
-                        <button
-                            className="btn btn-secondary"
+                        <Button
+                            variant="secondary"
                             onClick={() => handleExportReport('excel')}
                             disabled={!reportData}
                         >
                             <FaFileExcel /> Export Excel
-                        </button>
-                        <button
-                            className="btn btn-secondary"
+                        </Button>
+                        <Button
+                            variant="secondary"
                             onClick={() => handleExportReport('pdf')}
                             disabled={!reportData}
                         >
                             <FaFilePdf /> Export PDF
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -137,9 +138,9 @@ const PayrollReports = () => {
                             />
                         </div>
 
-                        <button className="btn btn-primary" onClick={handleGenerateReport}>
+                        <Button variant="primary" onClick={handleGenerateReport}>
                             <FaChartLine /> Generate Report
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

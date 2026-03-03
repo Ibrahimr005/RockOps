@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
+import { CloseButton } from '../../../../components/common/Button';
 import "./ResolutionHistory.scss";
 import { itemService } from '../../../../services/warehouse/itemService';
 
@@ -214,12 +215,7 @@ const ResolutionHistory = ({ warehouseId, showSnackbar }) => {
                                     {getResolutionTypeLabel(selectedResolution.resolutionType)}
                                 </div>
                             </div>
-                            <button className="btn-close" onClick={closeModal}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
+                            <CloseButton onClick={closeModal} />
                         </div>
 
                         {/* Content */}

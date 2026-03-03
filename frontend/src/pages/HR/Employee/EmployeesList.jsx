@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaUserPlus, FaEdit, FaTrash,  FaUser } from 'react-icons/fa';
+import { Button } from '../../../components/common/Button';
 import './EmployeesList.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
@@ -131,6 +132,16 @@ const EmployeesList = () => {
                     lastName={employee.lastName}
                     size="medium"
                 />
+            )
+        },
+        {
+            header: 'Employee #',
+            accessor: 'employeeNumber',
+            width: '140px',
+            render: (employee) => (
+                <span className="employee-number">
+                    {employee.employeeNumber || '-'}
+                </span>
             )
         },
         {
@@ -425,15 +436,13 @@ const EmployeesList = () => {
 
     // Define filterable columns - removed Department from here
     const filterableColumns = [
+        { header: 'Employee #', accessor: 'employeeNumber' },
         { header: 'Name', accessor: 'fullName' },
         { header: 'Email', accessor: 'email' },
         {header: 'Department', accessor: 'jobPositionDepartment', filterType: 'select' },
         {header: 'Position', accessor: 'jobPositionName', filterType: 'select' },
         {header: 'Status', accessor: 'status', filterType: 'select' },
         {header: 'Contract Type', accessor: 'jobPositionType', filterType: 'select' },
-
-
-
     ];
 
     // Define custom filters - Position, Department, Status, and Contract Type as dropdowns
@@ -462,7 +471,7 @@ const EmployeesList = () => {
         return (
             <div className="error-container">
                 <p>Error: {error}</p>
-                <button onClick={fetchEmployees}>Try Again</button>
+                <Button variant="primary" onClick={fetchEmployees}>Try Again</Button>
             </div>
         );
     }

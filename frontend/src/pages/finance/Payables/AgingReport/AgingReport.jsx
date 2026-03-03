@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fa';
 import { BiRefresh } from "react-icons/bi";
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 import './AgingReport.css';
@@ -347,14 +348,15 @@ const AgingReport = () => {
                     {/*    <BiRefresh />*/}
                     {/*    Refresh Data*/}
                     {/*</button>*/}
-                    <button
-                        className="payables-btn payables-btn-danger"
+                    <Button
+                        variant="danger"
                         onClick={handlePdfExport}
-                        disabled={downloadingPdf}
+                        loading={downloadingPdf}
+                        loadingText="Generating..."
                     >
                         <FaFilePdf />
-                        {downloadingPdf ? 'Generating...' : 'Export PDF'}
-                    </button>
+                        Export PDF
+                    </Button>
                 </div>
             </div>
 

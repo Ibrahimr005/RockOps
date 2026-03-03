@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaBriefcase, FaUsers, FaSearch, FaPlus } from 'react-icons/fa';
+import { FaBriefcase, FaUsers, FaSearch, FaPlus } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './AddToVacancyModal.scss';
 import { vacancyService } from '../../../../services/hr/vacancyService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const AddToVacancyModal = ({ onClose, onConfirm, candidateCount, isLoading }) => {
     const [vacancies, setVacancies] = useState([]);
@@ -11,8 +13,18 @@ const AddToVacancyModal = ({ onClose, onConfirm, candidateCount, isLoading }) =>
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     const { showError } = useSnackbar();
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     useEffect(() => {
         loadVacancies();
@@ -58,6 +70,7 @@ const AddToVacancyModal = ({ onClose, onConfirm, candidateCount, isLoading }) =>
     };
 
     const handleVacancySelect = (vacancy) => {
+        setIsFormDirty(true);
         setSelectedVacancy(vacancy);
     };
 
@@ -91,7 +104,16 @@ const AddToVacancyModal = ({ onClose, onConfirm, candidateCount, isLoading }) =>
         return 'available';
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     return (
+        <>
         <div className="modal-overlay">
             <div className="modal-container add-to-vacancy-modal">
                 <div className="modal-header">
@@ -99,9 +121,7 @@ const AddToVacancyModal = ({ onClose, onConfirm, candidateCount, isLoading }) =>
                         <FaPlus className="title-icon" />
                         Add Candidates to Vacancy
                     </h2>
-                    <button className="modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <div className="modal-body">
@@ -216,33 +236,39 @@ const AddToVacancyModal = ({ onClose, onConfirm, candidateCount, isLoading }) =>
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        className="btn btn-secondary"
-                        onClick={onClose}
+                    <Button
+                        variant="ghost"
+                        onClick={handleCloseAttempt}
                         disabled={isLoading}
                     >
                         Cancel
-                    </button>
-                    <button
-                        className="btn btn-primary"
+                    </Button>
+                    <Button
+                        variant="primary"
                         onClick={handleConfirm}
                         disabled={!selectedVacancy || isLoading}
+                        loading={isLoading}
+                        loadingText="Adding..."
                     >
-                        {isLoading ? (
-                            <>
-                                <div className="loading-spinner small"></div>
-                                Adding...
-                            </>
-                        ) : (
-                            <>
-                                <FaPlus />
-                                Add to Vacancy
-                            </>
-                        )}
-                    </button>
+                        <FaPlus />
+                        Add to Vacancy
+                    </Button>
                 </div>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

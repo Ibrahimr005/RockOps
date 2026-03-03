@@ -740,6 +740,9 @@ public class JobPositionController {
                     break;
             }
 
+            // Vacation days (applies to all contract types)
+            dto.setVacationDays(jobPosition.getVacationDays());
+
             // Calculate derived fields
             dto.calculateFields();
 

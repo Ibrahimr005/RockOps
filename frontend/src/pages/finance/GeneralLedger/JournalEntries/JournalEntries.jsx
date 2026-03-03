@@ -5,6 +5,7 @@ import { useAuth } from "../../../../contexts/AuthContext";
 import { FaBook, FaSearch, FaFilter, FaPlus, FaCheck, FaTimes, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../../components/common/PageHeader';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -43,6 +44,18 @@ const JournalEntries = () => {
 
     const isFinanceManager = currentUser?.role === "FINANCE_MANAGER" || "ADMIN";
     const isFinanceEmployee = currentUser?.role === "FINANCE_EMPLOYEE" || isFinanceManager;
+
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showAddModal || showDetailModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showDetailModal]);
 
     useEffect(() => {
         fetchJournalEntries();
@@ -438,7 +451,7 @@ const JournalEntries = () => {
                     <div className="journal-modal-content">
                         <div className="journal-modal-header">
                             <h2>Add Journal Entry</h2>
-                            <button className="journal-modal-close-button" onClick={handleCloseModals}>×</button>
+                            <CloseButton onClick={handleCloseModals} />
                         </div>
 
                         <div className="journal-modal-body">
@@ -582,20 +595,19 @@ const JournalEntries = () => {
                                         </div>
 
                                         <div className="journal-form-actions">
-                                            <button
+                                            <Button
                                                 type="submit"
-                                                className="journal-submit-button"
+                                                variant="primary"
                                                 disabled={!isBalanced()}
                                             >
                                                 Create Entry
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="journal-cancel-button"
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
                                                 onClick={handleCloseModals}
                                             >
                                                 Cancel
-                                            </button>
+                                            </Button>
                                         </div>
                                     </form>
                                 </div>
@@ -611,7 +623,7 @@ const JournalEntries = () => {
                     <div className="journal-modal-content">
                         <div className="journal-modal-header">
                             <h2>Journal Entry Details</h2>
-                            <button className="journal-modal-close-button" onClick={handleCloseModals}>×</button>
+                            <CloseButton onClick={handleCloseModals} />
                         </div>
 
                         <div className="journal-modal-body">
@@ -738,14 +750,14 @@ const JournalEntries = () => {
                                         {/* Only show approve/reject buttons if user didn't create this entry */}
                                         {selectedEntry.createdBy !== currentUser?.username ? (
                                             <>
-                                                <button
-                                                    className="journal-submit-button"
+                                                <Button
+                                                    variant="success"
                                                     onClick={() => handleApproveEntry(selectedEntry.id)}
                                                 >
                                                     <FaCheck /> Approve
-                                                </button>
-                                                <button
-                                                    className="journal-cancel-button"
+                                                </Button>
+                                                <Button
+                                                    variant="danger"
                                                     onClick={() => {
                                                         const reason = prompt('Enter reason for rejection:');
                                                         if (reason && reason.trim()) {
@@ -754,7 +766,7 @@ const JournalEntries = () => {
                                                     }}
                                                 >
                                                     <FaTimes /> Reject
-                                                </button>
+                                                </Button>
                                             </>
                                         ) : (
                                             <div className="journal-self-entry-notice">

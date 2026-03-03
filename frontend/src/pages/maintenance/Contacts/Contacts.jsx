@@ -6,6 +6,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import ContactModal from './ContactModal';
+import { Button, IconButton } from '../../../components/common/Button';
 import './Contacts.scss';
 import contactService from '../../../services/contactService.js';
 
@@ -287,8 +288,10 @@ const Contacts = () => {
             render: (row) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {getStatusBadge(row.isActive)}
-                    <button
-                        className={`btn btn-sm ${row.isActive ? 'btn-warning' : 'btn-success'}`}
+                    <IconButton
+                        variant={row.isActive ? 'danger' : 'success'}
+                        size="sm"
+                        icon={row.isActive ? <FaUserTimes /> : <FaUserCheck />}
                         onClick={(e) => {
                             e.stopPropagation();
                             if (row.isActive) {
@@ -298,10 +301,7 @@ const Contacts = () => {
                             }
                         }}
                         title={row.isActive ? 'Deactivate' : 'Activate'}
-                        style={{ padding: '4px 8px', fontSize: '12px' }}
-                    >
-                        {row.isActive ? <FaUserTimes /> : <FaUserCheck />}
-                    </button>
+                    />
                 </div>
             )
         },
@@ -353,9 +353,9 @@ const Contacts = () => {
                 <div className="error-message">
                     <h3>Error Loading Contacts</h3>
                     <p>{error}</p>
-                    <button onClick={loadContacts} className="retry-btn">
+                    <Button variant="primary" onClick={loadContacts}>
                         Try Again
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

@@ -13,6 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class MinimalJobPositionDTO {
     private UUID id;
+    private String positionNumber;
     private String positionName;
     private String experienceLevel;
     private String contractType;

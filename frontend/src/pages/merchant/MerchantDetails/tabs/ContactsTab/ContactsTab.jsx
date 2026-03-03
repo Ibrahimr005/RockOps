@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaUser, FaEnvelope, FaPhone, FaPlus, FaSync, FaEdit, FaTrash, FaBriefcase, FaBuilding } from 'react-icons/fa';
+import { Button, IconButton } from '../../../../../components/common/Button';
 import contactService from '../../../../../services/contactService';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import Snackbar from '../../../../../components/common/Snackbar/Snackbar';
@@ -106,10 +107,10 @@ const ContactsTab = ({ merchant }) => {
                 </h3>
                 <div className="header-actions">
 
-                    <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+                    <Button variant="primary" onClick={() => setShowAddModal(true)}>
                         <FaPlus />
                         Add Contact
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -238,27 +239,27 @@ const ContactsTab = ({ merchant }) => {
                             </div>
 
                             <div className="contact-actions">
-                                <button
-                                    className="btn-view"
+                                <IconButton
+                                    variant="primary"
+                                    size="sm"
+                                    icon={<FaUser />}
                                     onClick={() => console.log('View contact', contact.id)}
                                     title="View Details"
-                                >
-                                    <FaUser />
-                                </button>
-                                <button
-                                    className="btn-edit"
+                                />
+                                <IconButton
+                                    variant="primary"
+                                    size="sm"
+                                    icon={<FaEdit />}
                                     onClick={() => console.log('Edit contact', contact.id)}
                                     title="Edit Contact"
-                                >
-                                    <FaEdit />
-                                </button>
-                                <button
-                                    className="btn-unlink"
+                                />
+                                <IconButton
+                                    variant="danger"
+                                    size="sm"
+                                    icon={<FaTrash />}
                                     onClick={() => handleUnlinkClick(contact)}
                                     title="Unlink from Merchant"
-                                >
-                                    <FaTrash />
-                                </button>
+                                />
                             </div>
                         </div>
                     ))}

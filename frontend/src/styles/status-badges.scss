@@ -12,8 +12,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border-radius: var(--po-radius);
-  font-size: 0.78rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.025em;
   white-space: nowrap;
@@ -41,7 +41,7 @@
 }
 
 /* Employee Status */
-.status-badge.active, {
+.status-badge.active {
   background-color: rgba(76, 175, 80, 0.15);
   color: var(--color-success) !important;
   border-color: rgba(76, 175, 80, 0.3);
@@ -100,13 +100,13 @@
 
 .status-badge.acknowledged {
   background-color: rgba(139, 195, 74, 0.15);
-  color: #689f38;
+  color: var(--color-lime);
   border-color: rgba(139, 195, 74, 0.3);
 }
 
 .status-badge.processing {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
 }
 
@@ -131,13 +131,13 @@
 
 .status-badge.status-acknowledged {
   background-color: rgba(139, 195, 74, 0.15);
-  color: #689f38;
+  color: var(--color-lime);
   border-color: rgba(139, 195, 74, 0.3);
 }
 
 .status-badge.status-processing {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
 }
 
@@ -149,7 +149,7 @@
 
 .status-badge.status-ready {
   background-color: rgba(139, 195, 74, 0.15);
-  color: #689f38;
+  color: var(--color-lime);
   border-color: rgba(139, 195, 74, 0.3);
 }
 
@@ -167,7 +167,7 @@
 
 .status-badge.status-regenerating {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
   animation: pulse 2s infinite;
 }
@@ -213,7 +213,7 @@
 
 .status-badge.payroll-calculated {
   background-color: rgba(139, 195, 74, 0.15);
-  color: #689f38;
+  color: var(--color-lime);
   border-color: rgba(139, 195, 74, 0.3);
 }
 
@@ -251,7 +251,7 @@
 
 .status-badge.salary-adjusted {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
 }
 
@@ -276,7 +276,7 @@
 
 .status-badge.deduction-waived {
   background-color: rgba(139, 195, 74, 0.15);
-  color: #689f38;
+  color: var(--color-lime);
   border-color: rgba(139, 195, 74, 0.3);
 }
 
@@ -289,7 +289,7 @@
 
 .status-badge.tax-exempt {
   background-color: rgba(139, 195, 74, 0.15);
-  color: #689f38;
+  color: var(--color-lime);
   border-color: rgba(139, 195, 74, 0.3);
 }
 
@@ -327,7 +327,7 @@
 
 .status-badge.bonus-applied {
   background-color: rgba(139, 195, 74, 0.15);
-  color: #689f38;
+  color: var(--color-lime);
   border-color: rgba(139, 195, 74, 0.3);
 }
 
@@ -391,13 +391,13 @@
 
 .status-badge.overdue {
   background-color: rgba(183, 28, 28, 0.15);
-  color: #c62828;
+  color: var(--color-danger-dark);
   border-color: rgba(183, 28, 28, 0.3);
 }
 
 .status-badge.refunded, .status-badge.daily {
   background-color: rgba(103, 58, 183, 0.15);
-  color: #7b1fa2;
+  color: var(--color-purple);
   border-color: rgba(103, 58, 183, 0.3);
 }
 
@@ -416,7 +416,7 @@
 
 .status-badge.defaulted {
   background-color: rgba(183, 28, 28, 0.15);
-  color: #c62828;
+  color: var(--color-danger-dark);
   border-color: rgba(183, 28, 28, 0.3);
 }
 
@@ -474,7 +474,7 @@
 .status-badge.half-day,
 .status-badge.half_day {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
 }
 
@@ -507,7 +507,7 @@
 
 .status-badge.reviewed {
   background-color: rgba(103, 58, 183, 0.15);
-  color: #7b1fa2;
+  color: var(--color-purple);
   border-color: rgba(103, 58, 183, 0.3);
 }
 
@@ -535,7 +535,7 @@
 
 .status-badge.backordered {
   background-color: rgba(103, 58, 183, 0.15);
-  color: #7b1fa2;
+  color: var(--color-purple);
   border-color: rgba(103, 58, 183, 0.3);
 }
 
@@ -548,7 +548,7 @@
 /* Priority Levels */
 .status-badge.low  {
   background-color: rgba(139, 195, 74, 0.15);
-  color: #689f38;
+  color: var(--color-lime);
   border-color: rgba(139, 195, 74, 0.3);
 }
 
@@ -567,7 +567,7 @@
 .status-badge.critical,
 .status-badge.urgent {
   background-color: rgba(183, 28, 28, 0.15);
-  color: #c62828;
+  color: var(--color-danger-dark);
   border-color: rgba(183, 28, 28, 0.3);
   animation: pulse 2s infinite;
 }
@@ -581,7 +581,7 @@
 
 .status-badge.shipped {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
 }
 
@@ -593,7 +593,7 @@
 
 .status-badge.returned {
   background-color: rgba(103, 58, 183, 0.15);
-  color: #7b1fa2;
+  color: var(--color-purple);
   border-color: rgba(103, 58, 183, 0.3);
 }
 
@@ -626,7 +626,7 @@
 .status-badge.under-review,
 .status-badge.under_review {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
 }
 
@@ -647,7 +647,7 @@
 
 .status-badge.renewable {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
 }
 
@@ -692,7 +692,7 @@
 
 .status-badge.connecting {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
 }
 
@@ -705,13 +705,13 @@
 
 .status-badge.good {
   background-color: rgba(139, 195, 74, 0.15);
-  color: #689f38;
+  color: var(--color-lime);
   border-color: rgba(139, 195, 74, 0.3);
 }
 
 .status-badge.fair {
   background-color: rgba(255, 193, 7, 0.15);
-  color: #f57c00;
+  color: var(--color-orange);
   border-color: rgba(255, 193, 7, 0.3);
 }
 
