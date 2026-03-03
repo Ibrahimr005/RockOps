@@ -362,10 +362,12 @@ const InWarehouseItems = ({
             }
         },
         {
-            accessor: 'itemType.measuringUnit',
+            accessor: 'itemType.measuringUnit.displayName',
             header: 'UNIT',
             width: '200px',
-            render: (row) => row.itemType?.measuringUnit || "N/A"
+            render: (row) => row.itemType?.measuringUnit?.displayName ||
+                row.itemType?.measuringUnit?.abbreviation ||
+                "N/A"
         }
     ];
 

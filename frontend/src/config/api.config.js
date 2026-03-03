@@ -1092,15 +1092,21 @@ export const LOGISTICS_ENDPOINTS = {
     GET_ALL: '/api/procurement/logistics',
     GET_BY_ID: (id) => `/api/procurement/logistics/${id}`,
     PENDING_APPROVAL: '/api/procurement/logistics/pending-approval',
-    PENDING_PAYMENT: '/api/procurement/logistics/pending-payment',  // ✅ ADD THIS
-    COMPLETED: '/api/procurement/logistics/completed',  // ✅ ADD THIS
+    PENDING_PAYMENT: '/api/procurement/logistics/pending-payment',
+    COMPLETED: '/api/procurement/logistics/completed',
     BY_PURCHASE_ORDER: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}`,
     TOTAL_COST: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/total-cost`,
+
+    // Return logistics endpoints
+    BY_PURCHASE_ORDER_RETURN: (purchaseOrderReturnId) => `/api/procurement/logistics/purchase-order-return/${purchaseOrderReturnId}`,
+    TOTAL_COST_RETURN: (purchaseOrderReturnId) => `/api/procurement/logistics/purchase-order-return/${purchaseOrderReturnId}/total-cost`,
+    CREATE_RETURN: '/api/procurement/logistics/returns',
+
     CREATE: '/api/procurement/logistics',
     UPDATE: (id) => `/api/procurement/logistics/${id}`,
     DELETE: (id) => `/api/procurement/logistics/${id}`,
+    RETURN_LOGISTICS_BY_PO: (purchaseOrderId) => `/api/procurement/logistics/purchase-order/${purchaseOrderId}/returns`,
 };
-
 // ==================== INCOMING PAYMENTS (Finance) ====================
 export const INCOMING_PAYMENT_ENDPOINTS = {
     BASE: '/api/v1/finance/incoming-payments',

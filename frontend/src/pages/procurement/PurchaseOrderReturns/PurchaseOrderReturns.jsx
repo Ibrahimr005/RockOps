@@ -105,8 +105,8 @@ const PurchaseOrderReturnsPage = () => {
 
             <Snackbar
                 type={notificationType}
-                text={notificationMessage}
-                isVisible={showNotification}
+                message={notificationMessage}
+                show={showNotification}
                 onClose={() => setShowNotification(false)}
                 duration={3000}
             />

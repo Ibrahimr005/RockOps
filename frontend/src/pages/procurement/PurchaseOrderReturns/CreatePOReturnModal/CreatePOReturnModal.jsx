@@ -173,7 +173,7 @@ const CreatePOReturnModal = ({ isOpen, onClose, onSuccess, onError }) => {
                 .map(item => ({
                     purchaseOrderItemId: item.purchaseOrderItemId,
                     returnQuantity: item.returnQuantity,
-                    reason: item.reason || formData.reason
+                    reason: item.reason || ''  // ✅ Send empty string if no specific reason, don't use overall reason
                 }));
 
             const returnData = {

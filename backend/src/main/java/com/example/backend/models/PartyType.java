@@ -4,5 +4,6 @@ public enum PartyType {
     WAREHOUSE,
     MERCHANT,
     EQUIPMENT,
-    PROCUREMENT
+    PROCUREMENT,
+    LOSS
 }

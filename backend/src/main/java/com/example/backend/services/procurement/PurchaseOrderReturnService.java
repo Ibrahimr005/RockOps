@@ -5,16 +5,13 @@ import com.example.backend.dto.procurement.PurchaseOrderReturn.PurchaseOrderRetu
 import com.example.backend.dto.procurement.PurchaseOrderReturn.PurchaseOrderReturnResponseDTO;
 import com.example.backend.models.finance.incomingPayments.IncomingPaymentRequestItem;
 import com.example.backend.models.id.EntityTypeConfig;
-import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.models.procurement.PurchaseOrderReturn.PurchaseOrderReturn;
 import com.example.backend.models.procurement.PurchaseOrderReturn.PurchaseOrderReturnItem;
 import com.example.backend.models.procurement.PurchaseOrderReturn.PurchaseOrderReturnStatus;
-import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderItemRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
-import com.example.backend.repositories.procurement.PurchaseOrderReturnItemRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderReturnRepository;
 import com.example.backend.services.finance.incomingPayments.IncomingPaymentRequestService;
 import com.example.backend.services.id.EntityIdGeneratorService;
@@ -34,18 +31,17 @@ import java.util.stream.Collectors;
 public class PurchaseOrderReturnService {
 
     private final PurchaseOrderReturnRepository purchaseOrderReturnRepository;
-    private final PurchaseOrderReturnItemRepository purchaseOrderReturnItemRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
-    private final MerchantRepository merchantRepository;
     private final IncomingPaymentRequestService incomingPaymentRequestService;
     private final EntityIdGeneratorService entityIdGeneratorService;
 
     /**
-     * Create PO return requests grouped by merchant
+     * Create ONE PO return request with all items
+     * Creates MULTIPLE incoming payment requests (one per merchant)
      */
     @Transactional
-    public List<PurchaseOrderReturnResponseDTO> createPurchaseOrderReturns(
+    public PurchaseOrderReturnResponseDTO createPurchaseOrderReturn(
             UUID purchaseOrderId,
             CreatePurchaseOrderReturnDTO createDTO,
             String username) {
@@ -68,73 +64,22 @@ public class PurchaseOrderReturnService {
             }
         }
 
-        // Group items by merchant
-        Map<UUID, List<CreatePurchaseOrderReturnDTO.ReturnItemRequest>> itemsByMerchant = new HashMap<>();
-
-        for (CreatePurchaseOrderReturnDTO.ReturnItemRequest itemRequest : createDTO.getItems()) {
-            PurchaseOrderItem poItem = poItems.stream()
-                    .filter(i -> i.getId().equals(itemRequest.getPurchaseOrderItemId()))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("PO Item not found"));
-
-            UUID merchantId = poItem.getMerchant().getId();
-            itemsByMerchant.computeIfAbsent(merchantId, k -> new ArrayList<>()).add(itemRequest);
-        }
-
-        log.info("Grouped return items into {} merchant(s)", itemsByMerchant.size());
-
-        // Create PO return for each merchant
-        List<PurchaseOrderReturnResponseDTO> createdReturns = new ArrayList<>();
-
-        for (Map.Entry<UUID, List<CreatePurchaseOrderReturnDTO.ReturnItemRequest>> entry : itemsByMerchant.entrySet()) {
-            UUID merchantId = entry.getKey();
-            List<CreatePurchaseOrderReturnDTO.ReturnItemRequest> merchantItems = entry.getValue();
-
-            PurchaseOrderReturnResponseDTO returnDTO = createPurchaseOrderReturnForMerchant(
-                    purchaseOrder,
-                    merchantId,
-                    merchantItems,
-                    createDTO.getReason(),
-                    username
-            );
-
-            createdReturns.add(returnDTO);
-        }
-
-        log.info("Successfully created {} PO return request(s)", createdReturns.size());
-        return createdReturns;
-    }
-
-    /**
-     * Create PO return for a specific merchant
-     */
-    @Transactional
-    private PurchaseOrderReturnResponseDTO createPurchaseOrderReturnForMerchant(
-            PurchaseOrder purchaseOrder,
-            UUID merchantId,
-            List<CreatePurchaseOrderReturnDTO.ReturnItemRequest> itemRequests,
-            String reason,
-            String username) {
-
-        Merchant merchant = merchantRepository.findById(merchantId)
-                .orElseThrow(() -> new RuntimeException("Merchant not found"));
-
-        // Generate return ID using the ID generator service
+        // Generate return ID
         String returnId = entityIdGeneratorService.generateNextId(EntityTypeConfig.PURCHASE_ORDER_RETURN);
 
+        // Create ONE PurchaseOrderReturn for all items
         PurchaseOrderReturn poReturn = PurchaseOrderReturn.builder()
                 .returnId(returnId)
                 .purchaseOrder(purchaseOrder)
-                .merchant(merchant)
                 .status(PurchaseOrderReturnStatus.PENDING)
-                .reason(reason)
+                .reason(createDTO.getReason())
                 .requestedBy(username)
                 .requestedAt(LocalDateTime.now())
                 .returnItems(new ArrayList<>())
                 .build();
 
-        // Create return items
-        for (CreatePurchaseOrderReturnDTO.ReturnItemRequest itemRequest : itemRequests) {
+        // Add ALL return items
+        for (CreatePurchaseOrderReturnDTO.ReturnItemRequest itemRequest : createDTO.getItems()) {
             PurchaseOrderItem poItem = purchaseOrderItemRepository.findById(itemRequest.getPurchaseOrderItemId())
                     .orElseThrow(() -> new RuntimeException("PO Item not found"));
 
@@ -150,6 +95,7 @@ public class PurchaseOrderReturnService {
             PurchaseOrderReturnItem returnItem = PurchaseOrderReturnItem.builder()
                     .purchaseOrderReturn(poReturn)
                     .purchaseOrderItem(poItem)
+                    .merchant(poItem.getMerchant())  // Set merchant from PO item
                     .itemTypeName(poItem.getItemType().getName())
                     .returnQuantity(returnQuantity)
                     .unitPrice(unitPrice)
@@ -163,48 +109,59 @@ public class PurchaseOrderReturnService {
         // Calculate total return amount
         poReturn.calculateTotalReturnAmount();
 
-        // Save PO return
+        // Save the ONE PO return
         PurchaseOrderReturn savedReturn = purchaseOrderReturnRepository.save(poReturn);
 
-        // Create incoming payment request for finance tracking
-        createIncomingPaymentRequestForReturn(savedReturn);
+        // Create MULTIPLE incoming payment requests - one per merchant
+        createIncomingPaymentRequestsForReturn(savedReturn);
 
-        log.info("Created PO return: {} for merchant: {} with total amount: {}",
-                returnId, merchant.getName(), savedReturn.getTotalReturnAmount());
+        log.info("Created PO return: {} with total amount: {}", returnId, savedReturn.getTotalReturnAmount());
 
         return convertToDTO(savedReturn);
     }
 
-
     /**
-     * Create incoming payment request when PO return is created
+     * Create incoming payment requests grouped by merchant
      */
-    private void createIncomingPaymentRequestForReturn(PurchaseOrderReturn poReturn) {
-        List<IncomingPaymentRequestItem> incomingPaymentItems = new ArrayList<>();
+    private void createIncomingPaymentRequestsForReturn(PurchaseOrderReturn poReturn) {
+        // Group items by merchant (direct access now)
+        Map<UUID, List<PurchaseOrderReturnItem>> itemsByMerchant = poReturn.getReturnItems().stream()
+                .collect(Collectors.groupingBy(item -> item.getMerchant().getId()));
 
-        for (PurchaseOrderReturnItem returnItem : poReturn.getReturnItems()) {
-            IncomingPaymentRequestItem item = new IncomingPaymentRequestItem();
-            item.setPurchaseOrderItem(returnItem.getPurchaseOrderItem());
-            item.setIssue(null); // No issue for PO returns
-            item.setItemName(returnItem.getItemTypeName());
-            item.setAffectedQuantity(returnItem.getReturnQuantity().doubleValue()); // Convert BigDecimal to Double
-            item.setUnitPrice(returnItem.getUnitPrice());
-            item.setTotalRefundAmount(returnItem.getTotalReturnAmount());
-            item.setIssueType(null);
-            item.setIssueDescription(returnItem.getReason());
+        log.info("Creating {} incoming payment request(s) - one per merchant", itemsByMerchant.size());
 
-            incomingPaymentItems.add(item);
+        // Create one IncomingPaymentRequest per merchant
+        for (Map.Entry<UUID, List<PurchaseOrderReturnItem>> entry : itemsByMerchant.entrySet()) {
+            UUID merchantId = entry.getKey();
+            List<PurchaseOrderReturnItem> merchantItems = entry.getValue();
+
+            List<IncomingPaymentRequestItem> incomingPaymentItems = new ArrayList<>();
+            BigDecimal merchantTotal = BigDecimal.ZERO;
+
+            for (PurchaseOrderReturnItem returnItem : merchantItems) {
+                IncomingPaymentRequestItem item = new IncomingPaymentRequestItem();
+                item.setPurchaseOrderItem(returnItem.getPurchaseOrderItem());
+                item.setIssue(null);
+                item.setItemName(returnItem.getItemTypeName());
+                item.setAffectedQuantity(returnItem.getReturnQuantity().doubleValue());
+                item.setUnitPrice(returnItem.getUnitPrice());
+                item.setTotalRefundAmount(returnItem.getTotalReturnAmount());
+                item.setIssueType(null);
+                item.setIssueDescription(returnItem.getReason());
+
+                incomingPaymentItems.add(item);
+                merchantTotal = merchantTotal.add(returnItem.getTotalReturnAmount());
+            }
+
+            incomingPaymentRequestService.createIncomingPaymentFromPOReturn(
+                    poReturn.getPurchaseOrder().getId(),
+                    merchantId,
+                    poReturn.getId(),
+                    incomingPaymentItems,
+                    merchantTotal
+            );
         }
-
-        incomingPaymentRequestService.createIncomingPaymentFromPOReturn(
-                poReturn.getPurchaseOrder().getId(),
-                poReturn.getMerchant().getId(),
-                poReturn.getId(),
-                incomingPaymentItems,
-                poReturn.getTotalReturnAmount()
-        );
     }
-
 
     /**
      * Get all PO returns
@@ -242,16 +199,6 @@ public class PurchaseOrderReturnService {
     }
 
     /**
-     * Generate return number
-     */
-    private String generateReturnNumber(String poNumber) {
-        String datePart = LocalDateTime.now().toString().substring(0, 10).replace("-", "");
-        int randomNum = new Random().nextInt(1000);
-        String randomPart = String.format("%03d", randomNum);
-        return "RET-" + poNumber + "-" + datePart + "-" + randomPart;
-    }
-
-    /**
      * Convert entity to DTO
      */
     private PurchaseOrderReturnResponseDTO convertToDTO(PurchaseOrderReturn poReturn) {
@@ -259,18 +206,26 @@ public class PurchaseOrderReturnService {
                 .map(this::convertItemToDTO)
                 .collect(Collectors.toList());
 
+        // Get unique merchant names from items (direct access)
+        String merchantNames = poReturn.getReturnItems().stream()
+                .map(item -> item.getMerchant().getName())
+                .distinct()
+                .collect(Collectors.joining(", "));
+
         return PurchaseOrderReturnResponseDTO.builder()
                 .id(poReturn.getId())
                 .returnId(poReturn.getReturnId())
                 .purchaseOrderId(poReturn.getPurchaseOrder().getId())
                 .purchaseOrderNumber(poReturn.getPurchaseOrder().getPoNumber())
-                .merchantId(poReturn.getMerchant().getId())
-                .merchantName(poReturn.getMerchant().getName())
+                .merchantId(null)
+                .merchantName(merchantNames)
                 .totalReturnAmount(poReturn.getTotalReturnAmount())
-                .status(poReturn.getStatus())  // Now it's the enum, not .name()
+                .status(poReturn.getStatus().name())
                 .reason(poReturn.getReason())
                 .requestedBy(poReturn.getRequestedBy())
                 .requestedAt(poReturn.getRequestedAt())
+                .approvedBy(poReturn.getApprovedBy())        // ✅ ADD THIS
+                .approvedAt(poReturn.getApprovedAt())        // ✅ ADD THIS
                 .createdAt(poReturn.getCreatedAt())
                 .updatedAt(poReturn.getUpdatedAt())
                 .returnItems(itemDTOs)
@@ -282,7 +237,7 @@ public class PurchaseOrderReturnService {
         dto.setId(item.getId());
         dto.setPurchaseOrderItemId(item.getPurchaseOrderItem().getId());
         dto.setItemTypeName(item.getItemTypeName());
-        dto.setReturnQuantity(item.getReturnQuantity().doubleValue()); // Convert BigDecimal to Double for DTO
+        dto.setReturnQuantity(item.getReturnQuantity().doubleValue());
         dto.setUnitPrice(item.getUnitPrice());
         dto.setTotalReturnAmount(item.getTotalReturnAmount());
         dto.setReason(item.getReason());

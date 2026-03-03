@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiTruck, FiPackage, FiPlus, FiTrash2, FiCheck, FiBox } from 'react-icons/fi';
 import './CreateLogisticsModal.scss';
-import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog'; // Update the path
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import {merchantService} from "../../../../services/merchant/merchantService.js";
 import {logisticsService} from "../../../../services/procurement/logisticsService.js"
 
@@ -11,14 +11,15 @@ const CreateLogisticsModal = ({
                                   onSuccess,
                                   onError,
                                   availablePurchaseOrders = [],
-                                  existingLogistics = null,  // ← ADD THIS
-                                  isEditMode = false          // ← ADD THIS
+                                  availablePurchaseOrderReturns = [],
+                                  existingLogistics = null,
+                                  isEditMode = false
                               }) => {
+    const [logisticsType, setLogisticsType] = useState(null);
     const [currentStep, setCurrentStep] = useState(1);
     const [isSaving, setIsSaving] = useState(false);
-    const [showConfirmation, setShowConfirmation] = useState(false); // NEW
+    const [showConfirmation, setShowConfirmation] = useState(false);
 
-    // Form state
     const [formData, setFormData] = useState({
         merchantId: '',
         totalCost: '',
@@ -30,12 +31,15 @@ const CreateLogisticsModal = ({
         purchaseOrders: [{
             purchaseOrderId: '',
             selectedItemIds: []
+        }],
+        purchaseOrderReturns: [{
+            purchaseOrderReturnId: '',
+            selectedItemIds: []
         }]
     });
 
     const [merchants, setMerchants] = useState([]);
 
-    // NEW: Initial form state for comparison
     const initialFormState = {
         merchantId: '',
         totalCost: '',
@@ -46,6 +50,10 @@ const CreateLogisticsModal = ({
         notes: '',
         purchaseOrders: [{
             purchaseOrderId: '',
+            selectedItemIds: []
+        }],
+        purchaseOrderReturns: [{
+            purchaseOrderReturnId: '',
             selectedItemIds: []
         }]
     };
@@ -59,7 +67,7 @@ const CreateLogisticsModal = ({
                 resetForm();
             }
         }
-    }, [isOpen, isEditMode, existingLogistics]);;
+    }, [isOpen, isEditMode, existingLogistics]);
 
     useEffect(() => {
         if (isOpen) {
@@ -72,13 +80,6 @@ const CreateLogisticsModal = ({
             document.body.classList.remove("modal-open");
         };
     }, [isOpen]);
-
-    useEffect(() => {
-        if (availablePurchaseOrders.length > 0) {
-            console.log('Available Purchase Orders:', availablePurchaseOrders);
-            console.log('First PO structure:', availablePurchaseOrders[0]);
-        }
-    }, [availablePurchaseOrders]);
 
     const fetchServiceMerchants = async () => {
         try {
@@ -103,41 +104,65 @@ const CreateLogisticsModal = ({
             purchaseOrders: [{
                 purchaseOrderId: '',
                 selectedItemIds: []
+            }],
+            purchaseOrderReturns: [{
+                purchaseOrderReturnId: '',
+                selectedItemIds: []
             }]
         });
+        setLogisticsType(null);
         setCurrentStep(1);
     };
 
     const loadExistingData = async () => {
         try {
-            // Fetch full logistics details
             const fullLogistics = await logisticsService.getById(existingLogistics.id);
 
-            // Transform purchase orders data
-            const purchaseOrders = fullLogistics.purchaseOrders.map(po => ({
-                purchaseOrderId: po.purchaseOrderId,
-                selectedItemIds: po.items.map(item => item.purchaseOrderItemId)
-            }));
+            const isReturn = fullLogistics.logisticsNumber.startsWith('RET-LOG');
+            setLogisticsType(isReturn ? 'RETURN' : 'PO');
+            setCurrentStep(2);
 
-            setFormData({
-                merchantId: fullLogistics.merchantId,
-                totalCost: fullLogistics.totalCost.toString(),
-                currency: fullLogistics.currency,
-                carrierCompany: fullLogistics.carrierCompany,
-                driverName: fullLogistics.driverName,
-                driverPhone: fullLogistics.driverPhone || '',
-                notes: fullLogistics.notes || '',
-                purchaseOrders: purchaseOrders
-            });
+            if (isReturn) {
+                const purchaseOrderReturns = fullLogistics.purchaseOrderReturns.map(por => ({
+                    purchaseOrderReturnId: por.purchaseOrderReturnId,
+                    selectedItemIds: por.items.map(item => item.purchaseOrderReturnItemId)
+                }));
 
-            setCurrentStep(1);
+                setFormData({
+                    ...formData,
+                    merchantId: fullLogistics.merchantId,
+                    totalCost: fullLogistics.totalCost.toString(),
+                    currency: fullLogistics.currency,
+                    carrierCompany: fullLogistics.carrierCompany,
+                    driverName: fullLogistics.driverName,
+                    driverPhone: fullLogistics.driverPhone || '',
+                    notes: fullLogistics.notes || '',
+                    purchaseOrderReturns: purchaseOrderReturns
+                });
+            } else {
+                const purchaseOrders = fullLogistics.purchaseOrders.map(po => ({
+                    purchaseOrderId: po.purchaseOrderId,
+                    selectedItemIds: po.items.map(item => item.purchaseOrderItemId)
+                }));
+
+                setFormData({
+                    ...formData,
+                    merchantId: fullLogistics.merchantId,
+                    totalCost: fullLogistics.totalCost.toString(),
+                    currency: fullLogistics.currency,
+                    carrierCompany: fullLogistics.carrierCompany,
+                    driverName: fullLogistics.driverName,
+                    driverPhone: fullLogistics.driverPhone || '',
+                    notes: fullLogistics.notes || '',
+                    purchaseOrders: purchaseOrders
+                });
+            }
         } catch (error) {
             console.error('Error loading logistics data:', error);
             onError('Failed to load logistics data');
         }
     };
 
-    // NEW: Check if form has been modified
     const hasFormChanged = () => {
         return (
             formData.merchantId !== initialFormState.merchantId ||
@@ -146,16 +171,10 @@ const CreateLogisticsModal = ({
             formData.carrierCompany !== initialFormState.carrierCompany ||
             formData.driverName !== initialFormState.driverName ||
             formData.driverPhone !== initialFormState.driverPhone ||
-            formData.notes !== initialFormState.notes ||
-            formData.purchaseOrders.length !== initialFormState.purchaseOrders.length ||
-            formData.purchaseOrders.some((po, index) =>
-                po.purchaseOrderId !== initialFormState.purchaseOrders[index]?.purchaseOrderId ||
-                po.selectedItemIds.length !== initialFormState.purchaseOrders[index]?.selectedItemIds.length
-            )
+            formData.notes !== initialFormState.notes
         );
     };
 
-    // NEW: Handle close with confirmation
     const handleCloseAttempt = () => {
         if (hasFormChanged()) {
             setShowConfirmation(true);
@@ -164,15 +183,18 @@ const CreateLogisticsModal = ({
         }
     };
 
-    // NEW: Confirm discard changes
     const handleConfirmDiscard = () => {
         setShowConfirmation(false);
         onClose();
     };
 
-    // NEW: Cancel discard
     const handleCancelDiscard = () => {
         setShowConfirmation(false);
+    };
+
+    const handleTypeSelection = (type) => {
+        setLogisticsType(type);
+        setCurrentStep(2);
     };
 
     const validateStep1 = () => {
@@ -184,17 +206,24 @@ const CreateLogisticsModal = ({
     };
 
     const validateStep3 = () => {
-        return formData.purchaseOrders.length > 0 &&
-            formData.purchaseOrders.every(po => po.purchaseOrderId && po.selectedItemIds.length > 0);
+        if (logisticsType === 'PO') {
+            return formData.purchaseOrders.length > 0 &&
+                formData.purchaseOrders.every(po => po.purchaseOrderId && po.selectedItemIds.length > 0);
+        } else {
+            return formData.purchaseOrderReturns.length > 0 &&
+                formData.purchaseOrderReturns.every(por => por.purchaseOrderReturnId && por.selectedItemIds.length > 0);
+        }
     };
 
     const isStepComplete = (stepNumber) => {
         switch(stepNumber) {
             case 1:
-                return validateStep1();
+                return logisticsType !== null;
             case 2:
-                return validateStep2();
+                return validateStep1();
             case 3:
+                return validateStep2();
+            case 4:
                 return validateStep3();
             default:
                 return false;
@@ -222,10 +251,30 @@ const CreateLogisticsModal = ({
         }));
     };
 
+    const handleAddPurchaseOrderReturn = () => {
+        setFormData(prev => ({
+            ...prev,
+            purchaseOrderReturns: [
+                ...prev.purchaseOrderReturns,
+                {
+                    purchaseOrderReturnId: '',
+                    selectedItemIds: []
+                }
+            ]
+        }));
+    };
+
     const handleRemovePurchaseOrder = (index) => {
         setFormData(prev => ({
             ...prev,
             purchaseOrders: prev.purchaseOrders.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleRemovePurchaseOrderReturn = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            purchaseOrderReturns: prev.purchaseOrderReturns.filter((_, i) => i !== index)
         }));
     };
 
@@ -236,7 +285,6 @@ const CreateLogisticsModal = ({
                 ...newPOs[index],
                 [field]: value
             };
-            // Clear selected items when PO changes
             if (field === 'purchaseOrderId') {
                 newPOs[index].selectedItemIds = [];
             }
@@ -247,9 +295,25 @@ const CreateLogisticsModal = ({
         });
     };
 
-    const handleItemToggle = (poIndex, itemId) => {
+    const handlePORChange = (index, field, value) => {
         setFormData(prev => {
-            // Create a deep copy of purchaseOrders
+            const newPORs = [...prev.purchaseOrderReturns];
+            newPORs[index] = {
+                ...newPORs[index],
+                [field]: value
+            };
+            if (field === 'purchaseOrderReturnId') {
+                newPORs[index].selectedItemIds = [];
+            }
+            return {
+                ...prev,
+                purchaseOrderReturns: newPORs
+            };
+        });
+    };
+
+    const handlePOItemToggle = (poIndex, itemId) => {
+        setFormData(prev => {
             const newPOs = prev.purchaseOrders.map((po, idx) => {
                 if (idx === poIndex) {
                     const currentItems = po.selectedItemIds;
@@ -276,6 +340,34 @@ const CreateLogisticsModal = ({
         });
     };
 
+    const handlePORItemToggle = (porIndex, itemId) => {
+        setFormData(prev => {
+            const newPORs = prev.purchaseOrderReturns.map((por, idx) => {
+                if (idx === porIndex) {
+                    const currentItems = por.selectedItemIds;
+                    let newSelectedItems;
+
+                    if (currentItems.includes(itemId)) {
+                        newSelectedItems = currentItems.filter(id => id !== itemId);
+                    } else {
+                        newSelectedItems = [...currentItems, itemId];
+                    }
+
+                    return {
+                        ...por,
+                        selectedItemIds: newSelectedItems
+                    };
+                }
+                return por;
+            });
+
+            return {
+                ...prev,
+                purchaseOrderReturns: newPORs
+            };
+        });
+    };
+
     const validateFinalSubmit = () => {
         if (!formData.merchantId || !formData.totalCost || !formData.currency) {
             onError('Please fill in Service Provider and Cost details');
@@ -285,33 +377,49 @@ const CreateLogisticsModal = ({
             onError('Please fill in Delivery Information');
             return false;
         }
-        if (formData.purchaseOrders.length === 0) {
-            onError('Please add at least one Purchase Order');
-            return false;
-        }
-        if (!formData.purchaseOrders.every(po => po.purchaseOrderId && po.selectedItemIds.length > 0)) {
-            onError('Please select Purchase Orders and their items');
-            return false;
+        if (logisticsType === 'PO') {
+            if (formData.purchaseOrders.length === 0) {
+                onError('Please add at least one Purchase Order');
+                return false;
+            }
+            if (!formData.purchaseOrders.every(po => po.purchaseOrderId && po.selectedItemIds.length > 0)) {
+                onError('Please select Purchase Orders and their items');
+                return false;
+            }
+        } else {
+            if (formData.purchaseOrderReturns.length === 0) {
+                onError('Please add at least one Purchase Order Return');
+                return false;
+            }
+            if (!formData.purchaseOrderReturns.every(por => por.purchaseOrderReturnId && por.selectedItemIds.length > 0)) {
+                onError('Please select Purchase Order Returns and their items');
+                return false;
+            }
         }
         return true;
     };
 
     const handleNext = () => {
-        if (currentStep === 1 && !validateStep1()) {
+        if (currentStep === 2 && !validateStep1()) {
             onError('Please fill in all required fields in Service & Cost');
             return;
         }
-        if (currentStep === 2 && !validateStep2()) {
+        if (currentStep === 3 && !validateStep2()) {
             onError('Please fill in all required fields in Delivery Information');
             return;
         }
-        if (currentStep < 3) {
+        if (currentStep < 4) {
             setCurrentStep(prev => prev + 1);
         }
     };
 
     const handleBack = () => {
-        setCurrentStep(prev => prev - 1);
+        if (currentStep === 2 && !isEditMode) {
+            setCurrentStep(1);
+            setLogisticsType(null);
+        } else {
+            setCurrentStep(prev => prev - 1);
+        }
     };
 
     const handleSubmit = async () => {
@@ -321,7 +429,7 @@ const CreateLogisticsModal = ({
 
         setIsSaving(true);
         try {
-            const payload = {
+            const basePayload = {
                 merchantId: formData.merchantId,
                 totalCost: parseFloat(formData.totalCost),
                 currency: formData.currency,
@@ -329,18 +437,38 @@ const CreateLogisticsModal = ({
                 driverName: formData.driverName,
                 driverPhone: formData.driverPhone || null,
                 notes: formData.notes || null,
-                purchaseOrders: formData.purchaseOrders.map(po => ({
-                    purchaseOrderId: po.purchaseOrderId,
-                    selectedItemIds: po.selectedItemIds
-                }))
             };
+
+            let payload;
+            if (logisticsType === 'PO') {
+                payload = {
+                    ...basePayload,
+                    purchaseOrders: formData.purchaseOrders.map(po => ({
+                        purchaseOrderId: po.purchaseOrderId,
+                        selectedItemIds: po.selectedItemIds
+                    }))
+                };
+            } else {
+                payload = {
+                    ...basePayload,
+                    purchaseOrderReturns: formData.purchaseOrderReturns.map(por => ({
+                        purchaseOrderReturnId: por.purchaseOrderReturnId,
+                        selectedItemIds: por.selectedItemIds
+                    }))
+                };
+            }
 
             if (isEditMode && existingLogistics) {
                 await logisticsService.update(existingLogistics.id, payload);
                 onSuccess('Logistics updated successfully');
             } else {
-                await logisticsService.create(payload);
-                onSuccess('Logistics created successfully');
+                if (logisticsType === 'PO') {
+                    await logisticsService.create(payload);
+                    onSuccess('Logistics created successfully');
+                } else {
+                    await logisticsService.createReturn(payload);
+                    onSuccess('Return logistics created successfully');
+                }
             }
 
             onClose();
@@ -351,43 +479,53 @@ const CreateLogisticsModal = ({
         }
     };
 
-
     const getSelectedPO = (poIndex) => {
         const poId = formData.purchaseOrders[poIndex]?.purchaseOrderId;
         return availablePurchaseOrders.find(po => po.id === poId);
     };
 
+    const getSelectedPOR = (porIndex) => {
+        const porId = formData.purchaseOrderReturns[porIndex]?.purchaseOrderReturnId;
+        return availablePurchaseOrderReturns.find(por => por.id === porId);
+    };
+
     if (!isOpen) return null;
 
     const steps = [
-        { number: 1, label: 'Service & Cost' },
-        { number: 2, label: 'Delivery Info' },
-        { number: 3, label: 'Purchase Orders' }
+        { number: 1, label: 'Type Selection' },
+        { number: 2, label: 'Service & Cost' },
+        { number: 3, label: 'Delivery Info' },
+        { number: 4, label: logisticsType === 'PO' ? 'Purchase Orders' : logisticsType === 'RETURN' ? 'Return Orders' : 'Orders' }
     ];
 
     return (
         <>
-            <div className="modal-backdrop" onClick={handleCloseAttempt}> {/* CHANGED */}
+            <div className="modal-backdrop" onClick={handleCloseAttempt}>
                 <div className="modal-content modal-xl create-logistics-modal" onClick={(e) => e.stopPropagation()}>
-                    {/* Header */}
                     <div className="modal-header">
                         <h2 className="modal-title">
                             <FiTruck />
-                            {isEditMode ? 'Edit Logistics Entry' : 'Create Logistics Entry'}
+                            {isEditMode
+                                ? `Edit ${logisticsType === 'RETURN' ? 'Return' : ''} Logistics Entry`
+                                : 'Create Logistics Entry'
+                            }
                         </h2>
-                        <button className="btn-close" onClick={handleCloseAttempt}> {/* CHANGED */}
+                        <button className="btn-close" onClick={handleCloseAttempt}>
                             <FiX />
                         </button>
                     </div>
 
-                    {/* Step Indicator */}
                     <div className="step-indicator">
                         <div className="step-indicator-container">
                             {steps.map((step) => (
                                 <div
                                     key={step.number}
                                     className={`step-item ${currentStep === step.number ? 'active' : ''} ${isStepComplete(step.number) ? 'completed' : ''}`}
-                                    onClick={() => setCurrentStep(step.number)}
+                                    onClick={() => {
+                                        if (step.number <= currentStep || isStepComplete(step.number)) {
+                                            setCurrentStep(step.number);
+                                        }
+                                    }}
                                 >
                                     <div className="step-circle">
                                         {isStepComplete(step.number) ? (
@@ -402,11 +540,102 @@ const CreateLogisticsModal = ({
                         </div>
                     </div>
 
-                    {/* Body - Keep all your existing step content exactly as is */}
                     <div className="modal-body request-order-form-modal">
-                        {/* All your existing step 1, 2, 3 content stays the same */}
-                        {/* ... (keeping all the existing JSX for steps) ... */}
                         {currentStep === 1 && (
+                            <div className="modal-section">
+                                <h3 className="modal-section-title" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                                    Select Logistics Type
+                                </h3>
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '2rem',
+                                    justifyContent: 'center',
+                                    flexWrap: 'wrap'
+                                }}>
+                                    <button
+                                        type="button"
+                                        className="logistics-type-card"
+                                        onClick={() => handleTypeSelection('PO')}
+                                        style={{
+                                            flex: '1',
+                                            maxWidth: '300px',
+                                            minHeight: '200px',
+                                            padding: '2rem',
+                                            border: '2px solid var(--border-color)',
+                                            borderRadius: 'var(--radius-md)',
+                                            background: 'var(--section-background-color)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '1rem'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                            e.currentTarget.style.transform = 'translateY(-4px)';
+                                            e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.borderColor = 'var(--border-color)';
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                            e.currentTarget.style.boxShadow = 'none';
+                                        }}
+                                    >
+                                        <FiPackage size={48} style={{ color: 'var(--color-primary)' }} />
+                                        <h4 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'var(--bold-font-weight)', color: 'var(--color-text-primary)' }}>
+                                            Purchase Order
+                                        </h4>
+                                        <p style={{ margin: 0, textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                                            Create logistics for incoming purchase orders
+                                        </p>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="logistics-type-card"
+                                        onClick={() => handleTypeSelection('RETURN')}
+                                        style={{
+                                            flex: '1',
+                                            maxWidth: '300px',
+                                            minHeight: '200px',
+                                            padding: '2rem',
+                                            border: '2px solid var(--border-color)',
+                                            borderRadius: 'var(--radius-md)',
+                                            background: 'var(--section-background-color)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '1rem'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                            e.currentTarget.style.transform = 'translateY(-4px)';
+                                            e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.borderColor = 'var(--border-color)';
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                            e.currentTarget.style.boxShadow = 'none';
+                                        }}
+                                    >
+                                        <FiTruck size={48} style={{ color: '#a855f7', transform: 'scaleX(-1)' }} />
+                                        <h4 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'var(--bold-font-weight)', color: 'var(--color-text-primary)' }}>
+                                            Return Order
+                                        </h4>
+                                        <p style={{ margin: 0, textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                                            Create logistics for outgoing return shipments
+                                        </p>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentStep === 2 && (
                             <div className="modal-section">
                                 <h3 className="modal-section-title">Service Provider & Cost Details</h3>
 
@@ -445,7 +674,7 @@ const CreateLogisticsModal = ({
                                             step="0.01"
                                             min="0"
                                             required
-                                            onWheel={(e) => e.target.blur()}  // ADD THIS LINE
+                                            onWheel={(e) => e.target.blur()}
                                         />
                                     </div>
 
@@ -470,7 +699,7 @@ const CreateLogisticsModal = ({
                             </div>
                         )}
 
-                        {currentStep === 2 && (
+                        {currentStep === 3 && (
                             <div className="modal-section">
                                 <h3 className="modal-section-title">Delivery Information</h3>
 
@@ -506,7 +735,7 @@ const CreateLogisticsModal = ({
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="form-label">Driver Phone <span className="required">*</span> </label>
+                                        <label className="form-label">Driver Phone <span className="required">*</span></label>
                                         <input
                                             type="tel"
                                             name="driverPhone"
@@ -533,7 +762,7 @@ const CreateLogisticsModal = ({
                             </div>
                         )}
 
-                        {currentStep === 3 && (
+                        {currentStep === 4 && logisticsType === 'PO' && (
                             <div className="modal-section">
                                 <div className="section-header">
                                     <h3 className="modal-section-title">Select Purchase Orders & Items</h3>
@@ -605,7 +834,6 @@ const CreateLogisticsModal = ({
                                                         </select>
                                                     </div>
 
-
                                                     {selectedPO && selectedPO.requestOrder && (
                                                         <div className="request-order-info-logistics-po">
                                                             <div className="info-group">
@@ -619,7 +847,6 @@ const CreateLogisticsModal = ({
                                                         </div>
                                                     )}
 
-
                                                     {selectedPO && selectedPO.items && selectedPO.items.length > 0 && (
                                                         <>
                                                             <div className="form-section-header">
@@ -630,54 +857,194 @@ const CreateLogisticsModal = ({
                                                             </div>
                                                             <div className="form-group">
                                                                 <div className="logistics-checkbox-list">
-                                                                    {selectedPO.items.map(item => {
-                                                                        // ADD THESE CONSOLE LOGS
-                                                                        console.log('Full Item Object:', item);
-                                                                        console.log('Item Type:', item.itemType);
-                                                                        console.log('Item Category Name:', item.itemType?.itemCategoryName);
-                                                                        console.log('---');
-
-                                                                        return (
-                                                                            <div
-                                                                                key={item.id}
-                                                                                className={`logistics-checkbox-card ${po.selectedItemIds.includes(item.id) ? 'checked' : ''}`}
-                                                                                onClick={() => handleItemToggle(poIndex, item.id)}
-                                                                            >
-                                                                                <div className="logistics-checkbox-wrapper">
-                                                                                    <input
-                                                                                        type="checkbox"
-                                                                                        checked={po.selectedItemIds.includes(item.id)}
-                                                                                        readOnly
-                                                                                        className="logistics-checkbox-input"
-                                                                                    />
-                                                                                    <div className="logistics-checkbox-custom"></div>
+                                                                    {selectedPO.items.map(item => (
+                                                                        <div
+                                                                            key={item.id}
+                                                                            className={`logistics-checkbox-card ${po.selectedItemIds.includes(item.id) ? 'checked' : ''}`}
+                                                                            onClick={() => handlePOItemToggle(poIndex, item.id)}
+                                                                        >
+                                                                            <div className="logistics-checkbox-wrapper">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={po.selectedItemIds.includes(item.id)}
+                                                                                    readOnly
+                                                                                    className="logistics-checkbox-input"
+                                                                                />
+                                                                                <div className="logistics-checkbox-custom"></div>
+                                                                            </div>
+                                                                            <div className="logistics-checkbox-body">
+                                                                                <div className="logistics-checkbox-title">
+                                                                                    <span className="logistics-item-name">{item.itemTypeName}</span>
+                                                                                    {item.itemType?.itemCategoryName && (
+                                                                                        <span className="logistics-item-badge">
+                                                                                            {item.itemType.itemCategoryName}
+                                                                                        </span>
+                                                                                    )}
                                                                                 </div>
-                                                                                <div className="logistics-checkbox-body">
-                                                                                    <div className="logistics-checkbox-title">
-                                                                                        <span className="logistics-item-name">{item.itemTypeName}</span>
-                                                                                        {item.itemType?.itemCategoryName && (
-                                                                                            <span className="logistics-item-badge">
-                                        {item.itemType.itemCategoryName}
-                                    </span>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    <div className="logistics-item-meta">
-                                                                                        <span>Qty: <strong>{item.quantity} {item.measuringUnit}</strong></span>
-                                                                                        <span>•</span>
-                                                                                        <span>Price: <strong>{item.currency} {item.unitPrice}</strong></span>
-                                                                                        <span>•</span>
-                                                                                        <span>Total: <strong>{item.currency} {item.totalPrice}</strong></span>
-                                                                                        {item.merchantName && (
-                                                                                            <>
-                                                                                                <span>•</span>
-                                                                                                <span>Merchant: <strong>{item.merchantName}</strong></span>
-                                                                                            </>
-                                                                                        )}
-                                                                                    </div>
+                                                                                <div className="logistics-item-meta">
+                                                                                    <span>Qty: <strong>{item.quantity} {item.measuringUnit}</strong></span>
+                                                                                    <span>•</span>
+                                                                                    <span>Price: <strong>{item.currency} {item.unitPrice}</strong></span>
+                                                                                    <span>•</span>
+                                                                                    <span>Total: <strong>{item.currency} {item.totalPrice}</strong></span>
+                                                                                    {item.merchantName && (
+                                                                                        <>
+                                                                                            <span>•</span>
+                                                                                            <span>Merchant: <strong>{item.merchantName}</strong></span>
+                                                                                        </>
+                                                                                    )}
                                                                                 </div>
                                                                             </div>
-                                                                        );
-                                                                    })}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {currentStep === 4 && logisticsType === 'RETURN' && (
+                            <div className="modal-section">
+                                <div className="section-header">
+                                    <h3 className="modal-section-title">Select Purchase Order Returns & Items</h3>
+                                    <button
+                                        type="button"
+                                        className="btn-add-item"
+                                        onClick={handleAddPurchaseOrderReturn}
+                                    >
+                                        <FiPlus />
+                                        Add Return Order
+                                    </button>
+                                </div>
+
+                                <div className="items-container">
+                                    {formData.purchaseOrderReturns.map((por, porIndex) => {
+                                        const selectedPOR = getSelectedPOR(porIndex);
+
+                                        return (
+                                            <div key={porIndex} className="item-card">
+                                                <div className="item-header">
+                                                    <span className="item-number">Return Order #{porIndex + 1}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        {selectedPOR && (
+                                                            <span className={`status-badge-logistics-create status-${selectedPOR.status.toLowerCase()}`}>
+                                                                {selectedPOR.status}
+                                                            </span>
+                                                        )}
+                                                        {formData.purchaseOrderReturns.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                className="btn-remove-item"
+                                                                onClick={() => handleRemovePurchaseOrderReturn(porIndex)}
+                                                            >
+                                                                <FiTrash2 />
+                                                                Remove
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="item-body">
+                                                    <div className="form-section-header">
+                                                        <h4 className="form-section-title">
+                                                            <FiPackage />
+                                                            Purchase Order Return Selection
+                                                        </h4>
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <select
+                                                            value={por.purchaseOrderReturnId}
+                                                            onChange={(e) => handlePORChange(porIndex, 'purchaseOrderReturnId', e.target.value)}
+                                                            className="form-select"
+                                                            required
+                                                        >
+                                                            <option value="">Choose a purchase order return...</option>
+                                                            {availablePurchaseOrderReturns
+                                                                .filter(availablePOR => {
+                                                                    const isSelectedElsewhere = formData.purchaseOrderReturns.some(
+                                                                        (p, idx) => idx !== porIndex && p.purchaseOrderReturnId === availablePOR.id
+                                                                    );
+                                                                    return !isSelectedElsewhere;
+                                                                })
+                                                                .map(availablePOR => (
+                                                                    <option key={availablePOR.id} value={availablePOR.id}>
+                                                                        {availablePOR.returnId} - {availablePOR.purchaseOrderNumber} - {availablePOR.merchantName}
+                                                                    </option>
+                                                                ))
+                                                            }
+                                                        </select>
+                                                    </div>
+
+                                                    {selectedPOR && (
+                                                        <div className="request-order-info-logistics-po">
+                                                            <div className="info-group">
+                                                                <span className="info-label-logistics-po">PO Number:</span>
+                                                                <span className="info-value-logistics-po">{selectedPOR.purchaseOrderNumber}</span>
+                                                            </div>
+                                                            <div className="info-group">
+                                                                <span className="info-label-logistics-po">Reason:</span>
+                                                                <span className="info-value-logistics-po">{selectedPOR.reason || 'N/A'}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {selectedPOR && selectedPOR.items && selectedPOR.items.length > 0 && (
+                                                        <>
+                                                            <div className="form-section-header">
+                                                                <h4 className="form-section-title">
+                                                                    <FiBox />
+                                                                    Return Items Selection
+                                                                </h4>
+                                                            </div>
+                                                            <div className="form-group">
+                                                                <div className="logistics-checkbox-list">
+                                                                    {selectedPOR.items.map(item => (
+                                                                        <div
+                                                                            key={item.id}
+                                                                            className={`logistics-checkbox-card ${por.selectedItemIds.includes(item.id) ? 'checked' : ''}`}
+                                                                            onClick={() => handlePORItemToggle(porIndex, item.id)}
+                                                                        >
+                                                                            <div className="logistics-checkbox-wrapper">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={por.selectedItemIds.includes(item.id)}
+                                                                                    readOnly
+                                                                                    className="logistics-checkbox-input"
+                                                                                />
+                                                                                <div className="logistics-checkbox-custom"></div>
+                                                                            </div>
+                                                                            <div className="logistics-checkbox-body">
+                                                                                <div className="logistics-checkbox-title">
+                                                                                    <span className="logistics-item-name">{item.itemTypeName}</span>
+                                                                                </div>
+                                                                                <div className="logistics-item-meta">
+                                                                                    <span>Return Qty: <strong>{item.returnQuantity}</strong></span>
+                                                                                    <span>•</span>
+                                                                                    <span>Price: <strong>EGP {item.unitPrice}</strong></span>
+                                                                                    <span>•</span>
+                                                                                    <span>Total: <strong>EGP {item.totalReturnAmount}</strong></span>
+                                                                                    {item.merchantName && (
+                                                                                        <>
+                                                                                            <span>•</span>
+                                                                                            <span>Merchant: <strong>{item.merchantName}</strong></span>
+                                                                                        </>
+                                                                                    )}
+                                                                                    {item.reason && (
+                                                                                        <>
+                                                                                            <span>•</span>
+                                                                                            <span>Reason: <strong>{item.reason}</strong></span>
+                                                                                        </>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             </div>
                                                         </>
@@ -691,7 +1058,6 @@ const CreateLogisticsModal = ({
                         )}
                     </div>
 
-                    {/* Footer */}
                     <div className="modal-footer">
                         <div className="footer-left">
                             {currentStep > 1 && (
@@ -706,11 +1072,12 @@ const CreateLogisticsModal = ({
                             )}
                         </div>
                         <div className="footer-right">
-                            {currentStep < 3 ? (
+                            {currentStep < 4 ? (
                                 <button
                                     type="button"
                                     className="btn-primary"
                                     onClick={handleNext}
+                                    disabled={currentStep === 1 && !logisticsType}
                                 >
                                     Next
                                 </button>
@@ -733,7 +1100,6 @@ const CreateLogisticsModal = ({
                 </div>
             </div>
 
-            {/* NEW: Confirmation Dialog */}
             <ConfirmationDialog
                 isVisible={showConfirmation}
                 type="warning"

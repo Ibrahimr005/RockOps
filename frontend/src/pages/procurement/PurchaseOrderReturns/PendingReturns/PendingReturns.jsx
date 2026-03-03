@@ -10,7 +10,7 @@ const PendingReturns = ({ returns, loading, onDataChange, onSuccess, onError }) 
     const [showCreateModal, setShowCreateModal] = useState(false);
 
     const handleRowClick = (row) => {
-        navigate(`/procurement/purchase-orders/details/${row.purchaseOrderId}`);
+        navigate(`/procurement/purchase-order-returns/${row.id}`);
     };
 
     const handleViewItems = (row, e) => {
@@ -34,12 +34,17 @@ const PendingReturns = ({ returns, loading, onDataChange, onSuccess, onError }) 
 
     const columns = [
         {
-            id: 'returnNumber',
-            header: 'RETURN NUMBER',
-            accessor: 'returnNumber',
+            id: 'returnId',
+            header: 'RETURN ID',
+            accessor: 'returnId',
             sortable: true,
             filterable: true,
-            minWidth: '200px'
+            minWidth: '200px',
+            render: (row) => (
+                <span className="return-id-badge">
+                {row.returnId}
+            </span>
+            )
         },
         {
             id: 'purchaseOrderNumber',

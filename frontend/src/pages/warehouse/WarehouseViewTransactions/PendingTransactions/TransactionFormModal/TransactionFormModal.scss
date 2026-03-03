@@ -642,3 +642,49 @@
     height: 0.875rem;
   }
 }
+// 🆕 Info Banner for LOSS Transactions
+.info-banner {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+
+  &.warning {
+    .info-icon {
+      svg {
+        color: #ffc107;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .info-icon {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 2px;
+  }
+
+  .info-content {
+    flex: 1;
+
+    strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #856404;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+  }
+}

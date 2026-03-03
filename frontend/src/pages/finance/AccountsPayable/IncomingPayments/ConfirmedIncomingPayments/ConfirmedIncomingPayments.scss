@@ -1,0 +1,51 @@
+.confirmed-incoming-payments-container {
+  .source-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &.source-refund {
+      background: var(--color-warning-alpha-10);
+      color: var(--color-warning);
+    }
+
+    &.source-po-return {
+      background: var(--color-info-alpha-10);
+      color: var(--color-info);
+    }
+
+    &.source-other {
+      background: var(--color-neutral-alpha-10);
+      color: var(--color-neutral);
+    }
+  }
+
+  .reference-id {
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+
+  .amount-cell {
+    font-weight: 600;
+    color: var(--color-success);
+  }
+
+  .items-count-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--color-neutral-alpha-10);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+}

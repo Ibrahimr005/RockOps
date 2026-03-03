@@ -23,10 +23,18 @@ public class PurchaseOrderReturnResponseDTO {
     private UUID merchantId;
     private String merchantName;
     private BigDecimal totalReturnAmount;
-    private PurchaseOrderReturnStatus status;  // Changed from String to Enum
+    private String status;
     private String reason;
     private String requestedBy;
     private LocalDateTime requestedAt;
+
+    // ✅ ADD THESE FIELDS
+    private String approvedBy;
+    private LocalDateTime approvedAt;
+    private String rejectedBy;
+    private LocalDateTime rejectedAt;
+    private String rejectionReason;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<PurchaseOrderReturnItemDTO> returnItems;

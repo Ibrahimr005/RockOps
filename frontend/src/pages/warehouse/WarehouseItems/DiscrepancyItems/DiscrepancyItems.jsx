@@ -136,10 +136,12 @@ const DiscrepancyItems= ({
             width: '150px'
         },
         {
-            accessor: 'itemType.measuringUnit',
+            accessor: 'itemType.measuringUnit.displayName',
             header: 'UNIT',
             width: '120px',
-            render: (row) => row.itemType?.measuringUnit || "N/A"
+            render: (row) => row.itemType?.measuringUnit?.displayName ||
+                row.itemType?.measuringUnit?.abbreviation ||
+                "N/A"
         },
         {
             accessor: 'transaction.batchNumber',

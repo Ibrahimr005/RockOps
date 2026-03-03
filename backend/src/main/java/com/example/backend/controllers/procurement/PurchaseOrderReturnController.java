@@ -5,105 +5,59 @@ import com.example.backend.dto.procurement.PurchaseOrderReturn.PurchaseOrderRetu
 import com.example.backend.models.procurement.PurchaseOrderReturn.PurchaseOrderReturnStatus;
 import com.example.backend.services.procurement.PurchaseOrderReturnService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/v1/purchase-order-returns")
 @RequiredArgsConstructor
+@Slf4j
 public class PurchaseOrderReturnController {
 
     private final PurchaseOrderReturnService purchaseOrderReturnService;
 
-    /**
-     * Create PO return request (automatically groups by merchant)
-     */
     @PostMapping("/purchase-orders/{purchaseOrderId}")
-    public ResponseEntity<?> createPurchaseOrderReturn(
+    public ResponseEntity<Map<String, Object>> createPurchaseOrderReturn(
             @PathVariable UUID purchaseOrderId,
             @RequestBody CreatePurchaseOrderReturnDTO createDTO,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            Authentication authentication) {
 
-        try {
-            String username = userDetails.getUsername();
-            List<PurchaseOrderReturnResponseDTO> createdReturns =
-                    purchaseOrderReturnService.createPurchaseOrderReturns(purchaseOrderId, createDTO, username);
+        String username = authentication.getName();
 
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "PO return request(s) created successfully",
-                    "data", createdReturns,
-                    "count", createdReturns.size()
-            ));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", e.getMessage(), "success", false));
-        } catch (Exception e) {
-            System.err.println("Error creating PO return: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Error creating PO return request", "success", false));
-        }
+        purchaseOrderReturnService.createPurchaseOrderReturn(purchaseOrderId, createDTO, username);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Purchase order return created successfully");
+
+        return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get all PO returns
-     */
     @GetMapping
     public ResponseEntity<List<PurchaseOrderReturnResponseDTO>> getAllPurchaseOrderReturns() {
-        try {
-            List<PurchaseOrderReturnResponseDTO> returns =
-                    purchaseOrderReturnService.getAllPurchaseOrderReturns();
-            return ResponseEntity.ok(returns);
-        } catch (Exception e) {
-            System.err.println("Error fetching PO returns: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<PurchaseOrderReturnResponseDTO> returns = purchaseOrderReturnService.getAllPurchaseOrderReturns();
+        return ResponseEntity.ok(returns);
     }
 
-    /**
-     * Get PO returns by status
-     */
     @GetMapping("/status/{status}")
     public ResponseEntity<List<PurchaseOrderReturnResponseDTO>> getPurchaseOrderReturnsByStatus(
-            @PathVariable PurchaseOrderReturnStatus status) {
-        try {
-            List<PurchaseOrderReturnResponseDTO> returns =
-                    purchaseOrderReturnService.getPurchaseOrderReturnsByStatus(status);
-            return ResponseEntity.ok(returns);
-        } catch (Exception e) {
-            System.err.println("Error fetching PO returns by status: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+            @PathVariable String status) {
+        PurchaseOrderReturnStatus returnStatus = PurchaseOrderReturnStatus.valueOf(status.toUpperCase());
+        List<PurchaseOrderReturnResponseDTO> returns =
+                purchaseOrderReturnService.getPurchaseOrderReturnsByStatus(returnStatus);
+        return ResponseEntity.ok(returns);
     }
 
-    /**
-     * Get single PO return by ID
-     */
     @GetMapping("/{id}")
-    public ResponseEntity<?> getPurchaseOrderReturnById(@PathVariable UUID id) {
-        try {
-            PurchaseOrderReturnResponseDTO poReturn =
-                    purchaseOrderReturnService.getPurchaseOrderReturnById(id);
-            return ResponseEntity.ok(poReturn);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", e.getMessage(), "success", false));
-        } catch (Exception e) {
-            System.err.println("Error fetching PO return: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Error fetching PO return", "success", false));
-        }
+    public ResponseEntity<PurchaseOrderReturnResponseDTO> getPurchaseOrderReturnById(@PathVariable UUID id) {
+        PurchaseOrderReturnResponseDTO returnDTO = purchaseOrderReturnService.getPurchaseOrderReturnById(id);
+        return ResponseEntity.ok(returnDTO);
     }
 }

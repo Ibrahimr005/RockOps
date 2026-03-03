@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { FiPackage, FiAlertCircle, FiCheckCircle, FiTruck } from 'react-icons/fi';
+import { FiPackage, FiAlertCircle, FiCheckCircle, FiTruck, FiRotateCcw } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import Snackbar from '../../../components/common/Snackbar2/Snackbar2';
-import Tabs from '../../../components/common/Tabs/Tabs'; // Add this import
+import Tabs from '../../../components/common/Tabs/Tabs';
 import OverviewTab from './tabs/OverviewTab/OverviewTab';
 import ReceivingTab from './tabs/ReceivingTab/ReceivingTab2';
 import IssuesTab from './tabs/IssuesTab/IssuesTab';
 import LogisticsTab from './tabs/LogisticsTab/LogisticsTab';
+import ReturnsTab from './tabs/ReturnsTab/ReturnsTab';
 
 import './PurchaseOrderDetailsPage.scss';
 
@@ -58,6 +59,13 @@ const PurchaseOrderDetailsPage = () => {
         try {
             // Fetch PO with full delivery history (includes issues)
             const poData = await purchaseOrderService.getWithDeliveries(id);
+
+            console.log('📦 FULL PO DATA:', poData);
+            console.log('📦 PO Number:', poData.poNumber);
+            console.log('📦 PO Request Order:', poData.requestOrder);
+            console.log('📦 PO Title:', poData.requestOrder?.title);
+            console.log('📦 Full PO Structure:', JSON.stringify(poData, null, 2));
+
             setPurchaseOrder(poData);
 
             // Extract all issues from all items' receipts
@@ -200,7 +208,6 @@ const PurchaseOrderDetailsPage = () => {
     ];
 
     // Build tabs array based on user role
-// In the getTabs function, add the Logistics tab after the Issues tab:
     const getTabs = () => {
         const tabs = [
             {
@@ -230,7 +237,7 @@ const PurchaseOrderDetailsPage = () => {
             });
         }
 
-        // ADD THIS: Logistics tab for PROCUREMENT or ADMIN
+        // Add Logistics tab for PROCUREMENT or ADMIN
         if (userRole === 'PROCUREMENT' || userRole === 'ADMIN') {
             tabs.push({
                 id: 'logistics',
@@ -239,17 +246,26 @@ const PurchaseOrderDetailsPage = () => {
             });
         }
 
+        // Add Returns tab for PROCUREMENT or ADMIN
+        if (userRole === 'PROCUREMENT' || userRole === 'ADMIN') {
+            tabs.push({
+                id: 'returns',
+                label: 'Returns',
+                icon: <FiRotateCcw />
+            });
+        }
+
         return tabs;
     };
-
-// In the tab content section, add this after the Issues tab:
-
 
     return (
         <div className="po-details-page">
             {/* IntroCard Header */}
             <IntroCard
-                title={`PO #${purchaseOrder.poNumber}`}
+                title={purchaseOrder.requestOrder?.title
+                    ? `${purchaseOrder.requestOrder.title} - #${purchaseOrder.poNumber}`
+                    : ` #${purchaseOrder.poNumber}`
+                }
                 label={getStatusDisplay(purchaseOrder.status)}
                 breadcrumbs={breadcrumbs}
                 icon={<FiPackage />}
@@ -289,6 +305,13 @@ const PurchaseOrderDetailsPage = () => {
                     <LogisticsTab
                         purchaseOrder={purchaseOrder}
                         onSuccess={(msg) => showSnackbar(msg, 'success')}
+                        onError={(msg) => showSnackbar(msg, 'error')}
+                    />
+                )}
+
+                {activeTab === 'returns' && (userRole === 'PROCUREMENT' || userRole === 'ADMIN') && (
+                    <ReturnsTab
+                        purchaseOrder={purchaseOrder}
                         onError={(msg) => showSnackbar(msg, 'error')}
                     />
                 )}

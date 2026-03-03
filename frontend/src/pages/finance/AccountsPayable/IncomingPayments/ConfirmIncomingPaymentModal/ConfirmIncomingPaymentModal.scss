@@ -1,0 +1,362 @@
+.incoming-pay-modal {
+  .modal-body {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+}
+
+.incoming-pay-modal-section {
+  background-color: var(--section-background-color);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  border: 2px solid var(--border-color);
+  animation: fadeIn 0.3s ease-in-out;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .incoming-pay-modal-section-title {
+    font-size: 1.125rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &::before {
+      content: '';
+      width: 4px;
+      height: 1.5rem;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+// Payment Details Grid
+.incoming-pay-modal-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  .incoming-pay-modal-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--color-surface-hover);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast) ease;
+
+    &:hover {
+      border-color: var(--border-color-medium);
+      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    &.incoming-pay-modal-detail-item-full {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, rgba(var(--color-success-rgb, 76, 175, 80), 0.08), rgba(var(--color-success-rgb, 76, 175, 80), 0.03));
+      border: 2px solid rgba(var(--color-success-rgb, 76, 175, 80), 0.3);
+      text-align: center;
+      padding: 1.5rem;
+    }
+
+    .incoming-pay-modal-detail-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-text-secondary);
+    }
+
+    .incoming-pay-modal-detail-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+
+      &.incoming-pay-modal-total-amount {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--color-success);
+      }
+    }
+  }
+}
+
+// Source Badge
+.incoming-pay-modal-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &.source-refund {
+    background: var(--color-warning-alpha-10);
+    color: var(--color-warning);
+  }
+
+  &.source-po_return {
+    background: var(--color-info-alpha-10);
+    color: var(--color-info);
+  }
+}
+
+// Items Section
+.incoming-pay-modal-items-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border-color);
+
+  .incoming-pay-modal-items-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .incoming-pay-modal-items-table-container {
+    overflow-x: auto;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    .incoming-pay-modal-items-table {
+      width: 100%;
+      border-collapse: collapse;
+
+      thead {
+        background: linear-gradient(135deg, var(--color-surface-hover), var(--color-surface));
+
+        tr th {
+          padding: 14px 16px;
+          text-align: left;
+          font-size: 0.75rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--color-text-secondary);
+          border-bottom: 2px solid var(--border-color);
+        }
+      }
+
+      tbody {
+        background: var(--section-background-color);
+
+        tr {
+          border-bottom: 1px solid var(--border-color);
+          transition: all var(--transition-fast) ease;
+
+          &:hover {
+            background: var(--color-surface-hover);
+            transform: translateX(2px);
+          }
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          td {
+            padding: 14px 16px;
+            font-size: 0.875rem;
+            color: var(--color-text-primary);
+
+            &.incoming-pay-modal-item-name {
+              font-weight: 600;
+              color: var(--color-text-primary);
+            }
+
+            &.incoming-pay-modal-item-quantity {
+              text-align: left;
+              color: var(--color-text-secondary);
+              font-weight: 500;
+            }
+
+            &.incoming-pay-modal-item-price {
+              text-align: left;
+              font-family: "Courier New", monospace;
+              color: var(--color-text-secondary);
+            }
+
+            &.incoming-pay-modal-item-total {
+              text-align: left;
+              font-weight: 700;
+              font-family: "Courier New", monospace;
+              color: var(--color-success);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Form Styles (matching PO Return Modal)
+.incoming-pay-modal {
+  .form-group {
+    margin-bottom: 1.25rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: var(--semi-bold-font-weight, 600);
+    color: var(--color-text-primary);
+    font-size: 0.9375rem;
+    margin-bottom: 0.5rem;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      color: var(--color-primary);
+    }
+
+    .required {
+      color: var(--color-danger);
+      margin-left: 0.25rem;
+      font-weight: var(--bold-font-weight);
+    }
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family);
+    font-size: 0.9375rem;
+    color: var(--color-text-primary);
+    background-color: var(--section-background-color);
+    transition: all var(--transition-fast) ease;
+    line-height: 1.5;
+
+    &:hover:not(:disabled) {
+      border-color: var(--border-color-medium);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb, 59, 130, 246), 0.1);
+      background-color: var(--color-surface);
+    }
+
+    &:disabled {
+      background-color: var(--color-surface-hover);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    &::placeholder {
+      color: var(--color-text-tertiary);
+      font-style: italic;
+    }
+
+    &.error {
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 4px rgba(var(--color-danger-rgb, 244, 67, 54), 0.1);
+    }
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  .error-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--color-danger);
+    font-weight: 500;
+  }
+
+  .loading-accounts {
+    padding: 1rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-style: italic;
+  }
+}
+
+// Spinner
+.spinner-small {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .incoming-pay-modal-details-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+
+    .incoming-pay-modal-detail-item.incoming-pay-modal-detail-item-full {
+      grid-column: 1;
+    }
+  }
+
+  .incoming-pay-modal-items-section {
+    .incoming-pay-modal-items-table-container {
+      .incoming-pay-modal-items-table {
+        thead tr th {
+          padding: 10px 12px;
+          font-size: 0.7rem;
+        }
+
+        tbody tr td {
+          padding: 10px 12px;
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+
+  .incoming-pay-modal-section {
+    padding: 1rem;
+  }
+}

@@ -1,5 +1,6 @@
 package com.example.backend.models.procurement.PurchaseOrderReturn;
 
+import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -32,11 +33,15 @@ public class PurchaseOrderReturnItem {
     @JoinColumn(name = "purchase_order_item_id", nullable = false)
     private PurchaseOrderItem purchaseOrderItem;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "merchant_id", nullable = false)
+    private Merchant merchant;  // ADD THIS
+
     @Column(name = "item_type_name", nullable = false)
     private String itemTypeName;
 
     @Column(name = "return_quantity", nullable = false, precision = 15, scale = 3)
-    private BigDecimal returnQuantity;  // Changed from Double to BigDecimal
+    private BigDecimal returnQuantity;
 
     @Column(name = "unit_price", nullable = false, precision = 15, scale = 2)
     private BigDecimal unitPrice;

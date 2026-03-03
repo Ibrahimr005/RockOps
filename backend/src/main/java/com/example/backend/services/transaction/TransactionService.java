@@ -19,6 +19,7 @@ import com.example.backend.repositories.warehouse.WarehouseRepository;
 import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -74,6 +75,12 @@ public class TransactionService {
         Transaction receiverInitiatedTx = null; // A → B initiated by B (receiver claiming they got it)
 
         for (Transaction tx : batchTransactions) {
+            // 🆕 SKIP LOSS TRANSACTIONS - they are auto-completed and don't need matching
+            if (tx.getReceiverType() == PartyType.LOSS || tx.getSenderType() == PartyType.LOSS) {
+                System.out.println("⏭️ Skipping LOSS transaction from batch matching");
+                continue;
+            }
+
             // Only process warehouse-to-warehouse transactions
             if (tx.getSenderType() != PartyType.WAREHOUSE || tx.getReceiverType() != PartyType.WAREHOUSE) {
                 continue;
@@ -214,6 +221,7 @@ public class TransactionService {
     // MODIFIED CREATE TRANSACTION TO TRIGGER BATCH MATCHING
     // ========================================
 
+    @Transactional
     public Transaction createTransaction(
             PartyType senderType, UUID senderId,
             PartyType receiverType, UUID receiverId,
@@ -254,7 +262,8 @@ public class TransactionService {
     // CORE TRANSACTION CREATION METHODS - MODIFIED FOR RECEIVER INVENTORY UPDATE
     // ========================================
 
-    private Transaction createTransactionWithPurpose(
+    @Transactional
+    public Transaction createTransactionWithPurpose(
             PartyType senderType, UUID senderId,
             PartyType receiverType, UUID receiverId,
             List<TransactionItem> items,
@@ -268,7 +277,11 @@ public class TransactionService {
         System.out.println("SentFirst (Initiator): " + sentFirst);
 
         validateEntityExists(senderType, senderId);
-        validateEntityExists(receiverType, receiverId);
+
+        // 🆕 SKIP validation for LOSS receiver
+        if (receiverType != PartyType.LOSS) {
+            validateEntityExists(receiverType, receiverId);
+        }
 
         // 🆕 NEW LOGIC: Handle immediate inventory updates based on who initiated
         if (sentFirst.equals(senderId)) {
@@ -296,33 +309,50 @@ public class TransactionService {
             }
 
         }  else if (sentFirst.equals(receiverId)) {
-        // RECEIVER INITIATED: "I received these items"
-        System.out.println("📥 RECEIVER-INITIATED transaction");
+            // RECEIVER INITIATED: "I received these items"
+            System.out.println("📥 RECEIVER-INITIATED transaction");
 
-        // Note: Warehouse receiver inventory will be handled AFTER transaction is saved
-        // to avoid TransientObjectException with unsaved transaction references
+            // Note: Warehouse receiver inventory will be handled AFTER transaction is saved
+            // to avoid TransientObjectException with unsaved transaction references
 
-        // No validation of sender inventory for receiver-initiated transactions
-        // The receiver claims they already received the items, sender will confirm during acceptance
-        System.out.println("✅ Skipping sender inventory validation for receiver-initiated transaction");
-
-    }
+            // No validation of sender inventory for receiver-initiated transactions
+            // The receiver claims they already received the items, sender will confirm during acceptance
+            System.out.println("✅ Skipping sender inventory validation for receiver-initiated transaction");
+        }
 
         Transaction transaction = buildTransaction(
                 senderType, senderId, receiverType, receiverId,
                 transactionDate, username, batchNumber, sentFirst, purpose, description);
 
+        // 🆕 CHECK IF RECEIVER IS LOSS TYPE - AUTO-COMPLETE IMMEDIATELY
+        if (receiverType == PartyType.LOSS) {
+            System.out.println("🗑️ LOSS transaction detected - auto-completing immediately");
+
+            // Set transaction as automatically accepted
+            transaction.setStatus(TransactionStatus.ACCEPTED);
+            transaction.setCompletedAt(LocalDateTime.now());
+            transaction.setApprovedBy("SYSTEM_AUTO_LOSS");
+            transaction.setAcceptanceComment("Automatic loss/disposal transaction");
+        }
+
         transaction.setItems(new ArrayList<>());
         for (TransactionItem item : items) {
             item.setTransaction(transaction);
-            item.setStatus(TransactionStatus.PENDING);
+
+            // 🆕 Set item status based on transaction type
+            if (receiverType == PartyType.LOSS) {
+                item.setStatus(TransactionStatus.ACCEPTED);  // Auto-accept items
+            } else {
+                item.setStatus(TransactionStatus.PENDING);
+            }
+
             transaction.addItem(item);
         }
 
         Transaction saved = transactionRepository.save(transaction);
         System.out.println("Transaction saved with immediate inventory updates applied");
 
-// Handle receiver-initiated warehouse inventory AFTER transaction is saved
+        // Handle receiver-initiated warehouse inventory AFTER transaction is saved
         if (sentFirst.equals(receiverId) && receiverType == PartyType.WAREHOUSE) {
             System.out.println("Receiver is warehouse - adding inventory AFTER transaction save");
             for (TransactionItem item : saved.getItems()) {
@@ -331,7 +361,7 @@ public class TransactionService {
             System.out.println("Added inventory to receiver warehouse after transaction save");
         }
 
-// Handle equipment receiver inventory after transaction is saved
+        // Handle equipment receiver inventory after transaction is saved
         if (sentFirst.equals(receiverId) && receiverType == PartyType.EQUIPMENT) {
             System.out.println("Equipment receiver initiated - adding items after transaction save");
             for (TransactionItem item : saved.getItems()) {
@@ -340,59 +370,80 @@ public class TransactionService {
             System.out.println("Added items to equipment receiver after transaction save");
         }
 
-// Send creation notifications to BOTH parties
+        // 🆕 For LOSS transactions, items were already deducted, nothing to add to receiver
+        if (receiverType == PartyType.LOSS) {
+            System.out.println("✅ LOSS transaction - items deducted from sender, no receiver inventory update needed");
+        }
+
+        // Send creation notifications to BOTH parties
         try {
             String senderName = getEntityName(senderType, senderId);
-            String receiverName = getEntityName(receiverType, receiverId);
+            String receiverName = receiverType == PartyType.LOSS ? "Loss/Disposal" : getEntityName(receiverType, receiverId);
 
             String itemsSummary = saved.getItems().stream()
                     .map(item -> item.getQuantity() + "x " + item.getItemType().getName())
                     .collect(Collectors.joining(", "));
 
-            // Notify sender (initiator)
-            if (senderType == PartyType.WAREHOUSE) {
-                String senderMessage = "You created transaction (Batch #" + saved.getBatchNumber() +
-                        ") to " + receiverName + ": " + itemsSummary;
-                notificationService.sendNotificationToWarehouseUsers(
-                        "Transaction Created",
-                        senderMessage,
-                        NotificationType.INFO,
-                        "/warehouses/" + senderId,
-                        "TRANSACTION_" + saved.getId()
-                );
-            } else if (senderType == PartyType.EQUIPMENT) {
-                String senderMessage = "You created transaction (Batch #" + saved.getBatchNumber() +
-                        ") to " + receiverName + ": " + itemsSummary;
-                notificationService.sendNotificationToEquipmentUsers(
-                        "Transaction Created",
-                        senderMessage,
-                        NotificationType.INFO,
-                        "/equipment/" + senderId,
-                        "TRANSACTION_" + saved.getId()
-                );
-            }
+            // 🆕 Special notification for LOSS transactions
+            if (receiverType == PartyType.LOSS) {
+                if (senderType == PartyType.WAREHOUSE) {
+                    String message = "Loss/disposal transaction (Batch #" + saved.getBatchNumber() +
+                            ") completed: " + itemsSummary;
+                    notificationService.sendNotificationToWarehouseUsers(
+                            "Loss Transaction Completed",
+                            message,
+                            NotificationType.INFO,
+                            "/warehouses/" + senderId,
+                            "TRANSACTION_" + saved.getId()
+                    );
+                }
+            } else {
+                // Normal notifications for non-LOSS transactions
+                // Notify sender (initiator)
+                if (senderType == PartyType.WAREHOUSE) {
+                    String senderMessage = "You created transaction (Batch #" + saved.getBatchNumber() +
+                            ") to " + receiverName + ": " + itemsSummary;
+                    notificationService.sendNotificationToWarehouseUsers(
+                            "Transaction Created",
+                            senderMessage,
+                            NotificationType.INFO,
+                            "/warehouses/" + senderId,
+                            "TRANSACTION_" + saved.getId()
+                    );
+                } else if (senderType == PartyType.EQUIPMENT) {
+                    String senderMessage = "You created transaction (Batch #" + saved.getBatchNumber() +
+                            ") to " + receiverName + ": " + itemsSummary;
+                    notificationService.sendNotificationToEquipmentUsers(
+                            "Transaction Created",
+                            senderMessage,
+                            NotificationType.INFO,
+                            "/equipment/" + senderId,
+                            "TRANSACTION_" + saved.getId()
+                    );
+                }
 
-            // Notify receiver (awaiting response)
-            if (receiverType == PartyType.WAREHOUSE) {
-                String receiverMessage = "New pending transaction (Batch #" + saved.getBatchNumber() +
-                        ") from " + senderName + ": " + itemsSummary;
-                notificationService.sendNotificationToWarehouseUsers(
-                        "New Transaction Pending",
-                        receiverMessage,
-                        NotificationType.WARNING,
-                        "/warehouses/" + receiverId,
-                        "TRANSACTION_" + saved.getId()
-                );
-            } else if (receiverType == PartyType.EQUIPMENT) {
-                String receiverMessage = "New pending transaction (Batch #" + saved.getBatchNumber() +
-                        ") from " + senderName + ": " + itemsSummary;
-                notificationService.sendNotificationToEquipmentUsers(
-                        "New Transaction Pending",
-                        receiverMessage,
-                        NotificationType.WARNING,
-                        "/equipment/" + receiverId,
-                        "TRANSACTION_" + saved.getId()
-                );
+                // Notify receiver (awaiting response)
+                if (receiverType == PartyType.WAREHOUSE) {
+                    String receiverMessage = "New pending transaction (Batch #" + saved.getBatchNumber() +
+                            ") from " + senderName + ": " + itemsSummary;
+                    notificationService.sendNotificationToWarehouseUsers(
+                            "New Transaction Pending",
+                            receiverMessage,
+                            NotificationType.WARNING,
+                            "/warehouses/" + receiverId,
+                            "TRANSACTION_" + saved.getId()
+                    );
+                } else if (receiverType == PartyType.EQUIPMENT) {
+                    String receiverMessage = "New pending transaction (Batch #" + saved.getBatchNumber() +
+                            ") from " + senderName + ": " + itemsSummary;
+                    notificationService.sendNotificationToEquipmentUsers(
+                            "New Transaction Pending",
+                            receiverMessage,
+                            NotificationType.WARNING,
+                            "/equipment/" + receiverId,
+                            "TRANSACTION_" + saved.getId()
+                    );
+                }
             }
 
             System.out.println("Transaction creation notifications sent successfully");
@@ -497,7 +548,7 @@ public class TransactionService {
     // ========================================
     // TRANSACTION ACCEPTANCE - MODIFIED TO HANDLE IMMEDIATE INVENTORY UPDATES
     // ========================================
-
+@Transactional
     public Transaction acceptTransaction(UUID transactionId, Map<UUID, Integer> receivedQuantities,
                                          Map<UUID, Boolean> itemsNotReceived,
                                          String username, String acceptanceComment) {
@@ -545,6 +596,8 @@ public class TransactionService {
     /**
      * 🚨 MODIFIED: Now handles cases where inventory was already updated during transaction creation
      */
+
+    @Transactional
     private Transaction acceptTransactionWithPurpose(UUID transactionId, Map<UUID, Integer> receivedQuantities,
                                                      Map<UUID, Boolean> itemsNotReceived,
                                                      String username, String acceptanceComment, TransactionPurpose purpose) {
@@ -552,6 +605,11 @@ public class TransactionService {
 
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+
+        // 🆕 ADD THIS CHECK - LOSS transactions cannot be manually accepted
+        if (transaction.getReceiverType() == PartyType.LOSS) {
+            throw new IllegalArgumentException("LOSS transactions are auto-completed and cannot be manually accepted");
+        }
 
         if (transaction.getStatus() != TransactionStatus.PENDING) {
             throw new IllegalArgumentException("Transaction is not in PENDING status");
@@ -614,7 +672,7 @@ public class TransactionService {
             if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
                 // Equipment-involved transaction: Use clear fields
                 warehouseSentQuantity = (transaction.getSentFirst().equals(transaction.getSenderId()))
-                    ? item.getQuantity() : receivedQuantity;
+                        ? item.getQuantity() : receivedQuantity;
                 equipmentReceivedQuantity = item.getEquipmentReceivedQuantity();
 
                 System.out.printf("📦➡️⚙️ EQUIPMENT TRANSACTION: Warehouse sent %d, Equipment received %d%n",
@@ -666,20 +724,6 @@ public class TransactionService {
             transaction.setRejectionReason("Some items had issues - Check individual item statuses");
             System.out.println("❌ Transaction REJECTED - But inventory adjusted as needed");
         }
-
-        // At the end of acceptTransactionWithPurpose method, replace the return statement with:
-//        try {
-//            System.out.println("🔍 DEBUG: About to save updated transaction...");
-//            Transaction savedTransaction = transactionRepository.save(transaction);
-//            System.out.println("✅ Transaction acceptance completed successfully. Transaction ID: " + savedTransaction.getId());
-//            return savedTransaction;
-//        } catch (Exception e) {
-//            System.err.println("❌ ERROR saving transaction:");
-//            System.err.println("  Error type: " + e.getClass().getSimpleName());
-//            System.err.println("  Error message: " + e.getMessage());
-//            e.printStackTrace();
-//            throw new RuntimeException("Failed to save transaction after acceptance", e);
-//        }
 
         try {
             System.out.println("DEBUG: About to save updated transaction...");
@@ -2012,6 +2056,12 @@ public class TransactionService {
     }
 
     private void validateEntityExists(PartyType type, UUID id) {
+        // 🆕 SKIP validation for LOSS type
+        if (type == PartyType.LOSS) {
+            System.out.println("✅ Skipping validation for LOSS type");
+            return;
+        }
+
         switch (type) {
             case WAREHOUSE:
                 warehouseRepository.findById(id)

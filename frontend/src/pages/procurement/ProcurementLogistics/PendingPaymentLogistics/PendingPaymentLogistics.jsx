@@ -22,10 +22,18 @@ const PendingPaymentLogistics = ({ onCountChange }) => {
         setLoading(true);
         try {
             const data = await logisticsService.getPendingPayment();
-            console.log('Pending payment logistics:', data);
-            setLogistics(data);
+
+            // Enhance data with source type (reference comes from backend)
+            const enhancedData = data.map(item => ({
+                ...item,
+                source: item.logisticsNumber.startsWith('RET-LOG') ? 'Return' : 'Purchase Order',
+                sourceType: item.logisticsNumber.startsWith('RET-LOG') ? 'RETURN' : 'PO'
+                // reference is already in item.reference from backend
+            }));
+
+            setLogistics(enhancedData);
             if (onCountChange) {
-                onCountChange(data.length);
+                onCountChange(enhancedData.length);
             }
         } catch (error) {
             console.error('Error fetching pending payment logistics:', error);
@@ -34,7 +42,6 @@ const PendingPaymentLogistics = ({ onCountChange }) => {
             setLoading(false);
         }
     };
-
     const showErrorNotification = (message) => {
         setNotificationMessage(String(message || 'An error occurred'));
         setNotificationType('error');
@@ -68,6 +75,32 @@ const PendingPaymentLogistics = ({ onCountChange }) => {
             )
         },
         {
+            id: 'source',
+            header: 'SOURCE',
+            accessor: 'source',
+            sortable: true,
+            filterable: true,
+            minWidth: '140px',
+            render: (row) => (
+                <span className={`source-badge source-${row.sourceType.toLowerCase()}`}>
+                    {row.source}
+                </span>
+            )
+        },
+        {
+            id: 'reference',
+            header: 'REFERENCE',
+            accessor: 'reference',
+            sortable: true,
+            filterable: true,
+            minWidth: '150px',
+            render: (row) => (
+                <span className="reference-text">
+                    {row.reference}
+                </span>
+            )
+        },
+        {
             id: 'merchantName',
             header: 'SERVICE',
             accessor: 'merchantName',
@@ -92,18 +125,6 @@ const PendingPaymentLogistics = ({ onCountChange }) => {
             render: (row) => (
                 <span className="logistics-cost">
                     {row.currency} {parseFloat(row.totalCost).toFixed(2)}
-                </span>
-            )
-        },
-        {
-            id: 'purchaseOrderCount',
-            header: 'POs',
-            accessor: 'purchaseOrderCount',
-            sortable: true,
-            minWidth: '80px',
-            render: (row) => (
-                <span className="po-count-badge">
-                    {row.purchaseOrderCount}
                 </span>
             )
         },
@@ -137,6 +158,16 @@ const PendingPaymentLogistics = ({ onCountChange }) => {
         {
             header: 'Logistics #',
             accessor: 'logisticsNumber',
+            filterType: 'text'
+        },
+        {
+            header: 'Source',
+            accessor: 'source',
+            filterType: 'select'
+        },
+        {
+            header: 'Reference',
+            accessor: 'reference',
             filterType: 'text'
         },
         {

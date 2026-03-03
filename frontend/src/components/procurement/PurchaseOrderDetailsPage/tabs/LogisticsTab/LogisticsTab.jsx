@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { FiTruck, FiPackage, FiDollarSign, FiUser, FiPhone, FiFileText, FiCheckCircle } from 'react-icons/fi';
+import { FiTruck, FiPackage, FiDollarSign, FiUser, FiPhone, FiFileText, FiCheckCircle, FiRotateCcw, FiFilter, FiCheck, FiChevronUp } from 'react-icons/fi';
 import { logisticsService } from '../../../../../services/procurement/logisticsService';
 import './LogisticsTab.scss';
 
 const LogisticsTab = ({ purchaseOrder, onError }) => {
     const [logistics, setLogistics] = useState([]);
+    const [returnLogistics, setReturnLogistics] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [selectedFilters, setSelectedFilters] = useState(['po', 'return']); // Both selected by default
 
     useEffect(() => {
         if (purchaseOrder?.id) {
@@ -16,9 +19,16 @@ const LogisticsTab = ({ purchaseOrder, onError }) => {
     const fetchLogistics = async () => {
         setIsLoading(true);
         try {
-            const logisticsData = await logisticsService.getByPurchaseOrder(purchaseOrder.id);
-            console.log('📦 FULL LOGISTICS RESPONSE:', JSON.stringify(logisticsData, null, 2));
-            setLogistics(logisticsData);
+            // Fetch PO logistics
+            const poLogisticsData = await logisticsService.getByPurchaseOrder(purchaseOrder.id);
+            console.log('📦 PO LOGISTICS:', poLogisticsData);
+
+            // Fetch Return logistics for this PO
+            const returnLogisticsData = await logisticsService.getReturnLogisticsByPurchaseOrder(purchaseOrder.id);
+            console.log('📦 RETURN LOGISTICS:', returnLogisticsData);
+
+            setLogistics(poLogisticsData);
+            setReturnLogistics(returnLogisticsData);
         } catch (error) {
             console.error('Error fetching logistics:', error);
             if (onError) {
@@ -27,6 +37,23 @@ const LogisticsTab = ({ purchaseOrder, onError }) => {
         } finally {
             setIsLoading(false);
         }
+    };
+    const handleFilterChange = (filterId) => {
+        setSelectedFilters(prev => {
+            if (prev.includes(filterId)) {
+                return prev.filter(id => id !== filterId);
+            } else {
+                return [...prev, filterId];
+            }
+        });
+    };
+
+    const handleSelectAll = () => {
+        setSelectedFilters(['po', 'return']);
+    };
+
+    const handleClearAll = () => {
+        setSelectedFilters([]);
     };
 
     if (isLoading) {
@@ -40,10 +67,24 @@ const LogisticsTab = ({ purchaseOrder, onError }) => {
         );
     }
 
-    // Calculate total allocated cost for this PO
-    const totalAllocatedCost = logistics.reduce((sum, entry) =>
+    // Filter logistics based on selection
+    const filteredPOLogistics = selectedFilters.includes('po') ? logistics : [];
+    const filteredReturnLogistics = selectedFilters.includes('return') ? returnLogistics : [];
+    const allFilteredLogistics = [...filteredPOLogistics, ...filteredReturnLogistics];
+
+    // Calculate total allocated cost
+    const totalAllocatedCost = allFilteredLogistics.reduce((sum, entry) =>
         sum + parseFloat(entry.allocatedCost || 0), 0
     );
+
+    const filterItems = [
+        { id: 'po', name: 'Purchase Order Logistics' },
+        { id: 'return', name: 'Purchase Order Return Logistics' }
+    ];
+
+    const selectedCount = selectedFilters.length;
+    const totalCount = filterItems.length;
+    const hasActiveFilters = selectedCount > 0 && selectedCount < totalCount;
 
     return (
         <div className="logistics-tab">
@@ -59,7 +100,7 @@ const LogisticsTab = ({ purchaseOrder, onError }) => {
                 <div className="summary-grid">
                     <div className="summary-item">
                         <div className="summary-label">Total Entries</div>
-                        <div className="summary-value">{logistics.length}</div>
+                        <div className="summary-value">{allFilteredLogistics.length}</div>
                     </div>
                     <div className="summary-item">
                         <div className="summary-label">Allocated Cost</div>
@@ -71,16 +112,84 @@ const LogisticsTab = ({ purchaseOrder, onError }) => {
             </div>
 
             {/* Logistics Entries */}
-            {logistics.length > 0 ? (
+            {allFilteredLogistics.length > 0 ? (
                 <div className="logistics-section">
-                    <div className="section-title">
-                        <FiTruck />
-                        Logistics Entries ({logistics.length})
+                    <div className="section-header-with-filter">
+                        <div className="section-title">
+                            <FiTruck />
+                            Logistics Entries ({allFilteredLogistics.length})
+                        </div>
+                        <button
+                            className={`logistics-filter-btn ${isFilterOpen ? 'logistics-filter-btn--active' : ''}`}
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        >
+                            <FiFilter />
+                            {hasActiveFilters && (
+                                <span className="logistics-filter-count">
+                                    {selectedCount}
+                                </span>
+                            )}
+                        </button>
                     </div>
 
+                    {/* Filter Panel */}
+                    {isFilterOpen && (
+                        <div className="logistics-filter-panel">
+                            <div className="logistics-filter-header">
+                                <h4>
+                                    <FiFilter size={16} />
+                                    Filter Logistics
+                                </h4>
+                                <div className="filter-actions">
+                                    <button
+                                        type="button"
+                                        className="filter-reset-btn"
+                                        onClick={handleSelectAll}
+                                    >
+                                        Select All
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="filter-reset-btn"
+                                        onClick={handleClearAll}
+                                        disabled={selectedCount === 0}
+                                    >
+                                        Clear All
+                                    </button>
+                                    <button
+                                        className={`filter-collapse-btn ${!isFilterOpen ? 'collapsed' : ''}`}
+                                        onClick={() => setIsFilterOpen(false)}
+                                    >
+                                        <FiChevronUp />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="logistics-filter-list">
+                                {filterItems.map((item) => (
+                                    <div key={item.id} className="logistics-filter-item">
+                                        <label className="filter-checkbox-label">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedFilters.includes(item.id)}
+                                                onChange={() => handleFilterChange(item.id)}
+                                            />
+                                            <span className="filter-checkbox-custom">
+                                                <FiCheck size={12} />
+                                            </span>
+                                            <span className="filter-checkbox-text">{item.name}</span>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="logistics-list">
-                        {logistics.map(entry => (
-                            <LogisticsCard key={entry.logisticsId} logistics={entry} />
+                        {filteredPOLogistics.map(entry => (
+                            <LogisticsCard key={entry.logisticsId} logistics={entry} type="po" currency={purchaseOrder.currency} />
+                        ))}
+                        {filteredReturnLogistics.map(entry => (
+                            <LogisticsCard key={entry.logisticsId} logistics={entry} type="return" currency={purchaseOrder.currency} />
                         ))}
                     </div>
                 </div>
@@ -96,7 +205,7 @@ const LogisticsTab = ({ purchaseOrder, onError }) => {
 };
 
 // Simplified Logistics Card Component (read-only)
-const LogisticsCard = ({ logistics }) => {
+const LogisticsCard = ({ logistics, type, currency }) => {
     const getStatusDisplay = (status) => {
         const displayMap = {
             'PENDING_APPROVAL': 'Pending Approval',
@@ -116,20 +225,23 @@ const LogisticsCard = ({ logistics }) => {
         return displayMap[paymentStatus] || paymentStatus;
     };
 
+    const isReturn = type === 'return';
+
     return (
-        <div className="logistics-card standalone">
+        <div className={`logistics-card standalone ${isReturn ? 'logistics-card--return' : ''}`}>
             <div className="logistics-card-header">
                 <div className="logistics-icon">
-                    <FiPackage />
+                    {isReturn ? <FiRotateCcw /> : <FiPackage />}
                 </div>
                 <div className="logistics-main-info">
                     <div className="logistics-number">{logistics.logisticsNumber}</div>
                     <div className="logistics-company">{logistics.merchantName}</div>
+
                 </div>
                 <div className="logistics-cost-info">
                     <div className="cost-label">Allocated Cost</div>
                     <div className="cost-value">
-                        {logistics.currency} {parseFloat(logistics.allocatedCost).toFixed(2)}
+                        {currency} {parseFloat(logistics.allocatedCost).toFixed(2)}
                     </div>
                     <div className="cost-percentage">
                         ({parseFloat(logistics.costPercentage).toFixed(2)}% of total)
@@ -201,21 +313,23 @@ const LogisticsCard = ({ logistics }) => {
                 {/* Items in this logistics entry */}
                 {logistics.items && logistics.items.length > 0 && (
                     <div className="logistics-items">
-                        <div className="items-header">Items ({logistics.items.length})</div>
+                        <div className="items-header">
+                            {isReturn ? 'Return Items' : 'Items'} ({logistics.items.length})
+                        </div>
                         <div className="items-list">
                             {logistics.items.map(item => (
-                                <div key={item.purchaseOrderItemId} className="item-tag">
+                                <div key={item.purchaseOrderItemId || item.purchaseOrderReturnItemId} className="item-tag">
                                     <div className="item-tag-main">
-                                        <FiPackage size={14} />
+                                        {isReturn ? <FiRotateCcw size={14} /> : <FiPackage size={14} />}
                                         <span className="item-tag-name">{item.itemTypeName}</span>
                                     </div>
                                     <div className="item-tag-details">
                                         <span className="item-qty">
-                                            {item.quantity} {item.measuringUnit}
+                                            {isReturn ? `Return: ${item.quantity}` : `${item.quantity} ${item.measuringUnit}`}
                                         </span>
                                         <span className="item-separator">•</span>
                                         <span className="item-price">
-                                            {logistics.currency} {parseFloat(item.unitPrice).toFixed(2)}/unit
+                                            {currency} {parseFloat(item.unitPrice).toFixed(2)}/unit
                                         </span>
                                     </div>
                                 </div>

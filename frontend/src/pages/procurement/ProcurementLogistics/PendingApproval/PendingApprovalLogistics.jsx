@@ -7,6 +7,7 @@ import ConfirmationDialog from '../../../../components/common/ConfirmationDialog
 import CreateLogisticsModal from '../CreateLogisticsModal/CreateLogisticsModal';
 import { logisticsService } from '../../../../services/procurement/logisticsService';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService';
+import { poReturnService } from '../../../../services/procurement/poReturnService';
 
 const PendingApprovalLogistics = ({ onCountChange }) => {
     const navigate = useNavigate();
@@ -18,6 +19,7 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedLogistics, setSelectedLogistics] = useState(null);
     const [availablePurchaseOrders, setAvailablePurchaseOrders] = useState([]);
+    const [availablePurchaseOrderReturns, setAvailablePurchaseOrderReturns] = useState([]);
 
     // Delete state
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -36,19 +38,26 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
     const fetchLogistics = async () => {
         setLoading(true);
         try {
-            const data = await logisticsService.getPendingApproval();
-            setLogistics(data);
+            const data = await logisticsService.getPendingApproval(); // or getPendingPayment() or getCompleted()
+
+            // Enhance data with source type (reference now comes from backend)
+            const enhancedData = data.map(item => ({
+                ...item,
+                source: item.logisticsNumber.startsWith('RET-LOG') ? 'Return' : 'Purchase Order',
+                sourceType: item.logisticsNumber.startsWith('RET-LOG') ? 'RETURN' : 'PO'
+            }));
+
+            setLogistics(enhancedData);
             if (onCountChange) {
-                onCountChange(data.length);
+                onCountChange(enhancedData.length);
             }
         } catch (error) {
-            console.error('Error fetching pending logistics:', error);
-            showErrorNotification('Failed to load pending logistics');
+            console.error('Error fetching logistics:', error);
+            showErrorNotification('Failed to load logistics');
         } finally {
             setLoading(false);
         }
     };
-
     const fetchAvailablePurchaseOrders = async () => {
         try {
             console.log('Fetching purchase orders...');
@@ -87,6 +96,42 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
         }
     };
 
+    const fetchAvailablePurchaseOrderReturns = async () => {
+        try {
+            console.log('Fetching purchase order returns...');
+            const allPORs = await poReturnService.getAll();
+            console.log('All PO Returns with items:', allPORs);
+
+            const filtered = allPORs.filter(por => {
+                const items = por.returnItems || [];
+                console.log(`PO Return ${por.returnId}: has ${items.length} items, will ${items.length > 0 ? 'INCLUDE' : 'EXCLUDE'}`);
+                return items.length > 0;
+            });
+
+            console.log('Filtered PO Returns with items:', filtered);
+
+            const transformedPORs = filtered.map(por => ({
+                ...por,
+                items: por.returnItems.map(item => ({
+                    id: item.id,
+                    itemTypeName: item.itemTypeName,
+                    returnQuantity: item.returnQuantity,
+                    unitPrice: item.unitPrice,
+                    totalReturnAmount: item.totalReturnAmount,
+                    merchantName: item.merchant?.name || '',
+                    reason: item.reason
+                })),
+                merchantName: por.merchantName
+            }));
+
+            console.log('Transformed PO Returns ready for modal:', transformedPORs);
+            setAvailablePurchaseOrderReturns(transformedPORs);
+        } catch (error) {
+            console.error('Error fetching purchase order returns:', error);
+            showErrorNotification('Failed to load purchase order returns');
+        }
+    };
+
     const showErrorNotification = (message) => {
         setNotificationMessage(String(message || 'An error occurred'));
         setNotificationType('error');
@@ -100,12 +145,18 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
     };
 
     const handleAddLogistics = async () => {
-        await fetchAvailablePurchaseOrders();
+        await Promise.all([
+            fetchAvailablePurchaseOrders(),
+            fetchAvailablePurchaseOrderReturns()
+        ]);
         setShowCreateModal(true);
     };
 
     const handleEdit = async (logistics) => {
-        await fetchAvailablePurchaseOrders();
+        await Promise.all([
+            fetchAvailablePurchaseOrders(),
+            fetchAvailablePurchaseOrderReturns()
+        ]);
         setSelectedLogistics(logistics);
         setShowEditModal(true);
     };
@@ -177,6 +228,32 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
             )
         },
         {
+            id: 'source',
+            header: 'SOURCE',
+            accessor: 'source',
+            sortable: true,
+            filterable: true,
+            minWidth: '140px',
+            render: (row) => (
+                <span className={`source-badge source-${row.sourceType.toLowerCase()}`}>
+                    {row.source}
+                </span>
+            )
+        },
+        {
+            id: 'reference',
+            header: 'REFERENCE',
+            accessor: 'reference',
+            sortable: true,
+            filterable: true,
+            minWidth: '150px',
+            render: (row) => (
+                <span className="reference-text">
+                    {row.reference}
+                </span>
+            )
+        },
+        {
             id: 'merchantName',
             header: 'SERVICE',
             accessor: 'merchantName',
@@ -204,18 +281,7 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
                 </span>
             )
         },
-        {
-            id: 'purchaseOrderCount',
-            header: 'POs',
-            accessor: 'purchaseOrderCount',
-            sortable: true,
-            minWidth: '80px',
-            render: (row) => (
-                <span className="po-count-badge">
-                    {row.purchaseOrderCount}
-                </span>
-            )
-        },
+
         {
             id: 'createdAt',
             header: 'CREATED AT',
@@ -257,6 +323,16 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
         {
             header: 'Logistics #',
             accessor: 'logisticsNumber',
+            filterType: 'text'
+        },
+        {
+            header: 'Source',
+            accessor: 'source',
+            filterType: 'select'
+        },
+        {
+            header: 'Reference',
+            accessor: 'reference',
             filterType: 'text'
         },
         {
@@ -307,6 +383,7 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
                 onSuccess={handleCreateSuccess}
                 onError={showErrorNotification}
                 availablePurchaseOrders={availablePurchaseOrders}
+                availablePurchaseOrderReturns={availablePurchaseOrderReturns}
             />
 
             {/* Edit Modal */}
@@ -317,6 +394,7 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
                     onSuccess={handleEditSuccess}
                     onError={showErrorNotification}
                     availablePurchaseOrders={availablePurchaseOrders}
+                    availablePurchaseOrderReturns={availablePurchaseOrderReturns}
                     existingLogistics={selectedLogistics}
                     isEditMode={true}
                 />
