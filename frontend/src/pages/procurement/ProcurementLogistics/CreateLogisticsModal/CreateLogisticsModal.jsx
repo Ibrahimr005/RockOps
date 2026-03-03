@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiTruck, FiPackage, FiPlus, FiTrash2, FiCheck, FiBox } from 'react-icons/fi';
+import { FiTruck, FiPackage, FiPlus, FiTrash2, FiCheck, FiBox } from 'react-icons/fi';
 import './CreateLogisticsModal.scss';
-import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog'; // Update the path
+import { Button, CloseButton } from '../../../../components/common/Button';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import {merchantService} from "../../../../services/merchant/merchantService.js";
 import {logisticsService} from "../../../../services/procurement/logisticsService.js"
 
@@ -375,9 +376,7 @@ const CreateLogisticsModal = ({
                             <FiTruck />
                             {isEditMode ? 'Edit Logistics Entry' : 'Create Logistics Entry'}
                         </h2>
-                        <button className="btn-close" onClick={handleCloseAttempt}> {/* CHANGED */}
-                            <FiX />
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                     {/* Step Indicator */}
@@ -695,38 +694,25 @@ const CreateLogisticsModal = ({
                     <div className="modal-footer">
                         <div className="footer-left">
                             {currentStep > 1 && (
-                                <button
-                                    type="button"
-                                    className="btn-draft"
-                                    onClick={handleBack}
-                                    disabled={isSaving}
-                                >
+                                <Button variant="ghost" onClick={handleBack} disabled={isSaving}>
                                     Back
-                                </button>
+                                </Button>
                             )}
                         </div>
                         <div className="footer-right">
                             {currentStep < 3 ? (
-                                <button
-                                    type="button"
-                                    className="btn-primary"
-                                    onClick={handleNext}
-                                >
+                                <Button variant="primary" onClick={handleNext}>
                                     Next
-                                </button>
+                                </Button>
                             ) : (
-                                <button
-                                    type="button"
-                                    className="btn-primary"
+                                <Button
+                                    variant="primary"
                                     onClick={handleSubmit}
-                                    disabled={isSaving}
+                                    loading={isSaving}
+                                    loadingText={isEditMode ? 'Updating...' : 'Creating...'}
                                 >
-                                    {isSaving && <span className="spinner" />}
-                                    {isSaving
-                                        ? (isEditMode ? 'Updating...' : 'Creating...')
-                                        : (isEditMode ? 'Update Logistics' : 'Create Logistics')
-                                    }
-                                </button>
+                                    {isEditMode ? 'Update Logistics' : 'Create Logistics'}
+                                </Button>
                             )}
                         </div>
                     </div>

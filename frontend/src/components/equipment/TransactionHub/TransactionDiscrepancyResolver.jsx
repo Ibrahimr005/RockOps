@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, TrendingUp, TrendingDown, CheckCircle, Info } from 'lucide-react';
+import { Button } from '../../../components/common/Button';
 
 const TransactionDiscrepancyResolver = ({
     transaction,
@@ -223,14 +224,15 @@ const TransactionDiscrepancyResolver = ({
                     </p>
                 </div>
                 
-                <button
+                <Button
+                    variant="primary"
                     className="discrepancy-resolver-resolve-btn"
                     onClick={handleResolveAll}
                     disabled={discrepancies.some(d => !resolutionActions[d.item.id])}
                 >
                     <CheckCircle size={16} />
                     Resolve All Discrepancies
-                </button>
+                </Button>
             </div>
         </div>
     );

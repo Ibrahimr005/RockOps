@@ -3,6 +3,7 @@ import { FaCalendarAlt, FaLock, FaLockOpen, FaCheck, FaExclamationTriangle, FaPl
 import { useAuth } from "../../../../contexts/AuthContext";
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../../components/common/PageHeader';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './PeriodClosing.css';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
@@ -29,6 +30,18 @@ const PeriodClosing = () => {
 
     const isFinanceManager = currentUser?.role === "FINANCE_MANAGER" || "ADMIN";
     const { showError, showSuccess } = useSnackbar();
+
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showAddModal || confirmationModal.show) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, confirmationModal.show]);
 
     useEffect(() => {
         fetchAccountingPeriods();
@@ -253,12 +266,12 @@ const PeriodClosing = () => {
                     <h3>Component Error</h3>
                     <p>There was an error loading the Period Closing component.</p>
                     <p>Error: {error}</p>
-                    <button onClick={() => {
+                    <Button variant="ghost" onClick={() => {
                         setError(null);
                         fetchAccountingPeriods();
                     }}>
                         Retry
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -322,7 +335,7 @@ const PeriodClosing = () => {
                     <div className="period-modal-content">
                         <div className="period-modal-header">
                             <h2>Add Accounting Period</h2>
-                            <button className="period-modal-close-button" onClick={() => setShowAddModal(false)}>×</button>
+                            <CloseButton onClick={() => setShowAddModal(false)} />
                         </div>
 
                         <div className="period-modal-body">
@@ -366,19 +379,18 @@ const PeriodClosing = () => {
                                     </div>
 
                                     <div className="period-form-actions">
-                                        <button
-                                            type="button"
-                                            className="period-cancel-button"
+                                        <Button
+                                            variant="ghost"
                                             onClick={() => setShowAddModal(false)}
                                         >
                                             Cancel
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
                                             type="submit"
-                                            className="period-submit-button"
+                                            variant="primary"
                                         >
                                             Create Period
-                                        </button>
+                                        </Button>
                                     </div>
                                 </form>
                             </div>
@@ -393,7 +405,7 @@ const PeriodClosing = () => {
                     <div className="period-modal-content period-confirmation-content">
                         <div className="period-modal-header">
                             <h2>{confirmationModal.action === 'close' ? 'Close Period' : 'Reopen Period'}</h2>
-                            <button className="period-modal-close-button" onClick={cancelPeriodAction}>×</button>
+                            <CloseButton onClick={cancelPeriodAction} />
                         </div>
 
                         <div className="period-modal-body">
@@ -407,18 +419,18 @@ const PeriodClosing = () => {
                                 }
                             </div>
                             <div className="period-form-actions">
-                                <button
-                                    className="period-cancel-button"
+                                <Button
+                                    variant="ghost"
                                     onClick={cancelPeriodAction}
                                 >
                                     Cancel
-                                </button>
-                                <button
-                                    className="period-submit-button"
+                                </Button>
+                                <Button
+                                    variant="primary"
                                     onClick={confirmPeriodAction}
                                 >
                                     {confirmationModal.action === 'close' ? 'Close Period' : 'Reopen Period'}
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </div>

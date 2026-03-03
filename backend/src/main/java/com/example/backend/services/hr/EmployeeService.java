@@ -5,6 +5,7 @@ import com.example.backend.models.hr.JobPosition;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +19,10 @@ public class EmployeeService {
 
     @Autowired
     private EquipmentRepository equipmentRepository;
+
+    @Autowired
+    @Lazy
+    private VacationBalanceService vacationBalanceService;
 
     public List<Employee> getWarehouseWorkers() {
         return employeeRepository.findByJobPositionName("Warehouse Worker");
@@ -60,6 +65,36 @@ public class EmployeeService {
 
     public List<Employee> getEmployees() {
         return employeeRepository.findAll();
+    }
+
+    /**
+     * Get employee by ID
+     * @param id Employee ID
+     * @return Employee or null if not found
+     */
+    public Employee getEmployeeById(UUID id) {
+        return employeeRepository.findById(id).orElse(null);
+    }
+
+    /**
+     * Save/update employee
+     * @param employee Employee to save
+     * @return Saved employee
+     */
+    public Employee saveEmployee(Employee employee) {
+        Employee saved = employeeRepository.save(employee);
+
+        // Sync vacation balance when employee has a job position
+        if (saved.getJobPosition() != null && "ACTIVE".equalsIgnoreCase(saved.getStatus())) {
+            try {
+                vacationBalanceService.updateAllocationForEmployee(saved.getId());
+            } catch (Exception e) {
+                // Don't fail the save if vacation sync fails
+                System.err.println("Warning: Failed to sync vacation balance for employee " + saved.getId() + ": " + e.getMessage());
+            }
+        }
+
+        return saved;
     }
 
     /**

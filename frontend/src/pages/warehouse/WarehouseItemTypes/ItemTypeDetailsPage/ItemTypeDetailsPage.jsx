@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import IntroCard from '../../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2.jsx';
+import { Button } from '../../../../components/common/Button';
 import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
 import { FiPackage } from 'react-icons/fi';
 import './ItemTypeDetailsPage.scss';
@@ -188,9 +189,9 @@ const ItemTypeDetailsPage = () => {
                     </svg>
                     <h4>Item Type Not Found</h4>
                     <p>The requested item type could not be found.</p>
-                    <button className="it-page-retry-button" onClick={() => navigate(-1)}>
+                    <Button variant="primary" className="it-page-retry-button" onClick={() => navigate(-1)}>
                         Go Back
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

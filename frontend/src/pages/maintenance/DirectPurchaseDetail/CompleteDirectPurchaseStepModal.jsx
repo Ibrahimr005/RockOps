@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaCheckCircle } from 'react-icons/fa';
+import { FaCheckCircle } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
 import '../../../styles/cancel-modal-button.scss';
@@ -7,6 +9,8 @@ import '../../../styles/modal-styles.scss';
 import './CompleteDirectPurchaseStepModal.scss';
 
 const CompleteDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) => {
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState({
         actualEndDate: '',
         actualCost: '',
@@ -44,6 +48,7 @@ const CompleteDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) =>
     }, [isOpen, step]);
 
     const handleInputChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -74,6 +79,7 @@ const CompleteDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) =>
     };
 
     const handleRemainingCostChange = (e) => {
+        setIsFormDirty(true);
         setUseManualRemaining(true);
         setFormData(prev => ({
             ...prev,
@@ -111,6 +117,14 @@ const CompleteDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) =>
         return Object.keys(newErrors).length === 0;
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -138,17 +152,16 @@ const CompleteDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) =>
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-container complete-step-modal" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <div className="modal-title">
-                        <FaCheckCircle />
-                        Complete Step: {step?.stepName}
+        <>
+            <div className="modal-backdrop">
+                <div className="modal-container complete-step-modal" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <div className="modal-title">
+                            <FaCheckCircle />
+                            Complete Step: {step?.stepName}
+                        </div>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
-                </div>
                 <div className="modal-body">
                     <div className="step-info-display">
                         <h3>Step Information</h3>
@@ -252,16 +265,27 @@ const CompleteDirectPurchaseStepModal = ({ isOpen, onClose, onSubmit, step }) =>
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose}>
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" form="complete-step-form">
-                        <FaCheckCircle />
-                        Mark as Completed
-                    </button>
+                    </Button>
+                    <Button variant="primary" type="submit" form="complete-step-form">
+                        <FaCheckCircle /> Mark as Completed
+                    </Button>
                 </div>
             </div>
         </div>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

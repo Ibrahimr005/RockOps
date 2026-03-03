@@ -42,14 +42,30 @@
   --color-success: #4caf50;
   --color-success-light: #10b981;
   --color-success-hover: #059669;
+  --color-success-rgb: 76, 175, 80;
   --color-danger: #f44336;
   --color-danger-light: #ef4444;
   --color-danger-hover: #dc2626;
+  --color-danger-rgb: 244, 67, 54;
   --color-warning: #ff9800;
   --color-warning-light: #f59e0b;
-  --color-warning-rgb: 255, 152, 0; /* RGB values for #ff9800 */
+  --color-warning-rgb: 255, 152, 0;
   --color-info: #2196f3;
   --color-info-light: #3b82f6;
+  --color-info-rgb: 33, 150, 243;
+
+  /* Additional Status Colors */
+  --color-lime: #689f38;
+  --color-lime-rgb: 139, 195, 74;
+  --color-orange: #f57c00;
+  --color-orange-rgb: 255, 193, 7;
+  --color-purple: #7b1fa2;
+  --color-purple-rgb: 103, 58, 183;
+  --color-danger-dark: #c62828;
+  --color-danger-dark-rgb: 183, 28, 28;
+
+  /* Primary RGB for rgba() usage */
+  --color-primary-rgb: 72, 128, 255;
 
   /* Action Colors */
   --color-edit: var(--color-primary);
@@ -81,9 +97,27 @@
   --bold-font-weight: 600;
   --font-family: "Arial", sans-serif;
 
+  /* Typography Scale */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+
+  /* Spacing Scale */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
   /* Elevation & Shadows */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
   --shadow-table: 0 2px 8px var(--table-shadow);
 
   /* Border Radius */
@@ -140,14 +174,30 @@
   --color-success: #5cbc60;
   --color-success-light: #22c55e;
   --color-success-hover: #16a34a;
+  --color-success-rgb: 92, 188, 96;
   --color-danger: #ff5252;
   --color-danger-light: #f87171;
   --color-danger-hover: #ef4444;
+  --color-danger-rgb: 255, 82, 82;
   --color-warning: #ffb74d;
   --color-warning-light: #fbbf24;
-  --color-warning-rgb: 255, 183, 77; /* RGB values for #ffb74d */
+  --color-warning-rgb: 255, 183, 77;
   --color-info: #42a5f5;
   --color-info-light: #60a5fa;
+  --color-info-rgb: 66, 165, 245;
+
+  /* Additional Status Colors - adjusted for dark mode */
+  --color-lime: #8bc34a;
+  --color-lime-rgb: 139, 195, 74;
+  --color-orange: #ffb74d;
+  --color-orange-rgb: 255, 183, 77;
+  --color-purple: #ab47bc;
+  --color-purple-rgb: 171, 71, 188;
+  --color-danger-dark: #ef5350;
+  --color-danger-dark-rgb: 239, 83, 80;
+
+  /* Primary RGB for rgba() usage */
+  --color-primary-rgb: 72, 128, 255;
 
   /* Action Colors for Dark Mode */
   --color-edit: var(--color-primary);
@@ -179,9 +229,27 @@
   --bold-font-weight: 600;
   --font-family: "Arial", sans-serif;
 
+  /* Typography Scale - keeping consistent with light theme */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+
+  /* Spacing Scale - keeping consistent with light theme */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
   /* Elevation & Shadows - adjusted for dark mode */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
   --shadow-table: 0 2px 8px var(--table-shadow);
 
   /* Border Radius - keeping consistent with light theme */

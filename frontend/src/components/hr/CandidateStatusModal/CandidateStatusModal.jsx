@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUser, FaStar, FaComment, FaInfoCircle, FaArrowRight } from 'react-icons/fa';
 import StarRating from '../../common/StarRating/StarRating';
+import { Button, CloseButton } from '../../common/Button';
 import './CandidateStatusModal.scss';
 
 const CandidateStatusModal = ({
@@ -108,13 +109,10 @@ const CandidateStatusModal = ({
                         <FaUser />
                         Update Candidate Status
                     </div>
-                    <button
-                        className="modal-close-btn"
+                    <CloseButton
                         onClick={handleClose}
                         disabled={isLoading}
-                    >
-                        <FaTimes />
-                    </button>
+                    />
                 </div>
 
                 <div className="modal-body">
@@ -238,25 +236,25 @@ const CandidateStatusModal = ({
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
+                    <Button
+                        variant="ghost"
                         onClick={handleClose}
                         disabled={isLoading}
                     >
                         Cancel
-                    </button>
-                    <button
-                        type="button"
+                    </Button>
+                    <Button
+                        variant={selectedStatus === 'REJECTED' ? 'danger' : 'primary'}
                         onClick={handleSubmit}
-                        className={`btn btn-primary ${selectedStatus === 'REJECTED' ? 'btn-danger' : ''}`}
                         disabled={
                             isLoading ||
                             (showRejectionReason && !rejectionReason.trim())
                         }
+                        loading={isLoading}
+                        loadingText="Updating..."
                     >
-                        {isLoading ? 'Updating...' : `Update to ${selectedStatusInfo?.label || 'Selected Status'}`}
-                    </button>
+                        {`Update to ${selectedStatusInfo?.label || 'Selected Status'}`}
+                    </Button>
                 </div>
             </div>
         </div>

@@ -17,6 +17,7 @@ import IntroCard from '../../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import ContentLoader from '../../../../components/common/ContentLoader/ContentLoader';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import { Button } from '../../../../components/common/Button';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
 import './PaymentRequestDetailsPage.scss';
@@ -124,17 +125,13 @@ const PaymentRequestDetailsPage = () => {
         return statusMap[status] || 'status-default';
     };
 
-// Check if this is a loan payment request
+    // Check if this is a loan payment request
     const isLoanPayment = request?.loanInstallmentId != null;
 
-// For loan payments, determine if lender is institution or merchant
-    const isInstitutionLender = isLoanPayment && !!request.institutionName;
-    const isMerchantLender = isLoanPayment && !request.institutionName && !!request.merchantName;
-
-// Get the appropriate name (merchant or institution)
+    // Get the appropriate name (merchant or institution)
     const getPayeeName = () => {
         if (isLoanPayment) {
-            return request.institutionName || request.merchantName || 'N/A';
+            return request.institutionName || 'N/A';
         }
         return request.merchantName || 'N/A';
     };
@@ -319,12 +316,12 @@ const PaymentRequestDetailsPage = () => {
                     <FiFileText size={48} />
                     <h3>Payment Request Not Found</h3>
                     <p>The payment request you're looking for doesn't exist or has been deleted.</p>
-                    <button
-                        className="btn-primary"
+                    <Button
+                        variant="primary"
                         onClick={() => navigate('/finance/accounts-payable')}
                     >
                         Back to Accounts Payable
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -432,91 +429,74 @@ const PaymentRequestDetailsPage = () => {
                 <div className="details-section">
                     <div className="section-header">
                         <FaBuilding className="section-icon" />
-                        <h3>{isLoanPayment ? (isMerchantLender ? 'Merchant Lender' : 'Financial Institution') : 'Merchant Information'}</h3>                    </div>
+                        <h3>{isLoanPayment ? 'Financial Institution' : 'Merchant Information'}</h3>
+                    </div>
                     <div className="details-grid">
                         <div className="detail-item">
-                            <label>{isLoanPayment && isInstitutionLender ? 'Institution Name' : 'Merchant Name'}</label>
+                            <label>{isLoanPayment ? 'Institution Name' : 'Merchant Name'}</label>
                             <span>
-            {isLoanPayment ? (
-                isInstitutionLender ? (
-                    request.financialInstitutionId ? (
-                        <span
-                            className="link-text"
-                            onClick={() => navigate(`/finance/loans/institutions/${request.financialInstitutionId}`)}
-                        >
-                            {request.institutionName}
-                        </span>
-                    ) : (
-                        request.institutionName || 'N/A'
-                    )
-                ) : (
-                    request.merchantName || 'N/A'
-                )
-            ) : (
-                request.merchantId ? (
-                    <span
-                        className="link-text"
-                        onClick={() => navigate(`/merchants/${request.merchantId}`)}
-                    >
-                        {request.merchantName || 'N/A'}
-                    </span>
-                ) : (
-                    request.merchantName || 'N/A'
-                )
-            )}
-        </span>
+                                {isLoanPayment ? (
+                                    // Loan payment - show institution info
+                                    request.financialInstitutionId ? (
+                                        <span
+                                            className="link-text"
+                                            onClick={() => navigate(`/finance/loans/institutions/${request.financialInstitutionId}`)}
+                                        >
+                                            {request.institutionName || 'N/A'}
+                                        </span>
+                                    ) : (
+                                        request.institutionName || 'N/A'
+                                    )
+                                ) : (
+                                    // Regular payment - show merchant info
+                                    request.merchantId ? (
+                                        <span
+                                            className="link-text"
+                                            onClick={() => navigate(`/merchants/${request.merchantId}`)}
+                                        >
+                                            {request.merchantName || 'N/A'}
+                                        </span>
+                                    ) : (
+                                        request.merchantName || 'N/A'
+                                    )
+                                )}
+                            </span>
                         </div>
                         <div className="detail-item">
                             <label>Contact Person</label>
                             <span>{isLoanPayment
-                                ? (isInstitutionLender ? request.institutionContactPerson : request.merchantContactPerson) || 'N/A'
-                                : request.merchantContactPerson || 'N/A'
+                                ? (request.institutionContactPerson || 'N/A')
+                                : (request.merchantContactPerson || 'N/A')
                             }</span>
                         </div>
                         <div className="detail-item">
                             <label>Contact Phone</label>
                             <span>
-            {(() => {
-                const phone = isLoanPayment
-                    ? (isInstitutionLender ? request.institutionContactPhone : request.merchantContactPhone)
-                    : request.merchantContactPhone;
-                return phone ? <><FiPhone className="inline-icon" /> {phone}</> : 'N/A';
-            })()}
-        </span>
+                                {(isLoanPayment ? request.institutionContactPhone : request.merchantContactPhone) ? (
+                                    <><FiPhone className="inline-icon" /> {isLoanPayment ? request.institutionContactPhone : request.merchantContactPhone}</>
+                                ) : 'N/A'}
+                            </span>
                         </div>
                         <div className="detail-item">
                             <label>Contact Email</label>
                             <span>
-            {(() => {
-                const email = isLoanPayment
-                    ? (isInstitutionLender ? request.institutionContactEmail : request.merchantContactEmail)
-                    : request.merchantContactEmail;
-                return email ? <><FiMail className="inline-icon" /> {email}</> : 'N/A';
-            })()}
-        </span>
+                                {(isLoanPayment ? request.institutionContactEmail : request.merchantContactEmail) ? (
+                                    <><FiMail className="inline-icon" /> {isLoanPayment ? request.institutionContactEmail : request.merchantContactEmail}</>
+                                ) : 'N/A'}
+                            </span>
                         </div>
-                        {(() => {
-                            const bankName = isLoanPayment
-                                ? (isInstitutionLender ? request.institutionBankName : request.merchantBankName)
-                                : request.merchantBankName;
-                            return bankName ? (
-                                <div className="detail-item">
-                                    <label>Bank Name</label>
-                                    <span>{bankName}</span>
-                                </div>
-                            ) : null;
-                        })()}
-                        {(() => {
-                            const accountNumber = isLoanPayment
-                                ? (isInstitutionLender ? request.institutionAccountNumber : request.merchantAccountNumber)
-                                : request.merchantAccountNumber;
-                            return accountNumber ? (
-                                <div className="detail-item">
-                                    <label>Account Number</label>
-                                    <span>{accountNumber}</span>
-                                </div>
-                            ) : null;
-                        })()}
+                        {(isLoanPayment ? request.institutionBankName : request.merchantBankName) && (
+                            <div className="detail-item">
+                                <label>Bank Name</label>
+                                <span>{isLoanPayment ? request.institutionBankName : request.merchantBankName}</span>
+                            </div>
+                        )}
+                        {(isLoanPayment ? request.institutionAccountNumber : request.merchantAccountNumber) && (
+                            <div className="detail-item">
+                                <label>Account Number</label>
+                                <span>{isLoanPayment ? request.institutionAccountNumber : request.merchantAccountNumber}</span>
+                            </div>
+                        )}
                         {/* Loan-specific info */}
                         {isLoanPayment && (
                             <>
@@ -525,10 +505,10 @@ const PaymentRequestDetailsPage = () => {
                                         <label>Loan Number</label>
                                         <span
                                             className="link-text"
-                                            onClick={() => navigate(`/finance/company-loans/${request.companyLoanId}`)}
+                                            onClick={() => navigate(`/finance/loans/company-loans/${request.companyLoanId}`)}
                                         >
-                        {request.companyLoanNumber}
-                    </span>
+                                            {request.companyLoanNumber}
+                                        </span>
                                     </div>
                                 )}
                                 {request.loanInstallmentNumber && (
@@ -730,22 +710,26 @@ const PaymentRequestDetailsPage = () => {
                                 )}
                             </div>
                             <div className="review-actions">
-                                <button
-                                    className="btn-danger"
+                                <Button
+                                    variant="danger"
                                     onClick={handleRejectClick}
                                     disabled={actionLoading}
+                                    loading={actionLoading}
+                                    loadingText="Processing..."
                                 >
                                     <FiXCircle />
-                                    <span>{actionLoading ? 'Processing...' : 'Reject Request'}</span>
-                                </button>
-                                <button
-                                    className="btn-success"
+                                    <span>Reject Request</span>
+                                </Button>
+                                <Button
+                                    variant="success"
                                     onClick={handleApproveClick}
                                     disabled={actionLoading}
+                                    loading={actionLoading}
+                                    loadingText="Processing..."
                                 >
                                     <FiCheckCircle />
-                                    <span>{actionLoading ? 'Processing...' : 'Approve Request'}</span>
-                                </button>
+                                    <span>Approve Request</span>
+                                </Button>
                             </div>
                         </div>
                     </div>

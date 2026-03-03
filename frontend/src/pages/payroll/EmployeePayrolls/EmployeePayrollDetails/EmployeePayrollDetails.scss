@@ -1,0 +1,476 @@
+/* EmployeePayrollDetails.scss */
+
+.employee-payroll-details {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: var(--color-text-primary);
+  animation: fadeIn var(--transition-normal) ease-in;
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  // --- Utility States ---
+  .loading-state,
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background: var(--section-background-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-text-secondary);
+    font-size: 1.1rem;
+    gap: 1rem;
+
+    .spin {
+      animation: spin 1s linear infinite;
+      font-size: 2rem;
+      color: var(--color-primary);
+    }
+  }
+
+  @keyframes spin {
+    100% { transform: rotate(360deg); }
+  }
+
+  // --- Summary Section (Top Cards) ---
+  .summary-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .info-card {
+    background: var(--section-background-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    transition: transform var(--transition-fast);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--main-background-color);
+      color: var(--color-text-secondary);
+      font-weight: 600;
+      font-size: 1.1rem;
+
+      svg {
+        color: var(--color-primary);
+        font-size: 1.25rem;
+      }
+    }
+  }
+
+  // Employee Card Specifics
+  .employee-card {
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+
+      &:last-child { margin-bottom: 0; }
+
+      label {
+        color: var(--color-text-secondary);
+        font-weight: 500;
+      }
+
+      strong {
+        color: var(--color-text-primary);
+      }
+
+      .net-highlight {
+        color: var(--color-primary);
+        font-size: 1.35rem;
+        font-weight: 800;
+      }
+    }
+  }
+
+  // Attendance Card Specifics
+  .attendance-card {
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--main-background-color);
+        padding: 0.75rem 0.5rem;
+        border-radius: var(--radius-sm);
+        text-align: center;
+
+        .val {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: var(--color-text-primary);
+          line-height: 1.2;
+
+          &.danger { color: var(--color-danger); }
+          &.warning { color: var(--color-warning); }
+          &.info { color: var(--color-info); }
+        }
+
+        .lbl {
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          color: var(--color-text-tertiary);
+          font-weight: 600;
+          margin-top: 4px;
+        }
+      }
+    }
+  }
+
+  // --- Badges & Pills ---
+  .contract-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.badge-monthly {
+      background: rgba(33, 150, 243, 0.15); // Using fallback for var(--color-info)
+      color: var(--color-info);
+    }
+    &.badge-daily {
+      background: rgba(156, 39, 176, 0.15);
+      color: #9c27b0;
+    }
+    &.badge-hourly {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--color-success);
+    }
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+
+    &.success { background: rgba(76, 175, 80, 0.15); color: var(--color-success); }
+    &.danger { background: rgba(244, 67, 54, 0.15); color: var(--color-danger); }
+    &.warning { background: rgba(255, 152, 0, 0.15); color: var(--color-warning); }
+    &.info { background: rgba(33, 150, 243, 0.15); color: var(--color-info); }
+
+    &.neutral {
+      background: var(--color-surface-secondary);
+      color: var(--color-text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    &.holiday {
+      background: rgba(147, 51, 234, 0.15); // Purple
+      color: #9333ea;
+      border: 1px solid rgba(147, 51, 234, 0.2);
+    }
+
+    &.weekend {
+      background: var(--main-background-color);
+      color: var(--color-text-tertiary);
+      border: 1px dashed var(--border-color-medium);
+    }
+  }
+
+  // --- Financial Grid ---
+  .financial-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+
+    .section-card {
+      background: var(--section-background-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+
+      .section-header {
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+
+        h3 { margin: 0; font-size: 1.1rem; }
+
+        &.success-header {
+          background: linear-gradient(to right, rgba(76, 175, 80, 0.05), transparent);
+          color: var(--color-success-hover);
+          border-bottom: 1px solid var(--border-color-light);
+          svg { color: var(--color-success); }
+        }
+
+        &.danger-header {
+          background: linear-gradient(to right, rgba(244, 67, 54, 0.05), transparent);
+          color: var(--color-danger-hover);
+          border-bottom: 1px solid var(--border-color-light);
+          svg { color: var(--color-danger); }
+        }
+      }
+
+      .breakdown-list {
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+
+        .breakdown-item {
+          display: flex;
+          justify-content: space-between;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid var(--border-color-light);
+          color: var(--color-text-primary);
+          font-size: 0.95rem;
+
+          &:last-child { border-bottom: none; }
+
+          .positive { color: var(--color-success); font-weight: 500; }
+          .negative { color: var(--color-danger); font-weight: 500; }
+
+          &.total {
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 2px solid var(--border-color);
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--color-text-primary);
+          }
+
+          &.empty {
+            color: var(--color-text-tertiary);
+            font-style: italic;
+            justify-content: center;
+            padding: 2rem 0;
+          }
+        }
+      }
+    }
+  }
+
+  // --- Daily Activity Log (Table) ---
+  .section-card.full-width {
+    background: var(--section-background-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+    overflow: hidden;
+
+    .section-header {
+      padding: 1rem 1.5rem;
+      background: var(--main-background-color);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--color-text-primary);
+
+      h3 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+      svg { color: var(--color-text-secondary); }
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+
+      .details-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+
+        thead th {
+          text-align: left;
+          padding: 1rem;
+          background: var(--color-surface-secondary);
+          color: var(--color-text-secondary);
+          font-weight: 600;
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          letter-spacing: 0.05em;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        tbody td {
+          padding: 0.85rem 1rem;
+          border-bottom: 1px solid var(--border-color-light);
+          color: var(--color-text-primary);
+          vertical-align: middle;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        .row-weekend {
+          background-color: var(--color-surface-secondary);
+        }
+
+        .times {
+          font-family: 'Courier New', monospace;
+          color: var(--color-text-primary);
+          background: var(--color-surface-tertiary);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.85rem;
+        }
+
+        .sub-text {
+          display: block;
+          font-size: 0.75rem;
+          color: var(--color-text-tertiary);
+          margin-top: 2px;
+        }
+
+        .text-danger {
+          color: var(--color-danger);
+          font-weight: 600;
+        }
+
+        .ot-tag {
+          display: inline-block;
+          margin-left: 0.5rem;
+          font-size: 0.7rem;
+          padding: 2px 6px;
+          background: rgba(76, 175, 80, 0.1);
+          color: var(--color-success);
+          border-radius: 4px;
+          font-weight: 600;
+        }
+
+        .notes-col {
+          max-width: 250px;
+          color: var(--color-text-tertiary);
+          font-style: italic;
+          font-size: 0.85rem;
+        }
+      }
+    }
+  }
+
+  // --- Final Net Banner ---
+  .final-net-banner {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: var(--color-text-inverse);
+    padding: 1.5rem 2rem;
+    border-radius: var(--radius-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 16px -4px rgba(72, 128, 255, 0.4); // Matching primary blue shadow
+
+    .label {
+      font-size: 1.5rem;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    .amount {
+      font-size: 2.5rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      svg { opacity: 0.7; font-size: 2rem; }
+    }
+  }
+
+  // --- Responsive Design ---
+  @media (max-width: 900px) {
+    .financial-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .attendance-card .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 600px) {
+    padding: 1rem;
+
+    .summary-section {
+      grid-template-columns: 1fr;
+    }
+
+    .final-net-banner {
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: center;
+
+      .amount { font-size: 2rem; }
+    }
+
+    .details-table {
+      font-size: 0.8rem;
+      .times { font-size: 0.75rem; }
+    }
+  }
+
+  // --- Print Styles ---
+  @media print {
+    padding: 0;
+    max-width: 100%;
+
+    .no-print { display: none !important; }
+
+    .info-card, .section-card {
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+      break-inside: avoid;
+    }
+
+    .final-net-banner {
+      background: white !important;
+      color: black !important;
+      border: 2px solid black !important;
+      box-shadow: none !important;
+
+      .amount { color: black !important; }
+    }
+
+    .financial-grid {
+      display: flex; // Force flex to keep side-by-side on paper
+      gap: 1rem;
+    }
+
+    .status-pill {
+      border: 1px solid #ccc;
+      color: black !important;
+      background: white !important;
+    }
+  }
+}

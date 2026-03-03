@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import './PriceApprovalModal.scss';
-import { FiX, FiDollarSign } from 'react-icons/fi';
+import { FiDollarSign } from 'react-icons/fi';
+import { Button, CloseButton } from '../../../../components/common/Button';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
     const [approvedPrice, setApprovedPrice] = useState('');
     const [error, setError] = useState('');
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Scroll lock
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     useEffect(() => {
         if (item) {
@@ -40,17 +56,41 @@ const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
         return '0.00';
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
+    const handlePriceChange = (e) => {
+        setIsFormDirty(true);
+        setApprovedPrice(e.target.value);
+        setError('');
+    };
+
     if (!isOpen || !item) return null;
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        <div className="modal-overlay" onClick={handleCloseAttempt}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="modal-header">
                     <h2>Approve Item Price</h2>
-                    <button className="modal-close" onClick={onClose}>
-                        <FiX size={20} />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 {/* Body */}
@@ -101,10 +141,7 @@ const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
                                     className={`price-input ${error ? 'error' : ''}`}
                                     placeholder="Enter unit price"
                                     value={approvedPrice}
-                                    onChange={(e) => {
-                                        setApprovedPrice(e.target.value);
-                                        setError('');
-                                    }}
+                                    onChange={handlePriceChange}
                                     min="0"
                                     step="0.01"
                                     autoFocus
@@ -149,19 +186,20 @@ const PriceApprovalModal = ({ isOpen, onClose, item, onApprove }) => {
 
                 {/* Footer */}
                 <div className="modal-footer">
-                    <button className="btn btn-secondary" onClick={onClose}>
+                    <Button variant="ghost" onClick={handleCloseAttempt}>
                         Cancel
-                    </button>
-                    <button
-                        className="btn btn-primary"
+                    </Button>
+                    <Button
+                        variant="success"
                         onClick={handleApprove}
                         disabled={!approvedPrice || parseFloat(approvedPrice) <= 0}
                     >
                         Approve Price
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

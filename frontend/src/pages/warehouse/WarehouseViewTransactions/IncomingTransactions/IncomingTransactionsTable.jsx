@@ -4,6 +4,7 @@ import "./AcceptRejectModal.scss";
 import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { transactionService } from '../../../../services/transaction/transactionService.js';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
 import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
@@ -551,15 +552,10 @@ const IncomingTransactionsTable = ({
                                 <h2 className="accept-transaction-modal-title">Accept Transaction</h2>
 
                             </div>
-                            <button
-                                className="btn-close"
+                            <CloseButton
                                 onClick={() => setIsAcceptModalOpen(false)}
                                 disabled={processingAction}
-                            >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M18 6L6 18M6 6l12 12" />
-                                </svg>
-                            </button>
+                            />
                         </div>
 
                         {/* Content */}
@@ -804,41 +800,26 @@ const IncomingTransactionsTable = ({
 
                         {/* Footer */}
                         <div className="accept-transaction-modal-footer">
-                            <button
+                            <Button
                                 type="button"
-                                className="btn-cancel"
+                                variant="ghost"
                                 onClick={() => setIsAcceptModalOpen(false)}
                                 disabled={processingAction}
                             >
                                 Cancel
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 type="button"
-                                className="btn-primary"
+                                variant="success"
                                 onClick={handleAcceptTransaction}
-                                // disabled={processingAction || selectedTransaction.items?.some((_, index) => {
-                                //     if (itemsNotReceived[index]) return false;
-                                //     return receivedQuantities[index] === undefined ||
-                                //         receivedQuantities[index] === "" ||
-                                //         parseInt(receivedQuantities[index]) < 0;
-                                // })}
+                                loading={processingAction}
+                                loadingText="Processing..."
                             >
-                                {processingAction ? (
-                                    <>
-                                        <svg className="accept-transaction-loading-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                                        </svg>
-                                        Processing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Accept Transaction
-                                    </>
-                                )}
-                            </button>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M5 13l4 4L19 7" />
+                                </svg>
+                                Accept Transaction
+                            </Button>
                         </div>
                     </div>
                 </div>

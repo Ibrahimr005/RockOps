@@ -39,6 +39,7 @@ public class PromotionRequestMapperService {
                 
                 // Employee information
                 .employeeId(request.getEmployee() != null ? request.getEmployee().getId() : null)
+                .employeeNumber(request.getEmployee() != null ? request.getEmployee().getEmployeeNumber() : null)
                 .employeeName(request.getEmployeeName())
                 .employeePhotoUrl(request.getEmployee() != null ? request.getEmployee().getPhotoUrl() : null)
                 
@@ -101,6 +102,7 @@ public class PromotionRequestMapperService {
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
+
 
     /**
      * Convert Employee to promotion summary DTO

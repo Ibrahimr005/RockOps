@@ -8,6 +8,7 @@ import { useEquipmentPermissions } from '../../../utils/rbac';
 import { documentService } from '../../../services/documentService';
 import { getMonthLabel } from '../../../constants/documentTypes';
 import SarkyDocumentModal from './SarkyDocumentModal';
+import { Button } from '../../../components/common/Button';
 import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentSarkyMatrix.scss';
 import '../../../styles/form-validation.scss';
@@ -1424,14 +1425,17 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                 </span>
                             )}
                         </div>
-                        <button
+                        <Button
+                            variant="primary"
                             className={`btn-save ${hasValidationErrors() ? 'has-validation-errors' : ''}`}
                             onClick={handleSaveAll}
-                            disabled={!hasChanges || saving || !permissions.canEdit || hasValidationErrors()}
+                            disabled={!hasChanges || !permissions.canEdit || hasValidationErrors()}
                             title={hasValidationErrors() ? 'Please select drivers for all entries before saving' : ''}
+                            loading={saving}
+                            loadingText="Saving..."
                         >
-                            {saving ? 'Saving...' : 'Save All Changes (Ctrl+S)'}
-                        </button>
+                            Save All Changes (Ctrl+S)
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -1761,17 +1765,17 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                         )}
 
                         <div className="modal-actions">
-                            <button onClick={handleCloseWorkTypeModal}>Cancel</button>
-                            <button 
-                                onClick={handleAddWorkType} 
-                                className="btn-primary"
+                            <Button variant="ghost" onClick={handleCloseWorkTypeModal}>Cancel</Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleAddWorkType}
                                 disabled={
                                     (workTypeSelectionMode === 'existing' && !selectedExistingWorkType) ||
                                     (workTypeSelectionMode === 'new' && !newWorkTypeName.trim())
                                 }
                             >
                                 {workTypeSelectionMode === 'existing' ? 'Link Work Type' : 'Create Work Type'}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

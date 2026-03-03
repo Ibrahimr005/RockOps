@@ -241,55 +241,6 @@
     }
   }
 
-  .modal-footer {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 16px 24px;
-    border-top: 1px solid var(--border-color);
-
-
-    .back-btn, .next-btn, .save-btn {
-      padding: 10px 20px;
-      border-radius: var(--radius-sm);
-      font-weight: 500;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      font-size: 0.95rem;
-    }
-
-    .back-btn {
-      background-color: transparent;
-      border: 1px solid var(--border-color);
-      color: var(--color-text-secondary);
-
-      &:hover {
-        background-color: var(--color-surface);
-      }
-    }
-
-    .next-btn {
-      background-color: var(--color-primary-light);
-      border: none;
-      color: var(--color-text-inverse);
-      margin-left: auto;
-
-      &:hover {
-        background-color: var(--color-primary);
-      }
-    }
-
-    .save-btn {
-      background-color: var(--color-primary);
-      border: none;
-      color: var(--color-text-inverse);
-      margin-left: auto;
-
-      &:hover {
-        background-color: var(--color-primary-dark);
-      }
-    }
-  }
 }
 
 /* Responsive adjustments */
@@ -312,15 +263,6 @@
       }
     }
 
-    .modal-footer {
-      padding: 12px;
-      flex-wrap: wrap;
 
-      .back-btn, .next-btn, .save-btn {
-        flex: 1;
-        padding: 12px;
-        text-align: center;
-      }
-    }
   }
 }

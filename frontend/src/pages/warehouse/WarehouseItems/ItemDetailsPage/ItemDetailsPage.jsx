@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import IntroCard from '../../../../components/common/IntroCard/IntroCard';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import { Button } from '../../../../components/common/Button';
 import { itemService } from '../../../../services/warehouse/itemService';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
-import { FiArrowLeft, FiPackage } from 'react-icons/fi';
+import { FiPackage } from 'react-icons/fi';
 import './ItemDetailsPage.scss';
 
 const ItemDetailsPage = ({ showSnackbar }) => {
@@ -231,9 +232,9 @@ const ItemDetailsPage = ({ showSnackbar }) => {
             <div className="item-details-page">
                 <div className="error-state">
                     <p>Item not found</p>
-                    <button className="btn-primary" onClick={() => navigate(-1)}>
+                    <Button variant="primary" onClick={() => navigate(-1)}>
                         Go Back
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

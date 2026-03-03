@@ -6,6 +6,7 @@ import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import { siteService } from "../../../../services/siteService";
 import {FaPlus} from "react-icons/fa";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
+import { Button, CloseButton } from '../../../../components/common/Button';
 
 const SiteFixedAssetsTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -223,12 +224,7 @@ const SiteFixedAssetsTab = ({siteId}) => {
                     <div className="assign-fixed-asset-modal-content">
                         <div className="assign-fixed-asset-modal-header">
                             <h2>{t('site.assignFixedAsset')}</h2>
-                            <button
-                                className="assign-fixed-asset-modal-close-button"
-                                onClick={handleCloseModal}
-                            >
-                                ×
-                            </button>
+                            <CloseButton onClick={handleCloseModal} />
                         </div>
 
                         <div className="assign-fixed-asset-modal-body">
@@ -262,12 +258,13 @@ const SiteFixedAssetsTab = ({siteId}) => {
                                                     {ep.status || 'N/A'}
                                                 </td>
                                                 <td>
-                                                    <button
-                                                        className="assign-fixed-asset-btn"
+                                                    <Button
+                                                        variant="primary"
+                                                        size="sm"
                                                         onClick={() => handleAssignFixedAsset(ep.id)}
                                                     >
                                                         {t('site.assign')}
-                                                    </button>
+                                                    </Button>
                                                 </td>
                                             </tr>
                                         ))}

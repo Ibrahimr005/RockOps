@@ -1,8 +1,20 @@
-import React from 'react';
-import { FiX, FiDownload } from 'react-icons/fi';
+import React, { useEffect } from 'react';
+import { FiDownload } from 'react-icons/fi';
+import { CloseButton } from '../../../../../components/common/Button';
 import './LanguageSelectionModal.scss';
 
 const LanguageSelectionModal = ({ isVisible, onClose, onSelectLanguage, title }) => {
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
+
     if (!isVisible) return null;
 
     const handleLanguageSelect = (language) => {
@@ -17,9 +29,7 @@ const LanguageSelectionModal = ({ isVisible, onClose, onSelectLanguage, title })
                     <h3 className="modal-title">
                         <FiDownload /> {title || 'Select Language'}
                     </h3>
-                    <button className="btn-close" onClick={onClose}>
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiX, FiPlus, FiCheck, FiTrash2, FiPackage } from 'react-icons/fi';
 import './ModifyRequestItemsModal.scss';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { Button, CloseButton, IconButton } from '../../../../../components/common/Button';
 import { offerRequestItemService } from '../../../../../services/procurement/offerRequestItemService.js';
 import { itemCategoryService } from '../../../../../services/warehouse/itemCategoryService.js';
 
@@ -13,6 +14,17 @@ const ModifyRequestItemsModal = ({
                                      itemTypes,
                                      onShowSnackbar
                                  }) => {
+    // Scroll lock
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
     const [requestItems, setRequestItems] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [editingItemId, setEditingItemId] = useState(null);
@@ -327,9 +339,7 @@ const ModifyRequestItemsModal = ({
                         <FiPackage />
                         Modify Request Items
                     </h2>
-                    <button className="btn-close" onClick={handleClose}>
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={handleClose} />
                 </div>
 
                 <div className="modal-body">
@@ -429,23 +439,24 @@ const ModifyRequestItemsModal = ({
                                 </div>
 
                                 <div className="form-actions">
-                                    <button
-                                        type="button"
-                                        className="btn-cancel"
+                                    <Button
+                                        variant="ghost"
                                         onClick={() => {
                                             setShowAddForm(false);
                                             setAddFormData({ itemTypeId: '', quantity: '', parentCategoryId: '', childCategoryId: '' });
                                         }}
                                     >
                                         Cancel
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         type="submit"
-                                        className="btn-save"
+                                        variant="primary"
                                         disabled={isLoading}
+                                        loading={isLoading}
+                                        loadingText="Adding..."
                                     >
-                                        <FiCheck /> {isLoading ? 'Adding...' : 'Add'}
-                                    </button>
+                                        <FiCheck /> Add
+                                    </Button>
                                 </div>
                             </form>
                         )}
@@ -494,41 +505,41 @@ const ModifyRequestItemsModal = ({
                                         <div className="item-actions">
                                             {editingItemId === item.id ? (
                                                 <>
-                                                    <button
-                                                        className="btn-icon save"
+                                                    <IconButton
+                                                        variant="success"
+                                                        size="sm"
+                                                        icon={<FiCheck />}
                                                         onClick={() => handleSaveEdit(item)}
                                                         title="Save"
                                                         disabled={isLoading}
-                                                    >
-                                                        <FiCheck />
-                                                    </button>
-                                                    <button
-                                                        className="btn-icon cancel"
+                                                    />
+                                                    <IconButton
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        icon={<FiX />}
                                                         onClick={handleCancelEdit}
                                                         title="Cancel"
-                                                    >
-                                                        <FiX />
-                                                    </button>
+                                                    />
                                                 </>
                                             ) : (
                                                 <>
-                                                    <button
-                                                        className="btn-icon edit"
-                                                        onClick={() => handleEditClick(item)}
-                                                        title="Edit"
-                                                    >
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <IconButton
+                                                        variant="primary"
+                                                        size="sm"
+                                                        icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                                                             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                                        </svg>
-                                                    </button>
-                                                    <button
-                                                        className="btn-icon delete"
+                                                        </svg>}
+                                                        onClick={() => handleEditClick(item)}
+                                                        title="Edit"
+                                                    />
+                                                    <IconButton
+                                                        variant="danger"
+                                                        size="sm"
+                                                        icon={<FiTrash2 />}
                                                         onClick={() => handleDeleteClick(item)}
                                                         title="Delete"
-                                                    >
-                                                        <FiTrash2 />
-                                                    </button>
+                                                    />
                                                 </>
                                             )}
                                         </div>
@@ -540,9 +551,9 @@ const ModifyRequestItemsModal = ({
                 </div>
 
                 <div className="modal-footer">
-                    <button className="modal-btn-secondary" onClick={handleClose}>
+                    <Button variant="ghost" onClick={handleClose}>
                         Close
-                    </button>
+                    </Button>
                 </div>
             </div>
 

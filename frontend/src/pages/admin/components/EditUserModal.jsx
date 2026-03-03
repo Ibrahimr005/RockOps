@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaTimes } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import './EditUserModal.css';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 import { ROLES } from '../../../utils/roles.js'
 
@@ -19,6 +20,8 @@ const EditUserModal = ({ user, mode = 'edit', onCancel, onSave }) => {
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     // Initialize form data when the component mounts or user changes
     useEffect(() => {
@@ -50,6 +53,7 @@ const EditUserModal = ({ user, mode = 'edit', onCancel, onSave }) => {
     }, []);
 
     const handleFormChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
 
         // Convert username to lowercase automatically
@@ -152,18 +156,25 @@ const EditUserModal = ({ user, mode = 'edit', onCancel, onSave }) => {
     const handleOverlayClick = (e) => {
         // Only close if clicking on the overlay itself, not on the modal content
         if (e.target === e.currentTarget) {
+            handleCloseAttempt();
+        }
+    };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
             onCancel();
         }
     };
 
     return (
+        <>
         <div className="modal-overlay" onClick={handleOverlayClick}>
             <div className="modal-content">
                 <div className="modal-header">
                     <h2>{mode === 'edit' ? t('admin.editUser') : t('admin.addUser')}</h2>
-                    <button className="btn-close" onClick={onCancel} disabled={isSubmitting}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} disabled={isSubmitting} />
                 </div>
 
                 <form onSubmit={handleSubmit} className="edit-form">
@@ -259,28 +270,38 @@ const EditUserModal = ({ user, mode = 'edit', onCancel, onSave }) => {
                     </div>
 
                     <div className="form-actions">
-                        <button
-                            type="button"
-                            className="cancel-button"
-                            onClick={onCancel}
+                        <Button
+                            variant="ghost"
+                            onClick={handleCloseAttempt}
                             disabled={isSubmitting}
                         >
                             {t('common.cancel')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="primary"
                             type="submit"
-                            className="save-button"
-                            disabled={isSubmitting}
+                            loading={isSubmitting}
+                            loadingText={t('common.saving', 'Saving...')}
                         >
-                            {isSubmitting ?
-                                t('common.saving', 'Saving...') :
-                                (mode === 'edit' ? t('common.save') : t('admin.addUser'))
-                            }
-                        </button>
+                            {mode === 'edit' ? t('common.save') : t('admin.addUser')}
+                        </Button>
                     </div>
                 </form>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onCancel(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

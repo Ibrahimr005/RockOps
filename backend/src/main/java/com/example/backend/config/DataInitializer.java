@@ -12,6 +12,7 @@ import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.equipment.EquipmentTypeRepository;
 import com.example.backend.repositories.user.UserRepository;
 import com.example.backend.repositories.StepTypeRepository;
+import com.example.backend.services.payroll.DeductionTypeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -36,6 +37,7 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
     private final StepTypeRepository stepTypeRepository;
+    private final DeductionTypeService deductionTypeService;
 
     @Override
     @Transactional
@@ -46,6 +48,7 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
         createBasicDriverPosition();
         createJobPositionsForExistingEquipmentTypes(); // Re-enable this for existing equipment types
         createDefaultStepTypes(); // Initialize default step types
+        initializeDeductionTypes(); // Initialize system deduction types for payroll
 
         log.info("Application data initialization completed successfully.");
     }
@@ -279,6 +282,18 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
             log.info("Created default TRANSPORT step type");
         } else {
             log.debug("TRANSPORT step type already exists");
+        }
+    }
+
+    /**
+     * Initialize system deduction types for payroll
+     */
+    private void initializeDeductionTypes() {
+        log.info("Initializing system deduction types...");
+        try {
+            deductionTypeService.initializeSystemDeductionTypes();
+        } catch (Exception e) {
+            log.error("Failed to initialize system deduction types: {}", e.getMessage());
         }
     }
 }

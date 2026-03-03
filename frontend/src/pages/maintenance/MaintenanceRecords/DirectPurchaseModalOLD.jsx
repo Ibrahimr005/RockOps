@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave, FaShoppingCart } from 'react-icons/fa';
+import { FaSave, FaShoppingCart } from 'react-icons/fa';
 import { equipmentService } from '../../../services/equipmentService.js';
 import { siteService } from '../../../services/siteService.js';
 import { merchantService } from '../../../services/merchant/merchantService';
 import maintenanceService from '../../../services/maintenanceService';
 import { authService } from '../../../services/authService.js';
+import { Button, CloseButton } from '../../../components/common/Button';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
 import '../../../styles/cancel-modal-button.scss';
@@ -229,9 +230,7 @@ const DirectPurchaseModalOLD = ({ isOpen, onClose, onSubmit }) => {
                         <FaShoppingCart />
                         New Direct Purchase Ticket
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
                 <div className="modal-body">
                     <form onSubmit={handleSubmit} className="direct-purchase-form" id="direct-purchase-form">
@@ -420,13 +419,13 @@ const DirectPurchaseModalOLD = ({ isOpen, onClose, onSubmit }) => {
                     </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose}>
+                    <Button variant="ghost" onClick={onClose}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" form="direct-purchase-form">
+                    </Button>
+                    <Button variant="primary" type="submit" form="direct-purchase-form">
                         <FaSave />
                         Create Ticket
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

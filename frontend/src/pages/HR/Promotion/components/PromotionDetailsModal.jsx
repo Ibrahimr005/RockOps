@@ -1,13 +1,24 @@
 // src/pages/HR/Promotion/components/PromotionDetailsModal.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     User, Building, DollarSign, Calendar, MessageSquare,
     Clock, CheckCircle, XCircle, FileText, TrendingUp,
     AlertTriangle, Star, Award
 } from 'lucide-react';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './PromotionDetailsModal.scss'
 
 const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
 
     const formatCurrency = (amount) => {
         if (!amount) return 'N/A';
@@ -125,14 +136,7 @@ const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
                             Complete details for promotion request #{promotion.id}
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        className="modal-close"
-                        onClick={onClose}
-                        aria-label="Close modal"
-                    >
-                        ×
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <div className="modal-body">
@@ -561,14 +565,13 @@ const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button
-                        type="button"
+                    <Button
+                        variant="primary"
                         onClick={onClose}
-                        className="btn-primary"
                     >
                         <FileText size={18} />
                         Close
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

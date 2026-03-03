@@ -1,269 +1,239 @@
 import React, { useState, useEffect } from 'react';
-import { payslipService } from '../../../../services/payroll/payslipService.js';
+import { FaMoneyBillWave, FaCalendarAlt, FaMinus, FaPlus } from 'react-icons/fa';
+import payrollService from '../../../../services/payroll/payrollService.js';
+import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
-import { FaDownload, FaEnvelope, FaEye } from 'react-icons/fa';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
+import ContentLoader from '../../../../components/common/ContentLoader/ContentLoader.jsx';
 
 const PayslipsTab = ({ employee, formatCurrency }) => {
-    const [payslips, setPayslips] = useState([]);
+    const { showError } = useSnackbar();
+    const [payrolls, setPayrolls] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [downloading, setDownloading] = useState({});
 
     useEffect(() => {
         if (employee?.id) {
-            fetchEmployeePayslips();
+            fetchPayrollHistory();
         }
     }, [employee?.id]);
 
-    const fetchEmployeePayslips = async () => {
+    const fetchPayrollHistory = async () => {
         try {
             setLoading(true);
-            setError(null);
-
-            // Fetch payslips for the specific employee
-            const response = await payslipService.getPayslipsByEmployee(employee.id, 0, 50);
-
-            console.log('Payslips response:', response);
-
-            // Handle both paginated and direct array responses
-            const payslipsData = response.data?.content || response.data || [];
-            setPayslips(payslipsData);
-
+            const data = await payrollService.getEmployeePayrollHistory(employee.id);
+            setPayrolls(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error('Error fetching payslips:', error);
-            setError(error.response?.data?.message || 'Failed to fetch payslips');
+            console.error('Error fetching payroll history:', error);
+            showError('Failed to load payroll history');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleDownloadPayslip = async (payslipId) => {
-        try {
-            setDownloading(prev => ({ ...prev, [payslipId]: true }));
-
-            // Download the payslip PDF
-            const response = await payslipService.downloadPayslipPdf(payslipId);
-
-            // Create blob and download
-            const blob = new Blob([response.data], { type: 'application/pdf' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `payslip_${payslipId}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-
-        } catch (error) {
-            console.error('Error downloading payslip:', error);
-            alert('Failed to download payslip. Please try again.');
-        } finally {
-            setDownloading(prev => ({ ...prev, [payslipId]: false }));
+    const formatPeriod = (row) => {
+        if (row.payrollStartDate && row.payrollEndDate) {
+            const start = new Date(row.payrollStartDate);
+            const end = new Date(row.payrollEndDate);
+            return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
         }
+        if (row.calculatedAt) {
+            return new Date(row.calculatedAt).toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+        return row.employeePayrollNumber || '-';
     };
 
-    const handleSendEmail = async (payslipId) => {
-        try {
-            await payslipService.sendPayslipEmail(payslipId);
-            alert('Payslip sent via email successfully');
-            // Refresh payslips to update status
-            await fetchEmployeePayslips();
-        } catch (error) {
-            console.error('Error sending payslip email:', error);
-            alert('Failed to send payslip via email. Please try again.');
-        }
+    const getPayrollStatusBadge = (status) => {
+        const config = {
+            DRAFT: 'pending',
+            ATTENDANCE_IMPORTED: 'pending',
+            DEDUCTIONS_REVIEWED: 'pending',
+            OVERTIME_REVIEWED: 'pending',
+            BONUSES_REVIEWED: 'pending',
+            LEAVES_REVIEWED: 'pending',
+            CALCULATED: 'active',
+            SENT_TO_FINANCE: 'active',
+            FINANCE_APPROVED: 'completed',
+            FINANCE_REJECTED: 'cancelled',
+            COMPLETED: 'completed'
+        };
+        const badgeClass = config[status] || 'default';
+        const displayText = status?.replace(/_/g, ' ') || '-';
+        return <span className={`status-badge ${badgeClass}`}>{displayText}</span>;
     };
 
-    const handleViewPayslip = async (payslipId) => {
-        try {
-            // For now, just download and view. Later this could open in a modal
-            await handleDownloadPayslip(payslipId);
-        } catch (error) {
-            console.error('Error viewing payslip:', error);
-        }
-    };
+    // Summary calculations
+    const totalGross = payrolls.reduce((sum, p) => sum + (p.grossPay || 0), 0);
+    const totalNet = payrolls.reduce((sum, p) => sum + (p.netPay || 0), 0);
+    const totalDeductions = payrolls.reduce((sum, p) => sum + (p.totalDeductions || 0), 0);
+    const avgNet = payrolls.length > 0 ? totalNet / payrolls.length : 0;
 
-    const formatPeriod = (payslip) => {
-        if (payslip.payPeriodStart && payslip.payPeriodEnd) {
-            const startDate = new Date(payslip.payPeriodStart);
-            const endDate = new Date(payslip.payPeriodEnd);
-
-            // If same month, show month year format
-            if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
-                return startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            }
-
-            // Otherwise show date range
-            return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-        }
-
-        // Fallback to pay date if period not available
-        if (payslip.payDate) {
-            const payDate = new Date(payslip.payDate);
-            return payDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        }
-
-        return 'Unknown Period';
-    };
-
-    const getStatusBadge = (status) => {
-        const statusLower = status?.toLowerCase() || 'unknown';
-        let className = 'status-badge ';
-
-        switch (statusLower) {
-            case 'paid':
-            case 'completed':
-                className += 'completed';
-                break;
-            case 'pending':
-            case 'processing':
-                className += 'pending';
-                break;
-            case 'draft':
-                className += 'draft';
-                break;
-            case 'sent':
-                className += 'sent';
-                break;
-            case 'acknowledged':
-                className += 'acknowledged';
-                break;
-            default:
-                className += 'unknown';
-        }
-
-        return <span className={className}>{status || 'Unknown'}</span>;
-    };
-
-    const calculateNetPay = (payslip) => {
-        const grossPay = payslip.grossPay || 0;
-        const totalDeductions = payslip.totalDeductions || 0;
-        return grossPay - totalDeductions;
-    };
-
-    // Define columns for DataTable
     const columns = [
         {
-            id: 'period',
-            header: 'Pay Period',
-            accessor: 'period',
+            header: 'Payroll #',
+            accessor: 'employeePayrollNumber',
             sortable: true,
-            filterable: true,
+            width: '150px'
+        },
+        {
+            header: 'Period',
+            accessor: 'payrollStartDate',
+            sortable: true,
             render: (row) => formatPeriod(row)
         },
         {
-            id: 'grossPay',
+            header: 'Contract',
+            accessor: 'contractType',
+            sortable: true,
+            filterable: true,
+            filterType: 'select',
+            render: (row) => row.contractType || '-'
+        },
+        {
+            header: 'Base Salary',
+            accessor: 'monthlyBaseSalary',
+            sortable: true,
+            render: (row) => {
+                if (row.contractType === 'HOURLY') return formatCurrency(row.hourlyRate) + '/hr';
+                if (row.contractType === 'DAILY') return formatCurrency(row.dailyRate) + '/day';
+                return formatCurrency(row.monthlyBaseSalary);
+            }
+        },
+        {
+            header: 'Days/Hours',
+            accessor: 'attendedDays',
+            sortable: true,
+            render: (row) => {
+                if (row.contractType === 'HOURLY') return `${row.totalWorkedHours || 0} hrs`;
+                return `${row.attendedDays || 0} / ${row.totalWorkingDays || 0} days`;
+            }
+        },
+        {
             header: 'Gross Pay',
             accessor: 'grossPay',
             sortable: true,
-            filterable: true,
-            render: (row) => formatCurrency(row.grossPay)
+            render: (row) => (
+                <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>
+                    {formatCurrency(row.grossPay)}
+                </span>
+            )
         },
         {
-            id: 'totalDeductions',
             header: 'Deductions',
             accessor: 'totalDeductions',
             sortable: true,
-            filterable: true,
-            render: (row) => formatCurrency(row.totalDeductions)
+            render: (row) => {
+                const parts = [];
+                if (row.absenceDeductionAmount > 0) parts.push(`Absence: ${formatCurrency(row.absenceDeductionAmount)}`);
+                if (row.lateDeductionAmount > 0) parts.push(`Late: ${formatCurrency(row.lateDeductionAmount)}`);
+                if (row.loanDeductionAmount > 0) parts.push(`Loan: ${formatCurrency(row.loanDeductionAmount)}`);
+                if (row.otherDeductionAmount > 0) parts.push(`Other: ${formatCurrency(row.otherDeductionAmount)}`);
+
+                return (
+                    <div>
+                        <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>
+                            {formatCurrency(row.totalDeductions)}
+                        </span>
+                        {parts.length > 0 && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                                {parts.join(' | ')}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
         },
         {
-            id: 'netPay',
+            header: 'Bonus',
+            accessor: 'bonusAmount',
+            sortable: true,
+            render: (row) => row.bonusAmount > 0
+                ? <span style={{ color: 'var(--color-success)' }}>{formatCurrency(row.bonusAmount)}</span>
+                : '-'
+        },
+        {
+            header: 'Overtime',
+            accessor: 'overtimePay',
+            sortable: true,
+            render: (row) => row.overtimePay > 0
+                ? <span>{formatCurrency(row.overtimePay)} ({row.overtimeHours}h)</span>
+                : '-'
+        },
+        {
             header: 'Net Pay',
             accessor: 'netPay',
             sortable: true,
-            filterable: true,
-            render: (row) => formatCurrency(calculateNetPay(row))
+            render: (row) => (
+                <span style={{ fontWeight: 700, fontSize: '1rem' }}>
+                    {formatCurrency(row.netPay)}
+                </span>
+            )
         },
         {
-            id: 'status',
             header: 'Status',
-            accessor: 'status',
+            accessor: 'payrollStatus',
             sortable: true,
             filterable: true,
-            render: (row) => getStatusBadge(row.status)
-        },
-        {
-            id: 'payDate',
-            header: 'Pay Date',
-            accessor: 'payDate',
-            sortable: true,
-            filterable: true,
-            render: (row) => row.payDate ? new Date(row.payDate).toLocaleDateString('en-US') : 'N/A'
-        }
-    ];
-
-    // Define actions for DataTable
-    const actions = [
-        {
-            id: 'view',
-            label: 'View Payslip',
-            icon: <FaEye />,
-            onClick: (row) => handleViewPayslip(row.id),
-            isDisabled: (row) => row.status?.toLowerCase() === 'draft'
-        },
-        {
-            id: 'download',
-            label: 'Download PDF',
-            icon: <FaDownload />,
-            onClick: (row) => handleDownloadPayslip(row.id),
-            isDisabled: (row) => downloading[row.id] || row.status?.toLowerCase() === 'draft'
-        },
-        {
-            id: 'email',
-            label: 'Send Email',
-            icon: <FaEnvelope />,
-            onClick: (row) => handleSendEmail(row.id),
-            isDisabled: (row) => row.status?.toLowerCase() === 'sent' || row.status?.toLowerCase() === 'draft'
+            filterType: 'select',
+            render: (row) => row.payrollStatus ? getPayrollStatusBadge(row.payrollStatus) : '-'
         }
     ];
 
     if (loading) {
         return (
             <div className="payslips-info tab-panel">
-                {/*<h3>Payslips & Salary History</h3>*/}
-                <div className="loading-message">
-                    <p>Loading payslips...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="payslips-info tab-panel">
-                <h3>Payslips & Salary History</h3>
-                <div className="error-message">
-                    <p>Error: {error}</p>
-                    <button onClick={fetchEmployeePayslips} className="retry-btn">
-                        Try Again
-                    </button>
-                </div>
+                <ContentLoader text="Loading payroll history..." />
             </div>
         );
     }
 
     return (
         <div className="payslips-info tab-panel">
-            <h3>Payslips & Salary History</h3>
+            <StatisticsCards
+                cards={[
+                    {
+                        icon: <FaMoneyBillWave />,
+                        label: 'Total Gross',
+                        value: formatCurrency(totalGross),
+                        variant: 'success',
+                        subtitle: `${payrolls.length} payroll${payrolls.length !== 1 ? 's' : ''}`
+                    },
+                    {
+                        icon: <FaMinus />,
+                        label: 'Total Deductions',
+                        value: formatCurrency(totalDeductions),
+                        variant: 'danger',
+                        subtitle: 'Lifetime deductions'
+                    },
+                    {
+                        icon: <FaPlus />,
+                        label: 'Total Net',
+                        value: formatCurrency(totalNet),
+                        variant: 'primary',
+                        subtitle: 'Total received'
+                    },
+                    {
+                        icon: <FaCalendarAlt />,
+                        label: 'Avg Net Pay',
+                        value: formatCurrency(avgNet),
+                        variant: 'info',
+                        subtitle: 'Per payroll cycle'
+                    }
+                ]}
+                columns={4}
+            />
 
             <DataTable
-                data={payslips}
+                data={payrolls}
                 columns={columns}
-                actions={actions}
-                tableTitle=""
-                showSearch={true}
-                showFilters={true}
-                showExport={true}
-                exportFileName={`${employee.firstName}_${employee.lastName}_Payslips`}
-                defaultItemsPerPage={10}
-                itemsPerPageOptions={[5, 10, 25, 50]}
-                defaultSortField="payDate"
+                isLoading={loading}
+                emptyMessage="No payroll records found for this employee"
+                searchPlaceholder="Search payroll records..."
+                defaultSortField="payrollStartDate"
                 defaultSortDirection="desc"
-                emptyStateMessage="No payslips found for this employee"
-                noResultsMessage="No payslips match your search criteria"
-                className="payslips-table"
+                exportFileName={`${employee.firstName}_${employee.lastName}_Payrolls`}
             />
         </div>
     );

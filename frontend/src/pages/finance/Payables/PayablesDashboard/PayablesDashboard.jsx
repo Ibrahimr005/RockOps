@@ -9,6 +9,7 @@ import {
     FaEye
 } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
+import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 import './PayablesDashboard.css';
@@ -323,36 +324,35 @@ const PayablesDashboard = () => {
             </div>
 
             {/* Summary Statistics */}
-            <div className="payables-stats">
-                <div className="payables-stat-card">
-                    <FaFileInvoiceDollar className="payables-stat-icon" />
-                    <h3 className="payables-stat-value">
-                        ${dashboardData.summary.totalOutstanding.toLocaleString()}
-                    </h3>
-                    <p className="payables-stat-label">Total Outstanding</p>
-                </div>
-                <div className="payables-stat-card">
-                    <FaExclamationTriangle className="payables-stat-icon" />
-                    <h3 className="payables-stat-value">
-                        {dashboardData.summary.overdueInvoices}
-                    </h3>
-                    <p className="payables-stat-label">Overdue Invoices</p>
-                </div>
-                <div className="payables-stat-card">
-                    <FaClock className="payables-stat-icon" />
-                    <h3 className="payables-stat-value">
-                        {dashboardData.summary.dueThisWeek}
-                    </h3>
-                    <p className="payables-stat-label">Due This Week</p>
-                </div>
-                <div className="payables-stat-card">
-                    <FaMoneyBillWave className="payables-stat-icon" />
-                    <h3 className="payables-stat-value">
-                        ${dashboardData.summary.totalPaidThisMonth.toLocaleString()}
-                    </h3>
-                    <p className="payables-stat-label">Paid This Month</p>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    {
+                        icon: <FaFileInvoiceDollar />,
+                        label: "Total Outstanding",
+                        value: `$${dashboardData.summary.totalOutstanding.toLocaleString()}`,
+                        variant: "primary"
+                    },
+                    {
+                        icon: <FaExclamationTriangle />,
+                        label: "Overdue Invoices",
+                        value: dashboardData.summary.overdueInvoices,
+                        variant: "danger"
+                    },
+                    {
+                        icon: <FaClock />,
+                        label: "Due This Week",
+                        value: dashboardData.summary.dueThisWeek,
+                        variant: "warning"
+                    },
+                    {
+                        icon: <FaMoneyBillWave />,
+                        label: "Paid This Month",
+                        value: `$${dashboardData.summary.totalPaidThisMonth.toLocaleString()}`,
+                        variant: "success"
+                    }
+                ]}
+                columns={4}
+            />
 
             {/* Aging Summary */}
             <div className="payables-card">

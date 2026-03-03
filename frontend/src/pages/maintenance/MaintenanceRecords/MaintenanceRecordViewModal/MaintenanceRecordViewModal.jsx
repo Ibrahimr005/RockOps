@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaEye, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaInfoCircle, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaEye, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaInfoCircle, FaExternalLinkAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import maintenanceService from '../../../../services/maintenanceService.js';
 import directPurchaseService from '../../../../services/directPurchaseService.js';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import '../../../../styles/modal-styles.scss';
 import '../../../../styles/cancel-modal-button.scss';
 import './MaintenanceRecordViewModal.scss';
@@ -127,7 +128,7 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId, ticketType }) =
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
                 {/* Header */}
                 <div className="modal-header">
@@ -141,10 +142,7 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId, ticketType }) =
                         )}
                     </div>
                     <div className="header-actions">
-
-                        <button className="btn-close" onClick={onClose}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={onClose} />
                     </div>
                 </div>
 
@@ -158,9 +156,9 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId, ticketType }) =
                     ) : error ? (
                         <div className="error-state">
                             <p className="error-message">{error}</p>
-                            <button onClick={loadMaintenanceRecord} className="btn-retry">
+                            <Button variant="primary" onClick={loadMaintenanceRecord}>
                                 Try Again
-                            </button>
+                            </Button>
                         </div>
                     ) : maintenanceRecord ? (
                         <div className="content-grid">
@@ -307,13 +305,13 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId, ticketType }) =
 
                 {/* Footer */}
                 <div className="modal-footer">
-                    <button className="btn-cancel" onClick={onClose}>
+                    <Button variant="ghost" onClick={onClose}>
                         Close
-                    </button>
-                    <button className="btn-primary" onClick={handleViewFullDetails}>
+                    </Button>
+                    <Button variant="primary" onClick={handleViewFullDetails}>
                         <FaExternalLinkAlt />
                         View Full Details & Steps
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

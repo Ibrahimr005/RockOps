@@ -29,6 +29,9 @@ public class Employee
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(name = "employee_number", unique = true, length = 20)
+    private String employeeNumber;
+
     @Column(nullable = false)
     private String firstName;
 
@@ -81,6 +84,23 @@ public class Employee
     private BigDecimal baseSalaryOverride;
     private BigDecimal salaryMultiplier;
 
+    // Payment details - how this employee receives salary
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "payment_type_id")
+    private com.example.backend.models.payroll.PaymentType paymentType;
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
+    @Column(name = "bank_account_number", length = 50)
+    private String bankAccountNumber;
+
+    @Column(name = "bank_account_holder_name", length = 200)
+    private String bankAccountHolderName;
+
+    @Column(name = "wallet_number", length = 50)
+    private String walletNumber;
+
     // Relationships
     @ManyToOne
     @JoinColumn(name = "site_id", referencedColumnName = "id")
@@ -99,12 +119,14 @@ public class Employee
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonBackReference
-    private List<Attendance> attendances;
+    @Builder.Default
+    private List<Attendance> attendances = new ArrayList<>();
 
     // NEW: Loan relationship
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonBackReference("employee-loans")
-    private List<Loan> loans;
+    @Builder.Default
+    private List<Loan> loans = new ArrayList<>();
 
     // Helper methods
     public String getFullName() {
@@ -137,6 +159,7 @@ public class Employee
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference("employee-vacation-balance")
+    @Builder.Default
     private List<VacationBalance> vacationBalances = new ArrayList<>();
 
 
@@ -247,120 +270,8 @@ public class Employee
      * Get total outstanding loan balance for this employee
      * @return Total outstanding balance across all active and pending loans
      */
-    public BigDecimal getTotalOutstandingLoanBalance() {
-        return getLoans().stream()
-                .filter(loan -> loan.getStatus() == Loan.LoanStatus.ACTIVE ||
-                        loan.getStatus() == Loan.LoanStatus.PENDING)
-                .map(Loan::getRemainingBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
 
-    /**
-     * Get total loan amount ever borrowed by this employee
-     * @return Total amount borrowed (including completed loans)
-     */
-    public BigDecimal getTotalLoanAmountBorrowed() {
-        return getLoans().stream()
-                .filter(loan -> loan.getStatus() != Loan.LoanStatus.REJECTED &&
-                        loan.getStatus() != Loan.LoanStatus.CANCELLED)
-                .map(Loan::getLoanAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
 
-    /**
-     * Get monthly loan repayment amount (sum of all active loan installments)
-     * @return Total monthly repayment amount
-     */
-    public BigDecimal getMonthlyLoanRepayment() {
-        return getActiveLoans().stream()
-                .map(Loan::getInstallmentAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    /**
-     * Calculate net monthly salary after loan deductions
-     * @return Net salary after loan repayments
-     */
-    public BigDecimal getNetMonthlySalaryAfterLoans() {
-        return getMonthlySalary().subtract(getMonthlyLoanRepayment());
-    }
-
-    /**
-     * Check if employee has any active loans
-     * @return true if employee has active loans
-     */
-    public boolean hasActiveLoans() {
-        return !getActiveLoans().isEmpty();
-    }
-
-    /**
-     * Check if employee has any pending loan applications
-     * @return true if employee has pending loans
-     */
-    public boolean hasPendingLoans() {
-        return !getPendingLoans().isEmpty();
-    }
-
-    /**
-     * Get loan utilization ratio (outstanding balance / monthly salary)
-     * This helps assess loan risk
-     * @return Loan utilization ratio as percentage
-     */
-    public BigDecimal getLoanUtilizationRatio() {
-        BigDecimal monthlySalary = getMonthlySalary();
-        if (monthlySalary.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal outstandingBalance = getTotalOutstandingLoanBalance();
-        return outstandingBalance.divide(monthlySalary, 4, RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100));
-    }
-
-    /**
-     * Check if employee is eligible for new loan based on outstanding balance
-     * @param maxOutstandingLimit Maximum allowed outstanding balance
-     * @return true if eligible for new loan
-     */
-    public boolean isEligibleForNewLoan(BigDecimal maxOutstandingLimit) {
-        // Check if employee has pending loans
-        if (hasPendingLoans()) {
-            return false;
-        }
-
-        // Check if outstanding balance is below limit
-        return getTotalOutstandingLoanBalance().compareTo(maxOutstandingLimit) < 0;
-    }
-
-    /**
-     * Get maximum loan amount employee can request
-     * @param maxOutstandingLimit Maximum allowed outstanding balance
-     * @return Maximum loan amount available
-     */
-    public BigDecimal getMaxAvailableLoanAmount(BigDecimal maxOutstandingLimit) {
-        if (!isEligibleForNewLoan(maxOutstandingLimit)) {
-            return BigDecimal.ZERO;
-        }
-
-        return maxOutstandingLimit.subtract(getTotalOutstandingLoanBalance());
-    }
-
-    /**
-     * Get loan summary statistics for this employee
-     * @return Map containing loan statistics
-     */
-    public java.util.Map<String, Object> getLoanSummary() {
-        java.util.Map<String, Object> summary = new java.util.HashMap<>();
-        summary.put("totalLoans", getLoans().size());
-        summary.put("activeLoans", getActiveLoans().size());
-        summary.put("pendingLoans", getPendingLoans().size());
-        summary.put("totalBorrowed", getTotalLoanAmountBorrowed());
-        summary.put("totalOutstanding", getTotalOutstandingLoanBalance());
-        summary.put("monthlyRepayment", getMonthlyLoanRepayment());
-        summary.put("netSalary", getNetMonthlySalaryAfterLoans());
-        summary.put("utilizationRatio", getLoanUtilizationRatio());
-        return summary;
-    }
 
     // Existing equipment/driver methods remain unchanged
 
@@ -454,7 +365,8 @@ public class Employee
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonBackReference("employee-promotion-requests")
-    private List<PromotionRequest> promotionRequests;
+    @Builder.Default
+    private List<PromotionRequest> promotionRequests = new ArrayList<>();
 
     /**
      * Get all promotion requests for this employee

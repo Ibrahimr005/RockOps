@@ -14,6 +14,7 @@ import {
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2.jsx'
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { Button } from '../../../../components/common/Button';
 import { offerService } from '../../../../services/procurement/offerService.js';
 import "../ProcurementOffers.scss"
 import "./UnstartedOffers.scss"

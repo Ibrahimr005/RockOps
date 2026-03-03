@@ -1,804 +1,764 @@
 package com.example.backend.services.payroll;
 
 import com.example.backend.dto.payroll.LoanDTO;
-import com.example.backend.dto.payroll.RepaymentScheduleDTO;
+import com.example.backend.dto.payroll.LoanFinanceActionDTO;
+import com.example.backend.dto.payroll.LoanFinanceRequestDTO;
+import com.example.backend.exceptions.ResourceNotFoundException;
+import com.example.backend.models.finance.accountsPayable.PaymentRequest;
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
+import com.example.backend.models.id.EntityTypeConfig;
+import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.payroll.Loan;
-import com.example.backend.models.payroll.RepaymentSchedule;
-import com.example.backend.models.payroll.Deduction;
+import com.example.backend.models.payroll.LoanFinanceRequest;
+import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
+import com.example.backend.repositories.payroll.LoanFinanceRequestRepository;
 import com.example.backend.repositories.payroll.LoanRepository;
-import com.example.backend.repositories.payroll.RepaymentScheduleRepository;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service for managing employee loans with Finance integration
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class LoanService {
 
     private final LoanRepository loanRepository;
-    private final RepaymentScheduleRepository repaymentScheduleRepository;
+    private final LoanFinanceRequestRepository loanFinanceRequestRepository;
     private final EmployeeRepository employeeRepository;
+    private final EmployeeDeductionService employeeDeductionService;
+    private final PaymentRequestRepository paymentRequestRepository;
+    private final EntityIdGeneratorService entityIdGeneratorService;
+
+    // ===================================================
+    // LOAN CRUD OPERATIONS
+    // ===================================================
 
     /**
-     * ENHANCED: Create loan with payslip-period-aligned repayment schedule
-     * NO WEEKLY LOANS - Only monthly/payroll period schedules
+     * Get all loans
      */
-    // Key changes needed in LoanService.java createLoan method
-
-    @Transactional
-    public LoanDTO createLoan(LoanDTO loanDTO, String createdBy) {
-        log.info("Creating loan for employee: {}", loanDTO.getEmployeeId());
-
-        try {
-            // Validate loan data
-            validateLoanData(loanDTO);
-
-            // Validate employee exists and is active
-            Employee employee = employeeRepository.findById(loanDTO.getEmployeeId())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee not found with ID: " + loanDTO.getEmployeeId()));
-
-            // Check if employee has any pending loans
-            List<Loan> pendingLoans = loanRepository.findByEmployeeIdAndStatus(employee.getId(), Loan.LoanStatus.PENDING);
-            if (!pendingLoans.isEmpty()) {
-                throw new IllegalArgumentException("Employee already has a pending loan. Only one pending loan is allowed at a time.");
-            }
-
-            // Check outstanding balance limits
-            BigDecimal existingOutstanding = getTotalOutstandingBalanceByEmployee(employee.getId());
-            BigDecimal newTotalOutstanding = existingOutstanding.add(loanDTO.getLoanAmount());
-            BigDecimal maxAllowed = new BigDecimal("100000"); // $100k limit
-
-            if (newTotalOutstanding.compareTo(maxAllowed) > 0) {
-                throw new IllegalArgumentException(
-                        String.format("Total outstanding balance would exceed limit. Current: $%s, New: $%s, Max: $%s",
-                                existingOutstanding, newTotalOutstanding, maxAllowed));
-            }
-
-            // Calculate monthly payment if not provided
-            BigDecimal monthlyPayment = loanDTO.getInstallmentAmount();
-            if (monthlyPayment == null || monthlyPayment.compareTo(BigDecimal.ZERO) <= 0) {
-                monthlyPayment = calculateMonthlyPayment(
-                        loanDTO.getLoanAmount(),
-                        loanDTO.getInterestRate(),
-                        loanDTO.getTotalInstallments()
-                );
-                log.info("Calculated monthly payment: {} for loan amount: {}", monthlyPayment, loanDTO.getLoanAmount());
-            }
-
-            // Create loan entity
-            Loan loan = Loan.builder()
-                    .employee(employee)
-                    .loanAmount(loanDTO.getLoanAmount())
-                    .remainingBalance(loanDTO.getLoanAmount())
-                    .interestRate(loanDTO.getInterestRate())
-                    .totalInstallments(loanDTO.getTotalInstallments())
-                    .installmentAmount(monthlyPayment)  // FIX: Ensure this field is set
-                    .installmentFrequency(Loan.InstallmentFrequency.MONTHLY) // Set frequency
-                    .startDate(loanDTO.getStartDate())
-                    .endDate(calculateEndDate(loanDTO.getStartDate(), loanDTO.getTotalInstallments()))
-                    .status(Loan.LoanStatus.PENDING)
-                    .description(loanDTO.getDescription())
-                    .createdBy(createdBy)
-                    .build();
-
-            // Validate that installment amount is set
-            if (loan.getInstallmentAmount() == null || loan.getInstallmentAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Invalid installment amount calculated: " + loan.getInstallmentAmount());
-            }
-
-            // Save loan first to get ID
-            loan = loanRepository.save(loan);
-
-            // ENHANCED: Generate payslip-period-aligned repayment schedule
-            List<RepaymentSchedule> repaymentSchedules = generatePayslipAlignedRepaymentSchedule(loan);
-
-            // Set loan reference and save schedules
-            Loan finalLoan = loan;
-            repaymentSchedules.forEach(schedule -> schedule.setLoan(finalLoan));
-            repaymentSchedules = repaymentScheduleRepository.saveAll(repaymentSchedules);
-
-            // Set schedules on loan
-            loan.setRepaymentSchedules(repaymentSchedules);
-            loan = loanRepository.save(loan);
-
-            log.info("Loan created successfully: {} with {} payslip-aligned installments",
-                    loan.getId(), repaymentSchedules.size());
-
-            return convertToDTO(loan);
-
-        } catch (Exception e) {
-            log.error("Error creating loan for employee {}: {}", loanDTO.getEmployeeId(), e.getMessage());
-            throw e;
-        }
-    }
-
-    /**
-     * NEW: Generate repayment schedule aligned with payslip periods
-     * Ensures repayments only occur when payslips are generated
-     */
-    private List<RepaymentSchedule> generatePayslipAlignedRepaymentSchedule(Loan loan) {
-        List<RepaymentSchedule> schedules = new ArrayList<>();
-
-        try {
-            log.info("Generating payslip-aligned repayment schedule for loan: {}", loan.getId());
-
-            BigDecimal principal = loan.getLoanAmount();
-            BigDecimal interestRate = loan.getInterestRate().divide(new BigDecimal("100")); // Convert percentage
-            Integer installments = loan.getTotalInstallments();
-
-            // Calculate monthly payment using loan payment formula
-            BigDecimal monthlyPayment = calculateMonthlyPayment(principal, interestRate, installments);
-
-            LocalDate currentDueDate = getNextPayslipDate(loan.getStartDate());
-            BigDecimal remainingBalance = principal;
-
-            for (int i = 1; i <= installments; i++) {
-                // Calculate interest and principal portions
-                BigDecimal interestPortion = remainingBalance.multiply(interestRate.divide(new BigDecimal("12"), 8, RoundingMode.HALF_UP));
-                BigDecimal principalPortion = monthlyPayment.subtract(interestPortion);
-
-                // Calculate the actual payment amount for this installment
-                BigDecimal actualPaymentAmount = monthlyPayment;
-
-                // Adjust for final payment
-                if (i == installments) {
-                    principalPortion = remainingBalance; // Pay off remaining balance
-                    actualPaymentAmount = principalPortion.add(interestPortion);
-                }
-
-                RepaymentSchedule schedule = RepaymentSchedule.builder()
-                        .loan(loan)
-                        .installmentNumber(i)
-                        .dueDate(currentDueDate)
-                        .scheduledAmount(actualPaymentAmount.setScale(2, RoundingMode.HALF_UP))
-                        .principalAmount(principalPortion.setScale(2, RoundingMode.HALF_UP))
-                        .interestAmount(interestPortion.setScale(2, RoundingMode.HALF_UP))
-                        .status(RepaymentSchedule.RepaymentStatus.PENDING)
-                        .build();
-
-                schedules.add(schedule);
-
-                // Update remaining balance
-                remainingBalance = remainingBalance.subtract(principalPortion);
-
-                // Move to next payslip date (monthly)
-                currentDueDate = currentDueDate.plusMonths(1);
-            }
-
-            log.info("Generated {} payslip-aligned repayment schedules", schedules.size());
-
-        } catch (Exception e) {
-            log.error("Error generating repayment schedule for loan {}: {}", loan.getId(), e.getMessage());
-            throw new RuntimeException("Failed to generate repayment schedule", e);
-        }
-
-        return schedules;
-    }
-
-    /**
-     * NEW: Get next payslip date (assuming monthly payslips on last day of month)
-     */
-    private LocalDate getNextPayslipDate(LocalDate startDate) {
-        // Align with payslip generation - typically last day of month
-        return startDate.withDayOfMonth(startDate.lengthOfMonth());
-    }
-
-    /**
-     * ENHANCED: Get due repayments for employee within payslip period
-     * ONLY returns repayments due within the exact payslip start-end dates
-     */
-    public List<RepaymentSchedule> getDueRepaymentsForEmployee(UUID employeeId,
-                                                               LocalDate payslipStart,
-                                                               LocalDate payslipEnd) {
-        try {
-            log.debug("Getting due repayments for employee: {} within payslip period: {} to {}",
-                    employeeId, payslipStart, payslipEnd);
-
-            // Get ONLY active loans for the employee
-            List<Loan> activeLoans = loanRepository.findByEmployeeIdAndStatus(employeeId, Loan.LoanStatus.ACTIVE);
-
-            if (activeLoans.isEmpty()) {
-                log.debug("No active loans found for employee: {}", employeeId);
-                return new ArrayList<>();
-            }
-
-            List<RepaymentSchedule> dueRepayments = new ArrayList<>();
-
-            for (Loan loan : activeLoans) {
-                // Get repayments due within the payslip period
-                List<RepaymentSchedule> loanRepayments = repaymentScheduleRepository
-                        .findByLoanIdAndDueDateBetweenAndStatus(
-                                loan.getId(),
-                                payslipStart,
-                                payslipEnd,
-                                RepaymentSchedule.RepaymentStatus.PENDING
-                        );
-
-                // Additional validation: ensure due date falls within payslip period
-                List<RepaymentSchedule> validRepayments = loanRepayments.stream()
-                        .filter(repayment -> !repayment.getDueDate().isBefore(payslipStart) &&
-                                !repayment.getDueDate().isAfter(payslipEnd))
-                        .collect(Collectors.toList());
-
-                dueRepayments.addAll(validRepayments);
-
-                log.debug("Loan {} has {} repayments due in payslip period",
-                        loan.getId(), validRepayments.size());
-            }
-
-            log.info("Found {} total due repayments for employee: {} in payslip period",
-                    dueRepayments.size(), employeeId);
-
-            return dueRepayments;
-
-        } catch (Exception e) {
-            log.error("Error getting due repayments for employee {}: {}", employeeId, e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * NEW: Process loan deductions from payslip finalization
-     * Updates loan balances and repayment schedules after payslip is finalized
-     */
-    @Transactional
-    public void processLoanDeductionsFromPayslip(UUID payslipId,
-                                                 List<Deduction> loanDeductions,
-                                                 LocalDate payslipStart,
-                                                 LocalDate payslipEnd) {
-        try {
-            log.info("Processing {} loan deductions from payslip: {}", loanDeductions.size(), payslipId);
-
-            for (Deduction loanDeduction : loanDeductions) {
-                // Find the corresponding repayment schedule
-                RepaymentSchedule repayment = findRepaymentForDeduction(loanDeduction, payslipStart, payslipEnd);
-
-                if (repayment != null) {
-                    // Update repayment schedule
-                    repayment.setActualAmount(loanDeduction.getAmount());
-                    repayment.setPaidDate(LocalDate.now());
-                    repayment.setStatus(RepaymentSchedule.RepaymentStatus.PAID);
-                    repayment.setPayslipId(payslipId); // Link to payslip
-
-                    repaymentScheduleRepository.save(repayment);
-
-                    // Update loan balance
-                    Loan loan = repayment.getLoan();
-                    BigDecimal newBalance = loan.getRemainingBalance().subtract(repayment.getPrincipalAmount());
-                    loan.setRemainingBalance(newBalance.max(BigDecimal.ZERO)); // Ensure non-negative
-
-                    // Check if loan is fully paid
-                    if (loan.getRemainingBalance().compareTo(BigDecimal.ZERO) == 0) {
-                        loan.setStatus(Loan.LoanStatus.COMPLETED);
-                        // Note: Using existing endDate field since actualEndDate doesn't exist in model
-                        log.info("Loan {} marked as completed", loan.getId());
-                    }
-
-                    loanRepository.save(loan);
-
-                    log.debug("Updated loan {} balance to ${} after repayment of ${}",
-                            loan.getId(), loan.getRemainingBalance(), loanDeduction.getAmount());
-                }
-            }
-
-            log.info("Successfully processed loan deductions from payslip: {}", payslipId);
-
-        } catch (Exception e) {
-            log.error("Error processing loan deductions from payslip {}: {}", payslipId, e.getMessage());
-            throw new RuntimeException("Failed to process loan deductions", e);
-        }
-    }
-
-    /**
-     * Find repayment schedule for a loan deduction
-     */
-    private RepaymentSchedule findRepaymentForDeduction(Deduction loanDeduction,
-                                                        LocalDate payslipStart,
-                                                        LocalDate payslipEnd) {
-        try {
-            // Extract loan info from deduction description or use other logic
-            // This is a simplified approach - you might need more sophisticated matching
-            List<RepaymentSchedule> pendingRepayments = repaymentScheduleRepository
-                    .findByDueDateBetweenAndStatus(payslipStart, payslipEnd, RepaymentSchedule.RepaymentStatus.PENDING);
-
-            // Find repayment with matching amount
-            return pendingRepayments.stream()
-                    .filter(repayment -> repayment.getScheduledAmount().compareTo(loanDeduction.getAmount()) == 0)
-                    .findFirst()
-                    .orElse(null);
-
-        } catch (Exception e) {
-            log.warn("Could not find matching repayment for deduction: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * ENHANCED: Check if employee can afford loan with 50% salary limit
-     */
-    public boolean canAffordLoan(UUID employeeId, BigDecimal loanAmount,
-                                 Integer installments, BigDecimal monthlyGrossSalary) {
-        try {
-            // Calculate proposed monthly payment
-            BigDecimal monthlyPayment = loanAmount.divide(new BigDecimal(installments), 2, RoundingMode.HALF_UP);
-
-            // Get existing loan obligations
-            BigDecimal existingMonthlyPayments = getMonthlyLoanPayments(employeeId);
-
-            // Total monthly loan payments
-            BigDecimal totalMonthlyPayments = existingMonthlyPayments.add(monthlyPayment);
-
-            // Check against 50% of gross salary
-            BigDecimal maxAllowedPayments = monthlyGrossSalary.multiply(new BigDecimal("0.50"));
-
-            boolean canAfford = totalMonthlyPayments.compareTo(maxAllowedPayments) <= 0;
-
-            log.debug("Loan affordability check for employee {}: Monthly payment ${}, Total ${}, Max allowed ${}, Can afford: {}",
-                    employeeId, monthlyPayment, totalMonthlyPayments, maxAllowedPayments, canAfford);
-
-            return canAfford;
-
-        } catch (Exception e) {
-            log.error("Error checking loan affordability for employee {}: {}", employeeId, e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Get current monthly loan payments for employee
-     */
-    private BigDecimal getMonthlyLoanPayments(UUID employeeId) {
-        try {
-            List<Loan> activeLoans = loanRepository.findByEmployeeIdAndStatus(employeeId, Loan.LoanStatus.ACTIVE);
-
-            return activeLoans.stream()
-                    .map(this::calculateMonthlyPaymentForLoan)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        } catch (Exception e) {
-            log.error("Error calculating monthly loan payments for employee {}: {}", employeeId, e.getMessage());
-            return BigDecimal.ZERO;
-        }
-    }
-
-    /**
-     * Calculate monthly payment for a loan
-     */
-    private BigDecimal calculateMonthlyPaymentForLoan(Loan loan) {
-        if (loan.getTotalInstallments() == null || loan.getTotalInstallments() == 0) {
-            return BigDecimal.ZERO;
-        }
-
-        return loan.getLoanAmount().divide(new BigDecimal(loan.getTotalInstallments()), 2, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * Approve loan and activate it
-     */
-    @Transactional
-    public LoanDTO approveLoan(UUID loanId, String approvedBy) {
-        log.info("Approving loan: {}", loanId);
-
-        try {
-            Loan loan = loanRepository.findById(loanId)
-                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
-
-            if (loan.getStatus() != Loan.LoanStatus.PENDING) {
-                throw new IllegalStateException("Only pending loans can be approved");
-            }
-
-            loan.setStatus(Loan.LoanStatus.ACTIVE);
-            loan.setApprovedBy(approvedBy);
-            loan.setApprovalDate(LocalDateTime.now()); // Using approvalDate instead of approvedAt
-
-            loan = loanRepository.save(loan);
-
-            log.info("Loan approved successfully: {}", loanId);
-
-            return convertToDTO(loan);
-
-        } catch (Exception e) {
-            log.error("Error approving loan {}: {}", loanId, e.getMessage());
-            throw e;
-        }
+    public List<LoanDTO> getAllLoans() {
+        return loanRepository.findAll().stream()
+            .map(LoanDTO::fromEntity)
+            .collect(Collectors.toList());
     }
 
     /**
      * Get loan by ID
      */
-    public LoanDTO getLoanById(UUID loanId) {
-        Loan loan = loanRepository.findById(loanId)
-                .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
+    public LoanDTO getLoanById(UUID id) {
+        Loan loan = loanRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + id));
+        return LoanDTO.fromEntity(loan);
+    }
 
-        return convertToDTO(loan);
+    /**
+     * Get loan by loan number
+     */
+    public LoanDTO getLoanByNumber(String loanNumber) {
+        Loan loan = loanRepository.findByLoanNumber(loanNumber)
+            .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + loanNumber));
+        return LoanDTO.fromEntity(loan);
     }
 
     /**
      * Get loans by employee
      */
     public List<LoanDTO> getLoansByEmployee(UUID employeeId) {
-        List<Loan> loans = loanRepository.findByEmployeeIdOrderByStartDateDesc(employeeId);
-        return loans.stream().map(this::convertToDTO).collect(Collectors.toList());
+        return loanRepository.findByEmployeeId(employeeId).stream()
+            .map(LoanDTO::fromEntity)
+            .collect(Collectors.toList());
     }
 
     /**
-     * Get total outstanding balance by employee
+     * Get loans by status
      */
-    public BigDecimal getTotalOutstandingBalanceByEmployee(UUID employeeId) {
-        BigDecimal balance = loanRepository.getTotalOutstandingBalanceByEmployee(employeeId);
-        return balance != null ? balance : BigDecimal.ZERO;
-    }
-
-    /**
-     * Update loan
-     */
-    @Transactional
-    public LoanDTO updateLoan(UUID loanId, LoanDTO loanDTO) {
-        log.info("Updating loan: {}", loanId);
-
-        try {
-            Loan loan = loanRepository.findById(loanId)
-                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
-
-            // Only allow updates to pending loans
-            if (loan.getStatus() != Loan.LoanStatus.PENDING) {
-                throw new IllegalStateException("Only pending loans can be updated");
-            }
-
-            // Update fields if provided
-            if (loanDTO.getLoanAmount() != null) {
-                loan.setLoanAmount(loanDTO.getLoanAmount());
-                loan.setRemainingBalance(loanDTO.getLoanAmount()); // Reset remaining balance
-            }
-            if (loanDTO.getInterestRate() != null) {
-                loan.setInterestRate(loanDTO.getInterestRate());
-            }
-            if (loanDTO.getTotalInstallments() != null) {
-                loan.setTotalInstallments(loanDTO.getTotalInstallments());
-            }
-            if (loanDTO.getStartDate() != null) {
-                loan.setStartDate(loanDTO.getStartDate());
-                loan.setEndDate(calculateEndDate(loanDTO.getStartDate(), loan.getTotalInstallments()));
-            }
-            if (loanDTO.getDescription() != null) {
-                loan.setDescription(loanDTO.getDescription());
-            }
-
-            // Validate updated data
-            validateLoanData(convertToDTO(loan));
-
-            // Regenerate repayment schedule if loan details changed
-            if (loanDTO.getLoanAmount() != null || loanDTO.getTotalInstallments() != null ||
-                    loanDTO.getStartDate() != null || loanDTO.getInterestRate() != null) {
-
-                // Delete existing schedules
-                repaymentScheduleRepository.deleteByLoanId(loan.getId());
-
-                // Generate new schedules
-                List<RepaymentSchedule> newSchedules = generatePayslipAlignedRepaymentSchedule(loan);
-                Loan finalLoan = loan;
-                newSchedules.forEach(schedule -> schedule.setLoan(finalLoan));
-                repaymentScheduleRepository.saveAll(newSchedules);
-                loan.setRepaymentSchedules(newSchedules);
-            }
-
-            loan = loanRepository.save(loan);
-
-            log.info("Loan updated successfully: {}", loanId);
-            return convertToDTO(loan);
-
-        } catch (Exception e) {
-            log.error("Error updating loan {}: {}", loanId, e.getMessage());
-            throw e;
-        }
-    }
-
-    /**
-     * Cancel loan
-     */
-    @Transactional
-    public void cancelLoan(UUID loanId) {
-        log.info("Cancelling loan: {}", loanId);
-
-        try {
-            Loan loan = loanRepository.findById(loanId)
-                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
-
-            if (!loan.canBeCancelled()) {
-                throw new IllegalStateException("Loan cannot be cancelled in current status: " + loan.getStatus());
-            }
-
-            loan.cancel();
-            loanRepository.save(loan);
-
-            log.info("Loan cancelled successfully: {}", loanId);
-
-        } catch (Exception e) {
-            log.error("Error cancelling loan {}: {}", loanId, e.getMessage());
-            throw e;
-        }
+    public List<LoanDTO> getLoansByStatus(Loan.LoanStatus status) {
+        return loanRepository.findByStatus(status).stream()
+            .map(LoanDTO::fromEntity)
+            .collect(Collectors.toList());
     }
 
     /**
      * Get active loans
      */
     public List<LoanDTO> getActiveLoans() {
-        log.debug("Getting all active loans");
-
-        List<Loan> activeLoans = loanRepository.findByStatus(Loan.LoanStatus.ACTIVE);
-        return activeLoans.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return loanRepository.findAllActiveLoans().stream()
+            .map(LoanDTO::fromEntity)
+            .collect(Collectors.toList());
     }
 
     /**
-     * Get overdue loans
-     */
-    public List<LoanDTO> getOverdueLoans() {
-        log.debug("Getting overdue loans");
-
-        List<Loan> allLoans = loanRepository.findByStatus(Loan.LoanStatus.ACTIVE);
-        return allLoans.stream()
-                .filter(Loan::isOverdue)
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get loans by status
-     */
-    public List<LoanDTO> getLoansByStatus(String status) {
-        log.debug("Getting loans by status: {}", status);
-
-        try {
-            Loan.LoanStatus loanStatus = Loan.LoanStatus.valueOf(status.toUpperCase());
-            List<Loan> loans = loanRepository.findByStatus(loanStatus);
-            return loans.stream()
-                    .map(this::convertToDTO)
-                    .collect(Collectors.toList());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid loan status: " + status);
-        }
-    }
-
-    /**
-     * Get loan statistics
-     */
-    public Map<String, Object> getLoanStatistics() {
-        log.debug("Getting loan statistics");
-
-        Map<String, Object> statistics = new java.util.HashMap<>();
-
-        try {
-            // Basic counts
-            long totalLoans = loanRepository.count();
-            long activeLoans = loanRepository.countByStatus(Loan.LoanStatus.ACTIVE);
-            long completedLoans = loanRepository.countByStatus(Loan.LoanStatus.COMPLETED);
-            long pendingLoans = loanRepository.countByStatus(Loan.LoanStatus.PENDING);
-
-            // Financial data
-            BigDecimal totalOutstanding = loanRepository.getTotalOutstandingAmount();
-            BigDecimal averageLoanAmount = loanRepository.getAverageLoanAmount();
-
-            // Overdue analysis
-            List<Loan> activeLoanList = loanRepository.findByStatus(Loan.LoanStatus.ACTIVE);
-            long overdueLoans = activeLoanList.stream()
-                    .filter(Loan::isOverdue)
-                    .count();
-
-            // Compile statistics
-            statistics.put("totalLoans", totalLoans);
-            statistics.put("activeLoans", activeLoans);
-            statistics.put("completedLoans", completedLoans);
-            statistics.put("pendingLoans", pendingLoans);
-            statistics.put("overdueLoans", overdueLoans);
-            statistics.put("totalOutstandingAmount", totalOutstanding != null ? totalOutstanding : BigDecimal.ZERO);
-            statistics.put("averageLoanAmount", averageLoanAmount != null ? averageLoanAmount : BigDecimal.ZERO);
-            statistics.put("generatedAt", LocalDateTime.now());
-
-        } catch (Exception e) {
-            log.error("Error generating loan statistics: {}", e.getMessage());
-            statistics.put("error", "Failed to generate loan statistics");
-        }
-
-        return statistics;
-    }
-
-    /**
-     * Get repayment schedule for a loan
-     */
-    public List<RepaymentScheduleDTO> getRepaymentSchedule(UUID loanId) {
-        log.debug("Getting repayment schedule for loan: {}", loanId);
-
-        // Verify loan exists
-        if (!loanRepository.existsById(loanId)) {
-            throw new IllegalArgumentException("Loan not found with ID: " + loanId);
-        }
-
-        List<RepaymentSchedule> schedules = repaymentScheduleRepository.findByLoanIdOrderByInstallmentNumberAsc(loanId);
-        return schedules.stream()
-                .map(this::convertRepaymentScheduleToDTO)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Reject loan
+     * Create a new loan
      */
     @Transactional
-    public LoanDTO rejectLoan(UUID loanId, String rejectedBy, String reason) {
-        log.info("Rejecting loan: {} by: {} with reason: {}", loanId, rejectedBy, reason);
+    public LoanDTO createLoan(LoanDTO dto, String createdBy) {
+        log.info("Creating loan for employee {} by {}", dto.getEmployeeId(), createdBy);
 
-        try {
-            Loan loan = loanRepository.findById(loanId)
-                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
+        Employee employee = employeeRepository.findById(dto.getEmployeeId())
+            .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + dto.getEmployeeId()));
 
-            if (!loan.canBeApproved()) {
-                throw new IllegalStateException("Only pending loans can be rejected");
-            }
+        // Generate loan number
+        String loanNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.LOAN);
 
-            loan.reject(rejectedBy, reason);
-            loan = loanRepository.save(loan);
-
-            log.info("Loan rejected successfully: {}", loanId);
-            return convertToDTO(loan);
-
-        } catch (Exception e) {
-            log.error("Error rejecting loan {}: {}", loanId, e.getMessage());
-            throw e;
+        // Calculate monthly installment if not provided
+        BigDecimal monthlyInstallment = dto.getMonthlyInstallment();
+        if (monthlyInstallment == null || monthlyInstallment.compareTo(BigDecimal.ZERO) == 0) {
+            monthlyInstallment = Loan.calculateMonthlyInstallment(
+                dto.getLoanAmount(),
+                dto.getInstallmentMonths(),
+                dto.getInterestRate()
+            );
         }
+
+        // Calculate loan dates
+        LocalDate loanEffectiveDate = dto.getLoanEffectiveDate() != null ? dto.getLoanEffectiveDate() : LocalDate.now();
+        LocalDate loanStartDate = dto.getLoanStartDate() != null ? dto.getLoanStartDate() : loanEffectiveDate;
+        LocalDate endDate = loanStartDate.plusMonths(dto.getInstallmentMonths());
+
+        Loan loan = Loan.builder()
+            .loanNumber(loanNumber)
+            .employee(employee)
+            .loanAmount(dto.getLoanAmount())
+            .remainingBalance(dto.getLoanAmount())
+            .installmentMonths(dto.getInstallmentMonths())
+            .monthlyInstallment(monthlyInstallment)
+            .installmentAmount(monthlyInstallment) // Sync with monthlyInstallment for backward compatibility
+            .interestRate(dto.getInterestRate())
+            .loanEffectiveDate(loanEffectiveDate)
+            .loanStartDate(loanStartDate)
+            .endDate(endDate)
+            .disbursementDate(dto.getDisbursementDate())
+            .firstPaymentDate(dto.getFirstPaymentDate())
+            .status(Loan.LoanStatus.PENDING_HR_APPROVAL)
+            .financeStatus(Loan.FinanceApprovalStatus.NOT_SUBMITTED)
+            .purpose(dto.getPurpose())
+            .notes(dto.getNotes())
+            .createdBy(createdBy)
+            .build();
+
+        Loan saved = loanRepository.save(loan);
+        log.info("Created loan: {} for employee {}", saved.getLoanNumber(), employee.getId());
+
+        return LoanDTO.fromEntity(saved);
     }
 
     /**
-     * Process loan repayment manually
+     * Update a loan
      */
     @Transactional
-    public void processLoanRepayment(UUID scheduleId, BigDecimal amount) {
-        log.info("Processing manual loan repayment for schedule: {} amount: ${}", scheduleId, amount);
+    public LoanDTO updateLoan(UUID id, LoanDTO dto, String updatedBy) {
+        log.info("Updating loan {} by {}", id, updatedBy);
 
+        Loan existing = loanRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + id));
+
+        // Can only update loans in draft or pending HR approval status
+        if (existing.getStatus() != Loan.LoanStatus.DRAFT
+            && existing.getStatus() != Loan.LoanStatus.PENDING_HR_APPROVAL
+            && existing.getStatus() != Loan.LoanStatus.PENDING) {
+            throw new IllegalStateException("Cannot update loan in status: " + existing.getStatus());
+        }
+
+        existing.setLoanAmount(dto.getLoanAmount());
+        existing.setInstallmentMonths(dto.getInstallmentMonths());
+        existing.setInterestRate(dto.getInterestRate());
+        existing.setPurpose(dto.getPurpose());
+        existing.setNotes(dto.getNotes());
+        existing.setUpdatedBy(updatedBy);
+
+        // Recalculate monthly installment
+        BigDecimal monthlyInstallment = Loan.calculateMonthlyInstallment(
+            dto.getLoanAmount(),
+            dto.getInstallmentMonths(),
+            dto.getInterestRate()
+        );
+        existing.setMonthlyInstallment(monthlyInstallment);
+        existing.setInstallmentAmount(monthlyInstallment); // Sync with monthlyInstallment
+        existing.setRemainingBalance(dto.getLoanAmount());
+
+        // Recalculate end date based on loan start date and new installment months
+        LocalDate startDate = existing.getLoanStartDate() != null ? existing.getLoanStartDate() : existing.getLoanEffectiveDate();
+        if (startDate != null) {
+            LocalDate endDate = startDate.plusMonths(dto.getInstallmentMonths());
+            existing.setEndDate(endDate);
+        }
+
+        Loan saved = loanRepository.save(existing);
+        log.info("Updated loan: {}", saved.getLoanNumber());
+
+        return LoanDTO.fromEntity(saved);
+    }
+
+    // ===================================================
+    // HR APPROVAL WORKFLOW
+    // ===================================================
+
+    /**
+     * HR approves a loan - DEPRECATED, use hrApproveLoan with userId for auto-finance generation
+     */
+    @Transactional
+    public LoanDTO hrApproveLoan(UUID loanId, String approver) {
+        return hrApproveLoan(loanId, null, approver);
+    }
+
+    /**
+     * HR approves a loan and automatically generates finance request
+     * This ensures Finance team is immediately notified and can configure installment details
+     *
+     * @param loanId The loan ID to approve
+     * @param approverId The HR approver's user ID (for finance request tracking)
+     * @param approverName The HR approver's username
+     * @return The approved loan DTO with finance request information
+     */
+    @Transactional
+    public LoanDTO hrApproveLoan(UUID loanId, UUID approverId, String approverName) {
+        log.info("HR approving loan {} by {}", loanId, approverName);
+
+        Loan loan = loanRepository.findById(loanId)
+            .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + loanId));
+
+        // HR approval
+        loan.hrApprove(approverName);
+        Loan saved = loanRepository.save(loan);
+        log.info("HR approved loan: {}", saved.getLoanNumber());
+
+        // Create PaymentRequest with APPROVED status so it appears on Process Payments page
+        Employee employee = saved.getEmployee();
+        createApprovedPaymentRequestForLoan(saved, employee, approverId, approverName);
+
+        // Automatically generate finance request after HR approval
         try {
-            RepaymentSchedule repayment = repaymentScheduleRepository.findById(scheduleId)
-                    .orElseThrow(() -> new IllegalArgumentException("Repayment schedule not found with ID: " + scheduleId));
+            LoanFinanceRequestDTO financeRequest = sendToFinance(loanId, approverId, approverName);
+            log.info("Auto-generated finance request {} for loan {}",
+                    financeRequest.getRequestNumber(), saved.getLoanNumber());
 
-            if (repayment.getStatus() != RepaymentSchedule.RepaymentStatus.PENDING) {
-                throw new IllegalStateException("Only pending repayments can be processed");
-            }
-
-            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Repayment amount must be greater than zero");
-            }
-
-            // Update repayment schedule
-            repayment.setActualAmount(amount);
-            repayment.setPaidDate(LocalDate.now());
-            repayment.setStatus(RepaymentSchedule.RepaymentStatus.PAID);
-            repaymentScheduleRepository.save(repayment);
-
-            // Update loan balance
-            Loan loan = repayment.getLoan();
-            loan.processRepayment(amount);
-            loanRepository.save(loan);
-
-            log.info("Loan repayment processed successfully for schedule: {}", scheduleId);
-
+            // Refresh loan to get updated finance request info
+            saved = loanRepository.findById(loanId).orElse(saved);
         } catch (Exception e) {
-            log.error("Error processing loan repayment for schedule {}: {}", scheduleId, e.getMessage());
-            throw e;
-        }
-    }
-
-    // Helper methods
-    private void validateLoanData(LoanDTO loanDTO) {
-        if (loanDTO.getLoanAmount() == null || loanDTO.getLoanAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Loan amount must be greater than zero");
-        }
-        if (loanDTO.getTotalInstallments() == null || loanDTO.getTotalInstallments() <= 0) {
-            throw new IllegalArgumentException("Total installments must be greater than zero");
-        }
-        if (loanDTO.getStartDate() == null) {
-            throw new IllegalArgumentException("Start date is required");
+            log.error("Failed to auto-generate finance request for loan {}: {}",
+                    saved.getLoanNumber(), e.getMessage());
+            // Don't fail the HR approval if finance request creation fails
+            // The request can be sent manually later
         }
 
-        // NEW: Validate no weekly loans
-        validateNoWeeklyLoans(loanDTO);
+        return LoanDTO.fromEntity(saved);
     }
 
     /**
-     * NEW: Validate that no weekly loans are created
-     * According to new requirements: "NO WEEKLY LOANS"
+     * HR rejects a loan
      */
-    private void validateNoWeeklyLoans(LoanDTO loanDTO) {
-        // Check if this would result in a weekly schedule
-        if (loanDTO.getStartDate() != null && loanDTO.getTotalInstallments() != null) {
-            LocalDate endDate = calculateEndDate(loanDTO.getStartDate(), loanDTO.getTotalInstallments());
-            long daysBetween = ChronoUnit.DAYS.between(loanDTO.getStartDate(), endDate);
-            double avgDaysBetweenInstallments = (double) daysBetween / loanDTO.getTotalInstallments();
+    @Transactional
+    public LoanDTO hrRejectLoan(UUID loanId, String rejector, String reason) {
+        log.info("HR rejecting loan {} by {}", loanId, rejector);
 
-            // If average days between installments is less than 25 days, it's likely weekly
-            if (avgDaysBetweenInstallments < 25) {
-                throw new IllegalArgumentException("Weekly loans are not allowed. Only monthly or longer repayment periods are supported.");
-            }
-        }
+        Loan loan = loanRepository.findById(loanId)
+            .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + loanId));
 
-        // Additional check if installment frequency is provided
-        // Note: This assumes your LoanDTO has installmentFrequency field
-        // If not, you can remove this check
-        /*
-        if (loanDTO.getInstallmentFrequency() == Loan.InstallmentFrequency.WEEKLY) {
-            throw new IllegalArgumentException("Weekly loan frequency is not allowed. Only monthly repayment schedules are supported.");
-        }
-        */
+        loan.hrReject(rejector, reason);
+        Loan saved = loanRepository.save(loan);
+
+        log.info("HR rejected loan: {}", saved.getLoanNumber());
+        return LoanDTO.fromEntity(saved);
     }
 
-    private LocalDate calculateEndDate(LocalDate startDate, Integer installments) {
-        return startDate.plusMonths(installments).minusDays(1);
-    }
+    // ===================================================
+    // FINANCE INTEGRATION
+    // ===================================================
 
-    private BigDecimal calculateMonthlyPayment(BigDecimal principal, BigDecimal annualRate, Integer months) {
-        if (annualRate.compareTo(BigDecimal.ZERO) == 0) {
-            return principal.divide(new BigDecimal(months), 2, RoundingMode.HALF_UP);
+    /**
+     * Send loan to Finance for approval
+     * Creates a LoanFinanceRequest and updates loan status
+     */
+    @Transactional
+    public LoanFinanceRequestDTO sendToFinance(UUID loanId, UUID requestedByUserId, String requestedByUserName) {
+        log.info("Sending loan {} to Finance by {}", loanId, requestedByUserName);
+
+        Loan loan = loanRepository.findById(loanId)
+            .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + loanId));
+
+        if (loan.getStatus() != Loan.LoanStatus.HR_APPROVED) {
+            throw new IllegalStateException("Can only send HR-approved loans to Finance");
         }
 
-        BigDecimal monthlyRate = annualRate.divide(new BigDecimal("12"), 8, RoundingMode.HALF_UP);
-        BigDecimal factor = BigDecimal.ONE.add(monthlyRate).pow(months);
+        // Check if already sent to finance
+        if (loanFinanceRequestRepository.existsByLoanId(loanId)) {
+            throw new IllegalStateException("Loan already has a finance request");
+        }
 
-        return principal.multiply(monthlyRate).multiply(factor)
-                .divide(factor.subtract(BigDecimal.ONE), 2, RoundingMode.HALF_UP);
-    }
+        Employee employee = loan.getEmployee();
+        BigDecimal monthlySalary = getMonthlySalary(employee);
 
-    private LoanDTO convertToDTO(Loan loan) {
-        return LoanDTO.builder()
-                .id(loan.getId())
-                .employeeId(loan.getEmployee().getId())
-                .employeeName(loan.getEmployee().getFullName())
-                .loanAmount(loan.getLoanAmount())
-                .remainingBalance(loan.getRemainingBalance())
-                .interestRate(loan.getInterestRate())
-                .totalInstallments(loan.getTotalInstallments())
-                .startDate(loan.getStartDate())
-                .endDate(loan.getEndDate())
-                .status(loan.getStatus().name())
-                .description(loan.getDescription())
-                .createdBy(loan.getCreatedBy())
-                .approvedBy(loan.getApprovedBy())
-                .createdAt(loan.getCreatedAt())
-                .approvedAt(loan.getApprovalDate()) // Using approvalDate instead of approvedAt
-                .build();
+        // Generate request number
+        String requestNumber = generateFinanceRequestNumber();
+
+        LoanFinanceRequest request = LoanFinanceRequest.builder()
+            .requestNumber(requestNumber)
+            .loan(loan)
+            .employeeId(employee.getId())
+            .employeeName(employee.getFirstName() + " " + employee.getLastName())
+            .employeeNumber(employee.getEmployeeNumber())
+            .departmentName(employee.getJobPosition() != null && employee.getJobPosition().getDepartment() != null ? employee.getJobPosition().getDepartment().getName() : null)
+            .jobPositionName(employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : null)
+            .loanNumber(loan.getLoanNumber())
+            .loanAmount(loan.getLoanAmount())
+            .requestedInstallments(loan.getInstallmentMonths())
+            .requestedMonthlyAmount(loan.getMonthlyInstallment())
+            .interestRate(loan.getInterestRate())
+            .loanPurpose(loan.getPurpose())
+            .employeeMonthlySalary(monthlySalary)
+            .status(LoanFinanceRequest.RequestStatus.PENDING)
+            .requestedByUserId(requestedByUserId)
+            .requestedByUserName(requestedByUserName)
+            .requestedAt(LocalDateTime.now())
+            .build();
+
+        LoanFinanceRequest savedRequest = loanFinanceRequestRepository.save(request);
+
+        // Update loan status
+        loan.sendToFinance();
+        loan.setFinanceRequestId(savedRequest.getId());
+        loan.setFinanceRequestNumber(requestNumber);
+        loanRepository.save(loan);
+
+        log.info("Created finance request {} for loan {}", requestNumber, loan.getLoanNumber());
+        return LoanFinanceRequestDTO.fromEntity(savedRequest);
     }
 
     /**
-     * Convert RepaymentSchedule to DTO
+     * Get pending finance requests
      */
-    private RepaymentScheduleDTO convertRepaymentScheduleToDTO(RepaymentSchedule schedule) {
-        return RepaymentScheduleDTO.builder()
-                .id(schedule.getId())
-                .loanId(schedule.getLoan().getId())
-                .installmentNumber(schedule.getInstallmentNumber())
-                .dueDate(schedule.getDueDate())
-                .scheduledAmount(schedule.getScheduledAmount())
-                .principalAmount(schedule.getPrincipalAmount())
-                .interestAmount(schedule.getInterestAmount())
-                .actualAmount(schedule.getActualAmount())
-                .paidDate(schedule.getPaidDate())
-                .payslipId(schedule.getPayslipId())
-                .status(schedule.getStatus().name())
-                .notes(schedule.getNotes())
-                .createdAt(schedule.getCreatedAt())
-                .updatedAt(schedule.getUpdatedAt())
+    public List<LoanFinanceRequestDTO> getPendingFinanceRequests() {
+        return loanFinanceRequestRepository.findPendingRequests().stream()
+            .map(LoanFinanceRequestDTO::fromEntity)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all active finance requests for dashboard
+     */
+    public List<LoanFinanceRequestDTO> getActiveFinanceRequests() {
+        return loanFinanceRequestRepository.findActiveRequestsForDashboard().stream()
+            .map(LoanFinanceRequestDTO::fromEntity)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Get finance request by ID
+     */
+    public LoanFinanceRequestDTO getFinanceRequestById(UUID id) {
+        LoanFinanceRequest request = loanFinanceRequestRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Finance request not found: " + id));
+        return LoanFinanceRequestDTO.fromEntity(request);
+    }
+
+    /**
+     * Finance approves a loan with deduction plan
+     */
+    @Transactional
+    public LoanFinanceRequestDTO financeApproveLoan(LoanFinanceActionDTO.ApproveRequest approveRequest,
+                                                     UUID approverUserId, String approverUserName) {
+        log.info("Finance approving loan request {} by {}", approveRequest.getRequestId(), approverUserName);
+
+        LoanFinanceRequest request = loanFinanceRequestRepository.findById(approveRequest.getRequestId())
+            .orElseThrow(() -> new ResourceNotFoundException("Finance request not found"));
+
+        request.approve(
+            approverUserId,
+            approverUserName,
+            approveRequest.getInstallments(),
+            approveRequest.getMonthlyAmount(),
+            approveRequest.getFirstDeductionDate(),
+            approveRequest.getNotes()
+        );
+
+        LoanFinanceRequest savedRequest = loanFinanceRequestRepository.save(request);
+
+        // Update loan with Finance decision
+        Loan loan = request.getLoan();
+        loan.financeApprove(
+            approverUserName,
+            approveRequest.getInstallments(),
+            approveRequest.getMonthlyAmount(),
+            approveRequest.getNotes()
+        );
+        loan.setFirstPaymentDate(approveRequest.getFirstDeductionDate());
+        loanRepository.save(loan);
+
+        log.info("Finance approved loan: {} with {} installments of {}",
+            loan.getLoanNumber(), approveRequest.getInstallments(), approveRequest.getMonthlyAmount());
+
+        return LoanFinanceRequestDTO.fromEntity(savedRequest);
+    }
+
+    /**
+     * Finance rejects a loan
+     */
+    @Transactional
+    public LoanFinanceRequestDTO financeRejectLoan(LoanFinanceActionDTO.RejectRequest rejectRequest,
+                                                    UUID rejectorUserId, String rejectorUserName) {
+        log.info("Finance rejecting loan request {} by {}", rejectRequest.getRequestId(), rejectorUserName);
+
+        LoanFinanceRequest request = loanFinanceRequestRepository.findById(rejectRequest.getRequestId())
+            .orElseThrow(() -> new ResourceNotFoundException("Finance request not found"));
+
+        request.reject(rejectorUserId, rejectorUserName, rejectRequest.getReason());
+        LoanFinanceRequest savedRequest = loanFinanceRequestRepository.save(request);
+
+        // Update loan status
+        Loan loan = request.getLoan();
+        loan.financeReject(rejectorUserName, rejectRequest.getReason());
+        loanRepository.save(loan);
+
+        log.info("Finance rejected loan: {}", loan.getLoanNumber());
+        return LoanFinanceRequestDTO.fromEntity(savedRequest);
+    }
+
+    /**
+     * Disburse loan to employee
+     */
+    @Transactional
+    public LoanFinanceRequestDTO disburseLoan(LoanFinanceActionDTO.DisbursementRequest disbursementRequest,
+                                               UUID disburserUserId, String disburserUserName) {
+        log.info("Disbursing loan request {} by {}", disbursementRequest.getRequestId(), disburserUserName);
+
+        LoanFinanceRequest request = loanFinanceRequestRepository.findById(disbursementRequest.getRequestId())
+            .orElseThrow(() -> new ResourceNotFoundException("Finance request not found"));
+
+        request.markDisbursed(disburserUserId, disburserUserName, disbursementRequest.getDisbursementReference());
+        LoanFinanceRequest savedRequest = loanFinanceRequestRepository.save(request);
+
+        // Update loan and activate deductions
+        Loan loan = request.getLoan();
+        Employee employee = loan.getEmployee();
+
+        loan.disburse(
+            disburserUserName,
+            request.getPaymentSourceType(),
+            request.getPaymentSourceId(),
+            request.getPaymentSourceName()
+        );
+        loan.activate();
+        loanRepository.save(loan);
+
+        // Mark existing PaymentRequest as PAID (created during finance approval)
+        markLoanPaymentRequestAsPaid(loan, disburserUserId, disburserUserName);
+
+        // Create employee deduction for loan repayment
+        LocalDate endDate = request.getFirstDeductionDate()
+            .plusMonths(request.getApprovedInstallments() - 1);
+
+        employeeDeductionService.createLoanDeduction(
+            loan.getEmployee().getId(),
+            loan.getId(),
+            loan.getLoanNumber(),
+            request.getApprovedMonthlyAmount(),
+            request.getFirstDeductionDate(),
+            endDate,
+            disburserUserName
+        );
+
+        log.info("Disbursed loan: {} and created payroll deduction", loan.getLoanNumber());
+        return LoanFinanceRequestDTO.fromEntity(savedRequest);
+    }
+
+    /**
+     * Create a PaymentRequest with PENDING status when HR approves a loan.
+     * Finance must then approve/reject it. Once approved, it appears on Process Payments page.
+     * Due date is set to the loan date.
+     */
+    private void createApprovedPaymentRequestForLoan(Loan loan, Employee employee, UUID approverUserId, String approverUserName) {
+        String requestNumber = generatePaymentRequestNumber();
+
+        String employeeName = employee.getFirstName() + " " + employee.getLastName();
+        String targetDetails = buildEmployeeTargetDetails(
+            employee.getBankName(),
+            employee.getBankAccountNumber(),
+            employee.getWalletNumber()
+        );
+
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+            // Source polymorphism
+            .sourceType(PaymentSourceType.ELOAN)
+            .sourceId(loan.getId())
+            .sourceNumber(loan.getLoanNumber())
+            .sourceDescription("Employee Loan: " + loan.getLoanNumber() + " - " + loan.getPurpose())
+            // Target polymorphism
+            .targetType(PaymentTargetType.EMPLOYEE)
+            .targetId(employee.getId())
+            .targetName(employeeName)
+            .targetDetails(targetDetails)
+            // Financial details
+            .requestNumber(requestNumber)
+            .requestedAmount(loan.getLoanAmount())
+            .currency("EGP")
+            .description("Loan disbursement to " + employeeName + " - " + loan.getPurpose())
+            .paymentDueDate(loan.getLoanEffectiveDate()) // Due date = loan effective date
+            .status(PaymentRequestStatus.PENDING) // PENDING — Finance must approve before it can be paid
+            // Requestor info
+            .requestedByUserId(approverUserId)
+            .requestedByUserName(approverUserName)
+            .requestedByDepartment("HR")
+            .requestedAt(LocalDateTime.now())
+            // Payment tracking — not yet paid
+            .totalPaidAmount(BigDecimal.ZERO)
+            .remainingAmount(loan.getLoanAmount())
+            .build();
+
+        paymentRequestRepository.save(paymentRequest);
+        log.info("Created PENDING PaymentRequest {} for loan {} (due: {}) — awaiting Finance approval",
+                requestNumber, loan.getLoanNumber(), loan.getLoanEffectiveDate());
+    }
+
+    /**
+     * Mark an existing loan PaymentRequest as PAID after disbursement.
+     * Falls back to creating a new PAID PaymentRequest if none exists.
+     */
+    private void markLoanPaymentRequestAsPaid(Loan loan, UUID disburserUserId, String disburserUserName) {
+        // Find the existing APPROVED payment request for this loan
+        List<PaymentRequest> existing = paymentRequestRepository.findBySourceTypeAndSourceId(
+                PaymentSourceType.ELOAN, loan.getId());
+
+        if (!existing.isEmpty()) {
+            PaymentRequest pr = existing.get(0);
+            pr.setStatus(PaymentRequestStatus.PAID);
+            pr.setTotalPaidAmount(loan.getLoanAmount());
+            pr.setRemainingAmount(BigDecimal.ZERO);
+            paymentRequestRepository.save(pr);
+            log.info("Marked PaymentRequest {} as PAID for loan disbursement {}",
+                    pr.getRequestNumber(), loan.getLoanNumber());
+        } else {
+            // Fallback: create a PAID PaymentRequest if none exists (e.g., for loans approved before this fix)
+            log.warn("No existing PaymentRequest found for loan {}. Creating PAID record.", loan.getLoanNumber());
+            Employee employee = loan.getEmployee();
+            String requestNumber = generatePaymentRequestNumber();
+            String employeeName = employee.getFirstName() + " " + employee.getLastName();
+            String targetDetails = buildEmployeeTargetDetails(
+                employee.getBankName(), employee.getBankAccountNumber(), employee.getWalletNumber());
+
+            PaymentRequest paymentRequest = PaymentRequest.builder()
+                .sourceType(PaymentSourceType.ELOAN)
+                .sourceId(loan.getId())
+                .sourceNumber(loan.getLoanNumber())
+                .sourceDescription("Loan Disbursement: " + loan.getLoanNumber() + " - " + loan.getPurpose())
+                .targetType(PaymentTargetType.EMPLOYEE)
+                .targetId(employee.getId())
+                .targetName(employeeName)
+                .targetDetails(targetDetails)
+                .requestNumber(requestNumber)
+                .requestedAmount(loan.getLoanAmount())
+                .currency("EGP")
+                .description("Loan disbursement to " + employeeName + " - " + loan.getPurpose())
+                .status(PaymentRequestStatus.PAID)
+                .requestedByUserId(disburserUserId)
+                .requestedByUserName(disburserUserName)
+                .requestedByDepartment("Finance")
+                .requestedAt(LocalDateTime.now())
+                .approvedByUserId(disburserUserId)
+                .approvedByUserName(disburserUserName)
+                .approvedAt(LocalDateTime.now())
+                .approvalNotes("Auto-created: Loan " + loan.getLoanNumber() + " disbursed")
+                .totalPaidAmount(loan.getLoanAmount())
+                .remainingAmount(BigDecimal.ZERO)
                 .build();
+
+            paymentRequestRepository.save(paymentRequest);
+            log.info("Created PAID PaymentRequest {} for loan disbursement {}", requestNumber, loan.getLoanNumber());
+        }
+    }
+
+    /**
+     * Build employee target details JSON for PaymentRequest
+     */
+    private String buildEmployeeTargetDetails(String bankName, String bankAccountNumber, String walletNumber) {
+        StringBuilder details = new StringBuilder("{");
+        boolean hasContent = false;
+
+        if (bankName != null && !bankName.isEmpty()) {
+            details.append("\"bankName\":\"").append(bankName).append("\"");
+            hasContent = true;
+        }
+        if (bankAccountNumber != null && !bankAccountNumber.isEmpty()) {
+            if (hasContent) details.append(",");
+            details.append("\"bankAccountNumber\":\"").append(bankAccountNumber).append("\"");
+            hasContent = true;
+        }
+        if (walletNumber != null && !walletNumber.isEmpty()) {
+            if (hasContent) details.append(",");
+            details.append("\"walletNumber\":\"").append(walletNumber).append("\"");
+        }
+
+        details.append("}");
+        return details.toString();
+    }
+
+    /**
+     * Generate payment request number for loan disbursements
+     */
+    private String generatePaymentRequestNumber() {
+        int year = LocalDate.now().getYear();
+        String prefix = "PR-" + year + "-";
+        Long maxSequence = paymentRequestRepository.getMaxRequestNumberSequence(prefix + "%");
+        long nextSequence = (maxSequence != null ? maxSequence : 0) + 1;
+        return String.format("%s%06d", prefix, nextSequence);
+    }
+
+    /**
+     * Set disbursement source
+     */
+    @Transactional
+    public LoanFinanceRequestDTO setDisbursementSource(LoanFinanceActionDTO.SetDisbursementSourceRequest request,
+                                                        String updatedBy) {
+        log.info("Setting disbursement source for request {}", request.getRequestId());
+
+        LoanFinanceRequest financeRequest = loanFinanceRequestRepository.findById(request.getRequestId())
+            .orElseThrow(() -> new ResourceNotFoundException("Finance request not found"));
+
+        financeRequest.markReadyForDisbursement(
+            request.getPaymentSourceType(),
+            request.getPaymentSourceId(),
+            request.getPaymentSourceName()
+        );
+
+        LoanFinanceRequest saved = loanFinanceRequestRepository.save(financeRequest);
+        log.info("Set disbursement source for loan request: {}", saved.getRequestNumber());
+
+        return LoanFinanceRequestDTO.fromEntity(saved);
+    }
+
+    /**
+     * Get Finance dashboard summary
+     */
+    public LoanFinanceActionDTO.DashboardSummary getFinanceDashboardSummary() {
+        long pendingCount = loanFinanceRequestRepository.countByStatus(LoanFinanceRequest.RequestStatus.PENDING);
+        long underReviewCount = loanFinanceRequestRepository.countByStatus(LoanFinanceRequest.RequestStatus.UNDER_REVIEW);
+        long approvedCount = loanFinanceRequestRepository.countByStatus(LoanFinanceRequest.RequestStatus.APPROVED);
+        long pendingDisbursementCount = loanFinanceRequestRepository.countByStatus(LoanFinanceRequest.RequestStatus.DISBURSEMENT_PENDING);
+
+        BigDecimal totalPendingAmount = loanFinanceRequestRepository.sumLoanAmountByStatus(LoanFinanceRequest.RequestStatus.PENDING);
+        BigDecimal totalApprovedAmount = loanFinanceRequestRepository.sumLoanAmountByStatus(LoanFinanceRequest.RequestStatus.APPROVED)
+            .add(loanFinanceRequestRepository.sumLoanAmountByStatus(LoanFinanceRequest.RequestStatus.DISBURSEMENT_PENDING));
+
+        // Get disbursed this month
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonth = LocalDate.now().plusMonths(1).withDayOfMonth(1).atStartOfDay().minusSeconds(1);
+        List<LoanFinanceRequest> disbursedThisMonth = loanFinanceRequestRepository
+            .findDisbursedInDateRange(startOfMonth, endOfMonth);
+        BigDecimal totalDisbursedThisMonth = disbursedThisMonth.stream()
+            .map(LoanFinanceRequest::getLoanAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return LoanFinanceActionDTO.DashboardSummary.builder()
+            .pendingCount(pendingCount)
+            .underReviewCount(underReviewCount)
+            .approvedCount(approvedCount)
+            .pendingDisbursementCount(pendingDisbursementCount)
+            .totalPendingAmount(totalPendingAmount)
+            .totalApprovedAmount(totalApprovedAmount)
+            .totalDisbursedThisMonth(totalDisbursedThisMonth)
+            .build();
+    }
+
+    // ===================================================
+    // LOAN COMPLETION
+    // ===================================================
+
+    /**
+     * Record loan payment (called during payroll processing)
+     */
+    @Transactional
+    public void recordLoanPayment(UUID loanId, BigDecimal paymentAmount) {
+        log.info("Recording loan payment: {} for loan {}", paymentAmount, loanId);
+
+        Loan loan = loanRepository.findById(loanId)
+            .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + loanId));
+
+        loan.recordPayment(paymentAmount);
+        loanRepository.save(loan);
+
+        // If loan completed, deactivate the deduction
+        if (loan.getStatus() == Loan.LoanStatus.COMPLETED) {
+            employeeDeductionService.deactivateLoanDeduction(loanId, "SYSTEM");
+            log.info("Loan {} completed, deactivated payroll deduction", loan.getLoanNumber());
+        }
+    }
+
+    /**
+     * Cancel a loan
+     */
+    @Transactional
+    public LoanDTO cancelLoan(UUID loanId, String cancelledBy, String reason) {
+        log.info("Cancelling loan {} by {}", loanId, cancelledBy);
+
+        Loan loan = loanRepository.findById(loanId)
+            .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + loanId));
+
+        loan.cancel();
+        loan.setNotes((loan.getNotes() != null ? loan.getNotes() + "\n" : "") + "Cancelled: " + reason);
+        loan.setUpdatedBy(cancelledBy);
+        Loan saved = loanRepository.save(loan);
+
+        // Cancel finance request if exists
+        loanFinanceRequestRepository.findByLoanId(loanId)
+            .ifPresent(request -> {
+                request.cancel(null, cancelledBy, reason);
+                loanFinanceRequestRepository.save(request);
+            });
+
+        // Deactivate deduction if exists
+        employeeDeductionService.deactivateLoanDeduction(loanId, cancelledBy);
+
+        log.info("Cancelled loan: {}", saved.getLoanNumber());
+        return LoanDTO.fromEntity(saved);
+    }
+
+    // ===================================================
+    // HELPER METHODS
+    // ===================================================
+
+    private String generateFinanceRequestNumber() {
+        int year = LocalDate.now().getYear();
+        String yearPrefix = "LFR-" + year + "-%";
+        Long maxSequence = loanFinanceRequestRepository.getMaxRequestNumberSequence(yearPrefix);
+        long nextSequence = (maxSequence != null ? maxSequence : 0) + 1;
+        return LoanFinanceRequest.generateRequestNumber(year, nextSequence);
+    }
+
+    private BigDecimal getMonthlySalary(Employee employee) {
+        JobPosition jobPosition = employee.getJobPosition();
+        if (jobPosition == null) {
+            return BigDecimal.ZERO;
+        }
+
+        if (jobPosition.getContractType() == JobPosition.ContractType.MONTHLY) {
+            Double monthlySalary = jobPosition.getMonthlyBaseSalary();
+            return monthlySalary != null ? BigDecimal.valueOf(monthlySalary) : BigDecimal.ZERO;
+        } else if (jobPosition.getContractType() == JobPosition.ContractType.DAILY) {
+            // Estimate monthly as daily * 22 working days
+            Double dailyRate = jobPosition.getDailyRate();
+            return dailyRate != null ? BigDecimal.valueOf(dailyRate).multiply(BigDecimal.valueOf(22)) : BigDecimal.ZERO;
+        } else if (jobPosition.getContractType() == JobPosition.ContractType.HOURLY) {
+            // Estimate monthly as hourly * 8 hours * 22 working days
+            Double hourlyRate = jobPosition.getHourlyRate();
+            return hourlyRate != null ? BigDecimal.valueOf(hourlyRate).multiply(BigDecimal.valueOf(8 * 22)) : BigDecimal.ZERO;
+        }
+
+        return BigDecimal.ZERO;
     }
 }

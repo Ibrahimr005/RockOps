@@ -1,9 +1,11 @@
 package com.example.backend.services.hr;
 
 import com.example.backend.models.hr.Department;
+import com.example.backend.models.id.EntityTypeConfig;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import com.example.backend.services.notification.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,9 @@ public class DepartmentService {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private EntityIdGeneratorService entityIdGeneratorService;
 
     /**
      * Get all departments as Map objects
@@ -106,8 +111,12 @@ public class DepartmentService {
                     throw new IllegalArgumentException("Department with name '" + name + "' already exists");
                 }
 
+                // Generate department number
+                String departmentNumber = entityIdGeneratorService.generateNextId(EntityTypeConfig.DEPARTMENT);
+
                 // Create new department
                 Department department = Department.builder()
+                        .departmentNumber(departmentNumber)
                         .name(name)
                         .description(description != null && !description.isEmpty() ? description : null)
                         .jobPositions(new ArrayList<>())
@@ -359,6 +368,7 @@ public class DepartmentService {
         Map<String, Object> departmentMap = new HashMap<>();
 
         departmentMap.put("id", department.getId());
+        departmentMap.put("departmentNumber", department.getDepartmentNumber());
         departmentMap.put("name", department.getName());
         departmentMap.put("description", department.getDescription());
 
@@ -461,6 +471,9 @@ public class DepartmentService {
 
             // Set ID to null to let JPA generate it
             department.setId(null);
+
+            // Generate department number
+            department.setDepartmentNumber(entityIdGeneratorService.generateNextId(EntityTypeConfig.DEPARTMENT));
 
             // Trim whitespace
             department.setName(department.getName().trim());

@@ -9,6 +9,7 @@ import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
+import { Button, CloseButton } from '../../../components/common/Button';
 
 const EquipmentTypeManagement = () => {
     const [types, setTypes] = useState([]);
@@ -373,9 +374,7 @@ const EquipmentTypeManagement = () => {
                     <div className="modal-content work-type-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingType ? 'Edit Equipment Type' : 'Add Equipment Type'}</h2>
-                            <button className="btn-close" onClick={() => setShowModal(false)}>
-                                &times;
-                            </button>
+                            <CloseButton onClick={() => setShowModal(false)} />
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
@@ -449,12 +448,12 @@ const EquipmentTypeManagement = () => {
                                 </small>
                             </div>
                             <div className="modal-actions">
-                                <button type="button" onClick={() => setShowModal(false)}>
+                                <Button variant="ghost" onClick={() => setShowModal(false)}>
                                     Cancel
-                                </button>
-                                <button type="submit" className="btn-primary">
+                                </Button>
+                                <Button type="submit" variant="primary">
                                     {editingType ? 'Update' : 'Add'}
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

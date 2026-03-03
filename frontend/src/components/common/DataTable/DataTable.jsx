@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { FaSort, FaSortUp, FaSortDown, FaSearch, FaFilter, FaEllipsisV, FaPlus, FaFileExcel } from 'react-icons/fa';
+import { Button } from '../Button';
 import * as XLSX from 'xlsx';
 import './DataTable.scss';
 
@@ -45,6 +46,8 @@ const DataTable = ({
     exportColumnWidths = {}, // Object mapping column accessors to specific widths
     enableTextWrapping = true, // Enable text wrapping in exported Excel
     preventTextOverflow = false, // Explicitly prevent text overflow for rightmost columns
+    // Additional header content (e.g., extra buttons next to Add button)
+    additionalHeaderContent = null,
 }) => {
     // States for pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -718,38 +721,32 @@ const DataTable = ({
                 <div className="rockops-table__header-right">
                     {/* Export Button */}
                     {showExportButton && (
-                        <button
-                            className={`btn-secondary rockops-table__export-btn ${exportButtonProps.className || ''}`}
+                        <Button
+                            variant="secondary"
+                            className={`rockops-table__export-btn ${exportButtonProps.className || ''}`}
                             onClick={handleExportToExcel}
-                            disabled={isExporting || data.length === 0}
-                            type="button"
-                            {...exportButtonProps}
+                            disabled={data.length === 0}
+                            loading={isExporting}
+                            loadingText="Exporting..."
                         >
-                            {isExporting ? (
-                                <>
-                                    <div className="rockops-table__export-spinner"></div>
-                                    <span>Exporting...</span>
-                                </>
-                            ) : (
-                                <>
-                                    {exportButtonIcon}
-                                    <span>{exportButtonText}</span>
-                                </>
-                            )}
-                        </button>
+                            {exportButtonIcon}
+                            <span>{exportButtonText}</span>
+                        </Button>
                     )}
+
+                    {/* Additional Header Content */}
+                    {additionalHeaderContent}
 
                     {/* Add Button */}
                     {showAddButton && onAddClick && (
-                        <button
-                            className={`btn-primary rockops-table__add-btn ${addButtonProps.className || ''}`}
+                        <Button
+                            variant="primary"
+                            className={`rockops-table__add-btn ${addButtonProps.className || ''}`}
                             onClick={handleAddButtonClick}
-                            type="button"
-                            {...addButtonProps}
                         >
                             {addButtonIcon}
                             <span>{addButtonText}</span>
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div> {/* End of header-container */}

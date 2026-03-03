@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './EmployeeModals.scss';
 import {useSnackbar} from "../../../../contexts/SnackbarContext.jsx";
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import { Button, CloseButton } from '../../../../components/common/Button';
 
 // Country data with codes and flags
 const COUNTRIES = [
@@ -85,6 +87,16 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
     const [candidateId, setCandidateId] = useState(null);
     const [departments, setDepartments] = useState([]);
     const [filteredPositions, setFilteredPositions] = useState([]);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     // Check for pre-populated data from a candidate
     useEffect(() => {
@@ -349,7 +361,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
             <div className="r4m-employee-modal">
                 <div className="r4m-modal-header">
                     <h2>{isFromCandidate ? 'Hire Candidate as Employee' : 'Add New Employee'}</h2>
-                    <button className="btn-close" onClick={onClose}>×</button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {isFromCandidate && (
@@ -755,10 +767,10 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                     </div>
 
                     <div className="r4m-modal-footer">
-                        <button type="button" className="r4m-cancel-btn" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="r4m-save-btn">
+                        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+                        <Button variant="primary" type="submit">
                             {isFromCandidate ? 'Complete Hiring Process' : 'Save Employee'}
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div>

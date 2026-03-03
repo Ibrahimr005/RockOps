@@ -8,6 +8,7 @@ import {
 import "../ProcurementOffers.scss"
 import "./InprogressOffers.scss"
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx"
+import { Button, IconButton } from '../../../../components/common/Button';
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import ProcurementSolutionModal from './ProcurementSolutionModal/ProcurementSolutionModal.jsx';
@@ -174,8 +175,8 @@ const InProgressOffers = ({
     };
 
     // Handle confirmed submission
-    // Handle confirmed submission
-    // Handle confirmed submission
+// Handle confirmed submission
+// Handle confirmed submission
     const handleConfirmSubmit = async (offer) => {
         try {
             setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
@@ -254,7 +255,7 @@ const InProgressOffers = ({
     };
 
     // Handle confirmed deletion
-    // Handle confirmed deletion
+// Handle confirmed deletion
     const handleConfirmDelete = async (offerItemId) => {
         if (!activeOffer) return;
 
@@ -360,7 +361,7 @@ const InProgressOffers = ({
     };
 
     // Handle modal save (both add and edit)
-    // Handle modal save (both add and edit)
+// Handle modal save (both add and edit)
     const handleModalSave = async (formData) => {
         if (!activeOffer || !selectedRequestItem) return;
 
@@ -716,23 +717,24 @@ const InProgressOffers = ({
 
 
                                 <div className="action-buttons-group">
-                                    <button
-                                        className="btn-primary"
+                                    <Button
+                                        variant="primary"
                                         onClick={() => submitOffer(activeOffer)}
                                         disabled={!isOfferComplete(activeOffer)}
                                         style={{ marginRight: '10px' }}
                                     >
                                         <FiSend /> {isOfferComplete(activeOffer) ? 'Submit Offer' : 'Complete All Items to Submit'}
-                                    </button>
-                                    <button
-                                        className="btn-primary"
+                                    </Button>
+                                    <Button
+                                        variant="danger"
                                         onClick={handleDeleteOfferClick}
                                         disabled={isDeletingOffer}
+                                        loading={isDeletingOffer}
+                                        loadingText="Deleting..."
                                         title="Delete this offer permanently"
                                     >
-                                        <FiTrash2 />
-                                        {isDeletingOffer ? 'Deleting...' : 'Delete Offer'}
-                                    </button>
+                                        <FiTrash2 /> Delete Offer
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -912,39 +914,39 @@ const InProgressOffers = ({
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                {offerItems.map((offerItem, idx) => (
-                                                                    <tr key={offerItem.id || idx}>
-                                                                        <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                        <td>{offerItem.quantity} {itemTypeMeasuringUnit}</td>
-                                                                        <td>{offerItem.currency || 'USD'} {offerItem.unitPrice ? parseFloat(offerItem.unitPrice).toFixed(2) : 'N/A'}</td>
-                                                                        <td>{offerItem.currency || 'USD'} {offerItem.totalPrice ? parseFloat(offerItem.totalPrice).toFixed(2) : 'N/A'}</td>
-                                                                        <td>{offerItem.estimatedDeliveryDays || 'N/A'} days</td>
-                                                                        <td>
-                                                                            <div className="procurement-action-buttons">
-                                                                                <button
-                                                                                    className="procurement-action-button edit"
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        handleEditOfferItem(offerItem, requestItem);
-                                                                                    }}
-                                                                                    title="Edit this solution"
-                                                                                >
-                                                                                    <FiEdit size={16} />
-                                                                                </button>
-                                                                                <button
-                                                                                    className="procurement-action-button delete"
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        handleDeleteOfferItem(offerItem.id, offerItem);
-                                                                                    }}
-                                                                                    title="Remove this solution"
-                                                                                >
-                                                                                    <FiTrash2 size={16} />
-                                                                                </button>
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
+                                                            {offerItems.map((offerItem, idx) => (
+                                                                <tr key={offerItem.id || idx}>
+                                                                    <td>{offerItem.merchant?.name || 'Unknown'}</td>
+                                                                    <td>{offerItem.quantity} {itemTypeMeasuringUnit}</td>
+                                                                    <td>{offerItem.currency || 'USD'} {offerItem.unitPrice ? parseFloat(offerItem.unitPrice).toFixed(2) : 'N/A'}</td>
+                                                                    <td>{offerItem.currency || 'USD'} {offerItem.totalPrice ? parseFloat(offerItem.totalPrice).toFixed(2) : 'N/A'}</td>
+                                                                    <td>{offerItem.estimatedDeliveryDays || 'N/A'} days</td>
+                                                                    <td>
+                                                                        <div className="procurement-action-buttons">
+                                                                            <IconButton
+                                                                                variant="primary"
+                                                                                size="sm"
+                                                                                icon={<FiEdit size={16} />}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleEditOfferItem(offerItem, requestItem);
+                                                                                }}
+                                                                                title="Edit this solution"
+                                                                            />
+                                                                            <IconButton
+                                                                                variant="danger"
+                                                                                size="sm"
+                                                                                icon={<FiTrash2 size={16} />}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleDeleteOfferItem(offerItem.id, offerItem);
+                                                                                }}
+                                                                                title="Remove this solution"
+                                                                            />
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
                                                             </tbody>
                                                         </table>
                                                     </div>

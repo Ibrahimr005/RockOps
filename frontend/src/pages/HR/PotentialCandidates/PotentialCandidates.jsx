@@ -19,6 +19,7 @@ import {
     FaBriefcase,
     FaChartBar
 } from 'react-icons/fa';
+import { Button } from '../../../components/common/Button';
 
 const PotentialCandidates = () => {
     const navigate = useNavigate();
@@ -376,12 +377,12 @@ const PotentialCandidates = () => {
                         </select>
                     </div>
                     <div className="filter-actions">
-                        <button onClick={handleSearch} className="btn btn-primary">
+                        <Button variant="primary" onClick={handleSearch}>
                             <FaSearch /> Search
-                        </button>
-                        <button onClick={clearFilters} className="btn btn-secondary">
+                        </Button>
+                        <Button variant="ghost" onClick={clearFilters}>
                             <FaFilter /> Clear
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -392,13 +393,13 @@ const PotentialCandidates = () => {
                     <span className="selected-count">
                         {selectedCandidates.length} candidate(s) selected
                     </span>
-                    <button
+                    <Button
+                        variant="success"
                         onClick={handleAddToVacancy}
-                        className="btn btn-success"
                         disabled={actionLoading}
                     >
                         <FaPlus /> Add to Vacancy
-                    </button>
+                    </Button>
                 </div>
             )}
 

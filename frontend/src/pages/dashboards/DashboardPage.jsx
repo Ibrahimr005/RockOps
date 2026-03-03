@@ -1,7 +1,5 @@
 import React, {useState, useEffect } from 'react';
 import {useAuth} from '../../contexts/AuthContext';
-import Navbar from '../../components/common/Navbar/Navbar';
-import Sidebar from '../../components/common/Sidebar/Sidebar';
 import AdminDashboard from './AdminDashboard.jsx';
 import UserDashboard from './UserDashboard.jsx';
 import SiteAdminDashboard from './SiteAdminDashboard.jsx';

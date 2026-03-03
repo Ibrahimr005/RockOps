@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaDollarSign, FaShoppingBag, FaPlus, FaTrash } from 'react-icons/fa';
 import { merchantService } from '../../../services/merchant/merchantService';
+import { Button, IconButton } from '../../../components/common/Button';
 
 const Step2PurchasingForm = ({ ticketId, ticketData, onSave, onComplete, isLoading }) => {
     const [formData, setFormData] = useState({
@@ -253,14 +254,13 @@ const Step2PurchasingForm = ({ ticketId, ticketData, onSave, onComplete, isLoadi
                                         )}
                                     </td>
                                     <td style={{ textAlign: 'center' }}>
-                                        <button
-                                            type="button"
-                                            className="btn-icon btn-danger"
+                                        <IconButton
+                                            variant="danger"
+                                            size="sm"
+                                            icon={<FaTrash />}
                                             onClick={() => removeItem(index)}
                                             title="Remove item"
-                                        >
-                                            <FaTrash />
-                                        </button>
+                                        />
                                     </td>
                                 </tr>
                             ))}
@@ -281,22 +281,18 @@ const Step2PurchasingForm = ({ ticketId, ticketData, onSave, onComplete, isLoadi
 
             {/* Actions */}
             <div className="form-actions">
-                <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={handleSave}
-                    disabled={isLoading}
-                >
+                <Button variant="secondary" onClick={handleSave} disabled={isLoading}>
                     Save Progress
-                </button>
-                <button
-                    type="button"
-                    className="btn-primary"
+                </Button>
+                <Button
+                    variant="primary"
                     onClick={handleComplete}
                     disabled={isLoading}
+                    loading={isLoading}
+                    loadingText="Saving..."
                 >
-                    {isLoading ? 'Saving...' : 'Complete Step 2'}
-                </button>
+                    Complete Step 2
+                </Button>
             </div>
         </div>
     );

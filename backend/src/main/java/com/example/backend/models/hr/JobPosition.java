@@ -12,8 +12,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Entity
+@Table(name = "job_positions")
 @Builder
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = {"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition", "parentJobPosition", "childPositions"})
@@ -22,6 +24,9 @@ public class JobPosition {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+
+    @Column(name = "position_number", unique = true, length = 20)
+    private String positionNumber;
 
     private String positionName;
 
@@ -61,6 +66,11 @@ public class JobPosition {
     private Integer workingHours;
     private String vacations;
 
+    // Numeric vacation days allocation (used by VacationBalance)
+    @Column(name = "vacation_days")
+    @Builder.Default
+    private Integer vacationDays = 21;
+
     // Time fields for MONTHLY contracts
     @Column(name = "start_time")
     private LocalTime startTime;
@@ -74,7 +84,9 @@ public class JobPosition {
 
     /**
      * Amount deducted when attendance status is Absent (unexcused leave/leave without notice)
+     * For MONTHLY contracts, defaults to daily rate if not explicitly set
      */
+    @Getter
     @Column(name = "absent_deduction", precision = 10, scale = 2)
     private BigDecimal absentDeduction;
 
@@ -256,10 +268,27 @@ public class JobPosition {
     }
 
     /**
-     * Calculate absent deduction amount (returns 0 if not configured)
+     * Calculate absent deduction amount
+     * For MONTHLY contracts: defaults to daily rate if not explicitly configured
+     * For other contracts: returns configured value or 0
      */
     public BigDecimal calculateAbsentDeductionAmount() {
+        if (contractType == ContractType.MONTHLY) {
+            if (absentDeduction != null && absentDeduction.compareTo(BigDecimal.ZERO) > 0) {
+                return absentDeduction;
+            }
+            // Default to daily rate for monthly contracts
+            Double dailySalary = calculateDailySalary();
+            return dailySalary != null ? BigDecimal.valueOf(dailySalary).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        }
         return hasAbsentDeduction() ? absentDeduction : BigDecimal.ZERO;
+    }
+
+    /**
+     * Get the effective absent deduction (returns actual value or daily rate for monthly)
+     */
+    public BigDecimal getEffectiveAbsentDeduction() {
+        return calculateAbsentDeductionAmount();
     }
 
     /**

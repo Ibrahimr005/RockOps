@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiAlertTriangle } from 'react-icons/fi';
+import { Button } from '../../../../../components/common/Button/Button';
 
 const PositionErrorState = ({
                                 error,
@@ -14,13 +15,13 @@ const PositionErrorState = ({
                 <h2>{title}</h2>
                 <p>{error}</p>
                 <div className="error-actions">
-                    <button onClick={onBack} className="btn btn-secondary">
+                    <Button variant="secondary" onClick={onBack}>
                         Back to Positions
-                    </button>
+                    </Button>
                     {onRetry && (
-                        <button onClick={onRetry} className="btn btn-primary">
+                        <Button variant="primary" onClick={onRetry}>
                             Try Again
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div>

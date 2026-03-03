@@ -99,6 +99,14 @@ const DepartmentsList = () => {
     // DataTable configuration with enhanced columns
     const columns = [
         {
+            header: 'Dept #',
+            accessor: 'departmentNumber',
+            sortable: true,
+            render: (row, value) => (
+                <span className="entity-number">{value || '-'}</span>
+            )
+        },
+        {
             header: 'Department Name',
             accessor: 'name',
             sortable: true,

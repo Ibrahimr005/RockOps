@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave } from 'react-icons/fa';
+import { FaSave } from 'react-icons/fa';
 import { FiDollarSign, FiUser, FiCalendar, FiFileText, FiCreditCard } from 'react-icons/fi';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ProcessPaymentModal.scss';
 
@@ -240,9 +241,7 @@ const ProcessPaymentModal = ({ paymentRequest, onClose, onSuccess }) => {
                                 <span className="modal-subtitle">{paymentRequest.requestNumber}</span>
                             </div>
                         </div>
-                        <button className="modal-close" onClick={onClose} disabled={loading}>
-                            <FaTimes />
-                        </button>
+                        <CloseButton onClick={onClose} disabled={loading} />
                     </div>
 
                     {/* Modal Body */}
@@ -400,32 +399,18 @@ const ProcessPaymentModal = ({ paymentRequest, onClose, onSuccess }) => {
 
                     {/* Modal Footer */}
                     <div className="modal-footer">
-                        <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={onClose}
-                            disabled={loading}
-                        >
+                        <Button variant="ghost" onClick={onClose} disabled={loading}>
                             Cancel
-                        </button>
-                        <button
-                            type="button"
-                            className="btn-primary"
+                        </Button>
+                        <Button
+                            variant="primary"
                             onClick={handleSubmit}
-                            disabled={loading}
+                            loading={loading}
+                            loadingText="Processing..."
                         >
-                            {loading ? (
-                                <>
-                                    <span className="spinner-small"></span>
-                                    <span>Processing...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <FaSave />
-                                    <span>Process Payment</span>
-                                </>
-                            )}
-                        </button>
+                            <FaSave />
+                            <span>Process Payment</span>
+                        </Button>
                     </div>
                 </div>
             </div>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Wrench, Plus, Trash2, Search } from 'lucide-react';
+import { Package, Wrench, Plus, Trash2, Search } from 'lucide-react';
 import './QuickActions.scss';
 import { equipmentService } from '../../../services/equipmentService';
 import { warehouseService } from '../../../services/warehouseService';
 import { itemService } from '../../../services/warehouse/itemService';
+import { Button, CloseButton, IconButton } from '../../../components/common/Button';
 
 const TransactionQuickActions = ({
     equipmentId,
@@ -290,12 +291,13 @@ const TransactionQuickActions = ({
                                         onChange={(e) => updateItemQuantity(index, parseInt(e.target.value) || 0)}
                                         className="quick-actions-quantity-input"
                                     />
-                                    <button
+                                    <IconButton
+                                        variant="danger"
+                                        size="sm"
+                                        icon={<Trash2 size={16} />}
                                         onClick={() => removeItem(index)}
-                                        className="quick-actions-remove-btn"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                        title="Remove item"
+                                    />
                                 </div>
                             </div>
                         ))}
@@ -338,12 +340,7 @@ const TransactionQuickActions = ({
                             }
                         </p>
                     </div>
-                    <button 
-                        className="quick-actions-close"
-                        onClick={onCancel}
-                    >
-                        <X size={24} />
-                    </button>
+                    <CloseButton onClick={onCancel} />
                 </div>
 
                 <div className="quick-actions-content">
@@ -360,30 +357,33 @@ const TransactionQuickActions = ({
                 <div className="quick-actions-footer">
                     {activeAction ? (
                         <div className="quick-actions-nav">
-                            <button 
-                                className="primary-outline"
+                            <Button
+                                variant="primary"
+                                outline
                                 onClick={() => {
                                     setActiveAction(null);
                                     resetForm();
                                 }}
                             >
                                 Back
-                            </button>
-                            <button 
-                                className="quick-actions-btn primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleSubmitRequest}
                                 disabled={loading || !selectedWarehouse || selectedItems.length === 0}
+                                loading={loading}
+                                loadingText="Creating..."
                             >
-                                {loading ? 'Creating...' : 'Create Request'}
-                            </button>
+                                Create Request
+                            </Button>
                         </div>
                     ) : (
-                        <button 
-                            className="btn-cancel"
+                        <Button
+                            variant="ghost"
                             onClick={onCancel}
                         >
                             Cancel
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div>

@@ -5,6 +5,7 @@ import ChildCategoriesTable from "./ChildCategoriesTable";
 import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
+import { Button } from '../../../components/common/Button';
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
 import Tabs from "../../../components/common/Tabs/Tabs.jsx";
 
@@ -138,9 +139,9 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
     return (
         <div className="error-container">
           <p>Error loading categories: {error}</p>
-          <button onClick={fetchAllCategories} className="retry-button">
+          <Button onClick={fetchAllCategories} variant="primary">
             Retry
-          </button>
+          </Button>
         </div>
     );
   }

@@ -6,6 +6,7 @@ import EditPositionForm from './components/EditPositionForm.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
+import { CloseButton } from '../../../components/common/Button/Button';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { jobPositionService } from '../../../services/hr/jobPositionService.js';
 import './PositionsList.scss';
@@ -169,6 +170,14 @@ const PositionsList = () => {
 
     const columns = [
         {
+            header: 'Position #',
+            accessor: 'positionNumber',
+            sortable: true,
+            render: (row, value) => (
+                <span className="entity-number">{value || '-'}</span>
+            )
+        },
+        {
             header: 'Position Name',
             accessor: 'positionName',
             sortable: true,
@@ -314,32 +323,32 @@ const PositionsList = () => {
                 }
             }
         },
-        {
-            header: 'Reporting To',
-            accessor: 'head',
-            sortable: true,
-            render: (row) => {
-                // Show both manager and parent position info if available
-                const manager = row.head;
-                const parentPosition = row.parentJobPositionName;
-
-                return (
-                    <div className="reporting-info">
-                        {manager && (
-                            <div className="manager-name">
-                                {manager}
-                            </div>
-                        )}
-                        {parentPosition && (
-                            <div className="parent-position">
-                                <FiTrendingUp size={12} /> {parentPosition}
-                            </div>
-                        )}
-                        {!manager && !parentPosition && 'N/A'}
-                    </div>
-                );
-            }
-        },
+        // {
+        //     header: 'Reporting To',
+        //     accessor: 'head',
+        //     sortable: true,
+        //     render: (row) => {
+        //         // Show both manager and parent position info if available
+        //         const manager = row.head;
+        //         const parentPosition = row.parentJobPositionName;
+        //
+        //         return (
+        //             <div className="reporting-info">
+        //                 {manager && (
+        //                     <div className="manager-name">
+        //                         {manager}
+        //                     </div>
+        //                 )}
+        //                 {parentPosition && (
+        //                     <div className="parent-position">
+        //                         <FiTrendingUp size={12} /> {parentPosition}
+        //                     </div>
+        //                 )}
+        //                 {!manager && !parentPosition && 'N/A'}
+        //             </div>
+        //         );
+        //     }
+        // },
         {
             header: 'Status',
             accessor: 'active',
@@ -400,12 +409,7 @@ const PositionsList = () => {
             {error && (
                 <div className="positions-error">
                     <strong>Error:</strong> {error}
-                    <button
-                        onClick={() => setError(null)}
-                        style={{ marginLeft: '10px', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '16px' }}
-                    >
-                        ×
-                    </button>
+                    <CloseButton onClick={() => setError(null)} />
                 </div>
             )}
 

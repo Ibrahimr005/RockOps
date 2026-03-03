@@ -92,7 +92,8 @@ const PositionOverview = ({ position }) => {
                     workingHours,
                     monthlyDays: position.workingDaysPerMonth,
                     shifts: position.shifts,
-                    vacations: position.vacations
+                    vacations: position.vacations,
+                    vacationDays: position.vacationDays
                 };
             default:
                 return null;
@@ -262,17 +263,21 @@ const PositionOverview = ({ position }) => {
             )}
 
             {/* Additional Information Card */}
-            {(scheduleInfo?.vacations || position.description) && (
+            {(scheduleInfo?.vacations || scheduleInfo?.vacationDays || position.description) && (
                 <div className="position-overview-card">
                     <div className="card-header">
                         <h3><FiInfo /> Additional Information</h3>
                     </div>
                     <div className="card-content">
                         <div className="additional-info">
-                            {scheduleInfo?.vacations && (
+                            {(scheduleInfo?.vacationDays != null || scheduleInfo?.vacations) && (
                                 <div className="info-item">
-                                    <label>Vacation Policy</label>
-                                    <span>{scheduleInfo.vacations}</span>
+                                    <label>Annual Vacation Days</label>
+                                    <span>
+                                        {scheduleInfo.vacationDays != null ? `${scheduleInfo.vacationDays} days` : ''}
+                                        {scheduleInfo.vacationDays != null && scheduleInfo.vacations ? ' — ' : ''}
+                                        {scheduleInfo.vacations || ''}
+                                    </span>
                                 </div>
                             )}
                             {position.description && (

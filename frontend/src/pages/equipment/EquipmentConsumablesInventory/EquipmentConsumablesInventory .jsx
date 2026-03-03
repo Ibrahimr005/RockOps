@@ -1,5 +1,6 @@
 import React, {forwardRef, useEffect, useImperativeHandle, useState} from 'react';
 import { FaPlus } from 'react-icons/fa';
+import { Button, CloseButton } from '../../../components/common/Button';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import { equipmentService } from '../../../services/equipmentService';
 import { transactionService } from '../../../services/transaction/transactionService.js';
@@ -622,11 +623,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                     <div className="resolution-modal">
                         <div className="resolution-modal-header">
                             <h2>Resolve Consumable Discrepancy</h2>
-                            <button
-                                className="btn-close"
-                                onClick={() => setIsResolutionModalOpen(false)}
-                                aria-label="Close"
-                            ></button>
+                            <CloseButton onClick={() => setIsResolutionModalOpen(false)} />
                         </div>
 
                         <div className="resolution-modal-body">
@@ -726,24 +723,23 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                                 </div>
 
                                 <div className="resolution-modal-footer">
-                                    <button
-                                        type="button"
-                                        className="btn-primary--outline"
+                                    <Button
+                                        variant="ghost"
                                         onClick={() => setIsResolutionModalOpen(false)}
                                     >
                                         Cancel
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         type="submit"
-                                        className="btn-primary"
+                                        variant="primary"
                                         disabled={
-                                            !resolutionData.resolutionType || 
+                                            !resolutionData.resolutionType ||
                                             !resolutionData.notes ||
                                             (resolutionData.resolutionType === 'COUNTING_ERROR' && !resolutionData.correctedQuantity)
                                         }
                                     >
                                         Resolve Discrepancy
-                                    </button>
+                                    </Button>
                                 </div>
                             </form>
                         </div>

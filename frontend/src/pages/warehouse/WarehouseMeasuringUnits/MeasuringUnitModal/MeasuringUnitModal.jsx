@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Button, CloseButton } from "../../../../components/common/Button";
 import "./MeasuringUnitModal.scss";
 
 const MeasuringUnitModal = ({
@@ -87,11 +88,7 @@ const MeasuringUnitModal = ({
                         </svg>
                         {selectedUnit ? 'Edit Measuring Unit' : 'Add New Measuring Unit'}
                     </h2>
-                    <button className="btn-close" onClick={onClose}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Modal Body */}
@@ -168,15 +165,12 @@ const MeasuringUnitModal = ({
 
                 {/* Modal Footer */}
                 <div className="modal-footer">
-                    <button type="button" className="modal-btn-secondary" onClick={onClose}>
+                    <Button variant="ghost" onClick={onClose}>
                         Cancel
-                    </button>
-                    <button type="submit" form="measuring-unit-form" className="btn-success">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                    </Button>
+                    <Button variant="success" type="submit" form="measuring-unit-form">
                         {selectedUnit ? 'Update Unit' : 'Add Unit'}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

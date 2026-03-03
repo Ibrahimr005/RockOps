@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaCheck, FaCircle, FaArrowLeft, FaArrowRight, FaExclamationTriangle } from 'react-icons/fa';
+import { FaCheck, FaCircle, FaArrowLeft, FaArrowRight, FaExclamationTriangle } from 'react-icons/fa';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import directPurchaseService from '../../../services/directPurchaseService';
@@ -7,6 +7,7 @@ import Step1CreationForm from './Step1CreationForm';
 import Step2PurchasingForm from './Step2PurchasingForm';
 import Step3FinalizePurchasingForm from './Step3FinalizePurchasingForm';
 import Step4TransportingForm from './Step4TransportingForm';
+import { Button, CloseButton } from '../../../components/common/Button';
 import './DirectPurchaseWizardModal.scss';
 
 const DirectPurchaseWizardModal = ({ isOpen, ticketId, initialStep = 1, onClose, onComplete }) => {
@@ -326,9 +327,7 @@ const DirectPurchaseWizardModal = ({ isOpen, ticketId, initialStep = 1, onClose,
                         <h2>{currentStepInfo.title}</h2>
                         {/*<p className="header-description">{currentStepInfo.description}</p>*/}
                     </div>
-                    <button className="close-button" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Stepper */}
@@ -411,23 +410,23 @@ const DirectPurchaseWizardModal = ({ isOpen, ticketId, initialStep = 1, onClose,
 
                 {/* Navigation Footer */}
                 <div className="wizard-footer">
-                    <button
-                        className="btn-secondary"
+                    <Button
+                        variant="secondary"
                         onClick={handlePrevious}
                         disabled={currentStep === 1 || loading}
                     >
                         <FaArrowLeft /> Previous
-                    </button>
+                    </Button>
                     <div className="step-indicator">
                         Step {currentStep} of 4
                     </div>
-                    <button
-                        className="btn-secondary"
+                    <Button
+                        variant="secondary"
                         onClick={handleNext}
                         disabled={currentStep === 4 || loading}
                     >
                         Next <FaArrowRight />
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { FiPlus, FiFilter, FiCheck, FiChevronUp } from 'react-icons/fi';
+import { Button } from '../Button';
 import './PageHeader.scss';
 
 const PageHeader = ({
@@ -71,14 +72,15 @@ const PageHeader = ({
                         </button>
                     )}
                     {actionButton && (
-                        <button
-                            className={`btn-primary ${actionButton.className || ''}`}
+                        <Button
+                            variant="primary"
+                            className={actionButton.className || ''}
                             onClick={actionButton.onClick}
                             disabled={actionButton.disabled}
                         >
                             {actionButton.icon || <FiPlus />}
                             {actionButton.text || 'Add'}
-                        </button>
+                        </Button>
                     )}
                     {children}
                 </div>

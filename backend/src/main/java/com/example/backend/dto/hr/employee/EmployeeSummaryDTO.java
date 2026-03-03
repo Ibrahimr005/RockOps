@@ -22,6 +22,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class EmployeeSummaryDTO {
     private UUID id;
+    private String employeeNumber;
     private String firstName;
     private String lastName;
     private String fullName;
@@ -99,6 +100,7 @@ public class EmployeeSummaryDTO {
 
         return EmployeeSummaryDTO.builder()
                 .id(employee.getId())
+                .employeeNumber(employee.getEmployeeNumber())
                 .firstName(employee.getFirstName())
                 .lastName(employee.getLastName())
                 .fullName(employee.getFullName())

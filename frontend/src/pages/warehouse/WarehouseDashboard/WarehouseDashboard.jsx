@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Package, Users, Warehouse, AlertTriangle, TrendingUp, Search, RefreshCw, Activity, MapPin, CheckCircle, ArrowUp, ArrowDown, Eye, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards';
+import { Button } from '../../../components/common/Button';
 import './WarehouseDashboard.scss';
 
 // Import services
@@ -193,10 +195,10 @@ const WarehouseManagerDashboard = () => {
                                     <option key={w.id} value={w.id}>{w.name}</option>
                                 ))}
                             </select>
-                            <button onClick={loadAllData} disabled={loading} className="wh-refresh-btn">
+                            <Button onClick={loadAllData} disabled={loading} variant="primary" className="wh-refresh-btn">
                                 <RefreshCw className={loading ? "wh-spinning" : ""} />
                                 Refresh
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -209,63 +211,15 @@ const WarehouseManagerDashboard = () => {
                         <h2>Key Performance Indicators</h2>
                         <p>Real-time overview of your warehouse operations</p>
                     </div>
-                    <div className="wh-kpi-grid">
-                        <div className="wh-kpi-card wh-primary">
-                            <div className="wh-kpi-icon">
-                                <Package />
-                            </div>
-                            <div className="wh-kpi-content">
-                                <div className="wh-kpi-value">{totalItems.toLocaleString()}</div>
-                                <div className="wh-kpi-label">Total Inventory</div>
-                                <div className="wh-kpi-trend wh-positive">
-                                    <ArrowUp size={14} />
-                                    +12% from last month
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="wh-kpi-card wh-success">
-                            <div className="wh-kpi-icon">
-                                <CheckCircle />
-                            </div>
-                            <div className="wh-kpi-content">
-                                <div className="wh-kpi-value">{Math.round((statusData.find(s => s.name === 'In Stock')?.value || 0) / totalItems * 100) || 0}%</div>
-                                <div className="wh-kpi-label">Stock Availability</div>
-                                <div className="wh-kpi-trend wh-positive">
-                                    <ArrowUp size={14} />
-                                    +8% from last week
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="wh-kpi-card wh-warning">
-                            <div className="wh-kpi-icon">
-                                <AlertTriangle />
-                            </div>
-                            <div className="wh-kpi-content">
-                                <div className="wh-kpi-value">{totalAlerts}</div>
-                                <div className="wh-kpi-label">Active Issues</div>
-                                <div className="wh-kpi-trend wh-negative">
-                                    <ArrowDown size={14} />
-                                    -3% from last week
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="wh-kpi-card wh-info">
-                            <div className="wh-kpi-icon">
-                                <Users />
-                            </div>
-                            <div className="wh-kpi-content">
-                                <div className="wh-kpi-value">{totalEmployees}</div>
-                                <div className="wh-kpi-label">Team Members</div>
-                                <div className="wh-kpi-trend wh-neutral">
-                                    <Activity size={14} />
-                                    Across {totalWarehouses} locations
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <StatisticsCards
+                        cards={[
+                            { icon: <Package size={24} />, label: "Total Inventory", value: totalItems.toLocaleString(), variant: "primary", subtitle: "+12% from last month" },
+                            { icon: <CheckCircle size={24} />, label: "Stock Availability", value: `${Math.round((statusData.find(s => s.name === 'In Stock')?.value || 0) / totalItems * 100) || 0}%`, variant: "success", subtitle: "+8% from last week" },
+                            { icon: <AlertTriangle size={24} />, label: "Active Issues", value: totalAlerts, variant: "warning", subtitle: "-3% from last week" },
+                            { icon: <Users size={24} />, label: "Team Members", value: totalEmployees, variant: "info", subtitle: `Across ${totalWarehouses} locations` },
+                        ]}
+                        columns={4}
+                    />
                 </section>
 
                 {/* Analytics Section */}
@@ -285,10 +239,10 @@ const WarehouseManagerDashboard = () => {
                                         <p>Inventory levels and capacity utilization</p>
                                     </div>
                                 </div>
-                                <button className="wh-view-details-btn">
+                                <Button variant="ghost" className="wh-view-details-btn">
                                     <Eye size={16} />
                                     View Details
-                                </button>
+                                </Button>
                             </div>
                             <div className="wh-chart-container">
                                 <ResponsiveContainer width="100%" height={320}>

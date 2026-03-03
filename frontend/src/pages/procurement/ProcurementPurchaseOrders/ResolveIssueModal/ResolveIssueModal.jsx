@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService';
+import { Button, CloseButton } from '../../../../components/common/Button';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ResolveIssueModal.scss';
 
 const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
@@ -11,13 +13,17 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
     const [isFetchingIssues, setIsFetchingIssues] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     useEffect(() => {
         if (isOpen && purchaseOrder) {
             fetchIssues();
             document.body.classList.add('modal-open');
+            document.body.style.overflow = 'hidden';
         } else {
             document.body.classList.remove('modal-open');
+            document.body.style.overflow = 'unset';
             // Reset state when modal closes
             setIssues([]);
             setResolutions({});
@@ -26,6 +32,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
 
         return () => {
             document.body.classList.remove('modal-open');
+            document.body.style.overflow = 'unset';
         };
     }, [isOpen, purchaseOrder]);
 
@@ -66,6 +73,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
     };
 
     const handleResolutionTypeChange = (issueId, resolutionType) => {
+        setIsFormDirty(true);
         setResolutions(prev => ({
             ...prev,
             [issueId]: {
@@ -76,6 +84,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
     };
 
     const handleResolutionNotesChange = (issueId, notes) => {
+        setIsFormDirty(true);
         setResolutions(prev => ({
             ...prev,
             [issueId]: {
@@ -177,10 +186,30 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
         return null;
     };
 
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     if (!isOpen || !purchaseOrder) return null;
 
     return (
-        <div className="resolve-issue-modal-overlay" onClick={onClose}>
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        <div className="resolve-issue-modal-overlay" onClick={handleCloseAttempt}>
             <div className="resolve-issue-modal-container" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="resolve-issue-modal-header">
@@ -197,9 +226,7 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
                             </div>
                         </div>
                     </div>
-                    <button className="btn-close" onClick={onClose} disabled={isSubmitting}>
-                        ×
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} disabled={isSubmitting} />
                 </div>
 
                 {/* Content */}
@@ -551,39 +578,26 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
                             </span>
                         </div>
                         <div className="footer-actions">
-                            <button
-                                type="button"
-                                className="btn-cancel"
-                                onClick={onClose}
-                                disabled={isSubmitting}
-                            >
+                            <Button variant="ghost" onClick={handleCloseAttempt} disabled={isSubmitting}>
                                 Cancel
-                            </button>
-                            <button
-                                type="button"
-                                className="btn-primary"
+                            </Button>
+                            <Button
+                                variant="primary"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting}
+                                loading={isSubmitting}
+                                loadingText="Resolving..."
                             >
-                                {isSubmitting ? (
-                                    <>
-                                        <div className="spinner-small"></div>
-                                        Resolving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        Resolve All Issues
-                                    </>
-                                )}
-                            </button>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                                Resolve All Issues
+                            </Button>
                         </div>
                     </div>
                 )}
             </div>
         </div>
+        </>
     );
 };
 

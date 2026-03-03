@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './EmployeeModals.scss';
 import {useSnackbar} from "../../../../contexts/SnackbarContext.jsx";
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import { Button, CloseButton } from '../../../../components/common/Button';
 
 // Country data with codes and flags
 const COUNTRIES = [
@@ -50,6 +52,8 @@ const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplie
 
 const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) => {
     const { showSuccess, showError } = useSnackbar();
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -97,6 +101,14 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
         // If no country code found, assume it's just the number
         return { code: '+20', number: fullPhone };
     };
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     // Initialize form data with employee information
     useEffect(() => {
@@ -193,6 +205,7 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
 
     // Handle form input changes
     const handleChange = (e) => {
+        setIsFormDirty(true);
         const { name, value } = e.target;
         setFormData({
             ...formData,
@@ -370,18 +383,27 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
         }
     };
 
-    const handleOverlayClick = (e) => {
-        if (e.target === e.currentTarget) {
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
             onClose();
         }
     };
 
+    const handleOverlayClick = (e) => {
+        if (e.target === e.currentTarget) {
+            handleCloseAttempt();
+        }
+    };
+
     return (
+        <>
         <div className="r4m-modal-overlay" onClick={handleOverlayClick}>
             <div className="r4m-employee-modal">
                 <div className="r4m-modal-header">
                     <h2>Edit Employee</h2>
-                    <button className="btn-close" onClick={onClose}>×</button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -782,12 +804,25 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                     </div>
 
                     <div className="r4m-modal-footer">
-                        <button type="button" className="r4m-cancel-btn" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="r4m-save-btn">Update Employee</button>
+                        <Button variant="ghost" onClick={handleCloseAttempt}>Cancel</Button>
+                        <Button variant="primary" type="submit">Update Employee</Button>
                     </div>
                 </form>
             </div>
         </div>
+
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
+        </>
     );
 };
 

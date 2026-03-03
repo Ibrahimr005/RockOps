@@ -1,5 +1,7 @@
 import React from 'react';
+import { FiTrendingUp, FiArrowUp, FiDollarSign, FiClock } from 'react-icons/fi';
 import DataTable from '../../../../../components/common/DataTable/DataTable';
+import StatisticsCards from '../../../../../components/common/StatisticsCards/StatisticsCards';
 
 const PositionPromotionsTab = ({
                                    positionData,
@@ -66,37 +68,39 @@ const PositionPromotionsTab = ({
 
     return (
         <div className="promotions-tab">
-            <div className="promotion-stats">
-                <div className="stat-card">
-                    <h4>Promotions From This Position</h4>
-                    <div className="stat-value">{promotionStats.promotionsFromCount || 0}</div>
-                    <div className="stat-subtext">Total career progressions</div>
-                </div>
-
-                <div className="stat-card">
-                    <h4>Promotions To This Position</h4>
-                    <div className="stat-value">{promotionStats.promotionsToCount || 0}</div>
-                    <div className="stat-subtext">Employees promoted here</div>
-                </div>
-
-                <div className="stat-card">
-                    <h4>Average Salary Increase</h4>
-                    <div className="stat-value">
-                        {promotionStats.averageSalaryIncrease ?
-                            formatCurrency(promotionStats.averageSalaryIncrease) : 'N/A'}
-                    </div>
-                    <div className="stat-subtext">From this position</div>
-                </div>
-
-                <div className="stat-card">
-                    <h4>Average Time to Promotion</h4>
-                    <div className="stat-value">
-                        {promotionStats.averageTimeBeforePromotion ?
-                            `${Math.round(promotionStats.averageTimeBeforePromotion)} months` : 'N/A'}
-                    </div>
-                    <div className="stat-subtext">Before promotion</div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    {
+                        icon: <FiTrendingUp />,
+                        label: "Promotions From This Position",
+                        value: promotionStats.promotionsFromCount || 0,
+                        variant: "primary",
+                        subtitle: "Total career progressions"
+                    },
+                    {
+                        icon: <FiArrowUp />,
+                        label: "Promotions To This Position",
+                        value: promotionStats.promotionsToCount || 0,
+                        variant: "success",
+                        subtitle: "Employees promoted here"
+                    },
+                    {
+                        icon: <FiDollarSign />,
+                        label: "Average Salary Increase",
+                        value: promotionStats.averageSalaryIncrease ? formatCurrency(promotionStats.averageSalaryIncrease) : 'N/A',
+                        variant: "info",
+                        subtitle: "From this position"
+                    },
+                    {
+                        icon: <FiClock />,
+                        label: "Average Time to Promotion",
+                        value: promotionStats.averageTimeBeforePromotion ? `${Math.round(promotionStats.averageTimeBeforePromotion)} months` : 'N/A',
+                        variant: "warning",
+                        subtitle: "Before promotion"
+                    },
+                ]}
+                columns={4}
+            />
 
             <div className="promotion-tables">
                 <div className="promotion-section">

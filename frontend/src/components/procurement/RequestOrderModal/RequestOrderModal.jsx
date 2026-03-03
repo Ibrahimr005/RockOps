@@ -10,20 +10,21 @@ import { requestOrderService } from '../../../services/procurement/requestOrderS
 import { equipmentPurchaseSpecService } from '../../../services/procurement/equipmentPurchaseSpecService.js';
 import EquipmentItemForm from '../EquipmentItemForm/EquipmentItemForm.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { Button, CloseButton } from '../../../components/common/Button';
 import './RequestOrderModal.scss';
 
 const RequestOrderModal = ({
-    isOpen,
-    onClose,
-    onSuccess,
-    onError,
-    isEditMode = false,
-    existingOrder = null,
-    userType = 'PROCUREMENT', // 'PROCUREMENT' or 'WAREHOUSE'
-    currentWarehouseId = null,
-    currentSiteId = null,
-    initialPartyType = 'WAREHOUSE'
-}) => {
+                               isOpen,
+                               onClose,
+                               onSuccess,
+                               onError,
+                               isEditMode = false,
+                               existingOrder = null,
+                               userType = 'PROCUREMENT', // 'PROCUREMENT' or 'WAREHOUSE'
+                               currentWarehouseId = null,
+                               currentSiteId = null,
+                               initialPartyType = 'WAREHOUSE'
+                           }) => {
     // Current step state (1, 2, or 3)
     const [currentStep, setCurrentStep] = useState(1);
 
@@ -61,7 +62,18 @@ const RequestOrderModal = ({
     // Loading state
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Update the useEffect to fetch warehouses and set the site properly
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+// Update the useEffect to fetch warehouses and set the site properly
     useEffect(() => {
         if (isOpen) {
             const initializeModal = async () => {
@@ -100,7 +112,7 @@ const RequestOrderModal = ({
         }
     }, [warehouses, formData.requesterId]);
 
-    // Add this new function to fetch all warehouses
+// Add this new function to fetch all warehouses
     const fetchAllWarehouses = async () => {
         try {
             const data = await warehouseService.getAll(); // Assuming this method exists
@@ -111,7 +123,7 @@ const RequestOrderModal = ({
         }
     };
 
-    // Update fetchInitialData to include all warehouses
+// Update fetchInitialData to include all warehouses
     const fetchInitialData = async () => {
         try {
             await Promise.all([
@@ -129,9 +141,9 @@ const RequestOrderModal = ({
 
 
 
-    // Update handleSiteChange to filter warehouses instead of replacing them
+// Update handleSiteChange to filter warehouses instead of replacing them
 
-    // Add this new function
+// Add this new function
     const fetchWarehouseDetails = async (warehouseId) => {
         try {
             const warehouse = await warehouseService.getById(warehouseId);
@@ -557,6 +569,11 @@ const RequestOrderModal = ({
                 items: itemsPayload.length > 0 ? itemsPayload : undefined
             };
 
+            // Remove items array if empty
+            if (requestPayload.items && requestPayload.items.length === 0) {
+                delete requestPayload.items;
+            }
+
             if (isEditMode && existingOrder?.id) {
                 await requestOrderService.update(existingOrder.id, requestPayload);
                 onSuccess?.('Draft updated successfully');
@@ -786,13 +803,10 @@ const RequestOrderModal = ({
                         <h2 className="modal-title">
                             {isEditMode ? 'Update Request Order' : 'Create New Request Order'}
                         </h2>
-                        <button
-                            className="btn-close"
+                        <CloseButton
                             onClick={handleCloseAttempt}
                             disabled={isSubmitting}
-                        >
-                            <FaTimes />
-                        </button>
+                        />
                     </div>
 
                     {/* Step Indicator */}
@@ -914,15 +928,15 @@ const RequestOrderModal = ({
                                         <>
                                             <div className="section-header">
                                                 <h3 className="modal-section-title">Request Items</h3>
-                                                <button
-                                                    type="button"
-                                                    className="btn-add-item"
+                                                <Button
+                                                    variant="primary"
+                                                    size="sm"
                                                     onClick={handleAddItem}
                                                     disabled={isSubmitting}
                                                 >
                                                     <FaPlus />
                                                     Add Another Item
-                                                </button>
+                                                </Button>
                                             </div>
 
                                             <div className="items-container">
@@ -931,15 +945,15 @@ const RequestOrderModal = ({
                                                         <div className="item-header">
                                                             <span className="item-number">Item {index + 1}</span>
                                                             {formData.items.length > 1 && (
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn-remove-item"
+                                                                <Button
+                                                                    variant="danger"
+                                                                    size="sm"
                                                                     onClick={() => handleRemoveItem(index)}
                                                                     disabled={isSubmitting}
                                                                 >
                                                                     <FaTimes />
                                                                     Remove
-                                                                </button>
+                                                                </Button>
                                                             )}
                                                         </div>
 
@@ -1113,6 +1127,7 @@ const RequestOrderModal = ({
                                                     </select>
                                                 </div>
 
+                                                {/* REMOVED THE CONDITIONAL - Always show warehouse dropdown */}
                                                 <div className="form-group">
                                                     <label htmlFor="requesterId" className="form-label">
                                                         Warehouse <span className="required">*</span>
@@ -1177,59 +1192,46 @@ const RequestOrderModal = ({
                     <div className="modal-footer">
                         <div className="footer-left">
                             {currentStep > 1 && (
-                                <button
-                                    type="button"
-                                    className="modal-btn-secondary"
+                                <Button
+                                    variant="ghost"
                                     onClick={handlePreviousStep}
                                     disabled={isSubmitting}
                                 >
                                     Previous
-                                </button>
+                                </Button>
                             )}
                         </div>
 
                         <div className="footer-right">
-                            <button
-                                type="button"
-                                className="btn-draft"
+                            <Button
+                                variant="ghost"
                                 onClick={handleSaveAsDraft}
                                 disabled={isSubmitting}
+                                loading={isSubmitting}
+                                loadingText="Saving..."
                             >
-                                {isSubmitting ? (
-                                    <>
-                                        <span className="spinner"></span>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    'Save as Draft'
-                                )}
-                            </button>
+                                Save as Draft
+                            </Button>
 
                             {currentStep < 3 ? (
-                                <button
-                                    type="button"
-                                    className="btn-primary"
+                                <Button
+                                    variant="primary"
                                     onClick={handleNextStep}
                                     disabled={isSubmitting}
                                 >
                                     Next
-                                </button>
+                                </Button>
                             ) : (
-                                <button
+                                <Button
+                                    variant="success"
                                     type="submit"
-                                    className="btn-success"
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
+                                    loading={isSubmitting}
+                                    loadingText="Submitting..."
                                 >
-                                    {isSubmitting ? (
-                                        <>
-                                            <span className="spinner"></span>
-                                            Submitting...
-                                        </>
-                                    ) : (
-                                        isEditMode ? 'Create Request' : 'Submit Request'
-                                    )}
-                                </button>
+                                    {isEditMode ? 'Create Request' : 'Submit Request'}
+                                </Button>
                             )}
                         </div>
                     </div>

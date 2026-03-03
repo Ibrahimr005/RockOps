@@ -21,6 +21,7 @@ public class JobPositionDetailsDTO {
     // BASIC INFORMATION
     // ======================================
     private UUID id;
+    private String positionNumber;
     private String positionName;
     private String departmentName;
     private String head;
@@ -51,6 +52,7 @@ public class JobPositionDetailsDTO {
     private String shifts;
     private Integer workingHours;
     private String vacations;
+    private Integer vacationDays;
     private LocalTime startTime;
     private LocalTime endTime;
 
@@ -102,6 +104,11 @@ public class JobPositionDetailsDTO {
     private Boolean isRootPosition;
     private Integer hierarchyLevel;
     private String hierarchyPath;
+
+    // ======================================
+    // CHILD POSITIONS
+    // ======================================
+    private List<ChildPositionDTO> childPositions;
 
     // ======================================
     // EMPLOYEE DATA
@@ -223,5 +230,16 @@ public class JobPositionDetailsDTO {
         private String toPosition;
         private String promotionDate;
         private String reason;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChildPositionDTO {
+        private UUID id;
+        private String positionName;
+        private Integer employeeCount;
+        private Boolean active;
     }
 }

@@ -27,6 +27,7 @@ import { notificationService } from '../../services/notification/notificationSer
 import { webSocketService } from '../../services/notification/webSocketService';
 import notificationLight from '../../assets/imgs/notificationlight.png';
 import notificationDark from '../../assets/imgs/notificationdark.png';
+import { Button } from '../../components/common/Button';
 import './Notifications.scss';
 
 const Notifications = () => {
@@ -424,22 +425,24 @@ const Notifications = () => {
                 </div>
 
                 <div className="toolbar-actions">
-                    <button
+                    <Button
+                        variant="primary"
+                        outline
                         onClick={markAllAsRead}
                         disabled={filteredNotifications.filter(n => !n.read).length === 0}
-                        className="action-button mark-read"
                     >
                         <FaCheckDouble />
                         Mark All Read
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        variant="danger"
+                        outline
                         onClick={clearAllNotifications}
                         disabled={filteredNotifications.length === 0}
-                        className="action-button clear-all"
                     >
                         <FaTrash />
                         Clear All
-                    </button>
+                    </Button>
                 </div>
             </div>
 

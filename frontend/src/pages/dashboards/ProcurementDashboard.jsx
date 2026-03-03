@@ -5,6 +5,8 @@ import { ShoppingCart, FileText, Users, TrendingUp, AlertCircle, DollarSign } fr
 import DashboardService from '../../services/dashboardService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
+import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
+import StatisticsCards from '../../components/common/StatisticsCards/StatisticsCards.jsx';
 import '../../styles/dashboard-styles.scss';
 
 /**
@@ -51,85 +53,56 @@ const ProcurementDashboard = () => {
 
     return (
         <div className="procurement-dashboard">
-            <div className="procurement-dashboard-header">
-                <h1>Procurement Dashboard</h1>
-                <p>Procurement operations and vendor management</p>
-            </div>
+            <PageHeader title="Procurement Dashboard" subtitle="Procurement operations and vendor management" />
 
             {/* KPI Cards */}
-            <div className="procurement-kpi-grid">
-                <div className="procurement-kpi-card">
-                    <div className="procurement-kpi-icon">
-                        <FileText />
-                    </div>
-                    <div className="procurement-kpi-content">
-                        <div className="procurement-kpi-value">{dashboardData.totalRequestOrders}</div>
-                        <div className="procurement-kpi-label">Request Orders</div>
-                        <div className="procurement-kpi-sub">{dashboardData.pendingRequestOrders} Pending</div>
-                    </div>
-                </div>
-
-                <div className="procurement-kpi-card">
-                    <div className="procurement-kpi-icon">
-                        <ShoppingCart />
-                    </div>
-                    <div className="procurement-kpi-content">
-                        <div className="procurement-kpi-value">{dashboardData.totalPurchaseOrders}</div>
-                        <div className="procurement-kpi-label">Purchase Orders</div>
-                        <div className="procurement-kpi-sub">{dashboardData.inProgressPurchaseOrders} In Progress</div>
-                    </div>
-                </div>
-
-                <div className="procurement-kpi-card">
-                    <div className="procurement-kpi-icon">
-                        <Users />
-                    </div>
-                    <div className="procurement-kpi-content">
-                        <div className="procurement-kpi-value">{dashboardData.totalMerchants}</div>
-                        <div className="procurement-kpi-label">Merchants</div>
-                        <div className="procurement-kpi-sub">{dashboardData.activeMerchants} Active</div>
-                    </div>
-                </div>
-
-                <div className="procurement-kpi-card">
-                    <div className="procurement-kpi-icon">
-                        <DollarSign />
-                    </div>
-                    <div className="procurement-kpi-content">
-                        <div className="procurement-kpi-value">
-                            ${(dashboardData.totalProcurementValue || 0).toLocaleString()}
-                        </div>
-                        <div className="procurement-kpi-label">Total Value</div>
-                        <div className="procurement-kpi-sub">
-                            ${(dashboardData.pendingOrdersValue || 0).toLocaleString()} Pending
-                        </div>
-                    </div>
-                </div>
-
-                <div className="procurement-kpi-card">
-                    <div className="procurement-kpi-icon">
-                        <TrendingUp />
-                    </div>
-                    <div className="procurement-kpi-content">
-                        <div className="procurement-kpi-value">{dashboardData.orderFulfillmentRate}%</div>
-                        <div className="procurement-kpi-label">Fulfillment Rate</div>
-                        <div className="procurement-kpi-sub">
-                            {dashboardData.onTimeDeliveryRate}% On-time
-                        </div>
-                    </div>
-                </div>
-
-                <div className="procurement-kpi-card">
-                    <div className="procurement-kpi-icon">
-                        <AlertCircle />
-                    </div>
-                    <div className="procurement-kpi-content">
-                        <div className="procurement-kpi-value">{dashboardData.overdueOrders}</div>
-                        <div className="procurement-kpi-label">Overdue Orders</div>
-                        <div className="procurement-kpi-sub">{dashboardData.urgentRequests} Urgent</div>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                columns={3}
+                cards={[
+                    {
+                        icon: <FileText />,
+                        label: "Request Orders",
+                        value: dashboardData.totalRequestOrders,
+                        variant: "primary",
+                        subtitle: `${dashboardData.pendingRequestOrders} Pending`,
+                    },
+                    {
+                        icon: <ShoppingCart />,
+                        label: "Purchase Orders",
+                        value: dashboardData.totalPurchaseOrders,
+                        variant: "info",
+                        subtitle: `${dashboardData.inProgressPurchaseOrders} In Progress`,
+                    },
+                    {
+                        icon: <Users />,
+                        label: "Merchants",
+                        value: dashboardData.totalMerchants,
+                        variant: "purple",
+                        subtitle: `${dashboardData.activeMerchants} Active`,
+                    },
+                    {
+                        icon: <DollarSign />,
+                        label: "Total Value",
+                        value: `$${(dashboardData.totalProcurementValue || 0).toLocaleString()}`,
+                        variant: "success",
+                        subtitle: `$${(dashboardData.pendingOrdersValue || 0).toLocaleString()} Pending`,
+                    },
+                    {
+                        icon: <TrendingUp />,
+                        label: "Fulfillment Rate",
+                        value: `${dashboardData.orderFulfillmentRate}%`,
+                        variant: "lime",
+                        subtitle: `${dashboardData.onTimeDeliveryRate}% On-time`,
+                    },
+                    {
+                        icon: <AlertCircle />,
+                        label: "Overdue Orders",
+                        value: dashboardData.overdueOrders,
+                        variant: "danger",
+                        subtitle: `${dashboardData.urgentRequests} Urgent`,
+                    },
+                ]}
+            />
 
             {/* Charts Section */}
             <div className="procurement-charts">

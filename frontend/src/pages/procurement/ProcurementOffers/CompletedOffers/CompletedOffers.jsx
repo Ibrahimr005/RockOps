@@ -19,6 +19,7 @@ import "../ProcurementOffers.scss";
 import "./CompletedOffers.scss";
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
+import { Button } from '../../../../components/common/Button';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 
 const CompletedOffers = ({
@@ -287,13 +288,13 @@ const CompletedOffers = ({
                                             <div className="po-notification-text">
                                                 <p>A purchase order has been created for this completed offer.</p>
                                             </div>
-                                            <button
-                                                className="btn-primary"
+                                            <Button
+                                                variant="primary"
                                                 onClick={handleViewPurchaseOrder}
                                             >
                                                 View Purchase Order
                                                 <FiArrowRight size={16} />
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                 )}

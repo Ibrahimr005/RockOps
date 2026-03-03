@@ -11,13 +11,13 @@
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: var(--bg-secondary);
+    background: var(--color-surface-secondary);
     border: 2px solid var(--border-color);
     border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     transition: all 0.3s ease;
 
     svg {
@@ -25,49 +25,137 @@
     }
 
     &:hover {
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-      background: rgba(var(--primary-rgb), 0.05);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: rgba(var(--color-primary-rgb), 0.05);
     }
 
     &.active {
-      background: var(--primary-color);
+      background: var(--color-primary);
       color: white;
-      border-color: var(--primary-color);
+      border-color: var(--color-primary);
     }
   }
 
   .status-badge {
     padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
     font-weight: 600;
     text-transform: uppercase;
 
     &.status-pending {
-      background: rgba(255, 152, 0, 0.1);
-      color: #FF9800;
+      background: rgba(var(--color-warning-rgb), 0.1);
+      color: var(--color-warning);
     }
 
     &.status-approved {
-      background: rgba(33, 150, 243, 0.1);
-      color: #2196F3;
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
     }
 
     &.status-rejected {
-      background: rgba(244, 67, 54, 0.1);
-      color: #F44336;
+      background: rgba(var(--color-danger-rgb), 0.1);
+      color: var(--color-danger);
     }
 
     &.status-partial,
     &.status-partially_paid {
-      background: rgba(156, 39, 176, 0.1);
-      color: #9C27B0;
+      background: rgba(var(--color-purple-rgb), 0.1);
+      color: var(--color-purple);
     }
 
     &.status-paid {
-      background: rgba(76, 175, 80, 0.1);
-      color: #4CAF50;
+      background: rgba(var(--color-success-rgb), 0.1);
+      color: var(--color-success);
+    }
+  }
+
+  // Source badges - indicates where payment originates
+  .source-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+
+    &.source-procurement {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
+    }
+
+    &.source-maintenance {
+      background: rgba(var(--color-success-rgb), 0.1);
+      color: var(--color-success);
+    }
+
+    &.source-payroll {
+      background: rgba(var(--color-purple-rgb), 0.1);
+      color: var(--color-purple);
+    }
+
+    &.source-eloan {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
+    }
+
+    &.source-cloan {
+      background: rgba(var(--color-purple-rgb), 0.1);
+      color: var(--color-purple);
+    }
+
+    &.source-bonus {
+      background: rgba(var(--color-lime-rgb), 0.1);
+      color: var(--color-lime);
+    }
+
+    &.source-logistics {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
+    }
+
+    &.source-default,
+    &.source-unknown {
+      background: var(--color-surface-secondary);
+      color: var(--color-text-muted);
+    }
+  }
+
+  // Recipient badges - indicates who receives the payment
+  .recipient-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+
+    &.recipient-merchant {
+      background: rgba(var(--color-success-rgb), 0.1);
+      color: var(--color-success);
+    }
+
+    &.recipient-employee {
+      background: rgba(var(--color-primary-rgb), 0.1);
+      color: var(--color-primary);
+    }
+
+    &.recipient-employees {
+      background: rgba(var(--color-purple-rgb), 0.1);
+      color: var(--color-purple);
+    }
+
+    &.recipient-institution {
+      background: rgba(var(--color-warning-rgb), 0.1);
+      color: var(--color-warning);
+    }
+
+    &.recipient-default {
+      background: var(--color-surface-secondary);
+      color: var(--color-text-muted);
     }
   }
 }
@@ -79,16 +167,16 @@
   overflow-y: auto;
 
   .details-section {
-    background: var(--bg-secondary);
-    border-radius: 8px;
+    background: var(--color-surface-secondary);
+    border-radius: var(--radius-sm);
     padding: 16px;
     margin-bottom: 20px;
 
     h3 {
-      font-size: 16px;
+      font-size: var(--font-size-md);
       font-weight: 600;
       margin: 0 0 16px 0;
-      color: var(--text-color);
+      color: var(--color-text-primary);
       border-bottom: 2px solid var(--border-color);
       padding-bottom: 8px;
     }
@@ -111,13 +199,13 @@
       label {
         font-size: 12px;
         font-weight: 500;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         text-transform: uppercase;
       }
 
       span {
         font-size: 14px;
-        color: var(--text-color);
+        color: var(--color-text-primary);
 
         &.rejection-reason {
           color: var(--color-danger);
@@ -142,12 +230,12 @@
       gap: 8px;
       padding: 12px;
       background: var(--main-background-color);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
 
       label {
-        font-size: 12px;
+        font-size: var(--font-size-xs);
         font-weight: 500;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         text-transform: uppercase;
       }
 
@@ -156,15 +244,15 @@
         font-weight: 700;
 
         &.primary {
-          color: var(--primary-color);
+          color: var(--color-primary);
         }
 
         &.success {
-          color: var(--success-color);
+          color: var(--color-success);
         }
 
         &.warning {
-          color: var(--warning-color);
+          color: var(--color-warning);
         }
       }
     }
@@ -186,13 +274,13 @@
         th {
           background: var(--main-background-color);
           font-weight: 600;
-          color: var(--text-secondary);
+          color: var(--color-text-secondary);
           text-transform: uppercase;
           font-size: 11px;
         }
 
         td {
-          color: var(--text-color);
+          color: var(--color-text-primary);
         }
       }
     }
@@ -205,9 +293,9 @@
 
     .payment-item {
       background: var(--main-background-color);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 12px;
-      border-left: 4px solid var(--success-color);
+      border-left: 4px solid var(--color-success);
 
       .payment-header {
         display: flex;
@@ -217,7 +305,7 @@
 
         .payment-number {
           font-weight: 600;
-          color: var(--text-color);
+          color: var(--color-text-primary);
         }
 
         .payment-status {
@@ -228,13 +316,13 @@
           text-transform: uppercase;
 
           &.status-completed {
-            background: rgba(76, 175, 80, 0.1);
-            color: #4CAF50;
+            background: rgba(var(--color-success-rgb), 0.1);
+            color: var(--color-success);
           }
 
           &.status-pending {
-            background: rgba(255, 152, 0, 0.1);
-            color: #FF9800;
+            background: rgba(var(--color-warning-rgb), 0.1);
+            color: var(--color-warning);
           }
         }
       }
@@ -251,16 +339,16 @@
         font-size: 13px;
 
         label {
-          color: var(--text-secondary);
+          color: var(--color-text-secondary);
           font-weight: 500;
         }
 
         span {
-          color: var(--text-color);
+          color: var(--color-text-primary);
 
           &.amount {
             font-weight: 600;
-            color: var(--success-color);
+            color: var(--color-success);
           }
         }
       }
@@ -273,8 +361,8 @@
   width: 90%;
 
   .request-summary {
-    background: var(--bg-secondary);
-    border-radius: 8px;
+    background: var(--color-surface-secondary);
+    border-radius: var(--radius-sm);
     padding: 16px;
     margin-bottom: 20px;
 
@@ -282,7 +370,7 @@
       font-size: 16px;
       font-weight: 600;
       margin: 0 0 16px 0;
-      color: var(--text-color);
+      color: var(--color-text-primary);
     }
 
     .summary-grid {
@@ -299,18 +387,18 @@
       label {
         font-size: 12px;
         font-weight: 500;
-        color: var(--text-secondary);
+        color: var(--color-text-secondary);
         text-transform: uppercase;
       }
 
       span {
         font-size: 14px;
-        color: var(--text-color);
+        color: var(--color-text-primary);
 
         &.amount {
           font-size: 16px;
           font-weight: 700;
-          color: var(--primary-color);
+          color: var(--color-primary);
         }
       }
     }
@@ -333,47 +421,47 @@
       gap: 8px;
       padding: 14px;
       border: 2px solid var(--border-color);
-      border-radius: 8px;
-      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-secondary);
       cursor: pointer;
-      font-size: 14px;
+      font-size: var(--font-size-sm);
       font-weight: 600;
-      color: var(--text-secondary);
-      transition: all 0.3s ease;
+      color: var(--color-text-secondary);
+      transition: all var(--transition-normal) ease;
 
       svg {
-        font-size: 18px;
+        font-size: var(--font-size-lg);
       }
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-md);
       }
 
       &.approve-btn {
         &:hover {
-          border-color: #4CAF50;
-          color: #4CAF50;
-          background: rgba(76, 175, 80, 0.05);
+          border-color: var(--color-success);
+          color: var(--color-success);
+          background: rgba(var(--color-success-rgb), 0.05);
         }
 
         &.active {
-          background: #4CAF50;
-          border-color: #4CAF50;
+          background: var(--color-success);
+          border-color: var(--color-success);
           color: white;
         }
       }
 
       &.reject-btn {
         &:hover {
-          border-color: #F44336;
-          color: #F44336;
-          background: rgba(244, 67, 54, 0.05);
+          border-color: var(--color-danger);
+          color: var(--color-danger);
+          background: rgba(var(--color-danger-rgb), 0.05);
         }
 
         &.active {
-          background: #F44336;
-          border-color: #F44336;
+          background: var(--color-danger);
+          border-color: var(--color-danger);
           color: white;
         }
       }
@@ -386,7 +474,7 @@
     .modern-form-label {
       display: block;
       font-weight: 500;
-      color: var(--text-color);
+      color: var(--color-text-primary);
       font-size: 14px;
       margin-bottom: 6px;
 
@@ -400,17 +488,17 @@
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 14px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
       background: var(--main-background-color);
-      color: var(--text-color);
-      transition: border-color 0.2s ease;
+      color: var(--color-text-primary);
+      transition: border-color var(--transition-fast) ease;
       font-family: inherit;
 
       &:focus {
         outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
       }
 
       &.error {
@@ -427,12 +515,12 @@
   }
 
   .btn-danger {
-    background: #F44336;
-    border-color: #F44336;
+    background: var(--color-danger);
+    border-color: var(--color-danger);
 
     &:hover {
-      background: #D32F2F;
-      border-color: #D32F2F;
+      background: var(--color-danger-dark);
+      border-color: var(--color-danger-dark);
     }
   }
 }

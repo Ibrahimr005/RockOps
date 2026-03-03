@@ -37,7 +37,7 @@ const LoadingPage = () => {
                     {/* Progress Bar */}
                     <div className="progress-container">
                         <div className="progress-bar">
-                            <div className="progress-fill"></div>
+                            <div className="loading-progress-fill"></div>
                         </div>
                         <div className="progress-text">Loading your workspace...</div>
                     </div>

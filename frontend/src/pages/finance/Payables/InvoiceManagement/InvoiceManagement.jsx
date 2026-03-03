@@ -13,6 +13,7 @@ import {
     FaClock
 } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { financeService } from '../../../../services/financeService.js';
@@ -38,6 +39,18 @@ const InvoiceManagement = () => {
         dueDate: '',
         description: ''
     });
+
+    // Scroll lock for modals
+    useEffect(() => {
+        if (showCreateModal || showEditModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showCreateModal, showEditModal]);
 
     useEffect(() => {
         fetchInvoices();
@@ -349,13 +362,13 @@ const InvoiceManagement = () => {
                     {/*    <FaDownload />*/}
                     {/*    Refresh*/}
                     {/*</button>*/}
-                    <button
-                        className="payables-btn payables-btn-primary"
+                    <Button
+                        variant="primary"
                         onClick={openCreateModal}
                     >
                         <FaPlus />
                         Create Invoice
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -428,12 +441,7 @@ const InvoiceManagement = () => {
                     <div className="modal">
                         <div className="modal-header">
                             <h3>Create New Invoice</h3>
-                            <button
-                                className="modal-close"
-                                onClick={() => setShowCreateModal(false)}
-                            >
-                                ×
-                            </button>
+                            <CloseButton onClick={() => setShowCreateModal(false)} />
                         </div>
                         <form onSubmit={handleCreateInvoice} className="modal-content">
                             <div className="payables-form-row">
@@ -501,19 +509,18 @@ const InvoiceManagement = () => {
                                 />
                             </div>
                             <div className="modal-actions">
-                                <button
-                                    type="button"
-                                    className="payables-btn payables-btn-secondary"
+                                <Button
+                                    variant="ghost"
                                     onClick={() => setShowCreateModal(false)}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    className="payables-btn payables-btn-primary"
+                                    variant="primary"
                                 >
                                     Create Invoice
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>
@@ -526,12 +533,7 @@ const InvoiceManagement = () => {
                     <div className="modal">
                         <div className="modal-header">
                             <h3>Edit Invoice</h3>
-                            <button
-                                className="modal-close"
-                                onClick={() => setShowEditModal(false)}
-                            >
-                                ×
-                            </button>
+                            <CloseButton onClick={() => setShowEditModal(false)} />
                         </div>
                         <form onSubmit={handleEditInvoice} className="modal-content">
                             <div className="payables-form-row">
@@ -599,19 +601,18 @@ const InvoiceManagement = () => {
                                 />
                             </div>
                             <div className="modal-actions">
-                                <button
-                                    type="button"
-                                    className="payables-btn payables-btn-secondary"
+                                <Button
+                                    variant="ghost"
                                     onClick={() => setShowEditModal(false)}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    className="payables-btn payables-btn-primary"
+                                    variant="primary"
                                 >
                                     Update Invoice
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

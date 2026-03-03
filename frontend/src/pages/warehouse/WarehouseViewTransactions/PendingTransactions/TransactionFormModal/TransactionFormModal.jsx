@@ -3,6 +3,7 @@ import { FaCheck } from 'react-icons/fa';
 import { itemTypeService } from '../../../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../../../services/warehouse/itemCategoryService';
 import { siteService } from '../../../../../services/siteService';
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import "./TransactionFormModal.scss";
 
@@ -63,11 +64,14 @@ const TransactionFormModal = ({
     useEffect(() => {
         if (isOpen) {
             document.body.classList.add("modal-open");
+            document.body.style.overflow = 'hidden';
         } else {
             document.body.classList.remove("modal-open");
+            document.body.style.overflow = 'unset';
         }
         return () => {
             document.body.classList.remove("modal-open");
+            document.body.style.overflow = 'unset';
         };
     }, [isOpen]);
 
@@ -760,11 +764,7 @@ const TransactionFormModal = ({
                         <h2 className="modal-title">
                             {mode === "create" ? "Create New Transaction" : "Update Transaction"}
                         </h2>
-                        <button className="btn-close" onClick={handleCloseAttempt}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 6L6 18M6 6l12 12"/>
-                            </svg>
-                        </button>
+                        <CloseButton onClick={handleCloseAttempt} />
                     </div>
 
                     {/* Step Indicator */}
@@ -1234,33 +1234,25 @@ const TransactionFormModal = ({
                     <div className="modal-footer">
                         <div className="footer-left">
                             {currentStep > 1 && (
-                                <button
-                                    type="button"
-                                    className="modal-btn-secondary"
-                                    onClick={handlePreviousStep}
-                                >
+                                <Button variant="ghost" onClick={handlePreviousStep}>
                                     Previous
-                                </button>
+                                </Button>
                             )}
                         </div>
 
                         <div className="footer-right">
                             {currentStep < 3 ? (
-                                <button
-                                    type="button"
-                                    className="btn-primary"
-                                    onClick={handleNextStep}
-                                >
+                                <Button variant="primary" onClick={handleNextStep}>
                                     Next
-                                </button>
+                                </Button>
                             ) : (
-                                <button
+                                <Button
+                                    variant="success"
                                     type="submit"
-                                    className="btn-success"
                                     onClick={handleSubmitTransaction}
                                 >
                                     {mode === "create" ? "Create Transaction" : "Update Transaction"}
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>

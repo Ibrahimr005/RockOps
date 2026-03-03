@@ -12,6 +12,8 @@ import com.example.backend.models.site.Site;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.models.id.EntityTypeConfig;
+import com.example.backend.services.id.EntityIdGeneratorService;
 import com.example.backend.services.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ public class HREmployeeService {
     private final WarehouseRepository warehouseRepository;
     private final MinioService minioService;
     private final NotificationService notificationService;
+    private final EntityIdGeneratorService entityIdGeneratorService;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     /**
@@ -165,6 +168,9 @@ public class HREmployeeService {
 
             Employee employee = new Employee();
             updateEmployeeFromDTO(employee, employeeData);
+
+            // Generate employee number using centralized ID generator
+            employee.setEmployeeNumber(entityIdGeneratorService.generateNextId(EntityTypeConfig.EMPLOYEE));
 
             // Set job position if provided
             JobPosition jobPosition = null;
@@ -464,7 +470,7 @@ public class HREmployeeService {
      */
     public Map<String, Object> getEmployeeById(UUID id) {
         try {
-            Employee employee = employeeRepository.findById(id)
+            Employee employee = employeeRepository.findByIdWithDetails(id)
                     .orElseThrow(() -> new RuntimeException("Employee not found"));
 
             return convertEmployeeToMap(employee);
@@ -551,6 +557,7 @@ public class HREmployeeService {
 
         // Basic information
         employeeMap.put("id", employee.getId());
+        employeeMap.put("employeeNumber", employee.getEmployeeNumber());
         employeeMap.put("firstName", employee.getFirstName());
         employeeMap.put("lastName", employee.getLastName());
         employeeMap.put("middleName", employee.getMiddleName());

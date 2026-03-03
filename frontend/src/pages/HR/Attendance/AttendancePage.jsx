@@ -3,6 +3,7 @@ import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import { FaCalendarCheck, FaUsers, FaUserCheck, FaUserTimes, FaClock, FaSave, FaChevronLeft, FaChevronRight, FaUserSlash } from 'react-icons/fa';
+import { Button } from '../../../components/common/Button';
 import AttendanceMonthlyView from './components/AttendanceMonthlyView';
 import AttendanceSummaryCard from './components/AttendanceSummaryCard';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
@@ -462,13 +463,15 @@ const AttendancePage = () => {
 
                     {/* RIGHT SIDE: Save Button */}
                     <div className="header-right">
-                        <button
-                            className="save-btn-small"
+                        <Button
+                            variant="primary"
                             onClick={handleSaveAttendance}
                             disabled={saving || modifiedRecords.size === 0}
+                            loading={saving}
+                            loadingText="Saving..."
                         >
                             <FaSave /> Save Changes {modifiedRecords.size > 0 && `(${modifiedRecords.size})`}
-                        </button>
+                        </Button>
                     </div>
                 </div>
 

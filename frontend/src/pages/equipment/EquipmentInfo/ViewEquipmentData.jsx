@@ -6,6 +6,7 @@ import { BsPrinter } from "react-icons/bs";
 import { equipmentService } from "../../../services/equipmentService.js";
 import "./ViewEquipmentData.scss";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
+import { IconButton } from '../../../components/common/Button';
 
 const ViewEquipmentData = () => {
     const params = useParams();
@@ -133,9 +134,7 @@ const ViewEquipmentData = () => {
                         <NavLink to={`/related-documents/equipment/${params.EquipmentID}`}>
                             <IoDocumentOutline />
                         </NavLink>
-                        <button onClick={handlePrint}>
-                            <BsPrinter />
-                        </button>
+                        <IconButton onClick={handlePrint} icon={<BsPrinter />} title="Print" />
                     </div>
                 </div>
 

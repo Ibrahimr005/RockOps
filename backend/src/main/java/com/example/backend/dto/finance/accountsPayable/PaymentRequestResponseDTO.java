@@ -1,5 +1,7 @@
 package com.example.backend.dto.finance.accountsPayable;
 
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +22,49 @@ public class PaymentRequestResponseDTO {
     private UUID id;
     private String requestNumber;
 
-    // Purchase Order info
+    // ========================================
+    // SOURCE POLYMORPHISM
+    // ========================================
+
+    /**
+     * Type of source: PURCHASE_ORDER, MAINTENANCE, PAYROLL_BATCH, LOAN
+     */
+    private PaymentSourceType sourceType;
+    private UUID sourceId;
+    private String sourceNumber;
+    private String sourceDescription;
+
+    // ========================================
+    // TARGET POLYMORPHISM
+    // ========================================
+
+    /**
+     * Type of target: MERCHANT, EMPLOYEE, EMPLOYEE_GROUP
+     */
+    private PaymentTargetType targetType;
+    private UUID targetId;
+    private String targetName;
+    private String targetDetails;
+
+    // ========================================
+    // PAYROLL BATCH INFO (when sourceType = PAYROLL_BATCH)
+    // ========================================
+
+    private UUID payrollBatchId;
+    private String batchNumber;
+    private String paymentTypeName;
+    private String paymentTypeCode;
+    private Integer batchEmployeeCount;
+    private String payrollNumber;
+    private UUID payrollId;
+    private String payrollPeriod;
+
+    /**
+     * List of employees in the batch (for payroll batch details display)
+     */
+    private List<BatchEmployeeDTO> batchEmployees;
+
+    // Purchase Order info (legacy, kept for backward compatibility)
     private UUID purchaseOrderId;
     private String purchaseOrderNumber;
 

@@ -1,5 +1,7 @@
 package com.example.backend.services.hr;
 
+import com.example.backend.dto.hr.promotions.PromotionRequestCreateDTO;
+import com.example.backend.dto.hr.promotions.PromotionRequestReviewDTO;
 import com.example.backend.models.hr.*;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.hr.*;
@@ -27,82 +29,68 @@ public class PromotionRequestService {
     private final NotificationService notificationService;
 
     /**
-     * Create a new promotion request
+     * Create a new promotion request using DTO
      */
     @Transactional
-    public PromotionRequest createPromotionRequest(Map<String, Object> requestData, String requestedBy) {
+    public PromotionRequest createPromotionRequest(PromotionRequestCreateDTO createDTO, String requestedBy) {
         try {
             log.info("Creating promotion request by: {}", requestedBy);
 
-            // Get employee
-            UUID employeeId = UUID.fromString((String) requestData.get("employeeId"));
-            Employee employee = employeeRepository.findById(employeeId)
+            Employee employee = employeeRepository.findById(createDTO.getEmployeeId())
                     .orElseThrow(() -> new RuntimeException("Employee not found"));
 
-            // Get current job position
             JobPosition currentPosition = employee.getJobPosition();
             if (currentPosition == null) {
                 throw new RuntimeException("Employee has no current job position assigned");
             }
 
-            // Get promoted to job position
-            UUID promotedToPositionId = UUID.fromString((String) requestData.get("promotedToJobPositionId"));
-            JobPosition promotedToPosition = jobPositionRepository.findById(promotedToPositionId)
+            JobPosition promotedToPosition = jobPositionRepository.findById(createDTO.getPromotedToJobPositionId())
                     .orElseThrow(() -> new RuntimeException("Promoted to job position not found"));
 
-            // Validate that it's actually a promotion (not lateral move to same level)
             if (currentPosition.getId().equals(promotedToPosition.getId())) {
                 throw new RuntimeException("Cannot promote employee to the same position");
             }
 
-            // Parse dates
-            LocalDate proposedEffectiveDate = requestData.get("proposedEffectiveDate") != null 
-                ? LocalDate.parse((String) requestData.get("proposedEffectiveDate"))
-                : LocalDate.now().plusDays(30); // Default to 30 days from now
+            LocalDate proposedEffectiveDate = createDTO.getProposedEffectiveDate() != null
+                ? createDTO.getProposedEffectiveDate()
+                : LocalDate.now().plusDays(30);
 
-            // Parse salary information
             BigDecimal currentSalary = employee.getMonthlySalary();
-            BigDecimal proposedSalary = requestData.get("proposedSalary") != null 
-                ? new BigDecimal(requestData.get("proposedSalary").toString())
-                : promotedToPosition.getBaseSalary() != null 
+            BigDecimal proposedSalary = createDTO.getProposedSalary() != null
+                ? createDTO.getProposedSalary()
+                : promotedToPosition.getBaseSalary() != null
                     ? BigDecimal.valueOf(promotedToPosition.getBaseSalary())
-                    : currentSalary.multiply(BigDecimal.valueOf(1.1)); // Default 10% increase
+                    : currentSalary.multiply(BigDecimal.valueOf(1.1));
 
-            // Create promotion request
             PromotionRequest promotionRequest = PromotionRequest.builder()
                     .employee(employee)
                     .currentJobPosition(currentPosition)
                     .promotedToJobPosition(promotedToPosition)
-                    .requestTitle((String) requestData.get("requestTitle"))
-                    .justification((String) requestData.get("justification"))
+                    .requestTitle(createDTO.getRequestTitle())
+                    .justification(createDTO.getJustification() != null ? createDTO.getJustification() : "")
                     .proposedEffectiveDate(proposedEffectiveDate)
                     .currentSalary(currentSalary)
                     .proposedSalary(proposedSalary)
                     .requestedBy(requestedBy)
-                    .hrComments((String) requestData.get("hrComments"))
-                    .performanceRating((String) requestData.get("performanceRating"))
-                    .educationalQualifications((String) requestData.get("educationalQualifications"))
-                    .additionalCertifications((String) requestData.get("additionalCertifications"))
-                    .requiresAdditionalTraining(
-                        requestData.get("requiresAdditionalTraining") != null 
-                        ? (Boolean) requestData.get("requiresAdditionalTraining") 
-                        : false)
-                    .trainingPlan((String) requestData.get("trainingPlan"))
-                    .priority(requestData.get("priority") != null 
-                        ? PromotionRequest.PromotionPriority.valueOf(((String) requestData.get("priority")).toUpperCase())
+                    .hrComments(createDTO.getHrComments() != null ? createDTO.getHrComments() : "")
+                    .performanceRating(createDTO.getPerformanceRating() != null ? createDTO.getPerformanceRating() : "")
+                    .educationalQualifications(createDTO.getEducationalQualifications() != null ? createDTO.getEducationalQualifications() : "")
+                    .additionalCertifications(createDTO.getAdditionalCertifications() != null ? createDTO.getAdditionalCertifications() : "")
+                    .requiresAdditionalTraining(createDTO.getRequiresAdditionalTraining() != null ? createDTO.getRequiresAdditionalTraining() : false)
+                    .trainingPlan(createDTO.getTrainingPlan() != null ? createDTO.getTrainingPlan() : "")
+                    .priority(createDTO.getPriority() != null
+                        ? PromotionRequest.PromotionPriority.valueOf(createDTO.getPriority().toUpperCase())
                         : PromotionRequest.PromotionPriority.NORMAL)
                     .status(PromotionRequest.PromotionStatus.PENDING)
                     .build();
 
-            // Calculate years in current position
             if (employee.getHireDate() != null) {
                 long years = java.time.temporal.ChronoUnit.YEARS.between(employee.getHireDate(), LocalDate.now());
                 promotionRequest.setYearsInCurrentPosition((int) years);
             }
 
             PromotionRequest savedRequest = promotionRequestRepository.save(promotionRequest);
-            
-            // Send notifications
+
             sendPromotionRequestNotifications(savedRequest, "created");
 
             log.info("Successfully created promotion request with ID: {}", savedRequest.getId());
@@ -110,8 +98,7 @@ public class PromotionRequestService {
 
         } catch (Exception e) {
             log.error("Error creating promotion request", e);
-            
-            // Send error notification
+
             notificationService.sendNotificationToHRUsers(
                     "Promotion Request Creation Failed",
                     "Failed to create promotion request: " + e.getMessage(),
@@ -119,16 +106,16 @@ public class PromotionRequestService {
                     "/hr/promotions/",
                     "promotion-error-" + System.currentTimeMillis()
             );
-            
+
             throw e;
         }
     }
 
     /**
-     * Review a promotion request (HR Manager action)
+     * Review a promotion request using DTO (HR Manager action)
      */
     @Transactional
-    public PromotionRequest reviewPromotionRequest(UUID requestId, Map<String, Object> reviewData, String reviewedBy) {
+    public PromotionRequest reviewPromotionRequest(UUID requestId, PromotionRequestReviewDTO reviewDTO, String reviewedBy) {
         try {
             log.info("Reviewing promotion request: {} by: {}", requestId, reviewedBy);
 
@@ -139,43 +126,38 @@ public class PromotionRequestService {
                 throw new RuntimeException("Promotion request is not in pending status");
             }
 
-            String action = (String) reviewData.get("action"); // "approve" or "reject"
-            
+            String action = reviewDTO.getAction();
+
             request.setReviewedBy(reviewedBy);
             request.setReviewedAt(LocalDateTime.now());
-            request.setManagerComments((String) reviewData.get("managerComments"));
+            request.setManagerComments(reviewDTO.getManagerComments() != null ? reviewDTO.getManagerComments() : "");
 
             if ("approve".equalsIgnoreCase(action)) {
                 request.setStatus(PromotionRequest.PromotionStatus.APPROVED);
                 request.setApprovedBy(reviewedBy);
                 request.setApprovedAt(LocalDateTime.now());
 
-                // Update approved salary if different from proposed
-                if (reviewData.get("approvedSalary") != null) {
-                    BigDecimal approvedSalary = new BigDecimal(reviewData.get("approvedSalary").toString());
-                    request.setApprovedSalary(approvedSalary);
+                if (reviewDTO.getApprovedSalary() != null) {
+                    request.setApprovedSalary(reviewDTO.getApprovedSalary());
                 } else {
                     request.setApprovedSalary(request.getProposedSalary());
                 }
 
-                // Update effective date if changed
-                if (reviewData.get("actualEffectiveDate") != null) {
-                    LocalDate actualEffectiveDate = LocalDate.parse((String) reviewData.get("actualEffectiveDate"));
-                    request.setActualEffectiveDate(actualEffectiveDate);
+                if (reviewDTO.getActualEffectiveDate() != null) {
+                    request.setActualEffectiveDate(reviewDTO.getActualEffectiveDate());
                 } else {
                     request.setActualEffectiveDate(request.getProposedEffectiveDate());
                 }
 
             } else if ("reject".equalsIgnoreCase(action)) {
                 request.setStatus(PromotionRequest.PromotionStatus.REJECTED);
-                request.setRejectionReason((String) reviewData.get("rejectionReason"));
+                request.setRejectionReason(reviewDTO.getRejectionReason() != null ? reviewDTO.getRejectionReason() : "");
             } else {
                 throw new RuntimeException("Invalid review action. Must be 'approve' or 'reject'");
             }
 
             PromotionRequest updatedRequest = promotionRequestRepository.save(request);
-            
-            // Send notifications
+
             sendPromotionRequestNotifications(updatedRequest, action);
 
             log.info("Successfully reviewed promotion request: {} with action: {}", requestId, action);
@@ -183,7 +165,7 @@ public class PromotionRequestService {
 
         } catch (Exception e) {
             log.error("Error reviewing promotion request", e);
-            
+
             notificationService.sendNotificationToHRUsers(
                     "Promotion Review Failed",
                     "Failed to review promotion request: " + e.getMessage(),
@@ -191,7 +173,7 @@ public class PromotionRequestService {
                     "/hr/promotions/" + requestId,
                     "promotion-review-error-" + requestId
             );
-            
+
             throw e;
         }
     }

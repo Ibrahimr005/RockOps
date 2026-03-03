@@ -4,6 +4,7 @@ import { FiFileText, FiAlertCircle } from 'react-icons/fi';
 import { requestOrderService } from '../../../services/procurement/requestOrderService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import Snackbar from '../../../components/common/Snackbar2/Snackbar2';
+import { Button } from '../../../components/common/Button';
 import './RequestOrderDetailsPage.scss';
 
 const RequestOrderDetailsPage = () => {
@@ -143,9 +144,9 @@ const RequestOrderDetailsPage = () => {
                     <FiAlertCircle size={48} />
                     <h3>Error Loading Request Order</h3>
                     <p>{error || 'Request order not found'}</p>
-                    <button className="btn-primary" onClick={() => navigate(-1)}>
+                    <Button variant="primary" onClick={() => navigate(-1)}>
                         Go Back
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

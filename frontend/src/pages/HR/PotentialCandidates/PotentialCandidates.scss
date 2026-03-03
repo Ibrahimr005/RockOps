@@ -286,61 +286,6 @@
   }
 }
 
-// Button Styles
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  &.btn-primary {
-    background: #3b82f6;
-    color: white;
-
-    &:hover:not(:disabled) {
-      background: #2563eb;
-    }
-  }
-
-  &.btn-secondary {
-    background: #6b7280;
-    color: white;
-
-    &:hover:not(:disabled) {
-      background: #4b5563;
-    }
-  }
-
-  &.btn-success {
-    background: #10b981;
-    color: white;
-
-    &:hover:not(:disabled) {
-      background: #059669;
-    }
-  }
-
-  .loading-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid transparent;
-    border-top: 2px solid currentColor;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-}
 
 @keyframes spin {
   to {
@@ -362,11 +307,11 @@
     }
   }
 
-  .statistics-section .stats-grid {
+  .statistics-cards {
     .stat-card {
       padding: 1rem;
 
-      .stat-content .stat-number {
+      .stat-content .stat-value {
         font-size: 1.5rem;
       }
     }

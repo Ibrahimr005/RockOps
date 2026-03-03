@@ -20,12 +20,12 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, UUID
 
     // Find by employee
     List<LeaveRequest> findByEmployeeIdOrderByCreatedAtDesc(UUID employeeId);
-    
+
     Page<LeaveRequest> findByEmployeeIdOrderByCreatedAtDesc(UUID employeeId, Pageable pageable);
 
     // Find by status
     List<LeaveRequest> findByStatusOrderByCreatedAtDesc(LeaveStatus status);
-    
+
     Page<LeaveRequest> findByStatusOrderByCreatedAtDesc(LeaveStatus status, Pageable pageable);
 
     // Find by employee and status
@@ -36,32 +36,32 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, UUID
 
     // Find by date range
     @Query("SELECT lr FROM LeaveRequest lr WHERE " +
-           "(lr.startDate <= :endDate AND lr.endDate >= :startDate)")
-    List<LeaveRequest> findByDateRange(@Param("startDate") LocalDate startDate, 
-                                     @Param("endDate") LocalDate endDate);
+            "(lr.startDate <= :endDate AND lr.endDate >= :startDate)")
+    List<LeaveRequest> findByDateRange(@Param("startDate") LocalDate startDate,
+                                       @Param("endDate") LocalDate endDate);
 
     // Find overlapping requests for an employee
     @Query("SELECT lr FROM LeaveRequest lr WHERE lr.employee.id = :employeeId AND " +
-           "lr.status IN :statuses AND " +
-           "(lr.startDate <= :endDate AND lr.endDate >= :startDate)")
+            "lr.status IN :statuses AND " +
+            "(lr.startDate <= :endDate AND lr.endDate >= :startDate)")
     List<LeaveRequest> findOverlappingRequests(@Param("employeeId") UUID employeeId,
-                                             @Param("startDate") LocalDate startDate,
-                                             @Param("endDate") LocalDate endDate,
-                                             @Param("statuses") List<LeaveStatus> statuses);
+                                               @Param("startDate") LocalDate startDate,
+                                               @Param("endDate") LocalDate endDate,
+                                               @Param("statuses") List<LeaveStatus> statuses);
 
     // Find pending requests by department
     @Query("SELECT lr FROM LeaveRequest lr JOIN lr.employee e JOIN e.jobPosition jp " +
-           "WHERE jp.department.id = :departmentId AND lr.status = 'PENDING' " +
-           "ORDER BY lr.createdAt DESC")
+            "WHERE jp.department.id = :departmentId AND lr.status = 'PENDING' " +
+            "ORDER BY lr.createdAt DESC")
     List<LeaveRequest> findPendingRequestsByDepartment(@Param("departmentId") UUID departmentId);
 
     // Find requests by date range and status
     @Query("SELECT lr FROM LeaveRequest lr WHERE lr.status = :status AND " +
-           "lr.startDate >= :fromDate AND lr.endDate <= :toDate " +
-           "ORDER BY lr.startDate")
+            "lr.startDate >= :fromDate AND lr.endDate <= :toDate " +
+            "ORDER BY lr.startDate")
     List<LeaveRequest> findByStatusAndDateRange(@Param("status") LeaveStatus status,
-                                              @Param("fromDate") LocalDate fromDate,
-                                              @Param("toDate") LocalDate toDate);
+                                                @Param("fromDate") LocalDate fromDate,
+                                                @Param("toDate") LocalDate toDate);
 
     // Count pending requests by employee
     @Query("SELECT COUNT(lr) FROM LeaveRequest lr WHERE lr.employee.id = :employeeId AND lr.status = 'PENDING'")
@@ -69,21 +69,101 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, UUID
 
     // Find requests requiring attention (pending > X days)
     @Query("SELECT lr FROM LeaveRequest lr WHERE lr.status = 'PENDING' AND " +
-           "lr.createdAt < :cutoffDate ORDER BY lr.createdAt")
+            "lr.createdAt < :cutoffDate ORDER BY lr.createdAt")
     List<LeaveRequest> findStaleRequests(@Param("cutoffDate") LocalDateTime cutoffDate);
 
     // Analytics queries
     @Query("SELECT lr.leaveType, COUNT(lr) FROM LeaveRequest lr WHERE " +
-           "lr.createdAt >= :fromDate AND lr.createdAt <= :toDate " +
-           "GROUP BY lr.leaveType")
+            "lr.createdAt >= :fromDate AND lr.createdAt <= :toDate " +
+            "GROUP BY lr.leaveType")
     List<Object[]> getLeaveTypeStatistics(@Param("fromDate") LocalDateTime fromDate,
-                                        @Param("toDate") LocalDateTime toDate);
+                                          @Param("toDate") LocalDateTime toDate);
 
     @Query("SELECT MONTH(lr.startDate), COUNT(lr) FROM LeaveRequest lr WHERE " +
-           "lr.status = 'APPROVED' AND YEAR(lr.startDate) = :year " +
-           "GROUP BY MONTH(lr.startDate) ORDER BY MONTH(lr.startDate)")
+            "lr.status = 'APPROVED' AND YEAR(lr.startDate) = :year " +
+            "GROUP BY MONTH(lr.startDate) ORDER BY MONTH(lr.startDate)")
     List<Object[]> getMonthlyLeaveStatistics(@Param("year") int year);
 
     // Dashboard metrics methods
     long countByStatus(LeaveStatus status);
+
+    /**
+     * Find all leave requests that overlap with a given date range
+     * A leave request overlaps if:
+     * - It starts before or on the period end date, AND
+     * - It ends on or after the period start date
+     */
+    @Query("SELECT lr FROM LeaveRequest lr " +
+            "WHERE lr.startDate <= :periodEnd " +
+            "AND lr.endDate >= :periodStart " +
+            "ORDER BY lr.startDate ASC")
+    List<LeaveRequest> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            @Param("periodEnd") LocalDate periodEnd,
+            @Param("periodStart") LocalDate periodStart
+    );
+
+    /**
+     * Alternative: Simple method name query (Spring Data JPA will generate the query)
+     * This is equivalent to the @Query above
+     */
+    List<LeaveRequest> findByStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByStartDateAsc(
+            LocalDate periodEnd,
+            LocalDate periodStart
+    );
+
+    /**
+     * Find approved leave requests for a specific period
+     */
+    @Query("SELECT lr FROM LeaveRequest lr " +
+            "WHERE lr.status = 'APPROVED' " +
+            "AND lr.startDate <= :periodEnd " +
+            "AND lr.endDate >= :periodStart " +
+            "ORDER BY lr.startDate ASC")
+    List<LeaveRequest> findApprovedLeavesForPeriod(
+            @Param("periodStart") LocalDate periodStart,
+            @Param("periodEnd") LocalDate periodEnd
+    );
+
+    /**
+     * Find leave requests by employee for a specific period
+     */
+    @Query("SELECT lr FROM LeaveRequest lr " +
+            "WHERE lr.employee.id = :employeeId " +
+            "AND lr.startDate <= :periodEnd " +
+            "AND lr.endDate >= :periodStart " +
+            "ORDER BY lr.startDate ASC")
+    List<LeaveRequest> findByEmployeeIdAndPeriod(
+            @Param("employeeId") UUID employeeId,
+            @Param("periodStart") LocalDate periodStart,
+            @Param("periodEnd") LocalDate periodEnd
+    );
+
+    /**
+     * Find leave requests for an employee within a date range
+     * Returns leaves that overlap with the given period
+     */
+    @Query("SELECT lr FROM LeaveRequest lr " +
+            "WHERE lr.employee.id = :employeeId " +
+            "AND lr.startDate <= :endDate " +
+            "AND lr.endDate >= :startDate")
+    List<LeaveRequest> findByEmployeeIdAndDateRange(
+            @Param("employeeId") UUID employeeId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+
+    /**
+     * Find APPROVED leave requests for an employee in a date range
+     */
+    @Query("SELECT lr FROM LeaveRequest lr " +
+            "WHERE lr.employee.id = :employeeId " +
+            "AND lr.status = 'APPROVED' " +
+            "AND lr.startDate <= :endDate " +
+            "AND lr.endDate >= :startDate")
+    List<LeaveRequest> findApprovedLeavesByEmployeeAndDateRange(
+            @Param("employeeId") UUID employeeId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }

@@ -23,7 +23,8 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PurchaseOrder {
+public class
+PurchaseOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

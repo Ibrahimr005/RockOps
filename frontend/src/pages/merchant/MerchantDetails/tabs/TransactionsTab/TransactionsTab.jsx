@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { merchantService } from '../../../../../services/merchant/merchantService';
 import DataTable from '../../../../../components/common/DataTable/DataTable';
+import { Button } from '../../../../../components/common/Button';
 import './TransactionsTab.scss';
 
 const TransactionsTab = ({ merchant }) => {
@@ -257,13 +258,9 @@ const TransactionsTab = ({ merchant }) => {
                     </svg>
                     <h4>Error Loading Transactions</h4>
                     <p>{error}</p>
-                    <button className="retry-button" onClick={fetchTransactions}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                        </svg>
+                    <Button variant="primary" onClick={fetchTransactions}>
                         Try Again
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

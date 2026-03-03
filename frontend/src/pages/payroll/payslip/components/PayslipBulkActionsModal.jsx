@@ -1,7 +1,7 @@
 
 // ==================== PAYSLIP BULK ACTIONS MODAL ====================
 // frontend/src/pages/payroll/PayslipManagement/components/PayslipBulkActionsModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaTimes, FaCheck, FaEnvelope, FaDownload, FaUsers } from 'react-icons/fa';
 import { payslipService } from '../../../../services/payroll/payslipService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
@@ -10,6 +10,15 @@ import './PayslipBulkActionsModal.scss'
 
 const PayslipBulkActionsModal = ({ payslipIds, onClose, onSuccess }) => {
     const { showSuccess, showError } = useSnackbar();
+
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [loading, setLoading] = useState(false);
     const [selectedAction, setSelectedAction] = useState('');
 

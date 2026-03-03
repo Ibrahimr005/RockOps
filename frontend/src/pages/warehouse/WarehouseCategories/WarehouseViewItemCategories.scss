@@ -169,11 +169,17 @@
 
 /* For the Description column */
 .description-cell {
-  padding-left: 87px; /* Specific padding for the Description column */
-  padding-right: 250px; /* Specific padding for the Description column */
-  font-size: 12px;
-  white-space: nowrap;
-  text-align: left; /* Align text to the left */
+  color: var(--paragraph-color);
+
+  line-height: 1.5;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  max-width: 100%;
+  transition: all 0.2s ease-in-out;
 }
 
 .parent-cell {

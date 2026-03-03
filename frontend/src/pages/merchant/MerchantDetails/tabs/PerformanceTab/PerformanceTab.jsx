@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { merchantService } from '../../../../../services/merchant/merchantService';
+import { Button } from '../../../../../components/common/Button';
 import './PerformanceTab.scss';
 
 const PerformanceTab = ({ merchant }) => {
@@ -83,9 +84,9 @@ const PerformanceTab = ({ merchant }) => {
                     </svg>
                     <h4>Error Loading Performance Data</h4>
                     <p>{error}</p>
-                    <button className="retry-button" onClick={fetchPerformance}>
+                    <Button variant="primary" onClick={fetchPerformance}>
                         Try Again
-                    </button>
+                    </Button>
                 </div>
             </div>
         );

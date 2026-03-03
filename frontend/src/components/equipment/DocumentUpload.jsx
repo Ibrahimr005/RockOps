@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FaUpload, FaFile, FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaTrash } from 'react-icons/fa';
+import { IconButton } from '../../components/common/Button';
 import './DocumentUpload.css';
 
 const DocumentUpload = ({ fieldType, fieldLabel, onDocumentsChange, initialDocuments = [] }) => {
@@ -154,14 +155,13 @@ const DocumentUpload = ({ fieldType, fieldLabel, onDocumentsChange, initialDocum
                                     </select>
                                 </div>
                             </div>
-                            <button 
-                                type="button"
-                                className="remove-button"
+                            <IconButton
+                                variant="danger"
+                                size="sm"
+                                icon={<FaTrash />}
                                 onClick={() => handleRemoveDocument(doc.id)}
                                 title="Remove document"
-                            >
-                                <FaTrash />
-                            </button>
+                            />
                         </div>
                     ))}
                 </div>

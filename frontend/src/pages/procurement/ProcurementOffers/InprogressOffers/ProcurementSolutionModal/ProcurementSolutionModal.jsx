@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Button, CloseButton } from '../../../../../components/common/Button';
+import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { FiX, FiCheck } from 'react-icons/fi';
 import { equipmentPurchaseSpecService } from '../../../../../services/procurement/equipmentPurchaseSpecService.js';
 import './ProcurementSolutionModal.scss';
@@ -26,6 +28,20 @@ const ProcurementSolutionModal = ({
         deliveryNotes: '',
         comment: ''
     });
+    const [isFormDirty, setIsFormDirty] = useState(false);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    // Scroll lock
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
 
     // Equipment details state (fetched from backend)
     const [equipmentDetails, setEquipmentDetails] = useState(null);
@@ -90,6 +106,7 @@ const ProcurementSolutionModal = ({
 
     // Handle form field changes
     const handleFieldChange = (field, value) => {
+        setIsFormDirty(true);
         setFormData(prev => {
             const updated = { ...prev, [field]: value };
 
@@ -122,7 +139,7 @@ const ProcurementSolutionModal = ({
         }
     };
 
-    // Handle form submission
+// Handle form submission
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -151,10 +168,19 @@ const ProcurementSolutionModal = ({
 
         onSave(submissionData);
     };
+
+    const handleCloseAttempt = () => {
+        if (isFormDirty) {
+            setShowDiscardDialog(true);
+        } else {
+            onClose();
+        }
+    };
+
     // Handle backdrop click
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget) {
-            onClose();
+            handleCloseAttempt();
         }
     };
 
@@ -164,15 +190,25 @@ const ProcurementSolutionModal = ({
     console.log("Full requestItem object:", requestItem);
 
     return (
+        <>
+        <ConfirmationDialog
+            isVisible={showDiscardDialog}
+            type="warning"
+            title="Discard Changes?"
+            message="You have unsaved changes. Are you sure you want to close this form? All your changes will be lost."
+            confirmText="Discard Changes"
+            cancelText="Continue Editing"
+            onConfirm={() => { setShowDiscardDialog(false); setIsFormDirty(false); onClose(); }}
+            onCancel={() => setShowDiscardDialog(false)}
+            size="medium"
+        />
         <div className="modal-backdrop" onClick={handleBackdropClick}>
             <div className="modal-content modal-lg procurement-solution-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2 className="modal-title">
                         {mode === 'edit' ? 'Edit' : 'Add'} Procurement Solution for: {requestItem.itemTypeName || requestItem.equipmentName || 'Item'}
                     </h2>
-                    <button className="btn-close" onClick={onClose} type="button">
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={handleCloseAttempt} />
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -360,17 +396,18 @@ const ProcurementSolutionModal = ({
                     <div className="modal-footer">
                         <div className="footer-left"></div>
                         <div className="footer-right">
-                            <button type="button" className="btn-cancel" onClick={onClose}>
+                            <Button variant="ghost" onClick={handleCloseAttempt}>
                                 Cancel
-                            </button>
-                            <button type="submit" className="btn-save">
-                                <FiCheck /> {mode === 'edit' ? 'Save Changes' : 'Add to Offer'}
-                            </button>
+                            </Button>
+                            <Button type="submit" variant="primary">
+                                {mode === 'edit' ? 'Save Changes' : 'Add to Offer'}
+                            </Button>
                         </div>
                     </div>
                 </form>
             </div>
         </div>
+        </>
     );
 };
 

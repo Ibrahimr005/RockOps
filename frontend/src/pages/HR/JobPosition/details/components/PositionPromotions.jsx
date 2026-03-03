@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { FiTrendingUp, FiPlus, FiEye, FiCheck, FiX, FiClock, FiUser, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import DataTable from '../../../../../components/common/DataTable/DataTable';
+import StatisticsCards from '../../../../../components/common/StatisticsCards/StatisticsCards';
+import { Button } from '../../../../../components/common/Button/Button';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext';
 
 const PositionPromotions = ({ position, positionId, onRefresh }) => {
@@ -195,44 +197,15 @@ const PositionPromotions = ({ position, positionId, onRefresh }) => {
     return (
         <div className="position-promotions">
             {/* Statistics Cards */}
-            <div className="promotions-stats">
-                <div className="stat-card">
-                    <div className="stat-icon total">
-                        <FiTrendingUp />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats.total}</span>
-                        <span className="stat-label">Total Promotions</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon pending">
-                        <FiClock />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats.pending}</span>
-                        <span className="stat-label">Pending</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon approved">
-                        <FiCheck />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats.approved}</span>
-                        <span className="stat-label">Approved</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon rejected">
-                        <FiX />
-                    </div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats.rejected}</span>
-                        <span className="stat-label">Rejected</span>
-                    </div>
-                </div>
-            </div>
+            <StatisticsCards
+                cards={[
+                    { icon: <FiTrendingUp />, label: "Total Promotions", value: stats.total, variant: "primary" },
+                    { icon: <FiClock />, label: "Pending", value: stats.pending, variant: "warning" },
+                    { icon: <FiCheck />, label: "Approved", value: stats.approved, variant: "success" },
+                    { icon: <FiX />, label: "Rejected", value: stats.rejected, variant: "danger" },
+                ]}
+                columns={4}
+            />
 
             {/* Position Summary */}
             <div className="promotion-summary">
@@ -276,16 +249,16 @@ const PositionPromotions = ({ position, positionId, onRefresh }) => {
                         <FiTrendingUp /> Promotion History
                     </h3>
                     <div className="table-actions">
-                        <button
-                            className="btn btn-secondary"
+                        <Button
+                            variant="secondary"
                             onClick={fetchPromotions}
                             disabled={loading}
                         >
                             Refresh
-                        </button>
-                        <button className="btn btn-primary">
+                        </Button>
+                        <Button variant="primary">
                             <FiPlus /> Create Promotion Request
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
@@ -305,9 +278,9 @@ const PositionPromotions = ({ position, positionId, onRefresh }) => {
                             <FiTrendingUp className="empty-icon" />
                             <h4>No Promotion History</h4>
                             <p>This position doesn't have any promotion records yet.</p>
-                            <button className="btn btn-primary">
+                            <Button variant="primary">
                                 <FiPlus /> Create First Promotion Request
-                            </button>
+                            </Button>
                         </div>
                     }
                 />

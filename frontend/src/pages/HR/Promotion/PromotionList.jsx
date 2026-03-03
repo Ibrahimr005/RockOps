@@ -476,7 +476,7 @@ const PromotionList = () => {
             render: (row) => (
                 <div className="promotion-employee-cell">
                     <div className="employee-name">{row.employeeName || row.employee?.fullName || 'N/A'}</div>
-                    <div className="employee-id text-muted">ID: {row.employeeId || row.employee?.id || 'N/A'}</div>
+                    <div className="employee-number text-muted">{row.employeeNumber || 'N/A'}</div>
                 </div>
             )
         },

@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave, FaExchangeAlt } from 'react-icons/fa';
+import { FaSave, FaExchangeAlt } from 'react-icons/fa';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import { financeService } from '../../../../services/financeService.js';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './TransactionForm.css';
 
 const TransactionForm = ({ onClose, onSubmit }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [formData, setFormData] = useState({
         transactionType: 'DEPOSIT',
         amount: '',
@@ -162,9 +171,7 @@ const TransactionForm = ({ onClose, onSubmit }) => {
                         <FaExchangeAlt />
                         <h2>New Transaction</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <form onSubmit={handleSubmit} className="modal-body">
@@ -349,19 +356,19 @@ const TransactionForm = ({ onClose, onSubmit }) => {
 
 
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>
+                    <Button variant="ghost" onClick={onClose} disabled={loading}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>
-                        {loading ? (
-                            <span>Creating...</span>
-                        ) : (
-                            <>
-                                <FaSave />
-                                <span>Create Transaction</span>
-                            </>
-                        )}
-                    </button>
+                    </Button>
+                    <Button
+                        variant="primary"
+                        disabled={loading}
+                        onClick={handleSubmit}
+                        loading={loading}
+                        loadingText="Creating..."
+                    >
+                        <FaSave />
+                        <span>Create Transaction</span>
+                    </Button>
                 </div>
             </div>
         </div>

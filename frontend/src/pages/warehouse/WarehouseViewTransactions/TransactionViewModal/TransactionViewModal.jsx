@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from "react";
+import { CloseButton } from "../../../../components/common/Button";
 import "./TransactionViewModal.scss";
 
 const TransactionViewModal = ({ transaction, isOpen, onClose, hideItemQuantities = false, currentWarehouseId }) => {
     const [userRole, setUserRole] = useState(null);
+
+    // Scroll lock
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     // Get user role from localStorage
     useEffect(() => {
@@ -111,9 +124,7 @@ const TransactionViewModal = ({ transaction, isOpen, onClose, hideItemQuantities
                             </div>
                         )}
                     </div>
-                    <button className="btn-close" onClick={onClose}>
-
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Content */}

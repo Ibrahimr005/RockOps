@@ -2,9 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { FiX, FiDownload, FiCheckSquare, FiSquare, FiFileText, FiAlertCircle } from 'react-icons/fi';
 import './RFQExportDialog.scss';
 import Snackbar from '../../../../../components/common/Snackbar/Snackbar';
+import { Button, CloseButton } from '../../../../../components/common/Button';
 import { rfqService } from '../../../../../services/procurement/rfqService';
 
 const RFQExportDialog = ({ isVisible, onClose, offer, requestItems }) => {
+    // Scroll lock
+    useEffect(() => {
+        if (isVisible) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isVisible]);
+
     const [selectedItems, setSelectedItems] = useState([]);
     const [language, setLanguage] = useState('en'); // 'en' or 'ar'
     const [filename, setFilename] = useState('');
@@ -170,9 +183,7 @@ const RFQExportDialog = ({ isVisible, onClose, offer, requestItems }) => {
                         <FiFileText />
                         Export RFQ to Excel
                     </h2>
-                    <button className="btn-close" onClick={handleClose}>
-                        <FiX />
-                    </button>
+                    <CloseButton onClick={handleClose} />
                 </div>
 
                 <div className="modal-body">
@@ -306,22 +317,18 @@ const RFQExportDialog = ({ isVisible, onClose, offer, requestItems }) => {
                 </div>
 
                 <div className="modal-footer">
-                    <button className="modal-btn-secondary" onClick={handleClose} disabled={isExporting}>
+                    <Button variant="ghost" onClick={handleClose} disabled={isExporting}>
                         Cancel
-                    </button>
-                    <button
-                        className="btn-success"
+                    </Button>
+                    <Button
+                        variant="success"
                         onClick={handleExport}
-                        disabled={isExporting || selectedItems.length === 0}
+                        disabled={selectedItems.length === 0}
+                        loading={isExporting}
+                        loadingText="Exporting..."
                     >
-                        {isExporting ? (
-                            'Exporting...'
-                        ) : (
-                            <>
-                                <FiDownload /> Export Excel
-                            </>
-                        )}
-                    </button>
+                        <FiDownload /> Export Excel
+                    </Button>
                 </div>
             </div>
 

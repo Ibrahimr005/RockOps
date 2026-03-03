@@ -1,6 +1,8 @@
 package com.example.backend.services.finance.loans;
 
 import com.example.backend.models.finance.accountsPayable.PaymentRequest;
+import com.example.backend.models.finance.accountsPayable.PaymentSourceType;
+import com.example.backend.models.finance.accountsPayable.PaymentTargetType;
 import com.example.backend.models.finance.accountsPayable.enums.PaymentRequestStatus;
 import com.example.backend.models.finance.loans.CompanyLoan;
 import com.example.backend.models.finance.loans.FinancialInstitution;
@@ -30,7 +32,7 @@ public class LoanPaymentRequestService {
     private final LoanInstallmentRepository installmentRepository;
 
     /**
-     * Generate payment request number - same format as PaymentRequestService
+     * Generate payment request number
      * Format: PR-YYYYMMDD-XXXX
      */
     private String generatePaymentRequestNumber() {
@@ -45,7 +47,6 @@ public class LoanPaymentRequestService {
     public void createPaymentRequestsForLoan(CompanyLoan loan, String createdBy) {
         log.info("Creating payment requests for loan: {}", loan.getLoanNumber());
 
-//        FinancialInstitution institution = loan.getFinancialInstitution();
         FinancialInstitution institution = loan.getFinancialInstitution();
         Merchant merchant = loan.getMerchant();
 
@@ -53,7 +54,6 @@ public class LoanPaymentRequestService {
             PaymentRequest paymentRequest = createPaymentRequestForInstallment(
                     loan, installment, institution, createdBy, merchant);
 
-            // Link payment request to installment
             installment.setPaymentRequestId(paymentRequest.getId());
             installment.setStatus(LoanInstallmentStatus.PAYMENT_REQUEST_CREATED);
             installmentRepository.save(installment);
@@ -72,7 +72,6 @@ public class LoanPaymentRequestService {
             String createdBy,
             Merchant merchant) {
 
-        // Generate PR number using the same format as other payment requests
         String requestNumber = generatePaymentRequestNumber();
 
         String description = String.format("Loan Payment: %s - Installment %d/%d",
@@ -84,6 +83,16 @@ public class LoanPaymentRequestService {
                 .requestNumber(requestNumber)
                 .loanInstallment(installment)
                 .financialInstitution(institution)
+                // Source polymorphism
+                .sourceType(PaymentSourceType.CLOAN)
+                .sourceId(loan.getId())
+                .sourceNumber(loan.getLoanNumber())
+                .sourceDescription(description)
+                // Target polymorphism
+                .targetType(PaymentTargetType.FINANCIAL_INSTITUTION)
+                .targetId(institution != null ? institution.getId() : null)
+                .targetName(institution != null ? institution.getName() : null)
+                .targetDetails(buildInstitutionTargetDetails(institution))
                 .requestedAmount(installment.getTotalAmount())
                 .currency(loan.getCurrency())
                 .description(description)
@@ -99,18 +108,13 @@ public class LoanPaymentRequestService {
                 .totalPaidAmount(BigDecimal.ZERO)
                 .remainingAmount(installment.getTotalAmount())
                 // Institution info (denormalized for display)
-//                .institutionName(institution.getName())
-//                .institutionAccountNumber(institution.getPaymentAccountNumber())
-//                .institutionBankName(institution.getPaymentBankName())
-//                .institutionContactPerson(institution.getContactPersonName())
-//                .institutionContactPhone(institution.getContactPersonPhone())
-//                .institutionContactEmail(institution.getContactPersonEmail())
                 .institutionName(institution != null ? institution.getName() : null)
                 .institutionAccountNumber(institution != null ? institution.getPaymentAccountNumber() : null)
                 .institutionBankName(institution != null ? institution.getPaymentBankName() : null)
                 .institutionContactPerson(institution != null ? institution.getContactPersonName() : null)
                 .institutionContactPhone(institution != null ? institution.getContactPersonPhone() : null)
                 .institutionContactEmail(institution != null ? institution.getContactPersonEmail() : null)
+                // Merchant info (denormalized for display)
                 .merchantName(merchant != null ? merchant.getName() : null)
                 .merchantContactPerson(merchant != null ? merchant.getContactPersonName() : null)
                 .merchantContactPhone(merchant != null ? merchant.getContactPhone() : null)
@@ -121,6 +125,36 @@ public class LoanPaymentRequestService {
         log.debug("Created payment request {} for installment {}", requestNumber, installment.getInstallmentNumber());
 
         return saved;
+    }
+
+    /**
+     * Build target details JSON for financial institution
+     */
+    private String buildInstitutionTargetDetails(FinancialInstitution institution) {
+        if (institution == null) return null;
+
+        StringBuilder details = new StringBuilder();
+        details.append("{");
+        details.append("\"type\":\"FINANCIAL_INSTITUTION\"");
+
+        if (institution.getPaymentAccountNumber() != null) {
+            details.append(",\"accountNumber\":\"").append(institution.getPaymentAccountNumber()).append("\"");
+        }
+        if (institution.getPaymentBankName() != null) {
+            details.append(",\"bankName\":\"").append(institution.getPaymentBankName()).append("\"");
+        }
+        if (institution.getContactPersonName() != null) {
+            details.append(",\"contactPerson\":\"").append(institution.getContactPersonName()).append("\"");
+        }
+        if (institution.getContactPersonPhone() != null) {
+            details.append(",\"phone\":\"").append(institution.getContactPersonPhone()).append("\"");
+        }
+        if (institution.getContactPersonEmail() != null) {
+            details.append(",\"email\":\"").append(institution.getContactPersonEmail()).append("\"");
+        }
+
+        details.append("}");
+        return details.toString();
     }
 
     /**
@@ -137,11 +171,9 @@ public class LoanPaymentRequestService {
             return;
         }
 
-        // Update installment
         installment.processPayment(paidAmount);
         installmentRepository.save(installment);
 
-        // Update loan
         CompanyLoan loan = installment.getCompanyLoan();
         BigDecimal principalPortion = installment.getPrincipalPortion(paidAmount);
         BigDecimal interestPortion = installment.getInterestPortion(paidAmount);

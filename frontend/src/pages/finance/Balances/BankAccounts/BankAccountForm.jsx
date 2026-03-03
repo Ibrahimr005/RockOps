@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave, FaUniversity } from 'react-icons/fa';
+import { FaSave, FaUniversity } from 'react-icons/fa';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import { financeService } from '../../../../services/financeService.js';
+import { Button, CloseButton } from '../../../../components/common/Button';
 import './BankAccountForm.css';
 
 const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
+    // Scroll lock
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const [formData, setFormData] = useState({
         bankName: '',
         accountNumber: '',
@@ -119,9 +128,7 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                         <FaUniversity />
                         <h2>{mode === 'create' ? 'Add New Bank Account' : 'Edit Bank Account'}</h2>
                     </div>
-                    <button className="modern-modal-close" onClick={onClose}>
-                        <FaTimes />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 <form onSubmit={handleSubmit} className="modal-body">
@@ -296,19 +303,19 @@ const BankAccountForm = ({ account, mode, onClose, onSubmit }) => {
                 </form>
 
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>
+                    <Button variant="ghost" onClick={onClose} disabled={loading}>
                         Cancel
-                    </button>
-                    <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>
-                        {loading ? (
-                            <span>Saving...</span>
-                        ) : (
-                            <>
-                                <FaSave />
-                                <span>{mode === 'create' ? 'Create Account' : 'Update Account'}</span>
-                            </>
-                        )}
-                    </button>
+                    </Button>
+                    <Button
+                        variant="primary"
+                        disabled={loading}
+                        onClick={handleSubmit}
+                        loading={loading}
+                        loadingText="Saving..."
+                    >
+                        <FaSave />
+                        <span>{mode === 'create' ? 'Create Account' : 'Update Account'}</span>
+                    </Button>
                 </div>
             </div>
         </div>
