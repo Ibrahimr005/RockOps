@@ -240,7 +240,6 @@ function App() {
                                         {/* ===================== Procurement Routes ===================== */}
                                         <Route path="/procurement" element={<RoleRoute allowedRoles={[PROCUREMENT, SITE_ADMIN, ADMIN]}><SitesLayout/></RoleRoute>}>
                                             <Route path="request-orders" element={<ProcurementRequestOrders/>}/>
-                                            <Route path="request-orders/:id" element={<ProcurementRequestOrderDetails/>}/>
                                             <Route path="request-orders/:requestOrderId" element={<RequestOrderDetailsPage/>}/>
                                             <Route path="offers" element={<ProcurementOffers/>}/>
                                             <Route path="purchase-orders" element={<PurchaseOrders/>}/>

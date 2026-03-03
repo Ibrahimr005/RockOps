@@ -311,6 +311,8 @@ const RequestOrderDetailsPage = () => {
                     </div>
                 </div>
 
+
+
                 {/* Description Section */}
                 {requestOrder.description && (
                     <div className="ro-details-section">
@@ -329,6 +331,48 @@ const RequestOrderDetailsPage = () => {
                         </div>
                     </div>
                 )}
+
+                {(requestOrder.approvedBy || requestOrder.validatedBy || requestOrder.approvedAt || requestOrder.validatedDate) && (
+                    <div className="ro-details-section">
+                        <h3 className="section-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                            Approval Details
+                        </h3>
+                        <div className="overview-grid">
+                            {(requestOrder.approvedBy || requestOrder.validatedBy) && (
+                                <div className="overview-item">
+                                    <div className="overview-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="12" cy="7" r="4"/>
+                                        </svg>
+                                    </div>
+                                    <div className="overview-content">
+                                        <span className="overview-label">Approved By</span>
+                                        <span className="overview-value">{requestOrder.approvedBy || requestOrder.validatedBy}</span>
+                                    </div>
+                                </div>
+                            )}
+                            {(requestOrder.approvedAt || requestOrder.validatedDate) && (
+                                <div className="overview-item">
+                                    <div className="overview-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <polyline points="12,6 12,12 16,14"/>
+                                        </svg>
+                                    </div>
+                                    <div className="overview-content">
+                                        <span className="overview-label">Approved At</span>
+                                        <span className="overview-value">{formatDateTime(requestOrder.approvedAt || requestOrder.validatedDate)}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
 
                 {/* Request Items Section */}
                 <div className="ro-details-section">
@@ -391,46 +435,6 @@ const RequestOrderDetailsPage = () => {
                 </div>
 
                 {/* Approval Details */}
-                {(requestOrder.approvedBy || requestOrder.validatedBy || requestOrder.approvedAt || requestOrder.validatedDate) && (
-                    <div className="ro-details-section">
-                        <h3 className="section-title">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M20 6L9 17l-5-5"/>
-                            </svg>
-                            Approval Details
-                        </h3>
-                        <div className="overview-grid">
-                            {(requestOrder.approvedBy || requestOrder.validatedBy) && (
-                                <div className="overview-item">
-                                    <div className="overview-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                            <circle cx="12" cy="7" r="4"/>
-                                        </svg>
-                                    </div>
-                                    <div className="overview-content">
-                                        <span className="overview-label">Approved By</span>
-                                        <span className="overview-value">{requestOrder.approvedBy || requestOrder.validatedBy}</span>
-                                    </div>
-                                </div>
-                            )}
-                            {(requestOrder.approvedAt || requestOrder.validatedDate) && (
-                                <div className="overview-item">
-                                    <div className="overview-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <polyline points="12,6 12,12 16,14"/>
-                                        </svg>
-                                    </div>
-                                    <div className="overview-content">
-                                        <span className="overview-label">Approved At</span>
-                                        <span className="overview-value">{formatDateTime(requestOrder.approvedAt || requestOrder.validatedDate)}</span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
             </div>
 
             <Snackbar

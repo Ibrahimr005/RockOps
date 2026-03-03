@@ -237,13 +237,13 @@ const RequestOrderModal = ({
     const fetchItemTypes = async () => {
         try {
             const data = await itemTypeService.getAll();
+            console.log('Item types response:', JSON.stringify(data[0], null, 2)); // ADD THIS
             setItemTypes(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching item types:', err);
             setItemTypes([]);
         }
     };
-
     const fetchEmployees = async () => {
         try {
             const response = await employeeService.getAll();
@@ -858,7 +858,7 @@ const RequestOrderModal = ({
                                                                 {getAvailableItemTypes(index).map(type => (
                                                                     <option key={type.id} value={type.id}>
                                                                         {type.name || 'Unknown Item Type'}
-                                                                        {type.measuringUnit ? ` (${type.measuringUnit})` : ''}
+                                                                        {type.measuringUnit ? ` (${type.measuringUnit.name})` : ''}
                                                                     </option>
                                                                 ))}
                                                             </select>
@@ -882,7 +882,7 @@ const RequestOrderModal = ({
                                                                 />
                                                                 {item.itemTypeId && (
                                                                     <span className="unit-badge">
-                                                                        {itemTypes.find(type => type.id === item.itemTypeId)?.measuringUnit || 'units'}
+                                                                   {itemTypes.find(t => t.id === item.itemTypeId)?.measuringUnit?.name || 'units'}
                                                                     </span>
                                                                 )}
                                                             </div>
