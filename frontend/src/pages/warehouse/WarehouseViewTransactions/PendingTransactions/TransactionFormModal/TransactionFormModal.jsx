@@ -42,7 +42,7 @@ const TransactionFormModal = ({
         batchNumber: "",
     });
 
-    const entityTypes = ["WAREHOUSE", "EQUIPMENT"];
+    const entityTypes = ["WAREHOUSE", "EQUIPMENT", "LOSS"];
     const [parentCategories, setParentCategories] = useState([]);
     const [childCategoriesByItem, setChildCategoriesByItem] = useState({});
     const [showFilters, setShowFilters] = useState({});
@@ -223,6 +223,11 @@ const TransactionFormModal = ({
         } else if (step === 3) {
             // Step 3: Requester Info
             if (transactionRole === "sender") {
+                // 🆕 For LOSS transactions, only need receiver type
+                if (newTransaction.receiverType === "LOSS") {
+                    return newTransaction.receiverType === "LOSS";
+                }
+                // For normal transactions, need site, type, and ID
                 return selectedReceiverSite && newTransaction.receiverType && newTransaction.receiverId;
             } else {
                 return selectedSenderSite && newTransaction.senderType && newTransaction.senderId;
@@ -597,7 +602,7 @@ const TransactionFormModal = ({
                         const itemType = aggregatedItem.itemType;
                         return (
                             <option key={itemType.id} value={itemType.id}>
-                                {itemType.name} {itemType.measuringUnit ? `(${itemType.measuringUnit})` : ""} - {aggregatedItem.quantity} available
+                                {itemType.name} {itemType.measuringUnit?.displayName || itemType.measuringUnit?.abbreviation ? `(${itemType.measuringUnit?.displayName || itemType.measuringUnit?.abbreviation})` : ""} - {aggregatedItem.quantity} available
                             </option>
                         );
                     })}
@@ -670,7 +675,10 @@ const TransactionFormModal = ({
             senderType: newTransaction.senderType,
             senderId: newTransaction.senderId.toString(),
             receiverType: newTransaction.receiverType,
-            receiverId: newTransaction.receiverId.toString(),
+            // 🆕 For LOSS transactions, use a dummy UUID
+            receiverId: newTransaction.receiverType === "LOSS"
+                ? "00000000-0000-0000-0000-000000000000"
+                : newTransaction.receiverId.toString(),
             username: username,
             batchNumber: parseInt(newTransaction.batchNumber),
             sentFirst: warehouseId,
@@ -993,10 +1001,10 @@ const TransactionFormModal = ({
                                                                             let unit = '';
                                                                             if (transactionRole === "receiver") {
                                                                                 const itemType = allItemTypes.find(it => it.id === item.itemType.id);
-                                                                                unit = itemType?.measuringUnit || 'units';
+                                                                                unit = itemType?.measuringUnit?.displayName || itemType?.measuringUnit?.abbreviation || 'units';
                                                                             } else {
                                                                                 const warehouseItem = items.find(it => it.itemType.id === item.itemType.id);
-                                                                                unit = warehouseItem?.itemType?.measuringUnit || 'units';
+                                                                                unit = warehouseItem?.itemType?.measuringUnit?.displayName || warehouseItem?.itemType?.measuringUnit?.abbreviation || 'units';
                                                                             }
                                                                             return unit;
                                                                         })()}
@@ -1017,8 +1025,20 @@ const TransactionFormModal = ({
                                 <div className="modal-section-wh">
                                     <h3 className="modal-section-title">Requester Information</h3>
 
-                                    {/* Batch Number */}
-
+                                    {/* 🆕 NEW: Special message for LOSS transactions */}
+                                    {(transactionRole === "sender" && newTransaction.receiverType === "LOSS") && (
+                                        <div className="info-banner warning">
+                                            <div className="info-icon">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                </svg>
+                                            </div>
+                                            <div className="info-content">
+                                                <strong>Loss/Disposal Transaction</strong>
+                                                <p>This transaction will be automatically completed. Items will be removed from your warehouse inventory immediately.</p>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Conditional Forms Based on Role */}
                                     {transactionRole === "sender" ? (
@@ -1034,51 +1054,54 @@ const TransactionFormModal = ({
                                                     />
                                                 </div>
 
-                                                <div className="form-group">
-                                                    <label htmlFor="receiverSite" className="form-label">
-                                                        Destination Site <span className="required">*</span>
-                                                    </label>
-                                                    <select
-                                                        id="receiverSite"
-                                                        className="form-select"
-                                                        value={selectedReceiverSite}
-                                                        onChange={handleReceiverSiteChange}
-                                                        required
-                                                    >
-                                                        <option value="" disabled>Select Site</option>
-                                                        {allSites.map((site) => (
-                                                            <option key={site.id} value={site.id}>
-                                                                {site.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                                {/* 🆕 MODIFIED: Conditional site selection - hide for LOSS */}
+                                                {newTransaction.receiverType !== "LOSS" && (
+                                                    <div className="form-group">
+                                                        <label htmlFor="receiverSite" className="form-label">
+                                                            Destination Site <span className="required">*</span>
+                                                        </label>
+                                                        <select
+                                                            id="receiverSite"
+                                                            className="form-select"
+                                                            value={selectedReceiverSite}
+                                                            onChange={handleReceiverSiteChange}
+                                                            required
+                                                        >
+                                                            <option value="" disabled>Select Site</option>
+                                                            {allSites.map((site) => (
+                                                                <option key={site.id} value={site.id}>
+                                                                    {site.name}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {selectedReceiverSite && (
-                                                <div className="form-group-full-wh">
-                                                    <label htmlFor="receiverType" className="form-label">
-                                                        Destination Type <span className="required">*</span>
-                                                    </label>
-                                                    <select
-                                                        id="receiverType"
-                                                        name="receiverType"
-                                                        className="form-select"
-                                                        value={newTransaction.receiverType}
-                                                        onChange={handleReceiverTypeChange}
-                                                        required
-                                                    >
-                                                        <option value="" disabled>Select Type</option>
-                                                        {entityTypes.map((type) => (
-                                                            <option key={type} value={type}>
-                                                                {type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
+                                            {/* 🆕 MODIFIED: Show type selector always, handle LOSS differently */}
+                                            <div className="form-group-full-wh">
+                                                <label htmlFor="receiverType" className="form-label">
+                                                    Destination Type <span className="required">*</span>
+                                                </label>
+                                                <select
+                                                    id="receiverType"
+                                                    name="receiverType"
+                                                    className="form-select"
+                                                    value={newTransaction.receiverType}
+                                                    onChange={handleReceiverTypeChange}
+                                                    required
+                                                >
+                                                    <option value="" disabled>Select Type</option>
+                                                    {entityTypes.map((type) => (
+                                                        <option key={type} value={type}>
+                                                            {type === "LOSS" ? "Loss/Disposal" : type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                                            {selectedReceiverSite && newTransaction.receiverType && (
+                                            {/* 🆕 MODIFIED: Only show entity selector if NOT LOSS */}
+                                            {selectedReceiverSite && newTransaction.receiverType && newTransaction.receiverType !== "LOSS" && (
                                                 <div className="form-group-full-wh">
                                                     <label htmlFor="receiverId" className="form-label">
                                                         Select {newTransaction.receiverType.charAt(0).toUpperCase() + newTransaction.receiverType.slice(1).toLowerCase()} <span className="required">*</span>

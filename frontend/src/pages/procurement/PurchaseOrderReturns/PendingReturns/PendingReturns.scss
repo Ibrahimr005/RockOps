@@ -1,0 +1,68 @@
+.pending-returns-container {
+  width: 100%;
+
+  .po-number-link {
+    color: var(--primary-color);
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .amount-cell {
+    font-weight: 600;
+    color: var(--warning-color);
+  }
+
+  .items-count-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--primary-color-light);
+    color: var(--primary-color);
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .date-cell {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: capitalize;
+
+    &.status-pending {
+      background: #FFF3CD;
+      color: #856404;
+    }
+
+    &.status-confirmed {
+      background: #D4EDDA;
+      color: #155724;
+    }
+
+    &.status-rejected {
+      background: #F8D7DA;
+      color: #721C24;
+    }
+  }
+}
+.return-id-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background: var(--color-primary-alpha-10);
+  color: var(--color-primary);
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}

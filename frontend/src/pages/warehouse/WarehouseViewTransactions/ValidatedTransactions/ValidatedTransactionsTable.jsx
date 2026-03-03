@@ -109,7 +109,17 @@ const ValidatedTransactionsTable = ({
     };
 
     // Helper function to process entity data for consistent display
+// Helper function to process entity data for consistent display
     const processEntityData = (entityType, entityData) => {
+        // 🆕 Handle LOSS type specially - no entity data needed
+        if (entityType === "LOSS") {
+            return {
+                id: "00000000-0000-0000-0000-000000000000",
+                name: "Loss/Disposal",
+                type: "LOSS"
+            };
+        }
+
         if (!entityData) return null;
 
         switch (entityType) {
@@ -140,7 +150,6 @@ const ValidatedTransactionsTable = ({
                 };
         }
     };
-
     const fetchEntityDetails = async (entityType, entityId) => {
         if (!entityType || !entityId) return null;
 

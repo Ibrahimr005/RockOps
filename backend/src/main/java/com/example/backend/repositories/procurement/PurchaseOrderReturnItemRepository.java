@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface PurchaseOrderReturnItemRepository extends JpaRepository<PurchaseOrderReturnItem, UUID> {
 
     List<PurchaseOrderReturnItem> findByPurchaseOrderReturnId(UUID purchaseOrderReturnId);
+
+    List<PurchaseOrderReturnItem> findAllByIdIn(List<UUID> ids);
 }

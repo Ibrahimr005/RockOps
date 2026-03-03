@@ -46,4 +46,9 @@ public interface LogisticsRepository extends JpaRepository<Logistics, UUID> {
     Long getNextLogisticsSequenceValue();
 
     boolean existsByLogisticsNumber(String logisticsNumber);
+
+    @Query("SELECT DISTINCT l FROM Logistics l " +
+            "JOIN l.purchaseOrderReturns lpor " +
+            "WHERE lpor.purchaseOrderReturn.purchaseOrder.id = :purchaseOrderId")
+    List<Logistics> findByPurchaseOrderIdThroughReturns(@Param("purchaseOrderId") UUID purchaseOrderId);
 }

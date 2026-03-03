@@ -97,8 +97,9 @@ const PendingItems = ({
             width: '120px',
             render: (row) => (
                 <span className="quantity-value">
-                    {row.quantity} {row.itemType?.measuringUnit}
-                </span>
+        {row.quantity} {row.itemType?.measuringUnit?.displayName ||
+                    row.itemType?.measuringUnit?.abbreviation || ''}
+    </span>
             )
         },
         {

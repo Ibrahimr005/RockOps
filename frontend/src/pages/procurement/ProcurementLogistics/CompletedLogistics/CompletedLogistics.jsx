@@ -22,10 +22,18 @@ const CompletedLogistics = ({ onCountChange }) => {
         setLoading(true);
         try {
             const data = await logisticsService.getCompleted();
-            console.log('Completed logistics response:', data);
-            setLogistics(data);
+
+            // Enhance data with source type (reference comes from backend)
+            const enhancedData = data.map(item => ({
+                ...item,
+                source: item.logisticsNumber.startsWith('RET-LOG') ? 'Return' : 'Purchase Order',
+                sourceType: item.logisticsNumber.startsWith('RET-LOG') ? 'RETURN' : 'PO'
+                // reference is already in item.reference from backend
+            }));
+
+            setLogistics(enhancedData);
             if (onCountChange) {
-                onCountChange(data.length);
+                onCountChange(enhancedData.length);
             }
         } catch (error) {
             console.error('Error fetching completed logistics:', error);
@@ -79,6 +87,32 @@ const CompletedLogistics = ({ onCountChange }) => {
             )
         },
         {
+            id: 'source',
+            header: 'SOURCE',
+            accessor: 'source',
+            sortable: true,
+            filterable: true,
+            minWidth: '140px',
+            render: (row) => (
+                <span className={`source-badge source-${row.sourceType.toLowerCase()}`}>
+                    {row.source}
+                </span>
+            )
+        },
+        {
+            id: 'reference',
+            header: 'REFERENCE',
+            accessor: 'reference',
+            sortable: true,
+            filterable: true,
+            minWidth: '150px',
+            render: (row) => (
+                <span className="reference-text">
+                    {row.reference || 'N/A'}
+                </span>
+            )
+        },
+        {
             id: 'merchantName',
             header: 'SERVICE',
             accessor: 'merchantName',
@@ -107,18 +141,6 @@ const CompletedLogistics = ({ onCountChange }) => {
             )
         },
         {
-            id: 'purchaseOrderCount',
-            header: 'POs',
-            accessor: 'purchaseOrderCount',
-            sortable: true,
-            minWidth: '80px',
-            render: (row) => (
-                <span className="po-count-badge">
-                    {row.purchaseOrderCount}
-                </span>
-            )
-        },
-        {
             id: 'completedDate',
             header: 'COMPLETED AT',
             accessor: 'approvedAt',
@@ -143,18 +165,26 @@ const CompletedLogistics = ({ onCountChange }) => {
             minWidth: '150px',
             render: (row) => (
                 <span className={`logistics-table-payment-status logistics-table-payment-status--${row.paymentStatus?.toLowerCase() || 'unknown'}`}>
-            {formatPaymentStatus(row.paymentStatus)}
-        </span>
+                    {formatPaymentStatus(row.paymentStatus)}
+                </span>
             )
         }
-
-
     ];
 
     const filterableColumns = [
         {
             header: 'Logistics #',
             accessor: 'logisticsNumber',
+            filterType: 'text'
+        },
+        {
+            header: 'Source',
+            accessor: 'source',
+            filterType: 'select'
+        },
+        {
+            header: 'Reference',
+            accessor: 'reference',
             filterType: 'text'
         },
         {

@@ -15,6 +15,7 @@ import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderIssue;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderResolutionType;
+import com.example.backend.models.procurement.PurchaseOrderReturn.PurchaseOrderReturnStatus;
 import com.example.backend.repositories.finance.balances.BankAccountRepository;
 import com.example.backend.repositories.finance.balances.CashSafeRepository;
 import com.example.backend.repositories.finance.balances.CashWithPersonRepository;
@@ -22,6 +23,7 @@ import com.example.backend.repositories.finance.incomingPayments.IncomingPayment
 import com.example.backend.repositories.finance.incomingPayments.IncomingPaymentRequestRepository;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
+import com.example.backend.repositories.procurement.PurchaseOrderReturnRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -45,6 +47,7 @@ public class IncomingPaymentRequestService {
     private final BankAccountRepository bankAccountRepository;
     private final CashSafeRepository cashSafeRepository;
     private final CashWithPersonRepository cashWithPersonRepository;
+    private final PurchaseOrderReturnRepository purchaseOrderReturnRepository;
 
     /**
      * Create incoming payment requests from REFUND issues (maintains backward compatibility)
@@ -274,6 +277,19 @@ public class IncomingPaymentRequestService {
         request.setConfirmedBy(confirmedBy);
         request.setConfirmedAt(LocalDateTime.now());
 
+        // ADD THIS: If this is a PO_RETURN, update the PurchaseOrderReturn status to CONFIRMED
+        // If this is a PO_RETURN, update the PurchaseOrderReturn status to CONFIRMED
+        if (request.getSource() == IncomingPaymentSource.PO_RETURN && request.getSourceReferenceId() != null) {
+            purchaseOrderReturnRepository.findById(request.getSourceReferenceId())
+                    .ifPresent(poReturn -> {
+                        poReturn.setStatus(PurchaseOrderReturnStatus.CONFIRMED);
+                        poReturn.setApprovedBy(confirmedBy);  // ✅ ADD THIS
+                        poReturn.setApprovedAt(LocalDateTime.now());  // ✅ ADD THIS
+                        purchaseOrderReturnRepository.save(poReturn);
+                        log.info("Updated PurchaseOrderReturn {} status to CONFIRMED by {}", poReturn.getReturnId(), confirmedBy);
+                    });
+        }
+
         IncomingPaymentRequest savedRequest = incomingPaymentRequestRepository.save(request);
         log.info("Successfully confirmed incoming payment request: {} and updated balance", requestId);
 
@@ -355,6 +371,12 @@ public class IncomingPaymentRequestService {
     /**
      * Convert entity to DTO
      */
+    /**
+     * Convert entity to DTO
+     */
+    /**
+     * Convert entity to DTO
+     */
     private IncomingPaymentRequestResponseDTO convertToDTO(IncomingPaymentRequest request) {
         IncomingPaymentRequestResponseDTO dto = new IncomingPaymentRequestResponseDTO();
 
@@ -373,6 +395,30 @@ public class IncomingPaymentRequestService {
         // Payment details
         dto.setSource(request.getSource());
         dto.setSourceReferenceId(request.getSourceReferenceId());
+
+        // Populate human-readable reference IDs
+        // Populate human-readable reference IDs
+        if (request.getSource() == IncomingPaymentSource.PO_RETURN && request.getSourceReferenceId() != null) {
+            // Fetch PO Return to get the returnId (RET000001)
+            log.info("Looking for PO Return with ID: {}", request.getSourceReferenceId());
+            purchaseOrderReturnRepository.findById(request.getSourceReferenceId())
+                    .ifPresentOrElse(
+                            poReturn -> {
+                                log.info("Found PO Return with returnId: {}", poReturn.getReturnId());
+                                dto.setPurchaseOrderReturnId(poReturn.getReturnId());
+                            },
+                            () -> log.warn("PO Return not found for ID: {}", request.getSourceReferenceId())
+                    );
+        } else if (request.getSource() == IncomingPaymentSource.REFUND) {
+            // For refunds, use the issue UUID as string
+            if (!request.getIncomingPaymentItems().isEmpty()) {
+                IncomingPaymentRequestItem firstItem = request.getIncomingPaymentItems().get(0);
+                if (firstItem.getIssue() != null) {
+                    dto.setIssueId(firstItem.getIssue().getId().toString());
+                }
+            }
+        }
+
         dto.setTotalAmount(request.getTotalRefundAmount());
         dto.setStatus(request.getStatus());
 

@@ -17,5 +17,7 @@ public interface PurchaseOrderReturnRepository extends JpaRepository<PurchaseOrd
 
     List<PurchaseOrderReturn> findByPurchaseOrderIdOrderByCreatedAtDesc(UUID purchaseOrderId);
 
-    List<PurchaseOrderReturn> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
+    List<PurchaseOrderReturn> findByPurchaseOrderId(UUID purchaseOrderId);
+
+
 }

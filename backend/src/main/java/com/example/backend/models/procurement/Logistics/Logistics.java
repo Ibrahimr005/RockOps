@@ -102,6 +102,12 @@ public class Logistics {
     @Column(name = "payment_status", length = 50)
     private LogisticsPaymentStatus paymentStatus;
 
+
+    @OneToMany(mappedBy = "logistics", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @Builder.Default
+    private List<LogisticsPurchaseOrderReturn> purchaseOrderReturns = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {

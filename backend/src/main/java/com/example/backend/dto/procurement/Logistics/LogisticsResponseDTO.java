@@ -45,6 +45,9 @@ public class LogisticsResponseDTO {
     // Purchase orders associated with this logistics
     private List<LogisticsPODetailDTO> purchaseOrders;
 
+    // Purchase order returns associated with this logistics
+    private List<LogisticsPORDetailDTO> purchaseOrderReturns;
+
     // Audit fields
     private String createdBy;
     private LocalDateTime createdAt;
@@ -74,12 +77,37 @@ public class LogisticsResponseDTO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class LogisticsPORDetailDTO {
+        private UUID purchaseOrderReturnId;
+        private String returnId;
+        private BigDecimal allocatedCost;
+        private BigDecimal costPercentage;
+        private BigDecimal totalItemsValue;
+        private List<LogisticsReturnItemDetailDTO> items;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class LogisticsItemDetailDTO {
         private UUID purchaseOrderItemId;
         private String itemTypeName;
         private String itemCategoryName;
         private BigDecimal quantity;
         private String measuringUnit;
+        private BigDecimal unitPrice;
+        private BigDecimal totalValue;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LogisticsReturnItemDetailDTO {
+        private UUID purchaseOrderReturnItemId;
+        private String itemTypeName;
+        private BigDecimal quantity;
         private BigDecimal unitPrice;
         private BigDecimal totalValue;
     }

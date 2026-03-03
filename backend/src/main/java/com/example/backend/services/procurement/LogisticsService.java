@@ -7,12 +7,12 @@ import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.Logistics.*;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
+import com.example.backend.models.procurement.PurchaseOrderReturn.PurchaseOrderReturn;
+import com.example.backend.models.procurement.PurchaseOrderReturn.PurchaseOrderReturnItem;
 import com.example.backend.repositories.finance.accountsPayable.PaymentRequestRepository;
 import com.example.backend.repositories.merchant.MerchantRepository;
-import com.example.backend.repositories.procurement.LogisticsPurchaseOrderRepository;
-import com.example.backend.repositories.procurement.LogisticsRepository;
-import com.example.backend.repositories.procurement.PurchaseOrderItemRepository;
-import com.example.backend.repositories.procurement.PurchaseOrderRepository;
+import lombok.extern.slf4j.Slf4j;
+import com.example.backend.repositories.procurement.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -31,10 +32,15 @@ public class LogisticsService {
 
     private final LogisticsRepository logisticsRepository;
     private final LogisticsPurchaseOrderRepository logisticsPurchaseOrderRepository;
+    private final LogisticsPurchaseOrderReturnRepository logisticsPurchaseOrderReturnRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
+    private final PurchaseOrderReturnRepository purchaseOrderReturnRepository;
+    private final PurchaseOrderReturnItemRepository purchaseOrderReturnItemRepository;
     private final MerchantRepository merchantRepository;
     private final PaymentRequestRepository paymentRequestRepository;
+
+    // ==================== PURCHASE ORDER LOGISTICS ====================
 
     @Transactional
     public LogisticsResponseDTO createLogistics(CreateLogisticsDTO dto, UUID userId, String username) {
@@ -79,13 +85,11 @@ public class LogisticsService {
             grandTotalItemsValue = grandTotalItemsValue.add(poItemsTotal);
         }
 
-
         if (grandTotalItemsValue.compareTo(BigDecimal.ZERO) == 0) {
             throw new RuntimeException("Total items value cannot be zero");
         }
 
         // Second pass: create logistics purchase orders with calculated percentages
-// Second pass: create logistics purchase orders with calculated percentages
         for (CreateLogisticsDTO.LogisticsPurchaseOrderDTO poDto : dto.getPurchaseOrders()) {
             PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(poDto.getPurchaseOrderId())
                     .orElseThrow(() -> new RuntimeException("Purchase Order not found: " + poDto.getPurchaseOrderId()));
@@ -157,25 +161,120 @@ public class LogisticsService {
         return convertToResponseDTO(savedLogistics);
     }
 
-    private PaymentRequest createPaymentRequest(Logistics logistics, UUID userId, String username) {
-        String requestNumber = generatePaymentRequestNumber();
+    // ==================== PURCHASE ORDER RETURN LOGISTICS ====================
 
-        PaymentRequest paymentRequest = PaymentRequest.builder()
-                .requestNumber(requestNumber)
-                .requestedAmount(logistics.getTotalCost())
-                .currency(logistics.getCurrency())
-                .description("Logistics payment for " + logistics.getLogisticsNumber() +
-                        " - " + logistics.getCarrierCompany())
-                .status(PaymentRequestStatus.PENDING)
-                .merchant(logistics.getMerchant())
-                .merchantName(logistics.getMerchantName())
-                .requestedByUserId(userId)
-                .requestedByUserName(username)
+    @Transactional
+    public LogisticsResponseDTO createLogisticsForReturn(CreateLogisticsForReturnDTO dto, UUID userId, String username) {
+        // Validate merchant
+        Merchant merchant = merchantRepository.findById(dto.getMerchantId())
+                .orElseThrow(() -> new RuntimeException("Merchant not found"));
+
+        // Generate logistics number
+        String logisticsNumber = generateReturnLogisticsNumber();
+
+        // Create logistics entity
+        Logistics logistics = Logistics.builder()
+                .logisticsNumber(logisticsNumber)
+                .merchant(merchant)
+                .merchantName(merchant.getName())
+                .totalCost(dto.getTotalCost())
+                .currency(dto.getCurrency())
+                .carrierCompany(dto.getCarrierCompany())
+                .driverName(dto.getDriverName())
+                .driverPhone(dto.getDriverPhone())
+                .notes(dto.getNotes())
+                .status(LogisticsStatus.PENDING_APPROVAL)
+                .createdBy(username)
+                .createdAt(LocalDateTime.now())
                 .requestedAt(LocalDateTime.now())
                 .build();
 
-        return paymentRequestRepository.save(paymentRequest);
+        // Calculate total value of all selected items across all PO Returns
+        BigDecimal grandTotalItemsValue = BigDecimal.ZERO;
+
+        // First pass: calculate total value
+        for (CreateLogisticsForReturnDTO.LogisticsPurchaseOrderReturnDTO porDto : dto.getPurchaseOrderReturns()) {
+            List<PurchaseOrderReturnItem> items = purchaseOrderReturnItemRepository
+                    .findAllByIdIn(porDto.getSelectedItemIds());
+
+            BigDecimal porItemsTotal = items.stream()
+                    .map(PurchaseOrderReturnItem::getTotalReturnAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            grandTotalItemsValue = grandTotalItemsValue.add(porItemsTotal);
+        }
+
+        if (grandTotalItemsValue.compareTo(BigDecimal.ZERO) == 0) {
+            throw new RuntimeException("Total items value cannot be zero");
+        }
+
+        // Second pass: create logistics purchase order returns with calculated percentages
+        for (CreateLogisticsForReturnDTO.LogisticsPurchaseOrderReturnDTO porDto : dto.getPurchaseOrderReturns()) {
+            PurchaseOrderReturn purchaseOrderReturn = purchaseOrderReturnRepository.findById(porDto.getPurchaseOrderReturnId())
+                    .orElseThrow(() -> new RuntimeException("Purchase Order Return not found: " + porDto.getPurchaseOrderReturnId()));
+
+            List<PurchaseOrderReturnItem> items = purchaseOrderReturnItemRepository
+                    .findAllByIdIn(porDto.getSelectedItemIds());
+
+            if (items.isEmpty()) {
+                throw new RuntimeException("No items found for PO Return: " + porDto.getPurchaseOrderReturnId());
+            }
+
+            // Calculate total value of selected items for this PO Return
+            BigDecimal porItemsTotal = items.stream()
+                    .map(PurchaseOrderReturnItem::getTotalReturnAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // Calculate percentage and allocated cost
+            BigDecimal percentage = porItemsTotal
+                    .divide(grandTotalItemsValue, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"))
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal allocatedCost = dto.getTotalCost()
+                    .multiply(percentage)
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+            // Create LogisticsPurchaseOrderReturn
+            LogisticsPurchaseOrderReturn logisticsPOR = LogisticsPurchaseOrderReturn.builder()
+                    .logistics(logistics)
+                    .purchaseOrderReturn(purchaseOrderReturn)
+                    .allocatedCost(allocatedCost)
+                    .costPercentage(percentage)
+                    .totalItemsValue(porItemsTotal)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            // Create LogisticsPurchaseOrderReturnItem entries
+            for (PurchaseOrderReturnItem item : items) {
+                LogisticsPurchaseOrderReturnItem logisticsItem = LogisticsPurchaseOrderReturnItem.builder()
+                        .logisticsPurchaseOrderReturn(logisticsPOR)
+                        .purchaseOrderReturnItem(item)
+                        .itemTypeName(item.getItemTypeName())
+                        .quantity(item.getReturnQuantity())
+                        .unitPrice(item.getUnitPrice())
+                        .totalValue(item.getTotalReturnAmount())
+                        .createdAt(LocalDateTime.now())
+                        .build();
+
+                logisticsPOR.getItems().add(logisticsItem);
+            }
+
+            logistics.getPurchaseOrderReturns().add(logisticsPOR);
+        }
+
+        // Save logistics (will cascade to all related entities)
+        Logistics savedLogistics = logisticsRepository.save(logistics);
+
+        // Create payment request
+        PaymentRequest paymentRequest = createPaymentRequest(savedLogistics, userId, username);
+        savedLogistics.setPaymentRequest(paymentRequest);
+        savedLogistics = logisticsRepository.save(savedLogistics);
+
+        return convertToResponseDTO(savedLogistics);
     }
+
+    // ==================== QUERY METHODS ====================
 
     @Transactional(readOnly = true)
     public LogisticsResponseDTO getLogisticsById(UUID id) {
@@ -200,8 +299,6 @@ public class LogisticsService {
                 .collect(Collectors.toList());
     }
 
-
-
     @Transactional(readOnly = true)
     public List<LogisticsListDTO> getPendingPaymentLogistics() {
         List<Logistics> logistics = logisticsRepository.findByStatus(LogisticsStatus.PENDING_PAYMENT);
@@ -217,8 +314,6 @@ public class LogisticsService {
                 .map(this::convertToListDTO)
                 .collect(Collectors.toList());
     }
-
-// ❌ DELETE getHistoryLogistics() - replaced by getCompletedLogistics()
 
     @Transactional(readOnly = true)
     public List<POLogisticsDTO> getLogisticsByPurchaseOrder(UUID purchaseOrderId) {
@@ -240,170 +335,27 @@ public class LogisticsService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    @Transactional(readOnly = true)
+    public List<POReturnLogisticsDTO> getLogisticsByPurchaseOrderReturn(UUID purchaseOrderReturnId) {
+        List<LogisticsPurchaseOrderReturn> logisticsPORs = logisticsPurchaseOrderReturnRepository
+                .findByPurchaseOrderReturnId(purchaseOrderReturnId);
 
-
-
-
-
-
-
-
-
-    private String generateLogisticsNumber() {
-        String yearMonth = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        String logisticsNumber;
-        int maxRetries = 10;
-        int attempt = 0;
-
-        do {
-            // Generate random 4-digit number
-            int randomNumber = (int) (Math.random() * 10000);
-            logisticsNumber = String.format("LOG-%s-%04d", yearMonth, randomNumber);
-            attempt++;
-
-            if (attempt >= maxRetries) {
-                throw new RuntimeException("Failed to generate unique logistics number after " + maxRetries + " attempts");
-            }
-        } while (logisticsRepository.existsByLogisticsNumber(logisticsNumber));
-
-        return logisticsNumber;
-    }
-
-    private String generatePaymentRequestNumber() {
-        String prefix = "PR-LOG-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM")) + "-";
-        // You might want to add a counter here similar to logistics number
-        return prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    private LogisticsResponseDTO convertToResponseDTO(Logistics logistics) {
-        List<LogisticsResponseDTO.LogisticsPODetailDTO> poDetails = logistics.getPurchaseOrders().stream()
-                .map(lpo -> {
-                    List<LogisticsResponseDTO.LogisticsItemDetailDTO> items = lpo.getItems().stream()
-                            .map(item -> {
-                                PurchaseOrderItem poItem = item.getPurchaseOrderItem();
-                                return LogisticsResponseDTO.LogisticsItemDetailDTO.builder()
-                                        .purchaseOrderItemId(poItem.getId())
-                                        .itemTypeName(item.getItemTypeName())
-                                        .itemCategoryName(poItem.getItemType().getItemCategory().getName())
-                                        .quantity(item.getQuantity())
-                                        .measuringUnit(poItem.getItemType().getMeasuringUnit() != null ?
-                                                poItem.getItemType().getMeasuringUnit().getName() : null)
-                                        .unitPrice(item.getUnitPrice())
-                                        .totalValue(item.getTotalValue())
-
-                                        .build();
-                            })
-                            .collect(Collectors.toList());
-
-                    return LogisticsResponseDTO.LogisticsPODetailDTO.builder()
-                            .purchaseOrderId(lpo.getPurchaseOrder().getId())
-                            .poNumber(lpo.getPurchaseOrder().getPoNumber())
-                            .allocatedCost(lpo.getAllocatedCost())
-                            .costPercentage(lpo.getCostPercentage())
-                            .totalItemsValue(lpo.getTotalItemsValue())
-                            .items(items)
-                            .build();
-                })
+        return logisticsPORs.stream()
+                .map(this::convertToPOReturnLogisticsDTO)
                 .collect(Collectors.toList());
-
-        return LogisticsResponseDTO.builder()
-                .id(logistics.getId())
-                .logisticsNumber(logistics.getLogisticsNumber())
-                .merchantId(logistics.getMerchant() != null ? logistics.getMerchant().getId() : null)
-                .merchantName(logistics.getMerchantName())
-                .totalCost(logistics.getTotalCost())
-                .currency(logistics.getCurrency())
-                .carrierCompany(logistics.getCarrierCompany())
-                .driverName(logistics.getDriverName())
-                .driverPhone(logistics.getDriverPhone())
-                .notes(logistics.getNotes())
-                .status(logistics.getStatus())
-                .paymentStatus(logistics.getPaymentStatus())  // ✅ ADD THIS
-                .paymentRequestId(logistics.getPaymentRequestId())
-                .paymentRequestNumber(logistics.getPaymentRequest() != null ?
-                        logistics.getPaymentRequest().getRequestNumber() : null)
-                .purchaseOrders(poDetails)
-                .createdBy(logistics.getCreatedBy())
-                .createdAt(logistics.getCreatedAt())
-                .updatedBy(logistics.getUpdatedBy())
-                .updatedAt(logistics.getUpdatedAt())
-                .requestedAt(logistics.getRequestedAt())
-                .approvedAt(logistics.getApprovedAt())
-                .approvedBy(logistics.getApprovedBy())
-                .rejectedAt(logistics.getRejectedAt())
-                .rejectedBy(logistics.getRejectedBy())
-                .rejectionReason(logistics.getRejectionReason())
-                .build();
     }
 
+    @Transactional(readOnly = true)
+    public BigDecimal getTotalLogisticsCostForPOReturn(UUID purchaseOrderReturnId) {
+        List<LogisticsPurchaseOrderReturn> logisticsPORs = logisticsPurchaseOrderReturnRepository
+                .findByPurchaseOrderReturnId(purchaseOrderReturnId);
 
-    private LogisticsListDTO convertToListDTO(Logistics logistics) {
-        return LogisticsListDTO.builder()
-                .id(logistics.getId())
-                .logisticsNumber(logistics.getLogisticsNumber())
-                .merchantName(logistics.getMerchantName())
-                .carrierCompany(logistics.getCarrierCompany())
-                .driverName(logistics.getDriverName())
-                .totalCost(logistics.getTotalCost())
-                .currency(logistics.getCurrency())
-                .status(logistics.getStatus())
-                .paymentStatus(logistics.getPaymentStatus())  // ✅ ADD THIS
-                .paymentRequestId(logistics.getPaymentRequestId())
-                .paymentRequestNumber(logistics.getPaymentRequest() != null ?
-                        logistics.getPaymentRequest().getRequestNumber() : null)
-                .purchaseOrderCount(logistics.getPurchaseOrders().size())
-                .createdBy(logistics.getCreatedBy())
-                .createdAt(logistics.getCreatedAt())
-                .approvedAt(logistics.getApprovedAt())
-                .approvedBy(logistics.getApprovedBy())
-                .rejectedAt(logistics.getRejectedAt())
-                .rejectedBy(logistics.getRejectedBy())
-                .build();
+        return logisticsPORs.stream()
+                .map(LogisticsPurchaseOrderReturn::getAllocatedCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    @Transactional
-    public Logistics save(Logistics logistics) {
-        return logisticsRepository.save(logistics);
-    }
-
-    private POLogisticsDTO convertToPOLogisticsDTO(LogisticsPurchaseOrder lpo) {
-        List<POLogisticsDTO.LogisticsItemDetailDTO> items = lpo.getItems().stream()
-                .map(item -> {
-                    PurchaseOrderItem poItem = item.getPurchaseOrderItem();
-                    return POLogisticsDTO.LogisticsItemDetailDTO.builder()
-                            .purchaseOrderItemId(poItem.getId())
-                            .itemTypeName(item.getItemTypeName())
-                            .itemCategoryName(poItem.getItemType().getItemCategory().getName())
-                            .quantity(item.getQuantity())
-                            .measuringUnit(poItem.getItemType().getMeasuringUnit() != null ?
-                                    poItem.getItemType().getMeasuringUnit().getName() : null)
-                            .unitPrice(item.getUnitPrice())
-                            .totalValue(item.getTotalValue())
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        Logistics logistics = lpo.getLogistics();
-        return POLogisticsDTO.builder()
-                .logisticsId(logistics.getId())
-                .logisticsNumber(logistics.getLogisticsNumber())
-                .merchantName(logistics.getMerchantName())
-                .carrierCompany(logistics.getCarrierCompany())
-                .driverName(logistics.getDriverName())
-                .driverPhone(logistics.getDriverPhone())
-                .allocatedCost(lpo.getAllocatedCost())
-                .costPercentage(lpo.getCostPercentage())
-                .currency(logistics.getCurrency())
-                .totalLogisticsCost(logistics.getTotalCost())
-                .status(logistics.getStatus())
-                .paymentStatus(logistics.getPaymentStatus())  // ✅ ADD THIS
-                .paymentRequestId(logistics.getPaymentRequestId())
-                .items(items)
-                .notes(logistics.getNotes())
-                .createdAt(logistics.getCreatedAt())
-                .createdBy(logistics.getCreatedBy())
-                .build();
-    }
+    // ==================== UPDATE & DELETE ====================
 
     @Transactional
     public LogisticsResponseDTO updateLogistics(UUID id, CreateLogisticsDTO dto, String username) {
@@ -539,5 +491,329 @@ public class LogisticsService {
 
         // Delete logistics (will cascade to purchase orders and items)
         logisticsRepository.delete(logistics);
+    }
+
+    @Transactional
+    public Logistics save(Logistics logistics) {
+        return logisticsRepository.save(logistics);
+    }
+
+    // ==================== HELPER METHODS ====================
+
+    private PaymentRequest createPaymentRequest(Logistics logistics, UUID userId, String username) {
+        String requestNumber = generatePaymentRequestNumber();
+
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+                .requestNumber(requestNumber)
+                .requestedAmount(logistics.getTotalCost())
+                .currency(logistics.getCurrency())
+                .description("Logistics payment for " + logistics.getLogisticsNumber() +
+                        " - " + logistics.getCarrierCompany())
+                .status(PaymentRequestStatus.PENDING)
+                .merchant(logistics.getMerchant())
+                .merchantName(logistics.getMerchantName())
+                .requestedByUserId(userId)
+                .requestedByUserName(username)
+                .requestedAt(LocalDateTime.now())
+                .build();
+
+        return paymentRequestRepository.save(paymentRequest);
+    }
+
+    private String generateLogisticsNumber() {
+        String yearMonth = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
+        String logisticsNumber;
+        int maxRetries = 10;
+        int attempt = 0;
+
+        do {
+            int randomNumber = (int) (Math.random() * 10000);
+            logisticsNumber = String.format("LOG-%s-%04d", yearMonth, randomNumber);
+            attempt++;
+
+            if (attempt >= maxRetries) {
+                throw new RuntimeException("Failed to generate unique logistics number after " + maxRetries + " attempts");
+            }
+        } while (logisticsRepository.existsByLogisticsNumber(logisticsNumber));
+
+        return logisticsNumber;
+    }
+
+    private String generateReturnLogisticsNumber() {
+        String yearMonth = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
+        String logisticsNumber;
+        int maxRetries = 10;
+        int attempt = 0;
+
+        do {
+            int randomNumber = (int) (Math.random() * 10000);
+            logisticsNumber = String.format("RET-LOG-%s-%04d", yearMonth, randomNumber);
+            attempt++;
+
+            if (attempt >= maxRetries) {
+                throw new RuntimeException("Failed to generate unique return logistics number after " + maxRetries + " attempts");
+            }
+        } while (logisticsRepository.existsByLogisticsNumber(logisticsNumber));
+
+        return logisticsNumber;
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<POReturnLogisticsDTO> getReturnLogisticsByPurchaseOrder(UUID purchaseOrderId) {
+
+
+        List<Logistics> logistics = logisticsRepository.findByPurchaseOrderIdThroughReturns(purchaseOrderId);
+
+        return logistics.stream()
+                .map(logisticsEntry -> convertToPOReturnLogisticsDTO(logisticsEntry, purchaseOrderId))
+                .collect(Collectors.toList());
+    }
+
+    private POReturnLogisticsDTO convertToPOReturnLogisticsDTO(Logistics logistics, UUID purchaseOrderId) {
+        // Find the returns for this specific PO
+        List<LogisticsPurchaseOrderReturn> relevantReturns = logistics.getPurchaseOrderReturns().stream()
+                .filter(lpor -> lpor.getPurchaseOrderReturn().getPurchaseOrder().getId().equals(purchaseOrderId))
+                .collect(Collectors.toList());
+
+        BigDecimal totalAllocated = relevantReturns.stream()
+                .map(LogisticsPurchaseOrderReturn::getAllocatedCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal percentage = logistics.getTotalCost().compareTo(BigDecimal.ZERO) > 0
+                ? totalAllocated.divide(logistics.getTotalCost(), 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
+                : BigDecimal.ZERO;
+
+        // Collect all items
+        List<POReturnLogisticsDTO.LogisticsItemDetailDTO> items = new ArrayList<>();
+        for (LogisticsPurchaseOrderReturn lpor : relevantReturns) {
+            for (LogisticsPurchaseOrderReturnItem item : lpor.getItems()) {
+                items.add(POReturnLogisticsDTO.LogisticsItemDetailDTO.builder()
+                        .purchaseOrderReturnItemId(item.getPurchaseOrderReturnItem().getId())
+                        .itemTypeName(item.getPurchaseOrderReturnItem().getItemTypeName())
+                        .quantity(item.getPurchaseOrderReturnItem().getReturnQuantity())
+                        .unitPrice(item.getPurchaseOrderReturnItem().getUnitPrice())
+                        .totalValue(item.getPurchaseOrderReturnItem().getTotalReturnAmount())
+                        .build());
+            }
+        }
+
+        return POReturnLogisticsDTO.builder()
+                .logisticsId(logistics.getId())
+                .logisticsNumber(logistics.getLogisticsNumber())
+                .merchantName(logistics.getMerchantName())
+                .carrierCompany(logistics.getCarrierCompany())
+                .driverName(logistics.getDriverName())
+                .driverPhone(logistics.getDriverPhone())
+                .allocatedCost(totalAllocated)
+                .costPercentage(percentage)
+                .currency(logistics.getCurrency())
+                .totalLogisticsCost(logistics.getTotalCost())
+                .status(logistics.getStatus())
+                .paymentStatus(logistics.getPaymentStatus())
+                .paymentRequestId(logistics.getPaymentRequestId())
+                .items(items)
+                .notes(logistics.getNotes())
+                .createdAt(logistics.getCreatedAt())
+                .createdBy(logistics.getCreatedBy())
+                .build();
+    }
+
+    private String generatePaymentRequestNumber() {
+        String prefix = "PR-LOG-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM")) + "-";
+        return prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    // ==================== DTO CONVERTERS ====================
+
+    private LogisticsResponseDTO convertToResponseDTO(Logistics logistics) {
+        // Convert PO details
+        List<LogisticsResponseDTO.LogisticsPODetailDTO> poDetails = logistics.getPurchaseOrders().stream()
+                .map(lpo -> {
+                    List<LogisticsResponseDTO.LogisticsItemDetailDTO> items = lpo.getItems().stream()
+                            .map(item -> {
+                                PurchaseOrderItem poItem = item.getPurchaseOrderItem();
+                                return LogisticsResponseDTO.LogisticsItemDetailDTO.builder()
+                                        .purchaseOrderItemId(poItem.getId())
+                                        .itemTypeName(item.getItemTypeName())
+                                        .itemCategoryName(poItem.getItemType().getItemCategory().getName())
+                                        .quantity(item.getQuantity())
+                                        .measuringUnit(poItem.getItemType().getMeasuringUnit() != null ?
+                                                poItem.getItemType().getMeasuringUnit().getName() : null)
+                                        .unitPrice(item.getUnitPrice())
+                                        .totalValue(item.getTotalValue())
+                                        .build();
+                            })
+                            .collect(Collectors.toList());
+
+                    return LogisticsResponseDTO.LogisticsPODetailDTO.builder()
+                            .purchaseOrderId(lpo.getPurchaseOrder().getId())
+                            .poNumber(lpo.getPurchaseOrder().getPoNumber())
+                            .allocatedCost(lpo.getAllocatedCost())
+                            .costPercentage(lpo.getCostPercentage())
+                            .totalItemsValue(lpo.getTotalItemsValue())
+                            .items(items)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // Convert PO Return details
+        List<LogisticsResponseDTO.LogisticsPORDetailDTO> porDetails = logistics.getPurchaseOrderReturns().stream()
+                .map(lpor -> {
+                    List<LogisticsResponseDTO.LogisticsReturnItemDetailDTO> items = lpor.getItems().stream()
+                            .map(item -> LogisticsResponseDTO.LogisticsReturnItemDetailDTO.builder()
+                                    .purchaseOrderReturnItemId(item.getPurchaseOrderReturnItem().getId())
+                                    .itemTypeName(item.getItemTypeName())
+                                    .quantity(item.getQuantity())
+                                    .unitPrice(item.getUnitPrice())
+                                    .totalValue(item.getTotalValue())
+                                    .build())
+                            .collect(Collectors.toList());
+
+                    return LogisticsResponseDTO.LogisticsPORDetailDTO.builder()
+                            .purchaseOrderReturnId(lpor.getPurchaseOrderReturn().getId())
+                            .returnId(lpor.getPurchaseOrderReturn().getReturnId())
+                            .allocatedCost(lpor.getAllocatedCost())
+                            .costPercentage(lpor.getCostPercentage())
+                            .totalItemsValue(lpor.getTotalItemsValue())
+                            .items(items)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return LogisticsResponseDTO.builder()
+                .id(logistics.getId())
+                .logisticsNumber(logistics.getLogisticsNumber())
+                .merchantId(logistics.getMerchant() != null ? logistics.getMerchant().getId() : null)
+                .merchantName(logistics.getMerchantName())
+                .totalCost(logistics.getTotalCost())
+                .currency(logistics.getCurrency())
+                .carrierCompany(logistics.getCarrierCompany())
+                .driverName(logistics.getDriverName())
+                .driverPhone(logistics.getDriverPhone())
+                .notes(logistics.getNotes())
+                .status(logistics.getStatus())
+                .paymentStatus(logistics.getPaymentStatus())
+                .paymentRequestId(logistics.getPaymentRequestId())
+                .paymentRequestNumber(logistics.getPaymentRequest() != null ?
+                        logistics.getPaymentRequest().getRequestNumber() : null)
+                .purchaseOrders(poDetails)
+                .purchaseOrderReturns(porDetails)
+                .createdBy(logistics.getCreatedBy())
+                .createdAt(logistics.getCreatedAt())
+                .updatedBy(logistics.getUpdatedBy())
+                .updatedAt(logistics.getUpdatedAt())
+                .requestedAt(logistics.getRequestedAt())
+                .approvedAt(logistics.getApprovedAt())
+                .approvedBy(logistics.getApprovedBy())
+                .rejectedAt(logistics.getRejectedAt())
+                .rejectedBy(logistics.getRejectedBy())
+                .rejectionReason(logistics.getRejectionReason())
+                .build();
+    }
+
+    private LogisticsListDTO convertToListDTO(Logistics logistics) {
+        // Get the first PO number or Return ID as reference
+        String reference = "N/A";
+        if (!logistics.getPurchaseOrders().isEmpty()) {
+            reference = logistics.getPurchaseOrders().get(0).getPurchaseOrder().getPoNumber();
+        } else if (!logistics.getPurchaseOrderReturns().isEmpty()) {
+            reference = logistics.getPurchaseOrderReturns().get(0).getPurchaseOrderReturn().getReturnId();
+        }
+
+        return LogisticsListDTO.builder()
+                .id(logistics.getId())
+                .logisticsNumber(logistics.getLogisticsNumber())
+                .merchantName(logistics.getMerchantName())
+                .carrierCompany(logistics.getCarrierCompany())
+                .driverName(logistics.getDriverName())
+                .totalCost(logistics.getTotalCost())
+                .currency(logistics.getCurrency())
+                .status(logistics.getStatus())
+                .paymentStatus(logistics.getPaymentStatus())
+                .paymentRequestId(logistics.getPaymentRequestId())
+                .paymentRequestNumber(logistics.getPaymentRequest() != null ?
+                        logistics.getPaymentRequest().getRequestNumber() : null)
+                .purchaseOrderCount(logistics.getPurchaseOrders().size() + logistics.getPurchaseOrderReturns().size())
+                .reference(reference)  // ADD THIS
+                .createdBy(logistics.getCreatedBy())
+                .createdAt(logistics.getCreatedAt())
+                .approvedAt(logistics.getApprovedAt())
+                .approvedBy(logistics.getApprovedBy())
+                .rejectedAt(logistics.getRejectedAt())
+                .rejectedBy(logistics.getRejectedBy())
+                .build();
+    }
+
+    private POLogisticsDTO convertToPOLogisticsDTO(LogisticsPurchaseOrder lpo) {
+        List<POLogisticsDTO.LogisticsItemDetailDTO> items = lpo.getItems().stream()
+                .map(item -> {
+                    PurchaseOrderItem poItem = item.getPurchaseOrderItem();
+                    return POLogisticsDTO.LogisticsItemDetailDTO.builder()
+                            .purchaseOrderItemId(poItem.getId())
+                            .itemTypeName(item.getItemTypeName())
+                            .itemCategoryName(poItem.getItemType().getItemCategory().getName())
+                            .quantity(item.getQuantity())
+                            .measuringUnit(poItem.getItemType().getMeasuringUnit() != null ?
+                                    poItem.getItemType().getMeasuringUnit().getName() : null)
+                            .unitPrice(item.getUnitPrice())
+                            .totalValue(item.getTotalValue())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        Logistics logistics = lpo.getLogistics();
+        return POLogisticsDTO.builder()
+                .logisticsId(logistics.getId())
+                .logisticsNumber(logistics.getLogisticsNumber())
+                .merchantName(logistics.getMerchantName())
+                .carrierCompany(logistics.getCarrierCompany())
+                .driverName(logistics.getDriverName())
+                .driverPhone(logistics.getDriverPhone())
+                .allocatedCost(lpo.getAllocatedCost())
+                .costPercentage(lpo.getCostPercentage())
+                .currency(logistics.getCurrency())
+                .totalLogisticsCost(logistics.getTotalCost())
+                .status(logistics.getStatus())
+                .paymentStatus(logistics.getPaymentStatus())
+                .paymentRequestId(logistics.getPaymentRequestId())
+                .items(items)
+                .notes(logistics.getNotes())
+                .createdAt(logistics.getCreatedAt())
+                .createdBy(logistics.getCreatedBy())
+                .build();
+    }
+
+    private POReturnLogisticsDTO convertToPOReturnLogisticsDTO(LogisticsPurchaseOrderReturn lpor) {
+        List<POReturnLogisticsDTO.LogisticsItemDetailDTO> items = lpor.getItems().stream()
+                .map(item -> POReturnLogisticsDTO.LogisticsItemDetailDTO.builder()
+                        .purchaseOrderReturnItemId(item.getPurchaseOrderReturnItem().getId())
+                        .itemTypeName(item.getItemTypeName())
+                        .quantity(item.getQuantity())
+                        .unitPrice(item.getUnitPrice())
+                        .totalValue(item.getTotalValue())
+                        .build())
+                .collect(Collectors.toList());
+
+        Logistics logistics = lpor.getLogistics();
+        return POReturnLogisticsDTO.builder()
+                .logisticsId(logistics.getId())
+                .logisticsNumber(logistics.getLogisticsNumber())
+                .merchantName(logistics.getMerchantName())
+                .carrierCompany(logistics.getCarrierCompany())
+                .driverName(logistics.getDriverName())
+                .driverPhone(logistics.getDriverPhone())
+                .allocatedCost(lpor.getAllocatedCost())
+                .costPercentage(lpor.getCostPercentage())
+                .currency(logistics.getCurrency())
+                .totalLogisticsCost(logistics.getTotalCost())
+                .status(logistics.getStatus())
+                .paymentStatus(logistics.getPaymentStatus())
+                .paymentRequestId(logistics.getPaymentRequestId())
+                .items(items)
+                .notes(logistics.getNotes())
+                .createdAt(logistics.getCreatedAt())
+                .createdBy(logistics.getCreatedBy())
+                .build();
     }
 }

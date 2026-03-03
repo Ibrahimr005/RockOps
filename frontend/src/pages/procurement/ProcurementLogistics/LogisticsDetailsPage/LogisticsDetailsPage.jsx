@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiTruck, FiAlertCircle, FiPackage, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
+import { FiTruck, FiAlertCircle, FiPackage, FiDollarSign, FiCheckCircle, FiRotateCcw } from 'react-icons/fi';
 import { logisticsService } from '../../../../services/procurement/logisticsService';
 import IntroCard from '../../../../components/common/IntroCard/IntroCard';
 import { Button } from '../../../../components/common/Button';
@@ -95,6 +95,15 @@ const LogisticsDetailsPage = () => {
         return displayMap[paymentStatus] || paymentStatus;
     };
 
+    const isReturnLogistics = logistics.logisticsNumber?.startsWith('RET-LOG');
+    const hasOrders = isReturnLogistics
+        ? (logistics.purchaseOrderReturns && logistics.purchaseOrderReturns.length > 0)
+        : (logistics.purchaseOrders && logistics.purchaseOrders.length > 0);
+
+    const ordersCount = isReturnLogistics
+        ? (logistics.purchaseOrderReturns?.length || 0)
+        : (logistics.purchaseOrders?.length || 0);
+
     const breadcrumbs = [
         { label: 'Logistics', onClick: () => navigate('/procurement/logistics') },
         { label: logistics.logisticsNumber }
@@ -106,8 +115,8 @@ const LogisticsDetailsPage = () => {
             label: 'Created'
         },
         {
-            value: logistics.purchaseOrders?.length || 0,
-            label: 'Purchase Orders'
+            value: ordersCount,
+            label: isReturnLogistics ? 'Return Orders' : 'Purchase Orders'
         },
         {
             value: `${logistics.currency} ${parseFloat(logistics.totalCost).toFixed(2)}`,
@@ -117,16 +126,14 @@ const LogisticsDetailsPage = () => {
 
     return (
         <div className="logistics-details-page">
-            {/* IntroCard Header */}
             <IntroCard
                 title={logistics.logisticsNumber}
                 label={getStatusDisplay(logistics.status)}
                 breadcrumbs={breadcrumbs}
-                icon={<FiTruck />}
+                icon={isReturnLogistics ? <FiRotateCcw /> : <FiTruck />}
                 stats={stats}
             />
 
-            {/* Overview Content */}
             <div className="logistics-details-overview-tab">
                 {/* Basic Information Section */}
                 <div className="logistics-details-section">
@@ -136,6 +143,18 @@ const LogisticsDetailsPage = () => {
                     </div>
 
                     <div className="logistics-details-grid">
+                        <div className="logistics-details-item">
+                            <div className="logistics-details-icon">
+                                <FiPackage />
+                            </div>
+                            <div className="logistics-details-content">
+                                <div className="logistics-details-label">Type</div>
+                                <div className="logistics-details-value">
+                                    {isReturnLogistics ? 'Return Logistics' : 'Purchase Order Logistics'}
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="logistics-details-item">
                             <div className="logistics-details-icon">
                                 <FiPackage />
@@ -282,7 +301,7 @@ const LogisticsDetailsPage = () => {
                 </div>
 
                 {/* Purchase Orders Section */}
-                {logistics.purchaseOrders && logistics.purchaseOrders.length > 0 && (
+                {!isReturnLogistics && logistics.purchaseOrders && logistics.purchaseOrders.length > 0 && (
                     <div className="logistics-details-section">
                         <div className="logistics-details-section-title">
                             <FiPackage />
@@ -314,7 +333,6 @@ const LogisticsDetailsPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Items */}
                                     {po.items && po.items.length > 0 && (
                                         <div className="logistics-details-po-items">
                                             <div className="logistics-details-po-items-title">
@@ -331,6 +349,77 @@ const LogisticsDetailsPage = () => {
                                                             <div className="logistics-details-item-details">
                                                                 <span className="logistics-details-item-qty">
                                                                     {item.quantity} {item.measuringUnit}
+                                                                </span>
+                                                                <span className="logistics-details-item-separator">•</span>
+                                                                <span className="logistics-details-item-price">
+                                                                    {logistics.currency} {parseFloat(item.unitPrice).toFixed(2)}/unit
+                                                                </span>
+                                                                <span className="logistics-details-item-separator">•</span>
+                                                                <span className="logistics-details-item-total">
+                                                                    Total: {logistics.currency} {parseFloat(item.totalValue).toFixed(2)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Purchase Order Returns Section */}
+                {isReturnLogistics && logistics.purchaseOrderReturns && logistics.purchaseOrderReturns.length > 0 && (
+                    <div className="logistics-details-section">
+                        <div className="logistics-details-section-title">
+                            <FiRotateCcw />
+                            Purchase Order Returns ({logistics.purchaseOrderReturns.length})
+                        </div>
+
+                        <div className="logistics-details-po-grid">
+                            {logistics.purchaseOrderReturns.map((por) => (
+                                <div key={por.purchaseOrderReturnId} className="logistics-details-po-card logistics-details-return-card">
+                                    <div className="logistics-details-po-header">
+                                        <div className="logistics-details-po-number">{por.returnId}</div>
+                                        <div className="logistics-details-po-cost">
+                                            {logistics.currency} {parseFloat(por.allocatedCost).toFixed(2)}
+                                        </div>
+                                    </div>
+
+                                    <div className="logistics-details-po-body">
+                                        <div className="logistics-details-po-meta">
+                                            <span className="logistics-details-po-meta-label">Cost Percentage:</span>
+                                            <span className="logistics-details-po-meta-value">
+                                                {parseFloat(por.costPercentage).toFixed(2)}%
+                                            </span>
+                                        </div>
+                                        <div className="logistics-details-po-meta">
+                                            <span className="logistics-details-po-meta-label">Items Value:</span>
+                                            <span className="logistics-details-po-meta-value">
+                                                {logistics.currency} {parseFloat(por.totalItemsValue).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {por.items && por.items.length > 0 && (
+                                        <div className="logistics-details-po-items">
+                                            <div className="logistics-details-po-items-title">
+                                                Return Items ({por.items.length})
+                                            </div>
+                                            <div className="logistics-details-items-list-wrapper">
+                                                <div className="logistics-details-items-list">
+                                                    {por.items.map((item) => (
+                                                        <div key={item.purchaseOrderReturnItemId} className="logistics-details-item-tag">
+                                                            <div className="logistics-details-item-main">
+                                                                <FiRotateCcw size={14} />
+                                                                <span className="logistics-details-item-name">{item.itemTypeName}</span>
+                                                            </div>
+                                                            <div className="logistics-details-item-details">
+                                                                <span className="logistics-details-item-qty">
+                                                                    Return Qty: {item.quantity}
                                                                 </span>
                                                                 <span className="logistics-details-item-separator">•</span>
                                                                 <span className="logistics-details-item-price">

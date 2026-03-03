@@ -128,15 +128,15 @@
     padding: 24px;
 
     .section-title {
-      margin: 0 0 20px 0;
+      margin: 0 0 0 0;
       font-size: 15px;
       font-weight: 600;
       color: var(--color-text-primary);
       display: flex;
       align-items: center;
       gap: 10px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid var(--border-color-light);
+      padding-bottom: 0;
+      border-bottom: none;
 
       svg {
         color: var(--color-primary);
@@ -181,7 +181,7 @@
       gap: 16px;
       margin-bottom: 16px;
       padding-bottom: 16px;
-      border-bottom: 1px solid var(--border-color-light);
+      border-bottom: 2px solid var(--border-color-light);
 
       .logistics-icon {
         display: flex;
@@ -255,7 +255,7 @@
         flex-wrap: wrap;
         gap: 0;
         background: var(--color-surface-secondary);
-        border: 1px solid var(--border-color-light);
+        border: 2px solid var(--border-color-light);
         border-radius: var(--radius-sm);
         overflow: hidden;
       }
@@ -268,8 +268,8 @@
         flex: 1;
         min-width: 180px;
         padding: 14px 16px;
-        border-right: 1px solid var(--border-color-light);
-        border-bottom: 1px solid var(--border-color-light);
+        border-right: 2px solid var(--border-color-light);
+        border-bottom: 2px solid var(--border-color-light);
         transition: background var(--transition-fast);
 
         &:hover {
@@ -349,7 +349,7 @@
           gap: 8px;
           padding: 14px 16px;
           background: var(--color-surface-secondary);
-          border: 1px solid var(--border-color-light);
+          border: 2px solid var(--border-color-light);
           border-radius: var(--radius-sm);
           flex: 1 1 100%;
           border-right: none;
@@ -380,7 +380,7 @@
         margin-top: 4px;
         padding: 16px;
         background: var(--color-surface-secondary);
-        border: 1px solid var(--border-color-light);
+        border: 2px solid var(--border-color-light);
         border-radius: var(--radius-sm);
 
         .items-header {
@@ -391,7 +391,7 @@
           letter-spacing: 0.5px;
           margin-bottom: 12px;
           padding-bottom: 8px;
-          border-bottom: 1px solid var(--border-color-light);
+          border-bottom: 2px solid var(--border-color-light);
         }
 
         .items-list {
@@ -424,7 +424,7 @@
             gap: 8px;
             padding: 12px 14px;
             background: var(--color-surface);
-            border: 1px solid var(--border-color-light);
+            border: 2px solid var(--border-color-light);
             border-radius: var(--radius-sm);
             font-size: 13px;
             font-weight: 500;
@@ -596,5 +596,263 @@
         }
       }
     }
+  }
+}
+// ============================================================================
+// SECTION HEADER WITH FILTER
+// ============================================================================
+.section-header-with-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border-color-light);
+}
+
+// ============================================================================
+// FILTER BUTTON
+// ============================================================================
+.logistics-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+    background: var(--color-surface-hover);
+    border-color: var(--border-color-medium);
+    color: var(--color-text-primary);
+  }
+
+  &--active {
+    background: var(--color-surface-hover);
+    border-color: var(--border-color-medium);
+    color: var(--color-text-primary);
+  }
+}
+
+.logistics-filter-count {
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  min-width: 20px;
+  text-align: center;
+}
+
+// ============================================================================
+// FILTER PANEL
+// ============================================================================
+.logistics-filter-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-color-light);
+  box-shadow: var(--shadow-md);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logistics-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--color-surface-secondary);
+  border-bottom: 2px solid var(--border-color-light);
+
+  h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.filter-reset-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border-color-light);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    border-color: var(--color-text-secondary);
+    color: var(--color-text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.filter-collapse-btn {
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+  }
+
+  &.collapsed svg {
+    transform: rotate(180deg);
+  }
+}
+
+.logistics-filter-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.5rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.logistics-filter-item {
+  display: flex;
+  align-items: center;
+}
+
+// Checkbox Styles
+.filter-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
+  width: 100%;
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+
+  input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+}
+
+.filter-checkbox-custom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color-light);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+
+  svg {
+    opacity: 0;
+    color: white;
+    transition: opacity 0.15s ease;
+  }
+
+  .filter-checkbox-label:hover & {
+    border-color: var(--color-primary);
+  }
+
+  input:checked + & {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+
+    svg {
+      opacity: 1;
+    }
+  }
+}
+
+.filter-checkbox-text {
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+// ============================================================================
+// RETURN LOGISTICS CARD STYLING
+// ============================================================================
+.logistics-card--return {
+  border-left-color: #a855f7;
+
+  .logistics-icon {
+    background: rgba(168, 85, 247, 0.15);
+
+    svg {
+      color: #a855f7;
+    }
+  }
+
+  .logistics-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: var(--radius-sm);
+    margin-top: 4px;
+    letter-spacing: 0.3px;
   }
 }

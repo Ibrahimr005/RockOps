@@ -68,6 +68,10 @@ import ProcurementLogistics from "./pages/procurement/ProcurementLogistics/Procu
 import LogisticsDetailsPage
     from "./pages/procurement/ProcurementLogistics/LogisticsDetailsPage/LogisticsDetailsPage.jsx";
 
+import PurchaseOrderReturns from "./pages/procurement/PurchaseOrderReturns/PurchaseOrderReturns.jsx";
+import PurchaseOrderReturnDetailsPage
+    from "./pages/procurement/PurchaseOrderReturns/PurchaseOrderReturnDetailsPage/PurchaseOrderReturnDetailsPage.jsx";
+
 // ===================== Finance Imports =====================
 import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
 import Payables from "./pages/finance/Payables/Payables.jsx";
@@ -246,8 +250,8 @@ function App() {
                                             <Route path="price-approvals" element={<PriceApprovals/>}/>
                                             <Route path="logistics" element={<ProcurementLogistics/>}/>
                                             <Route path="logistics/:id" element={<LogisticsDetailsPage/>}/>
-
-
+                                            <Route path="purchase-order-returns" element={<PurchaseOrderReturns/>}/> {/* ADD THIS */}
+                                            <Route path="purchase-order-returns/:id" element={<PurchaseOrderReturnDetailsPage/>}/> {/* ADD THIS */}
                                         </Route>
 
                                         {/* ===================== HR Management Routes ===================== */}

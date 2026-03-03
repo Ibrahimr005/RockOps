@@ -33,6 +33,11 @@ public class IncomingPaymentRequestResponseDTO {
     // Payment details
     private IncomingPaymentSource source;
     private UUID sourceReferenceId;
+
+    // ADD THESE TWO FIELDS
+    private String issueId;  // For REFUND source - display ID of the issue
+    private String purchaseOrderReturnId;  // For PO_RETURN source - RET000001, etc.
+
     private BigDecimal totalAmount;
     private IncomingPaymentStatus status;
 

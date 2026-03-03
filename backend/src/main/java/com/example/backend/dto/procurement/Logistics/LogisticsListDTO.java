@@ -28,6 +28,7 @@ public class LogisticsListDTO {
     private UUID paymentRequestId;
     private String paymentRequestNumber;
     private int purchaseOrderCount;
+    private String reference;
     private String createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime approvedAt;
