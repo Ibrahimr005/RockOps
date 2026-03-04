@@ -44,10 +44,12 @@ const UnifiedCard = ({
                 const newUrl = await onImageRefresh(id);
                 if (isMounted && newUrl) {
                     setRefreshedImageUrl(newUrl);
-                    setImageRefreshAttempted(true);
                 }
             } catch (error) {
-                console.error(`Failed to load image for ${title}`, error);
+                // Silently handle - no image available, fallback will show
+            }
+            if (isMounted) {
+                setImageRefreshAttempted(true);
             }
         };
 
