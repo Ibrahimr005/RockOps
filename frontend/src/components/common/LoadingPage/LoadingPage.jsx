@@ -20,7 +20,7 @@ const LoadingPage = () => {
                                 </defs>
                             </svg>
                         </div>
-                        <h1 className="logo-text">RockOps</h1>
+                        <h1 className="logo-text">OreTech</h1>
                     </div>
                 </div>
 
