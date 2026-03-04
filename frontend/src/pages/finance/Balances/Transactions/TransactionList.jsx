@@ -267,14 +267,14 @@ const TransactionList = ({ onDataChange }) => {
             label: 'Approve',
             icon: <FaCheck />,
             onClick: handleApproveClick,
-            className: 'rockops-table__action-button approve',
+            className: 'oretech-table__action-button approve',
             show: (row) => canApproveReject(row)
         },
         {
             label: 'Reject',
             icon: <FaTimes />,
             onClick: handleRejectClick,
-            className: 'rockops-table__action-button danger',
+            className: 'oretech-table__action-button danger',
             show: (row) => canApproveReject(row)
         }
     ];

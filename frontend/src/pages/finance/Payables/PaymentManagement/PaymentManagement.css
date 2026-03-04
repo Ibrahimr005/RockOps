@@ -159,31 +159,31 @@
 }
 
 /* Table customizations */
-.payment-table .rockops-table__container {
+.payment-table .oretech-table__container {
     margin-top: 1rem;
 }
 
-.payment-table .rockops-table__th,
-.payment-table .rockops-table__cell {
+.payment-table .oretech-table__th,
+.payment-table .oretech-table__cell {
     padding: 12px 16px;
 }
 
 /* Action button customizations */
-.payment-table .rockops-table__action-button.view {
+.payment-table .oretech-table__action-button.view {
     color: var(--color-primary);
     background: rgba(59, 130, 246, 0.1);
 }
 
-.payment-table .rockops-table__action-button.view:hover {
+.payment-table .oretech-table__action-button.view:hover {
     background: rgba(59, 130, 246, 0.2);
 }
 
-[data-theme="dark"] .payment-table .rockops-table__action-button.view {
+[data-theme="dark"] .payment-table .oretech-table__action-button.view {
     color: var(--color-primary);
     background: rgba(72, 128, 255, 0.1);
 }
 
-[data-theme="dark"] .payment-table .rockops-table__action-button.view:hover {
+[data-theme="dark"] .payment-table .oretech-table__action-button.view:hover {
     background: rgba(72, 128, 255, 0.2);
 }
 
@@ -308,16 +308,16 @@
 }
 
 /* Loading and empty states */
-.payment-table .rockops-table__loading {
+.payment-table .oretech-table__loading {
     padding: 3rem;
 }
 
-.payment-table .rockops-table__empty {
+.payment-table .oretech-table__empty {
     padding: 3rem;
     text-align: center;
 }
 
-.payment-table .rockops-table__empty p {
+.payment-table .oretech-table__empty p {
     font-size: 1rem;
     color: var(--color-text-secondary);
     margin: 0;

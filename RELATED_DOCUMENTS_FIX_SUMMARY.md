@@ -15,7 +15,7 @@ Related documents were not working with the new folder structure refactor:
 
 `DocumentService.java` was still using old per-entity bucket structure:
 - Old: `equipment-{uuid}` bucket with `document-{id}` file
-- New: Should use `rockops/equipment/{uuid}/{fileName}` structure
+- New: Should use `oretech/equipment/{uuid}/{fileName}` structure
 
 ## Solution Implemented
 
@@ -33,7 +33,7 @@ minioService.uploadFile(bucketName, file, fileName);
 
 // NEW CODE:
 if (entityType == EntityType.EQUIPMENT) {
-    // Use: rockops/equipment/{equipmentId}/{fileName}
+    // Use: oretech/equipment/{equipmentId}/{fileName}
     String uploadedFileName = minioService.uploadEquipmentFile(entityId, file, name + "_" + savedDocument.getId().toString());
     String fileUrl = minioService.getEquipmentFileUrl(entityId, uploadedFileName);
 }
@@ -48,7 +48,7 @@ minioService.uploadFile(bucketName, file, fileName);
 
 // NEW CODE:
 if (entityType == EntityType.EQUIPMENT) {
-    // Use: rockops/equipment/{equipmentId}/sarky/{year}/{month}/{fileName}
+    // Use: oretech/equipment/{equipmentId}/sarky/{year}/{month}/{fileName}
     String sarkySubFolder = String.format("sarky/%d/%d", year, month);
     String uploadedFileName = minioService.uploadEquipmentFile(
         entityId, file, sarkySubFolder + "/" + name + "_" + savedDocument.getId()
@@ -69,7 +69,7 @@ if (document.getEntityType() == EntityType.EQUIPMENT) {
         minioService.deleteFile(oldBucketName, fileName);
     } catch (Exception oldE) {
         String fileKey = extractFileNameFromUrl(document.getFileUrl());
-        minioService.deleteFile("rockops", fileKey);
+        minioService.deleteFile("oretech", fileKey);
     }
 }
 ```
@@ -77,7 +77,7 @@ if (document.getEntityType() == EntityType.EQUIPMENT) {
 #### 4. Added Helper Method
 ```java
 private String extractFileNameFromUrl(String url) {
-    // Extract filename from URL: http://localhost:9000/rockops/equipment/{id}/{fileName}
+    // Extract filename from URL: http://localhost:9000/oretech/equipment/{id}/{fileName}
     String[] parts = url.split("/");
     return parts[parts.length - 1].split("\\?")[0]; // Remove query params
 }
@@ -89,7 +89,7 @@ private String extractFileNameFromUrl(String url) {
 
 **Regular Documents:**
 ```
-rockops/
+oretech/
   equipment/
     a7807e15-0652-4503-94ea-2aa9374ac9dc/
       Invoice_doc123_invoice.pdf
@@ -98,7 +98,7 @@ rockops/
 
 **Sarky Documents:**
 ```
-rockops/
+oretech/
   equipment/
     a7807e15-0652-4503-94ea-2aa9374ac9dc/
       sarky/
@@ -110,7 +110,7 @@ rockops/
 ### Non-Equipment Entities (Sites, Warehouses, etc.)
 
 ```
-rockops/
+oretech/
   site/
     {site-id}/
       Document_doc123_file.pdf
@@ -124,12 +124,12 @@ rockops/
 
 ### Local MinIO (Direct URLs):
 ```
-http://localhost:9000/rockops/equipment/a7807e15-0652-4503-94ea-2aa9374ac9dc/Invoice_doc123_invoice.pdf
+http://localhost:9000/oretech/equipment/a7807e15-0652-4503-94ea-2aa9374ac9dc/Invoice_doc123_invoice.pdf
 ```
 
 ### Production S3 (Presigned URLs):
 ```
-https://rockops.s3.us-east-1.amazonaws.com/equipment/a7807e15-.../Invoice_doc123_invoice.pdf?X-Amz-Algorithm=...
+https://oretech.s3.us-east-1.amazonaws.com/equipment/a7807e15-.../Invoice_doc123_invoice.pdf?X-Amz-Algorithm=...
 ```
 
 ## React Warning (False Alarm)
@@ -160,7 +160,7 @@ docker-compose restart backend
 
 ### 3. Verify in MinIO
 1. Go to: http://localhost:9001 (minioadmin/minioadmin)
-2. Navigate to: `rockops` → `equipment` → `{equipment-id}`
+2. Navigate to: `oretech` → `equipment` → `{equipment-id}`
 3. **Expected:** See uploaded documents
 
 ### 4. Test Download
@@ -192,13 +192,13 @@ EQUIPMENT_ID="a7807e15-0652-4503-94ea-2aa9374ac9dc"
 # Copy from old bucket to new location
 mc cp --recursive \
   local/$OLD_BUCKET/ \
-  local/rockops/equipment/$EQUIPMENT_ID/
+  local/oretech/equipment/$EQUIPMENT_ID/
 
 # Update database URLs (SQL)
 UPDATE document 
 SET file_url = REPLACE(file_url, 
     'http://localhost:9000/equipment-' || entity_id,
-    'http://localhost:9000/rockops/equipment/' || entity_id
+    'http://localhost:9000/oretech/equipment/' || entity_id
 )
 WHERE entity_type = 'EQUIPMENT';
 ```
@@ -207,7 +207,7 @@ WHERE entity_type = 'EQUIPMENT';
 
 Ensure `application.properties` has:
 ```properties
-aws.s3.bucket-name=rockops
+aws.s3.bucket-name=oretech
 aws.s3.public-url=http://localhost:9000
 storage.type=minio
 aws.s3.enabled=true

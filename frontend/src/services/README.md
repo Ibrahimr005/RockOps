@@ -1,6 +1,6 @@
 # Authentication Services
 
-This directory contains the authentication-related services for the RockOps application.
+This directory contains the authentication-related services for the OreTech application.
 
 ## Files
 

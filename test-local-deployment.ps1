@@ -1,6 +1,6 @@
-# RockOps Local Deployment Test Script
+# OreTech Local Deployment Test Script
 
-Write-Host "RockOps Local Deployment Test" -ForegroundColor Cyan
+Write-Host "OreTech Local Deployment Test" -ForegroundColor Cyan
 Write-Host "==============================" -ForegroundColor Cyan
 
 # Step 1: Clean up any existing containers
@@ -52,7 +52,7 @@ Write-Host ""
 Write-Host "Testing CORS configuration..."
 try {
     $headers = @{
-        "Origin" = "https://rock-ops.vercel.app"
+        "Origin" = "https://oretech.vercel.app"
     }
     $response = Invoke-WebRequest -Uri "http://localhost:8080/api/v1/auth/login" -Method OPTIONS -Headers $headers
     Write-Host "CORS test passed" -ForegroundColor Green
@@ -65,7 +65,7 @@ Write-Host "Service URLs:" -ForegroundColor Cyan
 Write-Host "Backend API: http://localhost:8080" -ForegroundColor White
 Write-Host "MinIO Console: http://localhost:9003" -ForegroundColor White
 Write-Host "PostgreSQL: localhost:5433" -ForegroundColor White
-Write-Host "Frontend (Vercel): https://rock-ops.vercel.app" -ForegroundColor White
+Write-Host "Frontend (Vercel): https://oretech.vercel.app" -ForegroundColor White
 
 Write-Host ""
 Write-Host "Local deployment test complete!" -ForegroundColor Green

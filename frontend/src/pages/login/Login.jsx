@@ -49,36 +49,36 @@ const Login = () => {
     };
 
     return (
-        <div className="rockops__auth__login__main__container">
+        <div className="oretech__auth__login__main__container">
             {/* Background decoration */}
-            <div className="rockops__auth__login__background__decoration">
-                <div className="rockops__auth__login__floating__circle rockops__auth__login__floating__circle--primary"></div>
-                <div className="rockops__auth__login__floating__circle rockops__auth__login__floating__circle--secondary"></div>
-                <div className="rockops__auth__login__floating__circle rockops__auth__login__floating__circle--tertiary"></div>
+            <div className="oretech__auth__login__background__decoration">
+                <div className="oretech__auth__login__floating__circle oretech__auth__login__floating__circle--primary"></div>
+                <div className="oretech__auth__login__floating__circle oretech__auth__login__floating__circle--secondary"></div>
+                <div className="oretech__auth__login__floating__circle oretech__auth__login__floating__circle--tertiary"></div>
             </div>
 
             {/* Main login card */}
-            <div className="rockops__auth__login__main__card">
+            <div className="oretech__auth__login__main__card">
                 {/* Header section */}
-                <div className="rockops__auth__login__header__section">
-                    <div className="rockops__auth__login__brand__logo">
-                        <div className="rockops__auth__login__brand__icon">
+                <div className="oretech__auth__login__header__section">
+                    <div className="oretech__auth__login__brand__logo">
+                        <div className="oretech__auth__login__brand__icon">
                             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         </div>
-                        <h1 className="rockops__auth__login__brand__text">Oretech</h1>
+                        <h1 className="oretech__auth__login__brand__text">Oretech</h1>
                     </div>
-                    <h2 className="rockops__auth__login__welcome__title">Welcome Back</h2>
-                    <p className="rockops__auth__login__welcome__subtitle">Sign in to your account to continue</p>
+                    <h2 className="oretech__auth__login__welcome__title">Welcome Back</h2>
+                    <p className="oretech__auth__login__welcome__subtitle">Sign in to your account to continue</p>
                 </div>
 
                 {/* Error message */}
                 {error && (
-                    <div className="rockops__auth__login__error__message">
-                        <svg className="rockops__auth__login__error__icon" viewBox="0 0 20 20" fill="currentColor">
+                    <div className="oretech__auth__login__error__message">
+                        <svg className="oretech__auth__login__error__icon" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                         <span>{error}</span>
@@ -86,20 +86,20 @@ const Login = () => {
                 )}
 
                 {/* Login form */}
-                <form onSubmit={handleSubmit} className="rockops__auth__login__form__wrapper">
+                <form onSubmit={handleSubmit} className="oretech__auth__login__form__wrapper">
                     {/* Username field */}
-                    <div className="rockops__auth__login__form__group">
-                        <label htmlFor="username" className="rockops__auth__login__field__label">
+                    <div className="oretech__auth__login__form__group">
+                        <label htmlFor="username" className="oretech__auth__login__field__label">
                             Username
                         </label>
-                        <div className="rockops__auth__login__input__wrapper">
-                            <svg className="rockops__auth__login__input__icon" viewBox="0 0 20 20" fill="currentColor">
+                        <div className="oretech__auth__login__input__wrapper">
+                            <svg className="oretech__auth__login__input__icon" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                             </svg>
                             <input
                                 id="username"
                                 type="text"
-                                className="rockops__auth__login__input__field"
+                                className="oretech__auth__login__input__field"
                                 placeholder="Enter your username"
                                 value={username}
                                 onChange={handleUsernameChange}
@@ -110,18 +110,18 @@ const Login = () => {
                     </div>
 
                     {/* Password field */}
-                    <div className="rockops__auth__login__form__group">
-                        <label htmlFor="password" className="rockops__auth__login__field__label">
+                    <div className="oretech__auth__login__form__group">
+                        <label htmlFor="password" className="oretech__auth__login__field__label">
                             Password
                         </label>
-                        <div className="rockops__auth__login__input__wrapper">
-                            <svg className="rockops__auth__login__input__icon" viewBox="0 0 20 20" fill="currentColor">
+                        <div className="oretech__auth__login__input__wrapper">
+                            <svg className="oretech__auth__login__input__icon" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                             </svg>
                             <input
                                 id="password"
                                 type={showPassword ? "text" : "password"}
-                                className="rockops__auth__login__input__field"
+                                className="oretech__auth__login__input__field"
                                 placeholder="Enter your password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -130,7 +130,7 @@ const Login = () => {
                             />
                             <button
                                 type="button"
-                                className="rockops__auth__login__password__toggle"
+                                className="oretech__auth__login__password__toggle"
                                 onClick={() => setShowPassword(!showPassword)}
                                 aria-label={showPassword ? "Hide password" : "Show password"}
                             >
@@ -150,18 +150,18 @@ const Login = () => {
                     </div>
 
                     {/* Form options */}
-                    <div className="rockops__auth__login__form__options">
-                        <label className="rockops__auth__login__checkbox__wrapper">
+                    <div className="oretech__auth__login__form__options">
+                        <label className="oretech__auth__login__checkbox__wrapper">
                             <input
                                 type="checkbox"
                                 checked={rememberPassword}
                                 onChange={(e) => setRememberPassword(e.target.checked)}
-                                className="rockops__auth__login__checkbox__input"
+                                className="oretech__auth__login__checkbox__input"
                             />
-                            <span className="rockops__auth__login__checkbox__custom"></span>
-                            <span className="rockops__auth__login__checkbox__label">Remember me</span>
+                            <span className="oretech__auth__login__checkbox__custom"></span>
+                            <span className="oretech__auth__login__checkbox__label">Remember me</span>
                         </label>
-                        <a href="#" className="rockops__auth__login__forgot__password">
+                        <a href="#" className="oretech__auth__login__forgot__password">
                             Forgot password?
                         </a>
                     </div>
@@ -169,18 +169,18 @@ const Login = () => {
                     {/* Submit button */}
                     <button
                         type="submit"
-                        className="rockops__auth__login__submit__button"
+                        className="oretech__auth__login__submit__button"
                         disabled={isLoading}
                     >
                         {isLoading ? (
                             <>
-                                <div className="rockops__auth__login__button__spinner"></div>
+                                <div className="oretech__auth__login__button__spinner"></div>
                                 <span>Signing in...</span>
                             </>
                         ) : (
                             <>
                                 <span>Sign In</span>
-                                <svg className="rockops__auth__login__button__arrow" viewBox="0 0 20 20" fill="currentColor">
+                                <svg className="oretech__auth__login__button__arrow" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                                 </svg>
                             </>
@@ -189,7 +189,7 @@ const Login = () => {
                 </form>
 
                 {/* Footer */}
-                <div className="rockops__auth__login__footer__section">
+                <div className="oretech__auth__login__footer__section">
                     <p>© 2025 Oretech. All rights reserved.</p>
                 </div>
             </div>

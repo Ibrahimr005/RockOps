@@ -1,7 +1,7 @@
 # DirectPurchase Notification System Integration & Global Toast Component
 
 ## Overview
-This document describes the complete notification system integration for the RockOps DirectPurchase module, including a new global toast notification component that works alongside the existing notification infrastructure.
+This document describes the complete notification system integration for the OreTech DirectPurchase module, including a new global toast notification component that works alongside the existing notification infrastructure.
 
 ## Table of Contents
 1. [System Architecture](#system-architecture)

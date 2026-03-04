@@ -22,7 +22,7 @@ public class MinioService implements FileStorageService {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
-    @Value("${aws.s3.bucket-name:rockops}")
+    @Value("${aws.s3.bucket-name:oretech}")
     private String bucketName;
 
     @Value("${aws.s3.region:us-east-1}")
@@ -260,7 +260,7 @@ public class MinioService implements FileStorageService {
 
         String folderPrefix = "equipment/" + equipmentId.toString() + "/";
         
-        // 1. Check NEW structure first (rockops bucket)
+        // 1. Check NEW structure first (oretech bucket)
         try {
             System.out.println("   Checking bucket: " + bucketName + " with prefix: " + folderPrefix + "Main_Image");
             

@@ -200,7 +200,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
     const CustomTooltip = ({ active, payload, label, labelFormatter, formatter }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="rockops-dashboard-tooltip">
+                <div className="oretech-dashboard-tooltip">
                     <p className="tooltip-label">{labelFormatter ? labelFormatter(label) : label}</p>
                     {payload.map((entry, index) => (
                         <p key={index} className="tooltip-entry" style={{ color: entry.color }}>
@@ -225,8 +225,8 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
 
     if (loading) {
         return (
-            <div className="rockops-dashboard-loading">
-                <div className="rockops-dashboard-loading-spinner"></div>
+            <div className="oretech-dashboard-loading">
+                <div className="oretech-dashboard-loading-spinner"></div>
                 <p>Loading dashboard data...</p>
             </div>
         );
@@ -234,7 +234,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
 
     if (error) {
         return (
-            <div className="rockops-dashboard-error">
+            <div className="oretech-dashboard-error">
                 <AlertTriangle size={48} className="error-icon" />
                 <h3>Unable to Load Dashboard</h3>
                 <p>{error}</p>
@@ -249,7 +249,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
     const stats = dashboardData.summaryStats;
 
     return (
-        <div className="rockops-equipment-dashboard">
+        <div className="oretech-equipment-dashboard">
             {/* Header removed: Displayed in parent Introduction Card */}
 
             {/* Summary Stats */}
@@ -264,19 +264,19 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
             />
 
             {/* Charts Section */}
-            <div className="rockops-dashboard-charts">
+            <div className="oretech-dashboard-charts">
                 {/* Work Hours Chart */}
-                <div className="rockops-chart-card">
-                    <div className="rockops-chart-header">
-                        <div className="rockops-chart-title">
+                <div className="oretech-chart-card">
+                    <div className="oretech-chart-header">
+                        <div className="oretech-chart-title">
                             <Clock size={20} />
                             <h3>Work Hours Over Time</h3>
                         </div>
-                        <div className="rockops-chart-subtitle">
+                        <div className="oretech-chart-subtitle">
                             Monthly work hours trend
                         </div>
                     </div>
-                    <div className="rockops-chart-container">
+                    <div className="oretech-chart-container">
                         <ResponsiveContainer width="100%" height={300}>
                             <LineChart data={dashboardData.workHoursOverTime}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -311,17 +311,17 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 </div>
 
                 {/* Consumables Usage Chart */}
-                <div className="rockops-chart-card">
-                    <div className="rockops-chart-header">
-                        <div className="rockops-chart-title">
+                <div className="oretech-chart-card">
+                    <div className="oretech-chart-header">
+                        <div className="oretech-chart-title">
                             <Package size={20} />
                             <h3>Consumables Usage Over Time</h3>
                         </div>
-                        <div className="rockops-chart-subtitle">
+                        <div className="oretech-chart-subtitle">
                             Monthly consumables consumption
                         </div>
                     </div>
-                    <div className="rockops-chart-container">
+                    <div className="oretech-chart-container">
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={dashboardData.consumablesOverTime}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -353,17 +353,17 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 </div>
 
                 {/* Maintenance History Chart */}
-                <div className="rockops-chart-card full-width">
-                    <div className="rockops-chart-header">
-                        <div className="rockops-chart-title">
+                <div className="oretech-chart-card full-width">
+                    <div className="oretech-chart-header">
+                        <div className="oretech-chart-title">
                             <Wrench size={20} />
                             <h3>Maintenance History & Status</h3>
                         </div>
-                        <div className="rockops-chart-subtitle">
+                        <div className="oretech-chart-subtitle">
                             Monthly maintenance events and completion status
                         </div>
                     </div>
-                    <div className="rockops-chart-container">
+                    <div className="oretech-chart-container">
                         <div className="chart-wrapper">
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={dashboardData.maintenanceHistory} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
@@ -403,7 +403,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
-                        <div className="rockops-dashboard-legend">
+                        <div className="oretech-dashboard-legend">
                             <div className="legend-item">
                                 <span className="legend-icon" style={{ backgroundColor: 'var(--color-warning)' }}></span>
                                 <span className="legend-text">Total Events</span>
@@ -418,15 +418,15 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
             </div>
 
             {/* Performance Insights */}
-            <div className="rockops-dashboard-insights">
-                <div className="rockops-insights-card">
-                    <div className="rockops-insights-header">
+            <div className="oretech-dashboard-insights">
+                <div className="oretech-insights-card">
+                    <div className="oretech-insights-header">
                         <h3>
                             <CheckCircle size={20} />
                             Performance Insights
                         </h3>
                     </div>
-                    <div className="rockops-insights-content">
+                    <div className="oretech-insights-content">
                         <div className="insight-item">
                             <div className="insight-metric">
                                 {dashboardData.summaryStats.averageWorkHours > 0 ?

@@ -15,7 +15,7 @@
 2. Click "New Project"
 3. Select "Deploy from GitHub repo"
 4. Authorize Railway to access your GitHub
-5. Select your repository: `RockOps`
+5. Select your repository: `OreTech`
 6. Select the `main` branch
 
 ### 2. Configure Backend Service
@@ -39,7 +39,7 @@ Click on your backend service → "Variables" tab → "Add Variable":
 
 ```env
 # CORS Configuration
-CORS_ALLOWED_ORIGINS=https://rock-ops.vercel.app
+CORS_ALLOWED_ORIGINS=https://oretech.vercel.app
 
 # Port Configuration
 PORT=8080
@@ -49,7 +49,7 @@ MINIO_ENDPOINT=https://YOUR-ACCOUNT-ID.r2.cloudflarestorage.com
 MINIO_PUBLIC_URL=https://pub-YOUR-HASH.r2.dev
 MINIO_ACCESS_KEY=your-r2-access-key-id
 MINIO_SECRET_KEY=your-r2-secret-access-key
-MINIO_BUCKET_NAME=rockops
+MINIO_BUCKET_NAME=oretech
 
 # Optional: Override default admin credentials
 SPRING_SECURITY_USER_NAME=admin
@@ -61,7 +61,7 @@ SPRING_SECURITY_USER_PASSWORD=your-secure-password
 1. Railway will automatically start deployment
 2. Monitor the build logs
 3. Check for any errors
-4. Once deployed, Railway provides a URL like: `https://rockops-backend.railway.app`
+4. Once deployed, Railway provides a URL like: `https://oretech-backend.railway.app`
 
 ### 6. Verify Deployment
 
@@ -71,7 +71,7 @@ SPRING_SECURITY_USER_PASSWORD=your-secure-password
    ```
 
 2. **Test CORS**:
-   Open browser console at https://rock-ops.vercel.app and run:
+   Open browser console at https://oretech.vercel.app and run:
    ```javascript
    fetch('https://your-app.railway.app/actuator/health')
      .then(r => r.json())
@@ -81,7 +81,7 @@ SPRING_SECURITY_USER_PASSWORD=your-secure-password
 ### 7. Update Vercel Frontend
 
 1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Select your `rock-ops` project
+2. Select your `oretech` project
 3. Go to "Settings" → "Environment Variables"
 4. Add:
    ```
@@ -95,7 +95,7 @@ SPRING_SECURITY_USER_PASSWORD=your-secure-password
 
 1. Create Cloudflare account
 2. Go to R2 Storage
-3. Create a bucket named `rockops`
+3. Create a bucket named `oretech`
 4. Create API tokens:
    - Go to "Manage R2 API Tokens"
    - Create token with "Object Read & Write" permissions
@@ -109,7 +109,7 @@ SPRING_SECURITY_USER_PASSWORD=your-secure-password
 
 1. Create Supabase project
 2. Go to Storage section
-3. Create `rockops` bucket
+3. Create `oretech` bucket
 4. Set bucket to public
 5. Get credentials from Settings → API
 
@@ -151,7 +151,7 @@ SPRING_SECURITY_USER_PASSWORD=your-secure-password
 
 3. **CORS Errors**
    - Verify CORS_ALLOWED_ORIGINS is set correctly
-   - Check if it includes https://rock-ops.vercel.app
+   - Check if it includes https://oretech.vercel.app
    - No trailing slashes in URLs
 
 4. **MinIO/Storage Issues**

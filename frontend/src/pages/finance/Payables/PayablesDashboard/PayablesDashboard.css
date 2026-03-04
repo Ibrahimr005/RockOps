@@ -27,8 +27,8 @@
 }
 
 /* Status Column Width Fix */
-.payables-dashboard .rockops-table__th:last-child,
-.payables-dashboard .rockops-table__cell:last-child {
+.payables-dashboard .oretech-table__th:last-child,
+.payables-dashboard .oretech-table__cell:last-child {
     width: auto !important;
     white-space: nowrap;
     min-width: fit-content;
@@ -49,8 +49,8 @@
 }
 
 /* Additional targeting for specific status columns */
-.payables-dashboard .rockops-table__th[data-column="status"],
-.payables-dashboard .rockops-table__cell[data-column="status"] {
+.payables-dashboard .oretech-table__th[data-column="status"],
+.payables-dashboard .oretech-table__cell[data-column="status"] {
     width: auto !important;
     white-space: nowrap !important;
     min-width: fit-content !important;
@@ -185,7 +185,7 @@
     height: 100%;
 }
 
-.table-section .rockops-table__container {
+.table-section .oretech-table__container {
     margin: 0;
     background: var(--section-background-color);
     border: 1px solid var(--border-color);
@@ -193,21 +193,21 @@
     box-shadow: var(--shadow-sm);
 }
 
-.table-section .rockops-table__header-container {
+.table-section .oretech-table__header-container {
     padding: 1rem;
     background: var(--color-surface);
     border-bottom: 1px solid var(--border-color);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
-.table-section .rockops-table__title {
+.table-section .oretech-table__title {
     font-size: 1.125rem;
     font-weight: 600;
     color: var(--color-text-primary);
     margin: 0;
 }
 
-.table-section .rockops-table__wrapper {
+.table-section .oretech-table__wrapper {
     border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 

@@ -136,13 +136,13 @@
     .transactions-table {
       flex: 1;
 
-      .rockops-table__container {
+      .oretech-table__container {
         height: 100%;
         display: flex;
         flex-direction: column;
       }
 
-      .rockops-table__wrapper {
+      .oretech-table__wrapper {
         flex: 1;
         overflow: auto;
       }
@@ -213,7 +213,7 @@
       }
 
       // Action buttons styling
-      .rockops-table__action-button {
+      .oretech-table__action-button {
         &.accept-action {
           color: var(--color-success);
 
@@ -257,8 +257,8 @@
       }
 
       // Action dropdown styling
-      .rockops-table__actions-dropdown {
-        .rockops-table__action-item {
+      .oretech-table__actions-dropdown {
+        .oretech-table__action-item {
           &.accept-action {
             color: var(--color-success);
 

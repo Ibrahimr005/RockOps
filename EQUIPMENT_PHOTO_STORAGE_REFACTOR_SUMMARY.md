@@ -36,7 +36,7 @@ equipment-{uuid-2}/
 
 **AFTER:** Single bucket with folder structure
 ```
-rockops/
+oretech/
   equipment/
     {uuid-1}/
       Main_Image_download.jpg
@@ -75,7 +75,7 @@ createBucketIfNotExists(equipmentBucket);
 return uploadFile(equipmentBucket, file, fileName);
 
 // NEW: Single bucket with folders
-createBucketIfNotExists(bucketName); // Ensures 'rockops' exists
+createBucketIfNotExists(bucketName); // Ensures 'oretech' exists
 String fileKey = "equipment/" + equipmentId.toString() + "/" + fileName;
 return uploadFile(bucketName, file, fileKey);
 ```
@@ -123,8 +123,8 @@ Both `EquipmentMain.jsx` and `EquipmentDetails.jsx` work correctly with the refa
 environment:
   - MINIO_ENDPOINT=http://minio:9000
   - MINIO_PUBLICURL=http://localhost:9000
-  - MINIO_BUCKETNAME=rockops          # Single bucket
-  - AWS_S3_BUCKET_NAME=rockops        # Consistent naming
+  - MINIO_BUCKETNAME=oretech          # Single bucket
+  - AWS_S3_BUCKET_NAME=oretech        # Consistent naming
   - STORAGE_TYPE=minio
   - AWS_S3_ENABLED=true
 
@@ -132,30 +132,30 @@ minio-setup:
   entrypoint: >
     /bin/sh -c "
     /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
-    /usr/bin/mc mb myminio/rockops --ignore-existing;      # Creates single bucket
-    /usr/bin/mc anonymous set public myminio/rockops;      # Public read access
+    /usr/bin/mc mb myminio/oretech --ignore-existing;      # Creates single bucket
+    /usr/bin/mc anonymous set public myminio/oretech;      # Public read access
     "
 ```
 
-### Deployed Dev (Render - RockOps-Dev-Backend)
+### Deployed Dev (Render - OreTech-Dev-Backend)
 ```
 AWS_ACCESS_KEY_ID=AKIAXEI5DBLJT5655U4V
-AWS_S3_BUCKET_NAME=rockops
+AWS_S3_BUCKET_NAME=oretech
 AWS_S3_REGION=us-east-1
 AWS_S3_ENABLED=true
 STORAGE_TYPE=s3
 ```
 
-### Deployed Production (Render - RockOps-Backend)
+### Deployed Production (Render - OreTech-Backend)
 ```
 AWS_ACCESS_KEY_ID=AKIAXEI5DBLJT5655U4V
-AWS_S3_BUCKET_NAME=rockops
+AWS_S3_BUCKET_NAME=oretech
 AWS_S3_REGION=us-east-1
 AWS_S3_ENABLED=true
 STORAGE_TYPE=s3
 ```
 
-**Note:** All environments now use the same `rockops` bucket name
+**Note:** All environments now use the same `oretech` bucket name
 
 ## Storage Type Handling
 
@@ -165,14 +165,14 @@ The system supports two storage types via the `STORAGE_TYPE` environment variabl
 - **When:** `STORAGE_TYPE=minio` or S3 disabled
 - **Service:** `MinioService.java` is used
 - **Endpoint:** `http://localhost:9000`
-- **Bucket:** `rockops`
+- **Bucket:** `oretech`
 - **Mock URLs:** Generated for S3-disabled mode
 
 ### AWS S3 (Production)
 - **When:** `STORAGE_TYPE=s3` and `AWS_S3_ENABLED=true`
 - **Service:** `S3ServiceImpl.java` is used (conditional on property)
 - **Region:** `us-east-1`
-- **Bucket:** `rockops`
+- **Bucket:** `oretech`
 - **URLs:** 7-day presigned URLs for secure access
 
 ## Presigned URL Strategy
@@ -199,23 +199,23 @@ try {
 ## Testing Checklist
 
 ### ✅ Local Development
-- [x] New equipment photos upload to `rockops/equipment/{id}/`
+- [x] New equipment photos upload to `oretech/equipment/{id}/`
 - [x] New equipment photos load in EquipmentMain
 - [x] New equipment photos load in EquipmentDetails
 - [x] Old equipment photos still load (if already in new structure)
 - [x] MinIO UI (localhost:9001) shows correct folder structure
 
-### ✅ Dev Deployment (dev-rock-ops.vercel.app)
+### ✅ Dev Deployment (dev-oretech.vercel.app)
 - [x] Equipment photos load in EquipmentMain
 - [x] Equipment photos load in EquipmentDetails
 - [x] New equipment uploads work correctly
 
-### ✅ Production Deployment (rock-ops.vercel.app)
+### ✅ Production Deployment (oretech.vercel.app)
 - [x] Equipment photos load in both components
 - [x] New equipment uploads work correctly
 
 ### ✅ AWS S3 Console Verification
-- [x] Check `rockops` bucket structure
+- [x] Check `oretech` bucket structure
 - [x] Verify `equipment/{id}/` folders exist
 - [x] Confirm no new per-equipment buckets created
 
@@ -235,7 +235,7 @@ try {
 #### Option 2: Batch Migration (Optional)
 Create a migration script to:
 1. List all existing `equipment-{uuid}` buckets
-2. Copy files to `rockops/equipment/{uuid}/`
+2. Copy files to `oretech/equipment/{uuid}/`
 3. Update any database references if needed
 4. Delete old buckets after verification
 
@@ -246,10 +246,10 @@ Create a migration script to:
 
 for bucket in $(aws s3 ls | grep "equipment-" | awk '{print $3}'); do
   equipment_id=${bucket#equipment-}
-  echo "Migrating $bucket to rockops/equipment/$equipment_id/"
+  echo "Migrating $bucket to oretech/equipment/$equipment_id/"
   
   # Copy all files from old bucket to new location
-  aws s3 sync s3://$bucket/ s3://rockops/equipment/$equipment_id/
+  aws s3 sync s3://$bucket/ s3://oretech/equipment/$equipment_id/
   
   # Verify copy was successful
   if [ $? -eq 0 ]; then
@@ -274,7 +274,7 @@ done
 
 ### Photos not loading in production
 1. Verify AWS credentials are correct
-2. Check `rockops` bucket exists in AWS S3
+2. Check `oretech` bucket exists in AWS S3
 3. Verify bucket policy allows public read
 4. Check presigned URL generation logs
 5. Verify `STORAGE_TYPE=s3` and `AWS_S3_ENABLED=true`
@@ -316,7 +316,7 @@ done
       "Effect": "Allow",
       "Principal": "*",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::rockops/*"
+      "Resource": "arn:aws:s3:::oretech/*"
     }
   ]
 }
@@ -368,7 +368,7 @@ done
 - Consider similar refactor for consistency (future work)
 
 ### Monitoring
-- Watch backend logs for "Using single bucket 'rockops' with folder structure" message
+- Watch backend logs for "Using single bucket 'oretech' with folder structure" message
 - Monitor S3 request counts (should decrease significantly)
 - Track presigned URL generation errors
 

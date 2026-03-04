@@ -920,15 +920,15 @@ public class SiteAdminService
                 throw new RuntimeException("Partner is already assigned to this site");
             }
 
-            // Step 4: Get default partner ID (Rock4Mining)
+            // Step 4: Get default partner ID (OreTech)
             Integer defaultPartnerId;
             try {
                 Object result = entityManager.createNativeQuery(
-                                "SELECT id FROM partner WHERE first_name = 'Rock4Mining' LIMIT 1")
+                                "SELECT id FROM partner WHERE first_name = 'OreTech' LIMIT 1")
                         .getSingleResult();
                 defaultPartnerId = ((Number) result).intValue();
             } catch (Exception e) {
-                throw new RuntimeException("Default partner Rock4Mining not found");
+                throw new RuntimeException("Default partner OreTech not found");
             }
 
             System.out.println("Default partner ID: " + defaultPartnerId);
@@ -1049,16 +1049,16 @@ public class SiteAdminService
 
     // Improved helper method
     private Partner ensureDefaultPartnerExists() {
-        Optional<Partner> existingPartner = partnerRepository.findByFirstName("Rock4Mining");
+        Optional<Partner> existingPartner = partnerRepository.findByFirstName("OreTech");
 
         if (existingPartner.isPresent()) {
             return existingPartner.get();
         }
 
         // Create new default partner
-        System.out.println("Creating default Rock4Mining partner");
+        System.out.println("Creating default OreTech partner");
         Partner defaultPartner = new Partner();
-        defaultPartner.setFirstName("Rock4Mining");
+        defaultPartner.setFirstName("OreTech");
         defaultPartner.setLastName("");
 
         return partnerRepository.save(defaultPartner);
@@ -1158,7 +1158,7 @@ public class SiteAdminService
             // Check if this is the default partner
             Partner defaultPartner = ensureDefaultPartnerExists();
             if (partnerId.equals(defaultPartner.getId())) {
-                throw new RuntimeException("Cannot remove the default Rock4Mining partner");
+                throw new RuntimeException("Cannot remove the default OreTech partner");
             }
 
             Double percentageToRecover = sitePartner.getPercentage();

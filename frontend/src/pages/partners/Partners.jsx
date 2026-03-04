@@ -137,9 +137,9 @@ const Partners = () => {
     };
 
     const handleDeletePartner = (partner) => {
-        // Check if this is Rock4Mining partner
-        if (partner.firstName === 'Rock4Mining') {
-            showError('Cannot delete the default Rock4Mining partner');
+        // Check if this is OreTech partner
+        if (partner.firstName === 'OreTech') {
+            showError('Cannot delete the default OreTech partner');
             return;
         }
 

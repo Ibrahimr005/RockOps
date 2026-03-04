@@ -1,8 +1,8 @@
-# RockOps Frontend Knowledgebase
+# OreTech Frontend Knowledgebase
 
 **Last Updated:** 2026-01-23
 **Version:** 1.0
-**Purpose:** Comprehensive documentation of the RockOps React frontend application architecture, components, patterns, and development guidelines.
+**Purpose:** Comprehensive documentation of the OreTech React frontend application architecture, components, patterns, and development guidelines.
 
 ---
 
@@ -31,7 +31,7 @@
 
 ## Frontend Overview
 
-The RockOps frontend is a **single-page application (SPA)** built with React 19.1.0 and Vite 6.3.5. It provides a comprehensive user interface for managing all aspects of mining site operations with real-time updates, multi-language support, and role-based access control.
+The OreTech frontend is a **single-page application (SPA)** built with React 19.1.0 and Vite 6.3.5. It provides a comprehensive user interface for managing all aspects of mining site operations with real-time updates, multi-language support, and role-based access control.
 
 ### Key Characteristics
 - **Modern React**: Uses React 19.1.0 with hooks and functional components
@@ -1369,7 +1369,7 @@ const menuItems = [
 
 **BEM Naming Convention**:
 ```scss
-.rockops-table {
+.oretech-table {
   &__header { }
   &__body { }
   &__row {

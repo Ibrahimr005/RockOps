@@ -296,14 +296,14 @@
 }
 
 /* Common table customizations */
-.payables-table .rockops-table__container {
+.payables-table .oretech-table__container {
     margin: 0;
     box-shadow: none;
     /*border: 1px solid var(--border-color);*/
     /*border-radius: var(--radius-md);*/
 }
 
-.payables-table .rockops-table__header-container {
+.payables-table .oretech-table__header-container {
     padding: 1rem 0;
 }
 

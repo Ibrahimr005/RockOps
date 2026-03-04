@@ -172,7 +172,7 @@ const RefundTracking = () => {
             label: activeFilter === 'pending' ? 'Review' : 'View Details',
             icon: <FiEye />,
             onClick: handleViewClick,
-            className: 'rockops-table__action-button primary'
+            className: 'oretech-table__action-button primary'
         }
     ];
 

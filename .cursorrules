@@ -1,7 +1,7 @@
-# RockOps Mining Site Management System - Cursor AI Rules
+# OreTech Mining Site Management System - Cursor AI Rules
 
 ## 🎯 Project Overview
-RockOps is a comprehensive mining site management system with REST API + WebSocket support, built with Spring Boot 3.4.5, PostgreSQL, and MinIO storage. This system manages equipment, maintenance workflows, multi-site operations, and real-time notifications.
+OreTech is a comprehensive mining site management system with REST API + WebSocket support, built with Spring Boot 3.4.5, PostgreSQL, and MinIO storage. This system manages equipment, maintenance workflows, multi-site operations, and real-time notifications.
 
 ## 🏗 Architecture & Tech Stack
 - **Backend**: Java 21 + Spring Boot 3.4.5
@@ -29,7 +29,7 @@ RockOps is a comprehensive mining site management system with REST API + WebSock
 
 ## 📁 Project Structure (EXACT ACTUAL PATHS)
 ```
-RockOps/
+OreTech/
 ├── frontend/                                    # React frontend application
 │   ├── package.json                            # Frontend dependencies
 │   ├── src/

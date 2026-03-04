@@ -182,20 +182,20 @@
 }
 
 /* Table customizations */
-.invoice-table .rockops-table__container {
+.invoice-table .oretech-table__container {
     margin-top: 1rem;
 }
 
-.invoice-table .rockops-table__th,
-.invoice-table .rockops-table__cell {
+.invoice-table .oretech-table__th,
+.invoice-table .oretech-table__cell {
     padding: 12px 16px;
 }
 
-.invoice-table .rockops-table__action-button {
+.invoice-table .oretech-table__action-button {
     margin-right: 0.5rem;
 }
 
-.invoice-table .rockops-table__action-button:last-child {
+.invoice-table .oretech-table__action-button:last-child {
     margin-right: 0;
 }
 
@@ -295,55 +295,55 @@
 }
 
 /* Loading state for table */
-.invoice-table .rockops-table__loading {
+.invoice-table .oretech-table__loading {
     padding: 3rem;
 }
 
-.invoice-table .rockops-table__empty {
+.invoice-table .oretech-table__empty {
     padding: 3rem;
     text-align: center;
 }
 
-.invoice-table .rockops-table__empty p {
+.invoice-table .oretech-table__empty p {
     font-size: 1rem;
     color: var(--color-text-secondary);
     margin: 0;
 }
 
 /* Action button customizations */
-.invoice-table .rockops-table__action-button.view {
+.invoice-table .oretech-table__action-button.view {
     color: var(--color-primary);
     background: rgba(59, 130, 246, 0.1);
 }
 
-.invoice-table .rockops-table__action-button.view:hover {
+.invoice-table .oretech-table__action-button.view:hover {
     background: rgba(59, 130, 246, 0.2);
 }
 
-.invoice-table .rockops-table__action-button.edit {
+.invoice-table .oretech-table__action-button.edit {
     color: #10b981;
     background: rgba(16, 185, 129, 0.1);
 }
 
-.invoice-table .rockops-table__action-button.edit:hover {
+.invoice-table .oretech-table__action-button.edit:hover {
     background: rgba(16, 185, 129, 0.2);
 }
 
-.invoice-table .rockops-table__action-button.danger {
+.invoice-table .oretech-table__action-button.danger {
     color: var(--color-danger);
     background: rgba(239, 68, 68, 0.1);
 }
 
-.invoice-table .rockops-table__action-button.danger:hover {
+.invoice-table .oretech-table__action-button.danger:hover {
     background: rgba(239, 68, 68, 0.2);
 }
 
-.invoice-table .rockops-table__action-button:disabled {
+.invoice-table .oretech-table__action-button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
 
-.invoice-table .rockops-table__action-button:disabled:hover {
+.invoice-table .oretech-table__action-button:disabled:hover {
     background: none;
     transform: none;
 }
@@ -361,29 +361,29 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-[data-theme="dark"] .invoice-table .rockops-table__action-button.view {
+[data-theme="dark"] .invoice-table .oretech-table__action-button.view {
     color: var(--color-primary);
     background: rgba(72, 128, 255, 0.1);
 }
 
-[data-theme="dark"] .invoice-table .rockops-table__action-button.view:hover {
+[data-theme="dark"] .invoice-table .oretech-table__action-button.view:hover {
     background: rgba(72, 128, 255, 0.2);
 }
 
-[data-theme="dark"] .invoice-table .rockops-table__action-button.edit {
+[data-theme="dark"] .invoice-table .oretech-table__action-button.edit {
     color: var(--color-success);
     background: rgba(92, 188, 96, 0.1);
 }
 
-[data-theme="dark"] .invoice-table .rockops-table__action-button.edit:hover {
+[data-theme="dark"] .invoice-table .oretech-table__action-button.edit:hover {
     background: rgba(92, 188, 96, 0.2);
 }
 
-[data-theme="dark"] .invoice-table .rockops-table__action-button.danger {
+[data-theme="dark"] .invoice-table .oretech-table__action-button.danger {
     color: var(--color-danger);
     background: rgba(255, 82, 82, 0.1);
 }
 
-[data-theme="dark"] .invoice-table .rockops-table__action-button.danger:hover {
+[data-theme="dark"] .invoice-table .oretech-table__action-button.danger:hover {
     background: rgba(255, 82, 82, 0.2);
 }

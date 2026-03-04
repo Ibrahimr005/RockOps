@@ -1,6 +1,6 @@
 # Maintenance Team Frontend
 
-This directory contains the frontend components for the maintenance team functionality in the RockOps web application.
+This directory contains the frontend components for the maintenance team functionality in the OreTech web application.
 
 ## Overview
 

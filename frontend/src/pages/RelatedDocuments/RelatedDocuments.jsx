@@ -380,7 +380,7 @@ const RelatedDocuments = () => {
     };
 
     return (
-        <div className="rockops-documents-page">
+        <div className="oretech-documents-page">
             {/* Header */}
             <PageHeader
                 title="Related Documents"
@@ -394,9 +394,9 @@ const RelatedDocuments = () => {
             />
 
             {/* Filters and Controls */}
-            <div className="rockops-documents-controls">
-                <div className="rockops-documents-filters">
-                    <div className="rockops-documents-search">
+            <div className="oretech-documents-controls">
+                <div className="oretech-documents-filters">
+                    <div className="oretech-documents-search">
                         <Search size={16} />
                         <input
                             type="text"
@@ -406,7 +406,7 @@ const RelatedDocuments = () => {
                         />
                     </div>
 
-                    <div className="rockops-documents-filter-group">
+                    <div className="oretech-documents-filter-group">
                         <Filter size={16} />
                         <select
                             value={filterType}
@@ -424,7 +424,7 @@ const RelatedDocuments = () => {
                         </select>
                     </div>
 
-                    <div className="rockops-documents-sort-group">
+                    <div className="oretech-documents-sort-group">
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
@@ -438,9 +438,9 @@ const RelatedDocuments = () => {
 
                     {/* Sarky Filter Toggle (only for equipment) */}
                     {entityType?.toLowerCase() === 'equipment' && (
-                        <div className="rockops-documents-sarky-filter">
+                        <div className="oretech-documents-sarky-filter">
                             <button
-                                className={`rockops-documents-sarky-btn ${sarkyFilterActive ? 'active' : ''}`}
+                                className={`oretech-documents-sarky-btn ${sarkyFilterActive ? 'active' : ''}`}
                                 onClick={() => setSarkyFilterActive(!sarkyFilterActive)}
                                 title={sarkyFilterActive ? 'Show all documents' : 'Show only monthly sarky documents'}
                             >
@@ -450,16 +450,16 @@ const RelatedDocuments = () => {
                     )}
                 </div>
 
-                <div className="rockops-documents-view-controls">
+                <div className="oretech-documents-view-controls">
                     <button
-                        className={`rockops-documents-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                        className={`oretech-documents-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
                         onClick={() => setViewMode('grid')}
                         title="Grid view"
                     >
                         <Grid size={16} />
                     </button>
                     <button
-                        className={`rockops-documents-view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                        className={`oretech-documents-view-btn ${viewMode === 'list' ? 'active' : ''}`}
                         onClick={() => setViewMode('list')}
                         title="List view"
                     >
@@ -469,17 +469,17 @@ const RelatedDocuments = () => {
             </div>
 
             {/* Documents Container */}
-            <div className="rockops-documents-container">
+            <div className="oretech-documents-container">
                 {loading && documents.length === 0 ? (
-                    <div className="rockops-documents-loading">
-                        <div className="rockops-documents-loading-spinner"></div>
+                    <div className="oretech-documents-loading">
+                        <div className="oretech-documents-loading-spinner"></div>
                         <p>Loading documents...</p>
                     </div>
                 ) : filteredAndSortedDocuments.length === 0 ? (
-                    <div className="rockops-documents-empty">
+                    <div className="oretech-documents-empty">
                         {documents.length === 0 ? (
                             <>
-                                <FolderOpen size={64} className="rockops-documents-empty-icon" />
+                                <FolderOpen size={64} className="oretech-documents-empty-icon" />
                                 <h3>No documents found</h3>
                                 <p>Upload your first document to get started</p>
                                 <Button
@@ -492,7 +492,7 @@ const RelatedDocuments = () => {
                             </>
                         ) : (
                             <>
-                                <Search size={64} className="rockops-documents-empty-icon" />
+                                <Search size={64} className="oretech-documents-empty-icon" />
                                 <h3>No matching documents</h3>
                                 <p>Try adjusting your search criteria</p>
                                 <Button
@@ -509,23 +509,23 @@ const RelatedDocuments = () => {
                         )}
                     </div>
                 ) : (
-                    <div className={`rockops-documents-grid ${viewMode === 'list' ? 'list-view' : 'grid-view'}`}>
+                    <div className={`oretech-documents-grid ${viewMode === 'list' ? 'list-view' : 'grid-view'}`}>
                         {filteredAndSortedDocuments.map(document => {
                             const typeConfig = getDocumentTypeConfig(document.type);
                             const IconComponent = getFileIcon(document.url, document.type);
 
                             return (
-                                <div key={document.id} className="rockops-documents-card">
-                                    <div className="rockops-documents-card-icon" style={{ color: typeConfig.color }}>
+                                <div key={document.id} className="oretech-documents-card">
+                                    <div className="oretech-documents-card-icon" style={{ color: typeConfig.color }}>
                                         <IconComponent size={viewMode === 'list' ? 24 : 32} />
                                     </div>
 
-                                    <div className="rockops-documents-card-content">
-                                        <div className="rockops-documents-card-header">
-                                            <h3 className="rockops-documents-card-title">{document.name}</h3>
-                                            <div className="rockops-documents-card-actions">
+                                    <div className="oretech-documents-card-content">
+                                        <div className="oretech-documents-card-header">
+                                            <h3 className="oretech-documents-card-title">{document.name}</h3>
+                                            <div className="oretech-documents-card-actions">
                                                 <button
-                                                    className="rockops-documents-action-btn view"
+                                                    className="oretech-documents-action-btn view"
                                                     onClick={() => handleDownload(document)}
                                                     title="View/Download"
                                                 >
@@ -536,7 +536,7 @@ const RelatedDocuments = () => {
                                                 {entityType?.toLowerCase() === 'equipment' && (
                                                     document.isSarkyDocument ? (
                                                         <button
-                                                            className="rockops-documents-action-btn sarky-assigned"
+                                                            className="oretech-documents-action-btn sarky-assigned"
                                                             onClick={() => handleRemoveSarkyAssignment(document.id)}
                                                             title={`Remove from ${getMonthLabel(document.sarkyMonth)} ${document.sarkyYear}`}
                                                         >
@@ -544,7 +544,7 @@ const RelatedDocuments = () => {
                                                         </button>
                                                     ) : (
                                                         <button
-                                                            className="rockops-documents-action-btn promote"
+                                                            className="oretech-documents-action-btn promote"
                                                             onClick={() => handlePromoteToSarky(document)}
                                                             title="Assign to month"
                                                         >
@@ -554,7 +554,7 @@ const RelatedDocuments = () => {
                                                 )}
                                                 
                                                 <button
-                                                    className="rockops-documents-action-btn edit"
+                                                    className="oretech-documents-action-btn edit"
                                                     onClick={() => {
                                                         setSelectedDocument(document);
                                                         setShowEditModal(true);
@@ -564,7 +564,7 @@ const RelatedDocuments = () => {
                                                     <Edit size={16} />
                                                 </button>
                                                 <button
-                                                    className="rockops-documents-action-btn delete"
+                                                    className="oretech-documents-action-btn delete"
                                                     onClick={() => handleDelete(document.id)}
                                                     title="Delete"
                                                 >
@@ -573,28 +573,28 @@ const RelatedDocuments = () => {
                                             </div>
                                         </div>
 
-                                        <div className="rockops-documents-card-meta">
-                                            <span className="rockops-documents-card-type" style={{ color: typeConfig.color }}>
+                                        <div className="oretech-documents-card-meta">
+                                            <span className="oretech-documents-card-type" style={{ color: typeConfig.color }}>
                                                 {typeConfig.label}
                                             </span>
                                             
                                             {/* Sarky assignment indicator */}
                                             {document.isSarkyDocument && document.sarkyMonth && document.sarkyYear && (
-                                                <span className="rockops-documents-sarky-badge">
+                                                <span className="oretech-documents-sarky-badge">
                                                     📅 {getMonthLabel(document.sarkyMonth)} {document.sarkyYear}
                                                 </span>
                                             )}
                                             
-                                            <div className="rockops-documents-card-info">
-                                                <span className="rockops-documents-card-size">
+                                            <div className="oretech-documents-card-info">
+                                                <span className="oretech-documents-card-size">
                                                     {formatFileSize(document.fileSize || document.size)}
                                                 </span>
-                                                <span className="rockops-documents-card-date">
+                                                <span className="oretech-documents-card-date">
                                                     <Calendar size={12} />
                                                     {formatDate(document.dateUploaded)}
                                                 </span>
                                                 {document.uploadedBy && (
-                                                    <span className="rockops-documents-card-user">
+                                                    <span className="oretech-documents-card-user">
                                                         <User size={12} />
                                                         {document.uploadedBy}
                                                     </span>
@@ -611,9 +611,9 @@ const RelatedDocuments = () => {
 
             {/* Upload Modal */}
             {showUploadModal && (
-                <div className="rockops-documents-modal-overlay">
-                    <div className="rockops-documents-modal">
-                        <div className="rockops-documents-modal-header">
+                <div className="oretech-documents-modal-overlay">
+                    <div className="oretech-documents-modal">
+                        <div className="oretech-documents-modal-header">
                             <h2>
                                 <Upload size={20} />
                                 Upload New Document
@@ -626,8 +626,8 @@ const RelatedDocuments = () => {
                             />
                         </div>
 
-                        <form onSubmit={handleUpload} className="rockops-documents-modal-form">
-                            <div className="rockops-documents-form-group">
+                        <form onSubmit={handleUpload} className="oretech-documents-modal-form">
+                            <div className="oretech-documents-form-group">
                                 <label htmlFor="documentName">Document Name *</label>
                                 <input
                                     type="text"
@@ -639,7 +639,7 @@ const RelatedDocuments = () => {
                                 />
                             </div>
 
-                            <div className="rockops-documents-form-group">
+                            <div className="oretech-documents-form-group">
                                 <label htmlFor="documentType">Document Type *</label>
                                 <select
                                     id="documentType"
@@ -656,9 +656,9 @@ const RelatedDocuments = () => {
                                 </select>
                             </div>
 
-                            <div className="rockops-documents-form-group">
+                            <div className="oretech-documents-form-group">
                                 <label htmlFor="documentFile">Select File *</label>
-                                <div className="rockops-documents-file-input">
+                                <div className="oretech-documents-file-input">
                                     <input
                                         type="file"
                                         id="documentFile"
@@ -666,13 +666,13 @@ const RelatedDocuments = () => {
                                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls,.csv"
                                         required
                                     />
-                                    <div className="rockops-documents-file-input-label">
+                                    <div className="oretech-documents-file-input-label">
                                         <Upload size={20} />
                                         <span>Choose file or drag and drop</span>
                                     </div>
                                 </div>
                                 {uploadData.file && (
-                                    <div className="rockops-documents-file-preview">
+                                    <div className="oretech-documents-file-preview">
                                         <File size={16} />
                                         <span className="file-name">{uploadData.file.name}</span>
                                         <span className="file-size">
@@ -682,7 +682,7 @@ const RelatedDocuments = () => {
                                 )}
                             </div>
 
-                            <div className="rockops-documents-modal-actions">
+                            <div className="oretech-documents-modal-actions">
                                 <Button
                                     variant="primary"
                                     outline
@@ -710,9 +710,9 @@ const RelatedDocuments = () => {
 
             {/* Edit Modal */}
             {showEditModal && selectedDocument && (
-                <div className="rockops-documents-modal-overlay">
-                    <div className="rockops-documents-modal">
-                        <div className="rockops-documents-modal-header">
+                <div className="oretech-documents-modal-overlay">
+                    <div className="oretech-documents-modal">
+                        <div className="oretech-documents-modal-header">
                             <h2>
                                 <Edit size={20} />
                                 Edit Document
@@ -725,14 +725,14 @@ const RelatedDocuments = () => {
                             />
                         </div>
 
-                        <form onSubmit={handleEdit} className="rockops-documents-modal-form">
-                            <div className="rockops-documents-form-group">
+                        <form onSubmit={handleEdit} className="oretech-documents-modal-form">
+                            <div className="oretech-documents-form-group">
                                 <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '16px' }}>
                                     <strong>Note:</strong> You can only edit the document name and type. The file itself cannot be changed.
                                 </p>
                             </div>
                             
-                            <div className="rockops-documents-form-group">
+                            <div className="oretech-documents-form-group">
                                 <label htmlFor="editDocumentName">Document Name *</label>
                                 <input
                                     type="text"
@@ -744,7 +744,7 @@ const RelatedDocuments = () => {
                                 />
                             </div>
 
-                            <div className="rockops-documents-form-group">
+                            <div className="oretech-documents-form-group">
                                 <label htmlFor="editDocumentType">Document Type *</label>
                                 <select
                                     id="editDocumentType"
@@ -760,7 +760,7 @@ const RelatedDocuments = () => {
                                 </select>
                             </div>
 
-                            <div className="rockops-documents-modal-actions">
+                            <div className="oretech-documents-modal-actions">
                                 <Button
                                     variant="primary"
                                     outline
@@ -788,9 +788,9 @@ const RelatedDocuments = () => {
 
             {/* Promote to Sarky Modal */}
             {showPromoteModal && documentToPromote && (
-                <div className="rockops-documents-modal-overlay">
-                    <div className="rockops-documents-modal">
-                        <div className="rockops-documents-modal-header">
+                <div className="oretech-documents-modal-overlay">
+                    <div className="oretech-documents-modal">
+                        <div className="oretech-documents-modal-header">
                             <h2>
                                 📅 Assign to Monthly Sarky
                             </h2>
@@ -802,14 +802,14 @@ const RelatedDocuments = () => {
                             />
                         </div>
 
-                        <div className="rockops-documents-modal-form">
-                            <div className="rockops-documents-form-group">
+                        <div className="oretech-documents-modal-form">
+                            <div className="oretech-documents-form-group">
                                 <p>
                                     Assign "<strong>{documentToPromote.name}</strong>" to a specific month for sarky documentation.
                                 </p>
                             </div>
 
-                            <div className="rockops-documents-form-group">
+                            <div className="oretech-documents-form-group">
                                 <label htmlFor="promoteMonth">Month</label>
                                 <select
                                     id="promoteMonth"
@@ -824,7 +824,7 @@ const RelatedDocuments = () => {
                                 </select>
                             </div>
 
-                            <div className="rockops-documents-form-group">
+                            <div className="oretech-documents-form-group">
                                 <label htmlFor="promoteYear">Year</label>
                                 <select
                                     id="promoteYear"
@@ -839,7 +839,7 @@ const RelatedDocuments = () => {
                                 </select>
                             </div>
 
-                            <div className="rockops-documents-modal-actions">
+                            <div className="oretech-documents-modal-actions">
                                 <Button
                                     variant="primary"
                                     outline

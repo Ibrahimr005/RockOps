@@ -89,7 +89,7 @@ Check if these requests are being made:
 Verify these environment variables in production:
 ```properties
 storage.type=s3  # Should be 's3' for AWS, 'minio' for local
-aws.s3.bucket-name=rockops
+aws.s3.bucket-name=oretech
 aws.s3.region=us-east-1
 aws.s3.enabled=true
 ```

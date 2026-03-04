@@ -44,9 +44,9 @@ public class PartnerService
             throw new RuntimeException("Partner not found with id: " + id);
         }
 
-        // Check if this is the default Rock4Mining partner
+        // Check if this is the default OreTech partner
         if (isDefaultPartner(id)) {
-            throw new RuntimeException("Cannot delete the default Rock4Mining partner");
+            throw new RuntimeException("Cannot delete the default OreTech partner");
         }
 
         // Check if partner has active shares in any site
@@ -60,7 +60,7 @@ public class PartnerService
 
     public boolean isDefaultPartner(int partnerId) {
         Optional<Partner> partner = partnerRepository.findById(partnerId);
-        return partner.isPresent() && "Rock4Mining".equals(partner.get().getFirstName());
+        return partner.isPresent() && "OreTech".equals(partner.get().getFirstName());
     }
 
     public boolean hasActiveShares(int partnerId) {

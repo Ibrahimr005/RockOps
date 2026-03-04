@@ -155,7 +155,7 @@ const CashSafeList = ({ onDataChange }) => {
             label: 'Edit',
             icon: <FaEdit />,
             onClick: handleEdit,
-            className: 'rockops-table__action-button primary'
+            className: 'oretech-table__action-button primary'
         },
         // {
         //     label: 'Toggle Status',
@@ -167,7 +167,7 @@ const CashSafeList = ({ onDataChange }) => {
             label: 'Delete',
             icon: <FaTrash />,
             onClick: handleDelete,
-            className: 'rockops-table__action-button danger'
+            className: 'oretech-table__action-button danger'
         }
     ];
 

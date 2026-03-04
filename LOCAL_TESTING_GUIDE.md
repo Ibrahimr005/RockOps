@@ -1,4 +1,4 @@
-# RockOps Local Testing Guide
+# OreTech Local Testing Guide
 
 ## 🎯 Objective
 Test the containerized backend locally with the Vercel-deployed frontend before pushing to production.
@@ -38,13 +38,13 @@ docker-compose -f compose-test.yaml logs -f backend
 
 2. **MinIO Console**: http://localhost:9003
    - Login: `minioadmin` / `minioadmin`
-   - Verify `rockops` bucket exists
+   - Verify `oretech` bucket exists
 
 3. **Check Backend Logs**:
    ```powershell
    docker-compose -f compose-test.yaml logs backend
    ```
-   - Look for: "✅ Bucket already exists: rockops"
+   - Look for: "✅ Bucket already exists: oretech"
    - Look for: "Started BackendApplication"
 
 ### 3. Configure Browser for Testing
@@ -66,7 +66,7 @@ Add to `C:\Windows\System32\drivers\etc\hosts`:
 Then access: http://your-backend.railway.app:8080
 
 #### Method C: Browser Developer Tools
-1. Open https://rock-ops.vercel.app
+1. Open https://oretech.vercel.app
 2. Open Developer Tools (F12)
 3. In Console, override the API URL:
    ```javascript
@@ -109,7 +109,7 @@ If something doesn't work:
 ## 🛠️ Common Issues & Solutions
 
 ### CORS Errors
-- Verify `CORS_ALLOWED_ORIGINS` includes `https://rock-ops.vercel.app`
+- Verify `CORS_ALLOWED_ORIGINS` includes `https://oretech.vercel.app`
 - Check response headers for `Access-Control-Allow-Origin`
 
 ### Connection Refused

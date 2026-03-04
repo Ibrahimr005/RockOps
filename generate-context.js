@@ -198,12 +198,12 @@ class ProjectContextGenerator {
         const structure = this.analyzeStructure();
         const recentFiles = this.getRecentFiles();
 
-        let content = `# RockOps Project Context for Cursor AI
+        let content = `# OreTech Project Context for Cursor AI
 
 *Auto-generated on: ${new Date().toISOString()}*
 
 ## Project Overview
-- **Name**: ${packageInfo?.name || 'RockOps Mining Site Management'}
+- **Name**: ${packageInfo?.name || 'OreTech Mining Site Management'}
 - **Version**: ${packageInfo?.version || 'Unknown'}
 - **Description**: ${packageInfo?.description || 'Mining site management system with Spring Boot backend and React frontend'}
 - **Package.json Location**: ${packageInfo?._location || 'Not found'}

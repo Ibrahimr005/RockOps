@@ -256,7 +256,7 @@ If this session terminates, resume with:
 
 ```
 Please continue the Direct Purchase 4-Step Workflow implementation.
-Check the progress file: D:\RockOps\DIRECT_PURCHASE_4_STEP_WORKFLOW_PROGRESS.md
+Check the progress file: D:\OreTech\DIRECT_PURCHASE_4_STEP_WORKFLOW_PROGRESS.md
 
 Current status: Phase 2 in progress - updating DirectPurchaseTicketService
 Next task: [Check the "Current Task" section above]

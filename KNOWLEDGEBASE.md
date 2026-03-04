@@ -1,8 +1,8 @@
-# RockOps Project Knowledgebase
+# OreTech Project Knowledgebase
 
 **Last Updated:** 2026-01-23
 **Version:** 1.0
-**Purpose:** Comprehensive documentation of the RockOps mining site management system architecture, features, and development history.
+**Purpose:** Comprehensive documentation of the OreTech mining site management system architecture, features, and development history.
 
 ---
 
@@ -25,7 +25,7 @@
 
 ## Project Overview
 
-RockOps is a comprehensive enterprise resource planning (ERP) system designed specifically for mining site operations. It digitizes and streamlines all aspects of mining site management across multiple locations.
+OreTech is a comprehensive enterprise resource planning (ERP) system designed specifically for mining site operations. It digitizes and streamlines all aspects of mining site management across multiple locations.
 
 ### Core Capabilities
 - **Equipment Management**: Track heavy machinery lifecycle, maintenance, and utilization
@@ -1151,7 +1151,7 @@ const stompClient = new Client({
 ```properties
 storage.type=minio  # or "s3"
 aws.s3.enabled=true
-aws.s3.bucket-name=rockops
+aws.s3.bucket-name=oretech
 ```
 
 **Bean Configuration**:
@@ -1842,9 +1842,9 @@ if (!SecurityUtils.hasRole(user, Role.EQUIPMENT_MANAGER)) {
 **Allowed Origins**:
 - `http://localhost:5173` (Vite dev)
 - `http://localhost:3000` (React dev alternative)
-- `https://dev-rock-ops.vercel.app` (Dev deployment)
-- `https://rock-ops.vercel.app` (Production)
-- `https://rockops.vercel.app` (Production alternative)
+- `https://dev-oretech.vercel.app` (Dev deployment)
+- `https://oretech.vercel.app` (Production)
+- `https://oretech.vercel.app` (Production alternative)
 
 **Allowed Methods**: GET, POST, PUT, DELETE, OPTIONS
 

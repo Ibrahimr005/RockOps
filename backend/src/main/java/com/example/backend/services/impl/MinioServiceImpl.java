@@ -19,7 +19,7 @@
 //
 //    private final MinioClient minioClient;
 //
-//    @Value("${minio.bucket-name:rockops}")
+//    @Value("${minio.bucket-name:oretech}")
 //    private String bucketName;
 //
 //    @Value("${minio.public-url:http://localhost:9000}")

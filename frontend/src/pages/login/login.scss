@@ -2,33 +2,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 // Modern color palette
-$rockops-primary-blue: #3b82f6;
-$rockops-primary-blue-dark: #2563eb;
-$rockops-primary-blue-light: #60a5fa;
-$rockops-text-primary: #111827;
-$rockops-text-secondary: #6b7280;
-$rockops-text-light: #9ca3af;
-$rockops-bg-primary: #ffffff;
-$rockops-bg-secondary: #f9fafb;
-$rockops-bg-accent: #f3f4f6;
-$rockops-border-color: #e5e7eb;
-$rockops-border-focus: #3b82f6;
-$rockops-error-color: #ef4444;
-$rockops-error-bg: #fef2f2;
-$rockops-success-color: #10b981;
-$rockops-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-$rockops-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-$rockops-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-$rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+$oretech-primary-blue: #3b82f6;
+$oretech-primary-blue-dark: #2563eb;
+$oretech-primary-blue-light: #60a5fa;
+$oretech-text-primary: #111827;
+$oretech-text-secondary: #6b7280;
+$oretech-text-light: #9ca3af;
+$oretech-bg-primary: #ffffff;
+$oretech-bg-secondary: #f9fafb;
+$oretech-bg-accent: #f3f4f6;
+$oretech-border-color: #e5e7eb;
+$oretech-border-focus: #3b82f6;
+$oretech-error-color: #ef4444;
+$oretech-error-bg: #fef2f2;
+$oretech-success-color: #10b981;
+$oretech-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$oretech-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$oretech-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$oretech-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
 // Reset and base styles for login container
-.rockops__auth__login__main__container * {
+.oretech__auth__login__main__container * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-.rockops__auth__login__main__container {
+.oretech__auth__login__main__container {
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -51,7 +51,7 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
                 radial-gradient(circle at 25% 25%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
                 radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
                 radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.2) 0%, transparent 50%);
-        animation: rockops-bg-pulse 8s ease-in-out infinite alternate;
+        animation: oretech-bg-pulse 8s ease-in-out infinite alternate;
         z-index: 0;
     }
 
@@ -71,7 +71,7 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
     }
 
     // Background decoration
-    .rockops__auth__login__background__decoration {
+    .oretech__auth__login__background__decoration {
         position: absolute;
         top: 0;
         left: 0;
@@ -80,7 +80,7 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
         pointer-events: none;
         z-index: 1;
 
-        .rockops__auth__login__floating__circle {
+        .oretech__auth__login__floating__circle {
             position: absolute;
             border-radius: 50%;
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.15));
@@ -88,36 +88,36 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 
-            &.rockops__auth__login__floating__circle--primary {
+            &.oretech__auth__login__floating__circle--primary {
                 width: 300px;
                 height: 300px;
                 top: -5%;
                 left: -5%;
                 background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.1));
-                animation: rockops-float-animation-primary 8s ease-in-out infinite;
+                animation: oretech-float-animation-primary 8s ease-in-out infinite;
             }
 
-            &.rockops__auth__login__floating__circle--secondary {
+            &.oretech__auth__login__floating__circle--secondary {
                 width: 200px;
                 height: 200px;
                 top: 40%;
                 right: -10%;
                 background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.1));
-                animation: rockops-float-animation-secondary 10s ease-in-out infinite reverse;
+                animation: oretech-float-animation-secondary 10s ease-in-out infinite reverse;
             }
 
-            &.rockops__auth__login__floating__circle--tertiary {
+            &.oretech__auth__login__floating__circle--tertiary {
                 width: 150px;
                 height: 150px;
                 bottom: -5%;
                 left: 15%;
                 background: linear-gradient(135deg, rgba(120, 119, 198, 0.18), rgba(59, 130, 246, 0.12));
-                animation: rockops-float-animation-tertiary 9s ease-in-out infinite;
+                animation: oretech-float-animation-tertiary 9s ease-in-out infinite;
             }
         }
     }
 
-    @keyframes rockops-float-animation-primary {
+    @keyframes oretech-float-animation-primary {
         0%, 100% {
             transform: translateY(0px) translateX(0px) rotate(0deg);
             opacity: 0.8;
@@ -132,7 +132,7 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
         }
     }
 
-    @keyframes rockops-float-animation-secondary {
+    @keyframes oretech-float-animation-secondary {
         0%, 100% {
             transform: translateY(0px) translateX(0px) rotate(0deg);
             opacity: 0.7;
@@ -143,7 +143,7 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
         }
     }
 
-    @keyframes rockops-float-animation-tertiary {
+    @keyframes oretech-float-animation-tertiary {
         0%, 100% {
             transform: translateY(0px) translateX(0px) scale(1);
             opacity: 0.6;
@@ -158,7 +158,7 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
         }
     }
 
-    @keyframes rockops-bg-pulse {
+    @keyframes oretech-bg-pulse {
         0% {
             opacity: 0.4;
             transform: scale(1);
@@ -170,7 +170,7 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
     }
 }
 
-.rockops__auth__login__main__card {
+.oretech__auth__login__main__card {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 24px;
     box-shadow:
@@ -194,21 +194,21 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
 }
 
 // Header section
-.rockops__auth__login__header__section {
+.oretech__auth__login__header__section {
     text-align: center;
     margin-bottom: 2.5rem;
 
-    .rockops__auth__login__brand__logo {
+    .oretech__auth__login__brand__logo {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.75rem;
         margin-bottom: 2rem;
 
-        .rockops__auth__login__brand__icon {
+        .oretech__auth__login__brand__icon {
             width: 48px;
             height: 48px;
-            background: linear-gradient(135deg, $rockops-primary-blue, $rockops-primary-blue-dark);
+            background: linear-gradient(135deg, $oretech-primary-blue, $oretech-primary-blue-dark);
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -221,18 +221,18 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
             }
         }
 
-        .rockops__auth__login__brand__text {
+        .oretech__auth__login__brand__text {
             font-size: 1.875rem;
             font-weight: 700;
-            color: $rockops-text-primary;
+            color: $oretech-text-primary;
             letter-spacing: -0.025em;
         }
     }
 
-    .rockops__auth__login__welcome__title {
+    .oretech__auth__login__welcome__title {
         font-size: 2rem;
         font-weight: 700;
-        color: $rockops-text-primary;
+        color: $oretech-text-primary;
         margin-bottom: 0.5rem;
         letter-spacing: -0.025em;
 
@@ -241,28 +241,28 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
         }
     }
 
-    .rockops__auth__login__welcome__subtitle {
-        color: $rockops-text-secondary;
+    .oretech__auth__login__welcome__subtitle {
+        color: $oretech-text-secondary;
         font-size: 1rem;
         font-weight: 400;
     }
 }
 
 // Error message
-.rockops__auth__login__error__message {
+.oretech__auth__login__error__message {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     padding: 1rem;
-    background: $rockops-error-bg;
+    background: $oretech-error-bg;
     border: 1px solid #fecaca;
     border-radius: 12px;
-    color: $rockops-error-color;
+    color: $oretech-error-color;
     font-size: 0.875rem;
     font-weight: 500;
     margin-bottom: 1.5rem;
 
-    .rockops__auth__login__error__icon {
+    .oretech__auth__login__error__icon {
         width: 20px;
         height: 20px;
         flex-shrink: 0;
@@ -270,50 +270,50 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
 }
 
 // Form styles
-.rockops__auth__login__form__wrapper {
-    .rockops__auth__login__form__group {
+.oretech__auth__login__form__wrapper {
+    .oretech__auth__login__form__group {
         margin-bottom: 1.5rem;
 
-        .rockops__auth__login__field__label {
+        .oretech__auth__login__field__label {
             display: block;
             font-size: 0.875rem;
             font-weight: 600;
-            color: $rockops-text-primary;
+            color: $oretech-text-primary;
             margin-bottom: 0.5rem;
         }
 
-        .rockops__auth__login__input__wrapper {
+        .oretech__auth__login__input__wrapper {
             position: relative;
             display: flex;
             align-items: center;
 
-            .rockops__auth__login__input__icon {
+            .oretech__auth__login__input__icon {
                 position: absolute;
                 left: 1rem;
                 width: 20px;
                 height: 20px;
-                color: $rockops-text-light;
+                color: $oretech-text-light;
                 z-index: 2;
             }
 
-            .rockops__auth__login__input__field {
+            .oretech__auth__login__input__field {
                 width: 100%;
                 padding: 0.875rem 1rem 0.875rem 3rem;
-                border: 2px solid $rockops-border-color;
+                border: 2px solid $oretech-border-color;
                 border-radius: 12px;
                 font-size: 1rem;
                 font-weight: 400;
-                color: $rockops-text-primary;
-                background: $rockops-bg-primary;
+                color: $oretech-text-primary;
+                background: $oretech-bg-primary;
                 transition: all 0.2s ease;
                 outline: none;
 
                 &::placeholder {
-                    color: $rockops-text-light;
+                    color: $oretech-text-light;
                 }
 
                 &:focus {
-                    border-color: $rockops-border-focus;
+                    border-color: $oretech-border-focus;
                     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                 }
 
@@ -322,19 +322,19 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
                 }
             }
 
-            .rockops__auth__login__password__toggle {
+            .oretech__auth__login__password__toggle {
                 position: absolute;
                 right: 1rem;
                 background: none;
                 border: none;
                 cursor: pointer;
                 padding: 0.25rem;
-                color: $rockops-text-light;
+                color: $oretech-text-light;
                 transition: color 0.2s ease;
                 z-index: 2;
 
                 &:hover {
-                    color: $rockops-text-secondary;
+                    color: $oretech-text-secondary;
                 }
 
                 svg {
@@ -347,7 +347,7 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
 }
 
 // Form options (checkbox and forgot password)
-.rockops__auth__login__form__options {
+.oretech__auth__login__form__options {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -359,21 +359,21 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
         gap: 1rem;
     }
 
-    .rockops__auth__login__checkbox__wrapper {
+    .oretech__auth__login__checkbox__wrapper {
         display: flex;
         align-items: center;
         gap: 0.75rem;
         cursor: pointer;
         user-select: none;
 
-        .rockops__auth__login__checkbox__input {
+        .oretech__auth__login__checkbox__input {
             position: absolute;
             opacity: 0;
             pointer-events: none;
 
-            &:checked + .rockops__auth__login__checkbox__custom {
-                background: $rockops-primary-blue;
-                border-color: $rockops-primary-blue;
+            &:checked + .oretech__auth__login__checkbox__custom {
+                background: $oretech-primary-blue;
+                border-color: $oretech-primary-blue;
 
                 &::after {
                     opacity: 1;
@@ -382,12 +382,12 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
             }
         }
 
-        .rockops__auth__login__checkbox__custom {
+        .oretech__auth__login__checkbox__custom {
             width: 20px;
             height: 20px;
-            border: 2px solid $rockops-border-color;
+            border: 2px solid $oretech-border-color;
             border-radius: 4px;
-            background: $rockops-bg-primary;
+            background: $oretech-bg-primary;
             position: relative;
             transition: all 0.2s ease;
 
@@ -407,35 +407,35 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
             }
         }
 
-        .rockops__auth__login__checkbox__label {
+        .oretech__auth__login__checkbox__label {
             font-size: 0.875rem;
             font-weight: 500;
-            color: $rockops-text-secondary;
+            color: $oretech-text-secondary;
         }
     }
 
-    .rockops__auth__login__forgot__password {
+    .oretech__auth__login__forgot__password {
         font-size: 0.875rem;
         font-weight: 600;
-        color: $rockops-primary-blue;
+        color: $oretech-primary-blue;
         text-decoration: none;
         transition: color 0.2s ease;
 
         &:hover {
-            color: $rockops-primary-blue-dark;
+            color: $oretech-primary-blue-dark;
         }
     }
 }
 
 // Submit button
-.rockops__auth__login__submit__button {
+.oretech__auth__login__submit__button {
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     padding: 1rem 2rem;
-    background: linear-gradient(135deg, $rockops-primary-blue, $rockops-primary-blue-dark);
+    background: linear-gradient(135deg, $oretech-primary-blue, $oretech-primary-blue-dark);
     color: white;
     border: none;
     border-radius: 12px;
@@ -449,7 +449,7 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
 
     &:hover:not(:disabled) {
         transform: translateY(-1px);
-        box-shadow: $rockops-shadow-lg;
+        box-shadow: $oretech-shadow-lg;
     }
 
     &:active:not(:disabled) {
@@ -462,55 +462,55 @@ $rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0
         transform: none;
     }
 
-    .rockops__auth__login__button__spinner {
+    .oretech__auth__login__button__spinner {
         width: 20px;
         height: 20px;
         border: 2px solid rgba(255, 255, 255, 0.3);
         border-top: 2px solid white;
         border-radius: 50%;
-        animation: rockops-spinner-rotation 1s linear infinite;
+        animation: oretech-spinner-rotation 1s linear infinite;
     }
 
-    .rockops__auth__login__button__arrow {
+    .oretech__auth__login__button__arrow {
         width: 20px;
         height: 20px;
         transition: transform 0.2s ease;
     }
 
-    &:hover:not(:disabled) .rockops__auth__login__button__arrow {
+    &:hover:not(:disabled) .oretech__auth__login__button__arrow {
         transform: translateX(2px);
     }
 
-    @keyframes rockops-spinner-rotation {
+    @keyframes oretech-spinner-rotation {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
 }
 
 // Footer
-.rockops__auth__login__footer__section {
+.oretech__auth__login__footer__section {
     text-align: center;
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid $rockops-border-color;
+    border-top: 1px solid $oretech-border-color;
 
     p {
         font-size: 0.875rem;
-        color: $rockops-text-light;
+        color: $oretech-text-light;
     }
 }
 
 // Responsive adjustments
 @media (max-width: 640px) {
-    .rockops__auth__login__main__container {
+    .oretech__auth__login__main__container {
         padding: 0.5rem;
     }
 
-    .rockops__auth__login__main__card {
+    .oretech__auth__login__main__card {
         max-width: 100%;
     }
 
-    .rockops__auth__login__form__options {
+    .oretech__auth__login__form__options {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;

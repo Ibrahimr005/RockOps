@@ -254,7 +254,7 @@ const SitePartnersTab = ({siteId}) => {
             showSuccess("Partner percentage successfully updated");
         } catch (err) {
             console.error("Error updating partner percentage:", err);
-            if (err.message && err.message.includes("Rock4Mining")) {
+            if (err.message && err.message.includes("OreTech")) {
                 showError("Cannot modify the default partner's percentage. Please adjust other partners instead");
             } else if (err.message && err.message.includes("Cannot increase partner percentage")) {
                 showError("Not enough percentage available. Please reduce other partners first");
@@ -281,7 +281,7 @@ const SitePartnersTab = ({siteId}) => {
             showSuccess("Partner successfully removed from the site");
         } catch (err) {
             console.error("Error removing partner:", err);
-            if (err.message && err.message.includes("Rock4Mining")) {
+            if (err.message && err.message.includes("OreTech")) {
                 showError("This partner cannot be removed as they are the default partner for the site");
             } else if (err.message && err.message.includes("Server Error")) {
                 showError("Unable to remove partner. The partner might be the default partner or have active assignments.");
@@ -301,7 +301,7 @@ const SitePartnersTab = ({siteId}) => {
     //         showSuccess("Partner successfully removed from the site");
     //     } catch (err) {
     //         console.error("Error removing partner:", err);
-    //         if (err.message && err.message.includes("Rock4Mining")) {
+    //         if (err.message && err.message.includes("OreTech")) {
     //             showError("This partner cannot be removed as they are the default partner for the site");
     //         } else if (err.message && err.message.includes("Server Error")) {
     //             showError("Unable to remove partner. The partner might be the default partner or have active assignments.");

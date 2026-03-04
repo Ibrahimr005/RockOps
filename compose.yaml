@@ -8,7 +8,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       # Override the localhost configs for Docker network
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/rockOpsDB
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/oretechDB
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=1234
       # MinIO configuration that overrides application.properties
@@ -16,7 +16,7 @@ services:
       - MINIO_PUBLICURL=http://localhost:9000
       - MINIO_ACCESSKEY=minioadmin
       - MINIO_SECRETKEY=minioadmin
-      - MINIO_BUCKETNAME=rockops
+      - MINIO_BUCKETNAME=oretech
       - MINIO_ENABLED=true
       # AWS S3 config overrides
       - AWS_S3_PUBLIC_URL=http://localhost:9000
@@ -35,9 +35,9 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: rockOpsDB
+      POSTGRES_DB: oretechDB
     volumes:
-      - rockops_pg_data:/var/lib/postgresql/data
+      - oretech_pg_data:/var/lib/postgresql/data
 
   minio:
     image: minio/minio:latest
@@ -69,12 +69,12 @@ services:
       echo 'Setting up MinIO...';
       sleep 5;
       /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb myminio/rockops --ignore-existing;
-      /usr/bin/mc anonymous set public myminio/rockops;
+      /usr/bin/mc mb myminio/oretech --ignore-existing;
+      /usr/bin/mc anonymous set public myminio/oretech;
       echo '✅ MinIO bucket created with public access!';
       "
     restart: "no"
 
 volumes:
-  rockops_pg_data:
+  oretech_pg_data:
   minio_data_local:

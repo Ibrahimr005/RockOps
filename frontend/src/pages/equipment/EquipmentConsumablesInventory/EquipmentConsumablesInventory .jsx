@@ -313,7 +313,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
             accessor: 'history',
             render: (row) => (
                 <button
-                    className="rockops-table__action-button view"
+                    className="oretech-table__action-button view"
                     title="View History"
                     onClick={() => showConsumableHistory(row)}
                 >

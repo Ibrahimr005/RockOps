@@ -1,7 +1,7 @@
 # PageHeader Component Usage Examples
 
 ## Overview
-The enhanced PageHeader component now supports add buttons and other action buttons, making it easy to create consistent page headers across the RockOps application.
+The enhanced PageHeader component now supports add buttons and other action buttons, making it easy to create consistent page headers across the OreTech application.
 
 ## Basic Usage
 

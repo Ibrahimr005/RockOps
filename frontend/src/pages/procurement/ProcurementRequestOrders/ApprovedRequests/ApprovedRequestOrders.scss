@@ -101,7 +101,7 @@
   }
 
   // DataTable specific styles
-  :global(.rockops-table__action-button) {
+  :global(.oretech-table__action-button) {
     width: 32px;
     height: 32px;
     display: inline-flex;
@@ -138,7 +138,7 @@
   }
 
   // DataTable header styling
-  :global(.rockops-table__th) {
+  :global(.oretech-table__th) {
     background-color: var(--table-header-bg);
     border-bottom: 1px solid var(--table-border);
     font-weight: var(--bold-font-weight);
@@ -149,7 +149,7 @@
   }
 
   // DataTable row styling
-  :global(.rockops-table__row) {
+  :global(.oretech-table__row) {
     border-bottom: 1px solid var(--table-border);
     transition: background-color var(--transition-fast);
 
@@ -159,14 +159,14 @@
   }
 
   // DataTable cell styling
-  :global(.rockops-table__cell) {
+  :global(.oretech-table__cell) {
     color: var(--color-text-primary);
     border-bottom: 1px solid var(--table-border);
     padding: 12px 16px;
   }
 
   // DataTable container styling
-  :global(.rockops-table__container) {
+  :global(.oretech-table__container) {
     background-color: var(--color-surface);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-table);
@@ -174,7 +174,7 @@
   }
 
   // DataTable search input styling
-  :global(.rockops-table__search-input) {
+  :global(.oretech-table__search-input) {
     background-color: var(--color-surface);
     border: 1px solid var(--border-color-light);
     color: var(--color-text-primary);
@@ -190,31 +190,31 @@
   }
 
   // DataTable filter panel styling
-  :global(.rockops-table__filter-panel) {
+  :global(.oretech-table__filter-panel) {
     background-color: var(--color-surface-secondary);
     border: 1px solid var(--border-color-light);
     border-radius: var(--radius-sm);
   }
 
   // DataTable pagination styling
-  :global(.rockops-table__pagination-btn) {
+  :global(.oretech-table__pagination-btn) {
     background-color: var(--color-surface);
     color: var(--color-text-primary);
     border: 1px solid var(--border-color-light);
   }
 
-  :global(.rockops-table__pagination-btn:hover) {
+  :global(.oretech-table__pagination-btn:hover) {
     background-color: var(--color-surface-hover);
   }
 
-  :global(.rockops-table__pagination-btn--active) {
+  :global(.oretech-table__pagination-btn--active) {
     background-color: var(--color-primary);
     color: var(--color-text-inverse);
     border-color: var(--color-primary);
   }
 
   // Filter dropdown styling
-  :global(.rockops-table__filter-select) {
+  :global(.oretech-table__filter-select) {
     background-color: var(--color-surface);
     border: 1px solid var(--border-color-medium);
     color: var(--color-text-primary);
@@ -227,7 +227,7 @@
   }
 
   // Filter input styling
-  :global(.rockops-table__filter-input) {
+  :global(.oretech-table__filter-input) {
     background-color: var(--color-surface);
     border: 1px solid var(--border-color-medium);
     color: var(--color-text-primary);
@@ -244,22 +244,22 @@
   }
 
   // Empty state styling
-  :global(.rockops-table__empty-state) {
+  :global(.oretech-table__empty-state) {
     color: var(--color-text-secondary);
     background-color: var(--color-surface-secondary);
   }
 
   // Loading state styling
-  :global(.rockops-table__loading) {
+  :global(.oretech-table__loading) {
     color: var(--color-text-secondary);
   }
 
   // Sort indicators - FIXED: Separated into individual selectors
-  :global(.rockops-table__sort-indicator) {
+  :global(.oretech-table__sort-indicator) {
     color: var(--color-text-muted);
   }
 
-  :global(.rockops-table__sort-indicator--active) {
+  :global(.oretech-table__sort-indicator--active) {
     color: var(--color-primary);
   }
 }
@@ -267,7 +267,7 @@
 // Dark mode specific adjustments
 [data-theme="dark"] {
   .pro-roa-approved-requests-table {
-    :global(.rockops-table__action-button) {
+    :global(.oretech-table__action-button) {
       &.view-action {
         background-color: var(--color-view-bg);
 
@@ -277,11 +277,11 @@
       }
     }
 
-    :global(.rockops-table__container) {
+    :global(.oretech-table__container) {
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
-    :global(.rockops-table__filter-panel) {
+    :global(.oretech-table__filter-panel) {
       background-color: var(--color-surface-tertiary);
     }
   }
@@ -294,16 +294,16 @@
   }
 
   .pro-roa-approved-requests-table {
-    :global(.rockops-table__container) {
+    :global(.oretech-table__container) {
       border-radius: var(--radius-sm);
     }
 
-    :global(.rockops-table__cell) {
+    :global(.oretech-table__cell) {
       padding: 8px 12px;
       font-size: 13px;
     }
 
-    :global(.rockops-table__action-button) {
+    :global(.oretech-table__action-button) {
       width: 28px;
       height: 28px;
       margin: 0 1px;
@@ -314,25 +314,25 @@
       }
     }
 
-    :global(.rockops-table__th) {
+    :global(.oretech-table__th) {
       padding: 8px 12px;
       font-size: 9px;
     }
 
     // Stack filters vertically on mobile
-    :global(.rockops-table__filter-panel) {
+    :global(.oretech-table__filter-panel) {
       flex-direction: column;
       gap: 8px;
     }
 
     // Adjust pagination for mobile
-    :global(.rockops-table__pagination) {
+    :global(.oretech-table__pagination) {
       flex-direction: column;
       gap: 8px;
       align-items: stretch;
     }
 
-    :global(.rockops-table__pagination-btn) {
+    :global(.oretech-table__pagination-btn) {
       padding: 8px 12px;
       font-size: 12px;
     }
@@ -342,20 +342,20 @@
 // Print styles
 @media print {
   .pro-roa-approved-requests-table {
-    :global(.rockops-table__action-button),
-    :global(.rockops-table__search-input),
-    :global(.rockops-table__filter-panel),
-    :global(.rockops-table__pagination) {
+    :global(.oretech-table__action-button),
+    :global(.oretech-table__search-input),
+    :global(.oretech-table__filter-panel),
+    :global(.oretech-table__pagination) {
       display: none !important;
     }
 
-    :global(.rockops-table__container) {
+    :global(.oretech-table__container) {
       box-shadow: none;
       border: 1px solid #000;
     }
 
-    :global(.rockops-table__th),
-    :global(.rockops-table__cell) {
+    :global(.oretech-table__th),
+    :global(.oretech-table__cell) {
       border: 1px solid #000;
       color: #000;
       background: #fff;

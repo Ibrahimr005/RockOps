@@ -471,7 +471,7 @@
 }
 
 /* Table Customizations */
-.aging-detail-table .rockops-table__container {
+.aging-detail-table .oretech-table__container {
     margin: 0;
     border-radius: var(--radius-md);
 }

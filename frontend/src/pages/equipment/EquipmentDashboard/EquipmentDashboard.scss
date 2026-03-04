@@ -3,7 +3,7 @@
 /* EquipmentDashboard.scss */
 
 // Main dashboard container
-.rockops-equipment-dashboard {
+.oretech-equipment-dashboard {
   @extend .dashboard-layout !optional; // Try to use the layout if available, or just ignore
   padding: 0;
   width: 100%;
@@ -16,7 +16,7 @@
 }
 
 // Stats Grid
-.rockops-dashboard-stats {
+.oretech-dashboard-stats {
   display: grid;
   // Use a smaller minmax to prevent stacking on laptops
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -26,7 +26,7 @@
 
 // We rename the class to match the pattern [class*="-kpi-card"] from dashboard-styles.scss
 // This way we get the styles automatically without @extend
-.rockops-kpi-card {
+.oretech-kpi-card {
   // Inherits from [class*="-kpi-card"] in dashboard-styles.scss automatically
   // Specific overrides:
   background: var(--color-surface);
@@ -65,7 +65,7 @@
   }
 }
 
-.rockops-stat-icon {
+.oretech-stat-icon {
   width: 50px;
   height: 50px;
   border-radius: 12px;
@@ -96,21 +96,21 @@
   }
 }
 
-.rockops-stat-content {
+.oretech-stat-content {
   flex: 1;
   min-width: 0; // Key for text truncation
   display: flex;
   flex-direction: column;
 }
 
-.rockops-stat-value {
+.oretech-stat-value {
   font-size: 1.75rem;
   font-weight: 700;
   color: var(--color-text-primary);
   line-height: 1.2;
 }
 
-.rockops-stat-label {
+.oretech-stat-label {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-secondary);
@@ -122,14 +122,14 @@
   text-overflow: ellipsis;
 }
 
-.rockops-stat-sublabel {
+.oretech-stat-sublabel {
   font-size: 0.75rem;
   color: var(--color-text-tertiary);
   margin-top: 0.1rem;
 }
 
 // Charts container
-.rockops-dashboard-charts {
+.oretech-dashboard-charts {
   display: grid;
   // Flexible grid that switches to single column only on very small screens
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -141,7 +141,7 @@
   }
 }
 
-.rockops-chart-card {
+.oretech-chart-card {
   background: var(--color-surface);
   border: 1px solid var(--border-color-light);
   border-radius: 12px;
@@ -156,13 +156,13 @@
   }
 }
 
-.rockops-chart-header {
+.oretech-chart-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1.5rem;
 
-  .rockops-chart-title {
+  .oretech-chart-title {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -176,18 +176,18 @@
   }
 }
 
-.rockops-chart-container {
+.oretech-chart-container {
   flex: 1;
   min-height: 0; // Allow flex child to shrink if needed
   width: 100%;
 }
 
 // Insights Section
-.rockops-dashboard-insights {
+.oretech-dashboard-insights {
   margin-top: 1rem;
 }
 
-.rockops-insights-card {
+.oretech-insights-card {
   background: var(--color-surface);
   border: 1px solid var(--border-color-light);
   border-radius: 12px;
@@ -195,7 +195,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-.rockops-insights-header {
+.oretech-insights-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -207,7 +207,7 @@
   border-bottom: 1px solid var(--border-color-light);
 }
 
-.rockops-insights-content {
+.oretech-insights-content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 2rem;
@@ -246,7 +246,7 @@
 }
 
 // Legend styles
-.rockops-dashboard-legend {
+.oretech-dashboard-legend {
   display: flex;
   gap: 1.5rem;
   margin-top: 1rem;

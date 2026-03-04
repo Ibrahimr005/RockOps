@@ -2177,13 +2177,13 @@
   min-height: 0;
 }
 
-.warehouse-manage-employees-data-table .rockops-table__container {
+.warehouse-manage-employees-data-table .oretech-table__container {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.warehouse-manage-employees-data-table .rockops-table__wrapper {
+.warehouse-manage-employees-data-table .oretech-table__wrapper {
   flex: 1;
   overflow: auto;
   min-height: 300px;
@@ -2243,7 +2243,7 @@
 }
 
 /* DataTable action button styling */
-.warehouse-manage-employees-data-table .rockops-table__action-button.danger {
+.warehouse-manage-employees-data-table .oretech-table__action-button.danger {
   background: #ef4444;
   color: white;
   border: none;
@@ -2252,12 +2252,12 @@
   transition: all 0.2s ease;
 }
 
-.warehouse-manage-employees-data-table .rockops-table__action-button.danger:hover {
+.warehouse-manage-employees-data-table .oretech-table__action-button.danger:hover {
   background: #dc2626;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
 }
 
-.warehouse-manage-employees-data-table .rockops-table__action-button.danger:active {
+.warehouse-manage-employees-data-table .oretech-table__action-button.danger:active {
   transform: translateY(0);
 }

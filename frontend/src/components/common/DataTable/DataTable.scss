@@ -1,6 +1,6 @@
 /* DataTable.scss - Fully Responsive Table with Mobile-First Approach */
 
-.rockops-table__container {
+.oretech-table__container {
   width: 100%;
   margin: 2rem 0;
   box-sizing: border-box;
@@ -10,7 +10,7 @@
   }
 }
 
-.rockops-table__wrapper {
+.oretech-table__wrapper {
   background-color: white;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -70,7 +70,7 @@
 
   // Scrollable state - applied when columns exceed container width
   &.scrollable {
-    .rockops-table {
+    .oretech-table {
       table-layout: fixed;
       width: max-content;
       min-width: 100%; // Ensure table takes at least full width
@@ -79,7 +79,7 @@
 
   // Full-width state - columns expand to fill available space
   &.full-width {
-    .rockops-table {
+    .oretech-table {
       table-layout: auto;
       width: 100%;
       min-width: 600px; // Minimum width before horizontal scroll
@@ -89,8 +89,8 @@
       }
     }
 
-    .rockops-table__th,
-    .rockops-table__cell {
+    .oretech-table__th,
+    .oretech-table__cell {
       &[data-flex-weight="1"] {
         width: 1fr;
       }
@@ -120,7 +120,7 @@
   }
 }
 
-.rockops-table {
+.oretech-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -132,7 +132,7 @@
 }
 
 // Table Header
-.rockops-table__header {
+.oretech-table__header {
   position: sticky;
   top: 0;
   z-index: 10;
@@ -151,7 +151,7 @@
   }
 }
 
-.rockops-table__th {
+.oretech-table__th {
   padding: 16px;
   font-size: 11px;
   font-weight: 600;
@@ -215,7 +215,7 @@
       }
     }
 
-    .rockops-table__th-content {
+    .oretech-table__th-content {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -226,7 +226,7 @@
       }
     }
 
-    .rockops-table__sort-icon {
+    .oretech-table__sort-icon {
       display: flex;
       align-items: center;
       opacity: 0.3;
@@ -242,7 +242,7 @@
       }
     }
 
-    &:hover .rockops-table__sort-icon {
+    &:hover .oretech-table__sort-icon {
       opacity: 0.6;
     }
   }
@@ -261,7 +261,7 @@
   }
 }
 
-.rockops-table__th-content {
+.oretech-table__th-content {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -272,7 +272,7 @@
 }
 
 // Table Body
-.rockops-table__row {
+.oretech-table__row {
   border-bottom: 1px solid #e5e7eb;
   transition: background-color 0.15s ease, color 0.15s ease;
 
@@ -299,7 +299,7 @@
       background-color: var(--color-surface-hover);
     }
 
-    .rockops-table__cell {
+    .oretech-table__cell {
       color: #111827;
 
       [data-theme="dark"] & {
@@ -325,7 +325,7 @@
   }
 }
 
-.rockops-table__cell {
+.oretech-table__cell {
   padding: 14px 16px;
   font-size: 12px;
   color: #1f2937;
@@ -363,7 +363,7 @@
 }
 
 // Loading State
-.rockops-table__loading {
+.oretech-table__loading {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -391,7 +391,7 @@
   }
 }
 
-.rockops-table__spinner {
+.oretech-table__spinner {
   width: 36px;
   height: 36px;
   border: 3px solid rgba(59, 130, 246, 0.2);
@@ -415,7 +415,7 @@
 }
 
 // Empty State Overlay
-.rockops-table__empty-overlay {
+.oretech-table__empty-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -433,7 +433,7 @@
     background-color: rgba(24, 24, 24, 0.95);
   }
 
-  .rockops-table__empty {
+  .oretech-table__empty {
     pointer-events: auto;
   }
 
@@ -442,7 +442,7 @@
   }
 }
 
-.rockops-table__empty {
+.oretech-table__empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -485,13 +485,13 @@
     }
   }
 
-  .rockops-table__btn--secondary {
+  .oretech-table__btn--secondary {
     margin-top: 0.5rem;
   }
 }
 
 // Action buttons styling
-.rockops-table__action-button {
+.oretech-table__action-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -703,12 +703,12 @@
 }
 
 // Actions dropdown styling
-.rockops-table__actions {
+.oretech-table__actions {
   position: relative;
   display: inline-block;
 }
 
-.rockops-table__action-toggle {
+.oretech-table__action-toggle {
   width: 32px;
   height: 32px;
   border-radius: 6px;
@@ -745,7 +745,7 @@
   }
 }
 
-.rockops-table__actions-dropdown {
+.oretech-table__actions-dropdown {
   position: absolute;
   top: 100%;
   right: 0;
@@ -770,15 +770,15 @@
   }
 }
 
-.rockops-table__actions.dropdown-open {
+.oretech-table__actions.dropdown-open {
   z-index: 10000;
 }
 
-.rockops-table__actions.dropdown-open .rockops-table__actions-dropdown {
+.oretech-table__actions.dropdown-open .oretech-table__actions-dropdown {
   z-index: 10001;
 }
 
-.rockops-table__action-item {
+.oretech-table__action-item {
   display: flex;
   align-items: center;
   width: 100%;
@@ -830,7 +830,7 @@
   }
 }
 
-.rockops-table__action-icon {
+.oretech-table__action-icon {
   margin-right: 0.75rem;
   font-size: 1rem;
   flex-shrink: 0;
@@ -841,7 +841,7 @@
   }
 }
 
-.rockops-table__actions-inline {
+.oretech-table__actions-inline {
   display: flex;
   justify-content: flex-start;
   align-items: center;
@@ -857,7 +857,7 @@
 }
 
 // Header Controls - Responsive Layout
-.rockops-table__header-container {
+.oretech-table__header-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -875,7 +875,7 @@
     gap: 0.75rem;
   }
 
-  .rockops-table__header-left {
+  .oretech-table__header-left {
     flex: 0 0 auto;
 
     @media (max-width: 768px) {
@@ -883,7 +883,7 @@
     }
   }
 
-  .rockops-table__header-center {
+  .oretech-table__header-center {
     flex: 1;
     display: flex;
     justify-content: flex-start;
@@ -901,7 +901,7 @@
     }
   }
 
-  .rockops-table__header-right {
+  .oretech-table__header-right {
     flex: 0 0 auto;
     margin-left: auto;
 
@@ -916,7 +916,7 @@
   }
 }
 
-.rockops-table__title {
+.oretech-table__title {
   font-size: 1.5rem;
   font-weight: 600;
   color: #1f2937;
@@ -935,7 +935,7 @@
   }
 }
 
-.rockops-table__controls {
+.oretech-table__controls {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -950,7 +950,7 @@
 }
 
 // Search styling - Fully Responsive
-.rockops-table__search {
+.oretech-table__search {
   position: relative;
   min-width: 300px;
   flex: 1;
@@ -965,7 +965,7 @@
   }
 }
 
-.rockops-table__search-icon {
+.oretech-table__search-icon {
   position: absolute;
   left: 12px;
   top: 50%;
@@ -986,7 +986,7 @@
   }
 }
 
-.rockops-table__search-input {
+.oretech-table__search-input {
   width: 100%;
   padding: 0.75rem 2.5rem 0.75rem 2.5rem;
   border: 1px solid #d1d5db;
@@ -1028,7 +1028,7 @@
 }
 
 // Filter Button - Responsive
-.rockops-table__filter-btn {
+.oretech-table__filter-btn {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1123,7 +1123,7 @@
   }
 }
 
-.rockops-table__filter-count {
+.oretech-table__filter-count {
   background: #ef4444;
   color: white;
   font-size: 0.75rem;
@@ -1146,7 +1146,7 @@
   }
 }
 
-.rockops-table__filter-btn--active .rockops-table__filter-count {
+.oretech-table__filter-btn--active .oretech-table__filter-count {
   background: white;
   color: #ef4444;
 
@@ -1157,7 +1157,7 @@
 }
 
 // Filter Panel - Responsive Grid
-.rockops-table__filter-panel {
+.oretech-table__filter-panel {
   background: white;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
@@ -1177,7 +1177,7 @@
   }
 }
 
-.rockops-table__filter-header {
+.oretech-table__filter-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1274,7 +1274,7 @@
   }
 }
 
-.rockops-table__filter-list {
+.oretech-table__filter-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
@@ -1292,7 +1292,7 @@
   }
 }
 
-.rockops-table__filter-item {
+.oretech-table__filter-item {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1453,7 +1453,7 @@
   }
 }
 
-.rockops-table__filter-actions {
+.oretech-table__filter-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1504,7 +1504,7 @@
 }
 
 // Footer Section - Fully Responsive
-.rockops-table__footer {
+.oretech-table__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1528,7 +1528,7 @@
   }
 }
 
-.rockops-table__footer-left {
+.oretech-table__footer-left {
   flex: 0 0 auto;
   min-width: fit-content;
 
@@ -1537,7 +1537,7 @@
   }
 }
 
-.rockops-table__footer-right {
+.oretech-table__footer-right {
   flex: 1 1 auto;
   display: flex;
   justify-content: flex-end;
@@ -1548,7 +1548,7 @@
   }
 }
 
-.rockops-table__items-per-page {
+.oretech-table__items-per-page {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1599,7 +1599,7 @@
   }
 }
 
-.rockops-table__showing {
+.oretech-table__showing {
   color: #6b7280;
   font-size: 0.875rem;
   font-weight: 500;
@@ -1615,7 +1615,7 @@
 }
 
 // PAGINATION - Fully Responsive
-.rockops-table__pagination {
+.oretech-table__pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1651,7 +1651,7 @@
   }
 }
 
-.rockops-table__pagination-info {
+.oretech-table__pagination-info {
   font-size: 13px;
   color: #475569;
   font-weight: 600;
@@ -1676,7 +1676,7 @@
   }
 }
 
-.rockops-table__pagination-controls {
+.oretech-table__pagination-controls {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1688,7 +1688,7 @@
   }
 }
 
-.rockops-table__pagination-btn {
+.oretech-table__pagination-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1809,7 +1809,7 @@
   }
 }
 
-.rockops-table__pagination-numbers {
+.oretech-table__pagination-numbers {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1836,7 +1836,7 @@
 }
 
 // Button styles - Responsive
-.rockops-table__btn {
+.oretech-table__btn {
   padding: 0.625rem 1rem;
   border-radius: 8px;
   font-weight: 500;
@@ -1893,7 +1893,7 @@
 }
 
 // Export Button - Responsive
-.rockops-table__export-btn {
+.oretech-table__export-btn {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1976,7 +1976,7 @@
   }
 }
 
-.rockops-table__export-spinner {
+.oretech-table__export-spinner {
   width: 18px;
   height: 18px;
   border: 2px solid rgba(255, 255, 255, 0.3);
@@ -1996,7 +1996,7 @@
 }
 
 // Enhanced Header Right - Responsive
-.rockops-table__header-right {
+.oretech-table__header-right {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -2007,8 +2007,8 @@
     flex-direction: column;
     gap: 0.5rem;
 
-    .rockops-table__export-btn,
-    .rockops-table__add-btn {
+    .oretech-table__export-btn,
+    .oretech-table__add-btn {
       width: 100%;
       justify-content: center;
       margin-right: 0;
@@ -2026,7 +2026,7 @@
 }
 
 // Action cell z-index management
-.rockops-table__cell--actions {
+.oretech-table__cell--actions {
   position: relative;
   z-index: 5;
   overflow: visible !important;
@@ -2036,12 +2036,12 @@
   }
 }
 
-.rockops-table__actions {
+.oretech-table__actions {
   position: relative;
   z-index: 10;
 }
 
-.rockops-table__actions-dropdown {
+.oretech-table__actions-dropdown {
   z-index: 999999 !important;
   position: absolute !important;
   background: white !important;
@@ -2049,21 +2049,21 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
-[data-theme="dark"] .rockops-table__actions-dropdown {
+[data-theme="dark"] .oretech-table__actions-dropdown {
   background: var(--section-background-color) !important;
   border-color: var(--border-color) !important;
 }
 
-.rockops-table__actions.dropdown-open {
+.oretech-table__actions.dropdown-open {
   z-index: 999999 !important;
   position: relative !important;
 }
 
-.rockops-table__actions:not(.dropdown-open) {
+.oretech-table__actions:not(.dropdown-open) {
   z-index: 1 !important;
 }
 
-.rockops-table__action-button {
+.oretech-table__action-button {
   z-index: 1 !important;
   position: relative;
 
@@ -2104,7 +2104,7 @@
 }
 
 // Simple count display - Responsive
-.rockops-table__simple-count {
+.oretech-table__simple-count {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2174,7 +2174,7 @@
   }
 }
 
-.rockops-table__add-btn {
+.oretech-table__add-btn {
   margin-right: 1rem;
 
   @media (max-width: 768px) {
@@ -2231,7 +2231,7 @@
 
 /* Touch device optimizations */
 @media (hover: none) {
-  .rockops-table__row--clickable:active {
+  .oretech-table__row--clickable:active {
     background-color: #e0e7ff;
 
     [data-theme="dark"] & {
@@ -2239,11 +2239,11 @@
     }
   }
 
-  .rockops-table__action-button:active {
+  .oretech-table__action-button:active {
     transform: scale(0.95);
   }
 
-  .rockops-table__pagination-btn:active {
+  .oretech-table__pagination-btn:active {
     transform: scale(0.95);
   }
 }

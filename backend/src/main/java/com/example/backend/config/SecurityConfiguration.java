@@ -35,13 +35,10 @@ public class SecurityConfiguration {
                             "http://localhost:3000",
 
                             // Development deployment
-                            "https://dev-rock-ops.vercel.app",
-
-                            // Test deployment
-                            "https://rock-ops.vercel.app",
+                            "https://dev-oretech.vercel.app",
 
                             // Production deployment
-                            "https://rockops.vercel.app"
+                            "https://oretech.vercel.app"
                     ));
                     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     configuration.setAllowedHeaders(Arrays.asList("*"));

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RockOps is a comprehensive mining site management system built with Spring Boot (backend) and React + Vite (frontend). The system manages equipment, HR, procurement, warehouse operations, finance, and maintenance workflows across multiple mining sites with real-time notifications via WebSocket.
+OreTech is a comprehensive mining site management system built with Spring Boot (backend) and React + Vite (frontend). The system manages equipment, HR, procurement, warehouse operations, finance, and maintenance workflows across multiple mining sites with real-time notifications via WebSocket.
 
 **Tech Stack:**
 - **Backend:** Java 21, Spring Boot 3.4.5, PostgreSQL, Spring Data JPA, Flyway migrations
@@ -75,7 +75,7 @@ docker-compose up --build
 
 ### Database
 
-- **Local PostgreSQL:** `jdbc:postgresql://localhost:5432/rockOpsDB`
+- **Local PostgreSQL:** `jdbc:postgresql://localhost:5432/oretechDB`
 - **Credentials:** postgres/1234
 - **Migrations:** Flyway handles all schema changes automatically from `backend/src/main/resources/db/migration`
 - **JPA DDL:** Set to `none` - Flyway manages all schema changes
@@ -374,7 +374,7 @@ RequestOrder → Offer (with finance review) → PurchaseOrder → Delivery → 
 ### Local Development
 - Backend: `http://localhost:8080`
 - Frontend: `http://localhost:5173`
-- PostgreSQL: `localhost:5432/rockOpsDB`
+- PostgreSQL: `localhost:5432/oretechDB`
 - MinIO: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
 

@@ -34,7 +34,7 @@ A full-stack web application designed to streamline and digitize operations acro
 
 ## 🧩 Project Structure
 ```
-RockOps/
+OreTech/
 ├── backend/ → Spring Boot Application
 ├── frontend/ → React App (JSX + SCSS)
 └── README.md

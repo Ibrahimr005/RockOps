@@ -93,7 +93,7 @@ const DataTable = ({
     // Close actions menu when clicking outside
     useEffect(() => {
         const handleOutsideClick = (e) => {
-            if (activeActionRow !== null && !e.target.closest('.rockops-table__actions')) {
+            if (activeActionRow !== null && !e.target.closest('.oretech-table__actions')) {
                 setActiveActionRow(null);
             }
         };
@@ -679,30 +679,30 @@ const DataTable = ({
     const endIndex = Math.min(startIndex + itemsPerPage, sortedData.length);
 
     return (
-        <div className={`rockops-table__container ${className}`}>
-            <div className="rockops-table__header-container">
-                <div className="rockops-table__header-left">
-                    {tableTitle && <h3 className="rockops-table__title">{tableTitle}</h3>}
+        <div className={`oretech-table__container ${className}`}>
+            <div className="oretech-table__header-container">
+                <div className="oretech-table__header-left">
+                    {tableTitle && <h3 className="oretech-table__title">{tableTitle}</h3>}
                 </div>
 
-                <div className="rockops-table__header-center">
-                    <div className="rockops-table__controls">
+                <div className="oretech-table__header-center">
+                    <div className="oretech-table__controls">
                         {showSearch && (
-                            <div className="rockops-table__search">
-                                <FaSearch className="rockops-table__search-icon" />
+                            <div className="oretech-table__search">
+                                <FaSearch className="oretech-table__search-icon" />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="Search..."
-                                    className="rockops-table__search-input"
+                                    className="oretech-table__search-input"
                                 />
                             </div>
                         )}
 
                         {showFilters && filterableColumns.length > 0 && (
                             <button
-                                className={`rockops-table__filter-btn ${showFilterPanel ? 'rockops-table__filter-btn--active' : ''}`}
+                                className={`oretech-table__filter-btn ${showFilterPanel ? 'oretech-table__filter-btn--active' : ''}`}
                                 onClick={() => {
                                     if (showFilterPanel) {
                                         // Reset filters when closing the panel
@@ -718,12 +718,12 @@ const DataTable = ({
                     </div>
                 </div>
 
-                <div className="rockops-table__header-right">
+                <div className="oretech-table__header-right">
                     {/* Export Button */}
                     {showExportButton && (
                         <Button
                             variant="secondary"
-                            className={`rockops-table__export-btn ${exportButtonProps.className || ''}`}
+                            className={`oretech-table__export-btn ${exportButtonProps.className || ''}`}
                             onClick={handleExportToExcel}
                             disabled={data.length === 0}
                             loading={isExporting}
@@ -741,7 +741,7 @@ const DataTable = ({
                     {showAddButton && onAddClick && (
                         <Button
                             variant="primary"
-                            className={`rockops-table__add-btn ${addButtonProps.className || ''}`}
+                            className={`oretech-table__add-btn ${addButtonProps.className || ''}`}
                             onClick={handleAddButtonClick}
                         >
                             {addButtonIcon}
@@ -754,7 +754,7 @@ const DataTable = ({
 
 
             {/* Simple Table Count */}
-            <div className="rockops-table__simple-count">
+            <div className="oretech-table__simple-count">
                 <span className="count-text">
                     Showing {sortedData.length} of {data.length} results
                     {activeFiltersCount > 0 && (
@@ -766,8 +766,8 @@ const DataTable = ({
 
             {/* Filter Panel - Professional Design */}
             {showFilters && showFilterPanel && (
-                <div className="rockops-table__filter-panel">
-                    <div className="rockops-table__filter-header">
+                <div className="oretech-table__filter-panel">
+                    <div className="oretech-table__filter-header">
                         <h4>
                             <FaFilter />
                             Filter Options
@@ -794,11 +794,11 @@ const DataTable = ({
                         </div>
                     </div>
 
-                    <div className="rockops-table__filter-list">
+                    <div className="oretech-table__filter-list">
                         {filterableColumns.map((column, index) => (
                             <div
                                 key={index}
-                                className={`rockops-table__filter-item ${filters[column.accessor] ? 'has-filter' : ''}`}
+                                className={`oretech-table__filter-item ${filters[column.accessor] ? 'has-filter' : ''}`}
                             >
                                 <label>{column.header}</label>
                                 <div className="filter-input-wrapper">
@@ -870,7 +870,7 @@ const DataTable = ({
                         ))}
 
                         {customFilters.map((filter, index) => (
-                            <div key={`custom-${index}`} className="rockops-table__filter-item">
+                            <div key={`custom-${index}`} className="oretech-table__filter-item">
                                 <label>{filter.label}</label>
                                 <div className="filter-input-wrapper">
                                     {filter.component}
@@ -878,7 +878,7 @@ const DataTable = ({
                             </div>
                         ))}
                     </div>
-                    <div className="rockops-table__filter-actions">
+                    <div className="oretech-table__filter-actions">
                         <div className="filter-stats">
                             {sortedData.length} of {data.length} results
                             {activeFiltersCount > 0 && ` with ${activeFiltersCount} filter${activeFiltersCount !== 1 ? 's' : ''} applied`}
@@ -886,7 +886,7 @@ const DataTable = ({
 
                         <div className="filter-buttons">
                             <button
-                                className="rockops-table__btn rockops-table__btn--secondary"
+                                className="oretech-table__btn oretech-table__btn--secondary"
                                 onClick={clearFilters}
                                 disabled={activeFiltersCount === 0}
                             >
@@ -900,22 +900,22 @@ const DataTable = ({
             {/* Table Wrapper - Always full-width */}
             <div
                 ref={wrapperRef}
-                className={`rockops-table__wrapper full-width ${activeActionRow !== null ? 'has-open-dropdown' : ''}`}
+                className={`oretech-table__wrapper full-width ${activeActionRow !== null ? 'has-open-dropdown' : ''}`}
             >
                 {loading ? (
-                    <div className="rockops-table__loading">
-                        <div className="rockops-table__spinner"></div>
+                    <div className="oretech-table__loading">
+                        <div className="oretech-table__spinner"></div>
                         <p>Loading data...</p>
                     </div>
                 ) : (
                     <div style={{ position: 'relative' }}>
-                        <table ref={tableRef} className="rockops-table">
-                            <thead className="rockops-table__header">
+                        <table ref={tableRef} className="oretech-table">
+                            <thead className="oretech-table__header">
                                 <tr>
                                     {columns.map((column, index) => (
                                         <th
                                             key={index}
-                                            className={`rockops-table__th ${column.sortable !== false ? 'rockops-table__th--sortable' : ''
+                                            className={`oretech-table__th ${column.sortable !== false ? 'oretech-table__th--sortable' : ''
                                                 } ${sortField === column.accessor ? `sorted-${sortDirection}` : ''
                                                 }`}
                                             style={{
@@ -925,10 +925,10 @@ const DataTable = ({
                                             data-flex-weight={column.flexWeight || 1}
                                             onClick={() => column.sortable !== false ? handleSort(column.accessor) : null}
                                         >
-                                            <div className="rockops-table__th-content">
+                                            <div className="oretech-table__th-content">
                                                 <span>{column.header}</span>
                                                 {column.sortable !== false && (
-                                                    <span className="rockops-table__sort-icon">
+                                                    <span className="oretech-table__sort-icon">
                                                         {sortField === column.accessor ? (
                                                             sortDirection === 'asc' ? <FaSortUp /> : <FaSortDown />
                                                         ) : (
@@ -943,14 +943,14 @@ const DataTable = ({
                                     {/* Actions column if actions array is provided */}
                                     {actions.length > 0 && (
                                         <th
-                                            className="rockops-table__th rockops-table__th--actions"
+                                            className="oretech-table__th oretech-table__th--actions"
                                             style={{
                                                 textAlign: 'left',
                                                 minWidth: actionsColumnWidth
                                             }}
                                             data-flex-weight={1}
                                         >
-                                            <div className="rockops-table__th-content">
+                                            <div className="oretech-table__th-content">
                                                 <span>Actions</span>
                                             </div>
                                         </th>
@@ -967,11 +967,11 @@ const DataTable = ({
                                             ))}
                                         </tr>
                                         {/* Empty State Overlay - Positioned absolutely over the tbody */}
-                                        <div className="rockops-table__empty-overlay">
-                                            <div className="rockops-table__empty">
+                                        <div className="oretech-table__empty-overlay">
+                                            <div className="oretech-table__empty">
                                                 <p>{activeFiltersCount > 0 ? 'No results match your filters' : emptyMessage}</p>
                                                 {activeFiltersCount > 0 && (
-                                                    <button className="rockops-table__btn rockops-table__btn--secondary" onClick={clearFilters}>
+                                                    <button className="oretech-table__btn oretech-table__btn--secondary" onClick={clearFilters}>
                                                         Clear Filters
                                                     </button>
                                                 )}
@@ -982,13 +982,13 @@ const DataTable = ({
                                     paginatedData.map((row, rowIndex) => (
                                         <tr
                                             key={rowIndex}
-                                            className={`rockops-table__row ${onRowClick ? 'rockops-table__row--clickable' : ''}`}
+                                            className={`oretech-table__row ${onRowClick ? 'oretech-table__row--clickable' : ''}`}
                                             onClick={() => onRowClick && onRowClick(row)}
                                         >
                                             {columns.map((column, colIndex) => (
                                                 <td
                                                     key={colIndex}
-                                                    className={`rockops-table__cell ${column.className || ''} ${isEmpty(getValue(row, column.accessor)) ? 'rockops-table__cell--empty' : ''}`}
+                                                    className={`oretech-table__cell ${column.className || ''} ${isEmpty(getValue(row, column.accessor)) ? 'oretech-table__cell--empty' : ''}`}
                                                     style={{
                                                         textAlign: column.align || 'left',
                                                         minWidth: column.minWidth || 'auto',
@@ -1007,7 +1007,7 @@ const DataTable = ({
                                             {/* Actions column */}
                                             {actions.length > 0 && (
                                                 <td
-                                                    className="rockops-table__cell rockops-table__cell--actions"
+                                                    className="oretech-table__cell oretech-table__cell--actions"
                                                     style={{
                                                         textAlign: 'left',
                                                         minWidth: actionsColumnWidth
@@ -1017,9 +1017,9 @@ const DataTable = ({
                                                 >
                                                     {actions.length > 2 ? (
                                                         // Dropdown menu for 3+ actions
-                                                        <div className={`rockops-table__actions ${activeActionRow === rowIndex ? 'dropdown-open' : ''}`}>
+                                                        <div className={`oretech-table__actions ${activeActionRow === rowIndex ? 'dropdown-open' : ''}`}>
                                                             <button
-                                                                className="rockops-table__action-toggle"
+                                                                className="oretech-table__action-toggle"
                                                                 onClick={(e) => toggleActionsMenu(e, rowIndex)}
                                                                 aria-label="Toggle actions menu"
                                                             >
@@ -1027,17 +1027,17 @@ const DataTable = ({
                                                             </button>
 
                                                             {activeActionRow === rowIndex && (
-                                                                <div className="rockops-table__actions-dropdown">
+                                                                <div className="oretech-table__actions-dropdown">
                                                                     {actions
                                                                         .filter(action => !action.show || action.show(row))
                                                                         .map((action, idx) => (
                                                                             <button
                                                                                 key={idx}
-                                                                                className={`rockops-table__action-item ${action.className || ''}`}
+                                                                                className={`oretech-table__action-item ${action.className || ''}`}
                                                                                 onClick={(e) => handleActionClick(e, action, row)}
                                                                                 disabled={action.isDisabled ? action.isDisabled(row) : false}
                                                                             >
-                                                                                {action.icon && <span className="rockops-table__action-icon">{action.icon}</span>}
+                                                                                {action.icon && <span className="oretech-table__action-icon">{action.icon}</span>}
                                                                                 <span>{action.label}</span>
                                                                             </button>
                                                                         ))}
@@ -1046,13 +1046,13 @@ const DataTable = ({
                                                         </div>
                                                     ) : (
                                                         // Inline buttons for 1-2 actions
-                                                        <div className="rockops-table__actions-inline">
+                                                        <div className="oretech-table__actions-inline">
                                                             {actions
                                                                 .filter(action => !action.show || action.show(row))
                                                                 .map((action, idx) => (
                                                                     <button
                                                                         key={idx}
-                                                                        className={`rockops-table__action-button ${action.className || ''}`}
+                                                                        className={`oretech-table__action-button ${action.className || ''}`}
                                                                         onClick={(e) => handleActionClick(e, action, row)}
                                                                         disabled={action.isDisabled ? action.isDisabled(row) : false}
                                                                         aria-label={action.label}
@@ -1075,9 +1075,9 @@ const DataTable = ({
             </div>
 
             {/* Footer with items per page and pagination */}
-            <div className="rockops-table__footer">
-                <div className="rockops-table__footer-left">
-                    <div className="rockops-table__items-per-page">
+            <div className="oretech-table__footer">
+                <div className="oretech-table__footer-left">
+                    <div className="oretech-table__items-per-page">
                         <span>Items per page:</span>
                         <select
                             value={itemsPerPage}
@@ -1093,26 +1093,26 @@ const DataTable = ({
                     </div>
                 </div>
 
-                <div className="rockops-table__footer-right">
+                <div className="oretech-table__footer-right">
                     {/* Pagination */}
                     {sortedData.length > itemsPerPage && (
-                        <div className="rockops-table__pagination-controls">
+                        <div className="oretech-table__pagination-controls">
                             <button
-                                className="rockops-table__pagination-btn"
+                                className="oretech-table__pagination-btn"
                                 onClick={() => goToPage(currentPage - 1)}
                                 disabled={currentPage === 1}
                             >
                                 Previous
                             </button>
 
-                            <div className="rockops-table__pagination-numbers">
+                            <div className="oretech-table__pagination-numbers">
                                 {getPageNumbers().map((pageNum, index) => (
                                     pageNum === '...' ? (
-                                        <span key={`ellipsis-${index}`} className="rockops-table__pagination-btn rockops-table__pagination-btn--ellipsis">...</span>
+                                        <span key={`ellipsis-${index}`} className="oretech-table__pagination-btn oretech-table__pagination-btn--ellipsis">...</span>
                                     ) : (
                                         <button
                                             key={pageNum}
-                                            className={`rockops-table__pagination-btn ${currentPage === pageNum ? 'rockops-table__pagination-btn--active' : ''}`}
+                                            className={`oretech-table__pagination-btn ${currentPage === pageNum ? 'oretech-table__pagination-btn--active' : ''}`}
                                             onClick={() => goToPage(pageNum)}
                                         >
                                             {pageNum}
@@ -1122,7 +1122,7 @@ const DataTable = ({
                             </div>
 
                             <button
-                                className="rockops-table__pagination-btn"
+                                className="oretech-table__pagination-btn"
                                 onClick={() => goToPage(currentPage + 1)}
                                 disabled={currentPage === totalPages}
                             >

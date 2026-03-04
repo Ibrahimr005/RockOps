@@ -132,13 +132,13 @@ public class DocumentService {
                 String fileKey = folderPath + "/" + fileName;
                 
                 // Ensure main bucket exists
-                minioService.createBucketIfNotExists("rockops");
+                minioService.createBucketIfNotExists("oretech");
                 
                 // Upload file to folder structure
-                minioService.uploadFile("rockops", file, fileKey);
+                minioService.uploadFile("oretech", file, fileKey);
                 
                 // Get the file URL
-                String fileUrl = minioService.getFileUrl("rockops", fileKey);
+                String fileUrl = minioService.getFileUrl("oretech", fileKey);
                 savedDocument.setFileUrl(fileUrl);
                 
                 System.out.println("✅ Uploaded document to: " + fileKey);
@@ -196,7 +196,7 @@ public class DocumentService {
             try {
                 if (document.getEntityType() == EntityType.EQUIPMENT) {
                     // For equipment, extract filename from URL and delete from equipment folder
-                    // URL format: http://localhost:9000/rockops/equipment/{id}/{fileName}
+                    // URL format: http://localhost:9000/oretech/equipment/{id}/{fileName}
                     String fileName = extractFileNameFromUrl(document.getFileUrl());
                     if (fileName != null) {
                         minioService.deleteEquipmentFile(document.getEntityId(), fileName);
@@ -213,8 +213,8 @@ public class DocumentService {
                         // Try new folder structure
                         String fileKey = extractFileNameFromUrl(document.getFileUrl());
                         if (fileKey != null) {
-                            minioService.deleteFile("rockops", fileKey);
-                            System.out.println("✅ Deleted from new folder structure: rockops/" + fileKey);
+                            minioService.deleteFile("oretech", fileKey);
+                            System.out.println("✅ Deleted from new folder structure: oretech/" + fileKey);
                         }
                     }
                 }
@@ -229,7 +229,7 @@ public class DocumentService {
     
     /**
      * Extract filename from full URL
-     * URL format: http://localhost:9000/rockops/equipment/{id}/{fileName}
+     * URL format: http://localhost:9000/oretech/equipment/{id}/{fileName}
      */
     private String extractFileNameFromUrl(String url) {
         if (url == null || url.isEmpty()) {
@@ -325,10 +325,10 @@ public class DocumentService {
                 String fileName = name + "_" + savedDocument.getId().toString() + "_" + file.getOriginalFilename();
                 String fileKey = folderPath + "/" + fileName;
                 
-                minioService.createBucketIfNotExists("rockops");
-                minioService.uploadFile("rockops", file, fileKey);
+                minioService.createBucketIfNotExists("oretech");
+                minioService.uploadFile("oretech", file, fileKey);
                 
-                String fileUrl = minioService.getFileUrl("rockops", fileKey);
+                String fileUrl = minioService.getFileUrl("oretech", fileKey);
                 savedDocument.setFileUrl(fileUrl);
                 
                 System.out.println("✅ Uploaded sarky document to: " + fileKey);

@@ -116,12 +116,12 @@ docker-compose restart backend
 Look for:
 ```
 ✅ Uploaded equipment document to: equipment/{id}/{actualFileName}
-✅ Document URL: http://localhost:9000/rockops/equipment/{id}/{actualFileName}
+✅ Document URL: http://localhost:9000/oretech/equipment/{id}/{actualFileName}
 ```
 
 ### 6. Verify in MinIO
 - Go to: http://localhost:9001
-- Navigate to: `rockops` → `equipment` → `{equipment-id}`
+- Navigate to: `oretech` → `equipment` → `{equipment-id}`
 - **Expected:** See file with correct name
 
 ## File Naming Convention
@@ -149,12 +149,12 @@ sarky/{year}/{month}/{documentName}_{documentId}_{originalFilename}
 
 **After Fix:**
 ```
-http://localhost:9000/rockops/equipment/a7807e15-0652-4503-94ea-2aa9374ac9dc/Invoice_abc123-def456_invoice.pdf
+http://localhost:9000/oretech/equipment/a7807e15-0652-4503-94ea-2aa9374ac9dc/Invoice_abc123-def456_invoice.pdf
 ```
 
 **File in MinIO:**
 ```
-rockops/
+oretech/
   equipment/
     a7807e15-0652-4503-94ea-2aa9374ac9dc/
       Invoice_abc123-def456_invoice.pdf  ✅ Matches!

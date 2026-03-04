@@ -3,7 +3,7 @@
    Modern, consistent with theme system
    ==================================== */
 
-.rockops-documents-page {
+.oretech-documents-page {
     padding: 2rem;
     background-color: var(--main-background-color);
     min-height: 100vh;
@@ -17,7 +17,7 @@
    HEADER STYLES
    ==================================== */
 
-.rockops-documents-header {
+.oretech-documents-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -29,13 +29,13 @@
         gap: 1rem;
     }
 
-    .rockops-documents-header-left {
+    .oretech-documents-header-left {
         display: flex;
         align-items: center;
         gap: 1rem;
         flex: 1;
 
-        .rockops-documents-back-btn {
+        .oretech-documents-back-btn {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -62,10 +62,10 @@
             }
         }
 
-        .rockops-documents-header-info {
+        .oretech-documents-header-info {
             flex: 1;
 
-            .rockops-documents-title {
+            .oretech-documents-title {
                 display: flex;
                 align-items: center;
                 gap: 0.75rem;
@@ -83,7 +83,7 @@
                 }
             }
 
-            .rockops-documents-subtitle {
+            .oretech-documents-subtitle {
                 color: var(--paragraph-color);
                 font-size: 1rem;
                 margin: 0;
@@ -91,7 +91,7 @@
         }
     }
 
-    .rockops-documents-header-actions {
+    .oretech-documents-header-actions {
         display: flex;
         gap: 1rem;
         align-items: center;
@@ -107,7 +107,7 @@
    CONTROLS AND FILTERS
    ==================================== */
 
-.rockops-documents-controls {
+.oretech-documents-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -124,7 +124,7 @@
         align-items: stretch;
     }
 
-    .rockops-documents-filters {
+    .oretech-documents-filters {
         display: flex;
         gap: 1rem;
         align-items: center;
@@ -136,7 +136,7 @@
             gap: 0.75rem;
         }
 
-        .rockops-documents-search {
+        .oretech-documents-search {
             position: relative;
             flex: 1;
             max-width: 300px;
@@ -176,8 +176,8 @@
             }
         }
 
-        .rockops-documents-filter-group,
-        .rockops-documents-sort-group {
+        .oretech-documents-filter-group,
+        .oretech-documents-sort-group {
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -211,7 +211,7 @@
         }
     }
 
-    .rockops-documents-view-controls {
+    .oretech-documents-view-controls {
         display: flex;
         gap: 0.5rem;
         background: var(--color-surface);
@@ -223,7 +223,7 @@
             justify-content: center;
         }
 
-        .rockops-documents-view-btn {
+        .oretech-documents-view-btn {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -257,7 +257,7 @@
    DOCUMENTS CONTAINER
    ==================================== */
 
-.rockops-documents-container {
+.oretech-documents-container {
     background: var(--section-background-color);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
@@ -270,7 +270,7 @@
    LOADING AND EMPTY STATES
    ==================================== */
 
-.rockops-documents-loading {
+.oretech-documents-loading {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -278,7 +278,7 @@
     padding: 4rem 2rem;
     color: var(--color-text-secondary);
 
-    .rockops-documents-loading-spinner {
+    .oretech-documents-loading-spinner {
         width: 48px;
         height: 48px;
         border: 4px solid var(--color-surface-hover);
@@ -294,7 +294,7 @@
     }
 }
 
-.rockops-documents-empty {
+.oretech-documents-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -303,7 +303,7 @@
     text-align: center;
     color: var(--color-text-secondary);
 
-    .rockops-documents-empty-icon {
+    .oretech-documents-empty-icon {
         opacity: 0.5;
         margin-bottom: 1.5rem;
         color: var(--color-text-tertiary);
@@ -333,7 +333,7 @@
    DOCUMENTS GRID
    ==================================== */
 
-.rockops-documents-grid {
+.oretech-documents-grid {
     padding: 1.5rem;
 
     &.grid-view {
@@ -347,32 +347,32 @@
             padding: 1rem;
         }
 
-        .rockops-documents-card {
+        .oretech-documents-card {
             flex-direction: column;
             text-align: center;
 
-            .rockops-documents-card-icon {
+            .oretech-documents-card-icon {
                 align-self: center;
                 margin-bottom: 1rem;
             }
 
-            .rockops-documents-card-content {
+            .oretech-documents-card-content {
                 flex: 1;
             }
 
-            .rockops-documents-card-header {
+            .oretech-documents-card-header {
                 flex-direction: column;
                 align-items: center;
                 gap: 1rem;
                 margin-bottom: 1rem;
 
-                .rockops-documents-card-title {
+                .oretech-documents-card-title {
                     text-align: center;
                 }
             }
 
-            .rockops-documents-card-meta {
-                .rockops-documents-card-info {
+            .oretech-documents-card-meta {
+                .oretech-documents-card-info {
                     justify-content: center;
                     flex-wrap: wrap;
                 }
@@ -385,33 +385,33 @@
         flex-direction: column;
         gap: 1rem;
 
-        .rockops-documents-card {
+        .oretech-documents-card {
             flex-direction: row;
             align-items: center;
             padding: 1rem 1.5rem;
 
-            .rockops-documents-card-icon {
+            .oretech-documents-card-icon {
                 margin-right: 1rem;
                 flex-shrink: 0;
             }
 
-            .rockops-documents-card-content {
+            .oretech-documents-card-content {
                 flex: 1;
             }
 
-            .rockops-documents-card-header {
+            .oretech-documents-card-header {
                 flex-direction: row;
                 justify-content: space-between;
                 align-items: center;
                 margin-bottom: 0.5rem;
             }
 
-            .rockops-documents-card-meta {
-                .rockops-documents-card-type {
+            .oretech-documents-card-meta {
+                .oretech-documents-card-type {
                     margin-bottom: 0.25rem;
                 }
 
-                .rockops-documents-card-info {
+                .oretech-documents-card-info {
                     flex-direction: row;
                     gap: 1rem;
                 }
@@ -420,7 +420,7 @@
     }
 }
 
-.rockops-documents-card {
+.oretech-documents-card {
     display: flex;
     background: var(--color-surface);
     border: 1px solid var(--border-color);
@@ -434,12 +434,12 @@
         box-shadow: var(--shadow-md);
         transform: translateY(-2px);
 
-        .rockops-documents-card-actions {
+        .oretech-documents-card-actions {
             transform: scale(1.05);
         }
     }
 
-    .rockops-documents-card-icon {
+    .oretech-documents-card-icon {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -451,19 +451,19 @@
         font-size: 1.5rem;
     }
 
-    .rockops-documents-card-content {
+    .oretech-documents-card-content {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
     }
 
-    .rockops-documents-card-header {
+    .oretech-documents-card-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         gap: 1rem;
 
-        .rockops-documents-card-title {
+        .oretech-documents-card-title {
             margin: 0;
             font-size: 1rem;
             font-weight: var(--bold-font-weight);
@@ -472,7 +472,7 @@
             line-height: 1.4;
         }
 
-        .rockops-documents-card-actions {
+        .oretech-documents-card-actions {
             display: flex;
             gap: 0.5rem;
             opacity: 1;
@@ -480,12 +480,12 @@
         }
     }
 
-    .rockops-documents-card-meta {
+    .oretech-documents-card-meta {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
 
-        .rockops-documents-card-type {
+        .oretech-documents-card-type {
             font-size: 0.875rem;
             font-weight: 500;
             padding: 0.25rem 0.75rem;
@@ -495,7 +495,7 @@
             align-self: flex-start;
         }
 
-        .rockops-documents-card-info {
+        .oretech-documents-card-info {
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
@@ -508,14 +508,14 @@
                 gap: 0.25rem;
             }
 
-            .rockops-documents-card-size {
+            .oretech-documents-card-size {
                 font-weight: 500;
             }
         }
     }
 }
 
-.rockops-documents-action-btn {
+.oretech-documents-action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -556,7 +556,7 @@
    MODAL STYLES
    ==================================== */
 
-.rockops-documents-modal-overlay {
+.oretech-documents-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -571,7 +571,7 @@
     backdrop-filter: blur(4px);
 }
 
-.rockops-documents-modal {
+.oretech-documents-modal {
     background: var(--section-background-color);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
@@ -581,7 +581,7 @@
     overflow-y: auto;
     animation: modalSlideUp 0.3s ease-out;
 
-    .rockops-documents-modal-header {
+    .oretech-documents-modal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -602,7 +602,7 @@
             }
         }
 
-        .rockops-documents-modal-close {
+        .oretech-documents-modal-close {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -623,11 +623,11 @@
         }
     }
 
-    .rockops-documents-modal-form {
+    .oretech-documents-modal-form {
         padding: 1.5rem;
     }
 
-    .rockops-documents-form-group {
+    .oretech-documents-form-group {
         margin-bottom: 1.5rem;
 
         label {
@@ -661,7 +661,7 @@
             }
         }
 
-        .rockops-documents-file-input {
+        .oretech-documents-file-input {
             position: relative;
 
             input[type="file"] {
@@ -672,7 +672,7 @@
                 cursor: pointer;
             }
 
-            .rockops-documents-file-input-label {
+            .oretech-documents-file-input-label {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -703,7 +703,7 @@
             }
         }
 
-        .rockops-documents-file-preview {
+        .oretech-documents-file-preview {
             display: flex;
             align-items: center;
             gap: 0.75rem;
@@ -731,7 +731,7 @@
         }
     }
 
-    .rockops-documents-modal-actions {
+    .oretech-documents-modal-actions {
         display: flex;
         justify-content: flex-end;
         gap: 1rem;
@@ -741,7 +741,7 @@
         @media (max-width: 480px) {
             flex-direction: column;
 
-            .rockops-btn {
+            .oretech-btn {
                 width: 100%;
             }
         }
@@ -763,7 +763,7 @@
    BUTTON STYLES (extending existing)
    ==================================== */
 
-.rockops-btn {
+.oretech-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -824,66 +824,66 @@
    ==================================== */
 
 @media (max-width: 1024px) {
-    .rockops-documents-page {
+    .oretech-documents-page {
         padding: 1.5rem;
     }
 
-    .rockops-documents-grid.grid-view {
+    .oretech-documents-grid.grid-view {
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     }
 }
 
 @media (max-width: 768px) {
-    .rockops-documents-page {
+    .oretech-documents-page {
         padding: 1rem;
     }
 
-    .rockops-documents-header {
-        .rockops-documents-title {
+    .oretech-documents-header {
+        .oretech-documents-title {
             font-size: 1.5rem;
         }
     }
 
-    .rockops-documents-controls {
+    .oretech-documents-controls {
         padding: 1rem;
     }
 
-    .rockops-documents-grid {
+    .oretech-documents-grid {
         padding: 1rem;
 
         &.grid-view {
             gap: 1rem;
         }
 
-        &.list-view .rockops-documents-card {
+        &.list-view .oretech-documents-card {
             padding: 1rem;
         }
     }
 
-    .rockops-documents-modal {
+    .oretech-documents-modal {
         margin: 0.5rem;
 
-        .rockops-documents-modal-header,
-        .rockops-documents-modal-form {
+        .oretech-documents-modal-header,
+        .oretech-documents-modal-form {
             padding: 1rem;
         }
     }
 }
 
 @media (max-width: 480px) {
-    .rockops-documents-card {
-        .rockops-documents-card-header {
+    .oretech-documents-card {
+        .oretech-documents-card-header {
             flex-direction: column;
             align-items: stretch;
 
-            .rockops-documents-card-actions {
+            .oretech-documents-card-actions {
                 justify-content: center;
                 margin-top: 0.75rem;
             }
         }
     }
 
-    .rockops-documents-action-btn {
+    .oretech-documents-action-btn {
         width: 2.5rem;
         height: 2.5rem;
     }
@@ -894,15 +894,15 @@
    ==================================== */
 
 [data-theme="dark"] {
-    .rockops-documents-card-icon {
+    .oretech-documents-card-icon {
         background: rgba(106, 154, 255, 0.15);
     }
 
-    .rockops-documents-card-type {
+    .oretech-documents-card-type {
         background: rgba(106, 154, 255, 0.15);
     }
 
-    .rockops-documents-file-input-label {
+    .oretech-documents-file-input-label {
         &:hover {
             background: rgba(106, 154, 255, 0.1);
         }
@@ -914,29 +914,29 @@
    ==================================== */
 
 @media print {
-    .rockops-documents-page {
+    .oretech-documents-page {
         padding: 0;
         background: white !important;
     }
 
-    .rockops-documents-header-actions,
-    .rockops-documents-controls,
-    .rockops-documents-card-actions,
-    .rockops-documents-modal-overlay {
+    .oretech-documents-header-actions,
+    .oretech-documents-controls,
+    .oretech-documents-card-actions,
+    .oretech-documents-modal-overlay {
         display: none !important;
     }
 
-    .rockops-documents-container,
-    .rockops-documents-card {
+    .oretech-documents-container,
+    .oretech-documents-card {
         background: white !important;
         box-shadow: none !important;
         border: 1px solid #ccc !important;
     }
 
-    .rockops-documents-grid {
+    .oretech-documents-grid {
         display: block !important;
 
-        .rockops-documents-card {
+        .oretech-documents-card {
             page-break-inside: avoid;
             margin-bottom: 1rem;
             padding: 1rem;
@@ -949,8 +949,8 @@
    ==================================== */
 
 // Sarky filter toggle
-.rockops-documents-sarky-filter {
-    .rockops-documents-sarky-btn {
+.oretech-documents-sarky-filter {
+    .oretech-documents-sarky-btn {
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -980,7 +980,7 @@
 }
 
 // Sarky assignment badge
-.rockops-documents-sarky-badge {
+.oretech-documents-sarky-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
@@ -995,7 +995,7 @@
 }
 
 // Sarky action buttons
-.rockops-documents-action-btn {
+.oretech-documents-action-btn {
     &.promote {
         &:hover {
             background: var(--color-info-light);

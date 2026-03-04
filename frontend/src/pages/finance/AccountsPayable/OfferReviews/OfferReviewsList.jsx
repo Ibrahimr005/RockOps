@@ -124,7 +124,7 @@ const OfferReviewsList = () => {
             label: 'Review',
             icon: <FiEye />,
             onClick: handleReview,
-            className: 'rockops-table__action-button primary',
+            className: 'oretech-table__action-button primary',
             show: (row) => !row.status // Only show for pending offers
         }
     ];

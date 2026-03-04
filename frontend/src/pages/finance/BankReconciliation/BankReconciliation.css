@@ -474,12 +474,12 @@
 }
 
 /* Common table customizations */
-.bank-reconciliation-table .rockops-table__container {
+.bank-reconciliation-table .oretech-table__container {
     margin: 0;
     box-shadow: none;
 }
 
-.bank-reconciliation-table .rockops-table__header-container {
+.bank-reconciliation-table .oretech-table__header-container {
     padding: 1rem 0;
 }
 
@@ -893,11 +893,11 @@
 }
 
 /* Common table customizations */
-.bank-reconciliation-table .rockops-table__container {
+.bank-reconciliation-table .oretech-table__container {
     margin: 0;
     box-shadow: none;
 }
 
-.bank-reconciliation-table .rockops-table__header-container {
+.bank-reconciliation-table .oretech-table__header-container {
     padding: 1rem 0;
 }

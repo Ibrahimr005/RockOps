@@ -175,13 +175,13 @@ const PaymentRequestsList = () => {
         //     label: 'View Details',
         //     icon: <FiEye />,
         //     onClick: handleView,
-        //     className: 'rockops-table__action-button primary'
+        //     className: 'oretech-table__action-button primary'
         // },
         // {
         //     label: 'Approve/Reject',
         //     icon: <FiCheckCircle />,
         //     onClick: handleApproveReject,
-        //     className: 'rockops-table__action-button success',
+        //     className: 'oretech-table__action-button success',
         //     show: (row) => row.status === 'PENDING'
         // }
     ];

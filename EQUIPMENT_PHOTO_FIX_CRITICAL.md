@@ -18,7 +18,7 @@ After implementing the folder structure refactor, equipment photos were **not lo
 MinIO presigned URLs generated with S3 SDK use the internal endpoint (`http://minio:9000` from Docker), making them **inaccessible from the browser**.
 
 ### Issue 2: No Fallback for Old Structure
-Code only checked new folder structure (`rockops/equipment/{id}/`), ignoring existing equipment in old buckets.
+Code only checked new folder structure (`oretech/equipment/{id}/`), ignoring existing equipment in old buckets.
 
 ### Issue 3: Public Bucket Strategy
 For MinIO with public read policy, presigned URLs are **unnecessary** and cause complications. Direct URLs work better.
@@ -29,7 +29,7 @@ For MinIO with public read policy, presigned URLs are **unnecessary** and cause 
 
 **MinIO (Local Development):**
 - When `aws.s3.public-url` is set → Use **direct public URLs**
-- Format: `http://localhost:9000/rockops/equipment/{id}/filename.jpg`
+- Format: `http://localhost:9000/oretech/equipment/{id}/filename.jpg`
 - No presigned URL generation needed
 - Avoids Docker hostname issues
 
@@ -42,9 +42,9 @@ For MinIO with public read policy, presigned URLs are **unnecessary** and cause 
 
 Equipment photo retrieval now checks **both locations**:
 
-1. **First**: New folder structure in `rockops` bucket
+1. **First**: New folder structure in `oretech` bucket
    ```
-   rockops/equipment/{uuid}/Main_Image_*.jpg
+   oretech/equipment/{uuid}/Main_Image_*.jpg
    ```
 
 2. **Fallback**: Old bucket structure (if first fails)
@@ -64,7 +64,7 @@ Added comprehensive logging to diagnose issues:
 
 ```java
 ✅ Found equipment photo in new structure: equipment/uuid/Main_Image_file.jpg
-✅ Using direct public URL: http://localhost:9000/rockops/...
+✅ Using direct public URL: http://localhost:9000/oretech/...
 ⚠️ No Main_Image found in new structure, checking old bucket structure...
 ✅ Found equipment photo in OLD bucket structure: Main_Image_file.jpg
 ⚠️ MIGRATION RECOMMENDED: This equipment still uses old bucket structure
@@ -93,7 +93,7 @@ Ensure these settings are correct:
 
 ```properties
 # AWS S3 Configuration
-aws.s3.bucket-name=rockops
+aws.s3.bucket-name=oretech
 aws.s3.region=us-east-1
 aws.s3.enabled=true
 aws.s3.public-url=http://localhost:9000  # CRITICAL for MinIO direct URLs
@@ -121,7 +121,7 @@ storage.type=minio  # or 's3' for production
 
 2. **Check MinIO:**
    - Visit http://localhost:9001 (minioadmin/minioadmin)
-   - Verify `rockops` bucket exists
+   - Verify `oretech` bucket exists
    - Check `equipment/{uuid}/` folders contain photos
 
 3. **Test Equipment List:**
@@ -132,28 +132,28 @@ storage.type=minio  # or 's3' for production
 
 4. **Test New Equipment:**
    - Create new equipment with photo
-   - **Expected:** Photo uploads to `rockops/equipment/{id}/`
+   - **Expected:** Photo uploads to `oretech/equipment/{id}/`
    - **Expected:** Photo displays immediately
 
 5. **Check Backend Logs:**
    ```
    Look for:
    ✅ Found equipment photo in new structure: equipment/...
-   ✅ Using direct public URL: http://localhost:9000/rockops/...
+   ✅ Using direct public URL: http://localhost:9000/oretech/...
    ```
 
 ### Production:
 
 1. **Deploy backend** to Render
 2. **Check environment variables** on Render:
-   - `AWS_S3_BUCKET_NAME=rockops`
+   - `AWS_S3_BUCKET_NAME=oretech`
    - `AWS_S3_ENABLED=true`
    - `STORAGE_TYPE=s3`
    - `AWS_S3_PUBLIC_URL` should be **empty** (for presigned URLs)
 
 3. **Test equipment pages:**
-   - dev-rock-ops.vercel.app
-   - rock-ops.vercel.app
+   - dev-oretech.vercel.app
+   - oretech.vercel.app
 
 4. **Monitor logs** on Render for warnings about old structure
 
@@ -161,12 +161,12 @@ storage.type=minio  # or 's3' for production
 
 ### Local MinIO (Direct URLs):
 ```
-http://localhost:9000/rockops/equipment/a7807e15-0652-4503-94ea-2aa9374ac9dc/Main_Image_photo.jpg
+http://localhost:9000/oretech/equipment/a7807e15-0652-4503-94ea-2aa9374ac9dc/Main_Image_photo.jpg
 ```
 
 ### Production S3 (Presigned URLs):
 ```
-https://rockops.s3.us-east-1.amazonaws.com/equipment/a7807e15-.../Main_Image_photo.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=...
+https://oretech.s3.us-east-1.amazonaws.com/equipment/a7807e15-.../Main_Image_photo.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=...
 ```
 
 ### Old Structure (Backward Compatibility):
@@ -193,7 +193,7 @@ http://localhost:9000/equipment-a7807e15-0652-4503-94ea-2aa9374ac9dc/Main_Image_
 
 3. **Check MinIO bucket policy:**
    - Visit http://localhost:9001
-   - Select `rockops` bucket
+   - Select `oretech` bucket
    - Go to "Access Policy"
    - Should be "Public" or have read policy
 
@@ -215,11 +215,11 @@ http://localhost:9000/equipment-a7807e15-0652-4503-94ea-2aa9374ac9dc/Main_Image_
 
 1. **Verify upload succeeded:**
    - Check MinIO UI: http://localhost:9001
-   - Look for `rockops/equipment/{new-equipment-id}/` folder
+   - Look for `oretech/equipment/{new-equipment-id}/` folder
 
 2. **Check backend logs** during upload:
    ```
-   Should see: ✅ Using single bucket 'rockops' with folder structure
+   Should see: ✅ Using single bucket 'oretech' with folder structure
    ```
 
 3. **Verify file key format:**
@@ -256,10 +256,10 @@ docker exec -it minio-dev sh
 mc alias set local http://localhost:9000 minioadmin minioadmin
 
 # For each old bucket:
-mc cp --recursive local/equipment-{uuid}/ local/rockops/equipment/{uuid}/
+mc cp --recursive local/equipment-{uuid}/ local/oretech/equipment/{uuid}/
 
 # Verify copy succeeded
-mc ls local/rockops/equipment/{uuid}/
+mc ls local/oretech/equipment/{uuid}/
 
 # Optionally remove old bucket
 mc rb --force local/equipment-{uuid}
@@ -274,10 +274,10 @@ aws s3 ls | grep "equipment-"
 OLD_BUCKET="equipment-a7807e15-0652-4503-94ea-2aa9374ac9dc"
 UUID="a7807e15-0652-4503-94ea-2aa9374ac9dc"
 
-aws s3 sync s3://$OLD_BUCKET/ s3://rockops/equipment/$UUID/
+aws s3 sync s3://$OLD_BUCKET/ s3://oretech/equipment/$UUID/
 
 # Verify
-aws s3 ls s3://rockops/equipment/$UUID/
+aws s3 ls s3://oretech/equipment/$UUID/
 
 # Delete old bucket (after verification)
 aws s3 rb s3://$OLD_BUCKET --force
