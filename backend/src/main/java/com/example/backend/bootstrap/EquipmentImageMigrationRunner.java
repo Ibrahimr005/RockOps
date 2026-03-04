@@ -62,11 +62,12 @@ public class EquipmentImageMigrationRunner implements ApplicationRunner {
                     equipmentRepository.save(equipment);
                     successCount++;
                     // Basic rate limiting to avoid slamming S3 from a burst
-                    Thread.sleep(100); 
+                    Thread.sleep(100);
                 } else {
                     noImageCount++;
-                    // Optionally set to empty string or flag to stop retrying?
-                    // For now, leaving null means we'll retry next startup, which is safe.
+                    // Mark as checked so we don't re-scan S3 on every startup
+                    equipment.setImageStorageKey("");
+                    equipmentRepository.save(equipment);
                 }
 
             } catch (Exception e) {
