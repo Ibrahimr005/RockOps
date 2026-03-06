@@ -99,7 +99,7 @@ public class EquipmentService {
     // GET methods
 
     public List<EquipmentDTO> getAllEquipment() {
-        List<Equipment> equipments = equipmentRepository.findAll();
+        List<Equipment> equipments = equipmentRepository.findAllWithAssociations();
         return equipments.stream()
                 .map(equipment -> {
                     EquipmentDTO dto = EquipmentDTO.fromEntity(equipment);
