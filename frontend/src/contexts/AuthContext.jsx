@@ -18,13 +18,13 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await authService.authenticate({ username, password });
             const userData = response.data;
-            const { token: jwtToken, role, firstName, lastName, username: userName } = userData;
+            const { token: jwtToken, role, firstName, lastName, username: userName, id } = userData;
 
             // Save token to localStorage
             localStorage.setItem('token', jwtToken);
 
             // Save user info to localStorage for persistence
-            const userInfo = { role, firstName, lastName, username: userName };
+            const userInfo = { id, role, firstName, lastName, username: userName };
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
             // Update state

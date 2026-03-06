@@ -221,6 +221,12 @@ const Sidebar = () => {
             roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
         },
         {
+            title: 'My Tasks',
+            icon: <FaTasks/>,
+            path: '/my-tasks',
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
+        },
+        {
             title: 'Sites',
             icon: <FaMapMarkerAlt/>,
             path: '/sites',
@@ -633,7 +639,16 @@ const Sidebar = () => {
             title: 'Secretary',
             icon: <FaClipboard/>,
             path: '/secretary',
-            roles: [ADMIN, USER, SITE_ADMIN, SECRETARY]
+            roles: [ADMIN, SECRETARY],  // remove USER and SITE_ADMIN
+            hasSubmenu: true,
+            submenuItems: [
+                {
+                    title: 'Tasks',
+                    icon: <FaTasks/>,
+                    path: '/secretary/tasks',
+                    roles: [ADMIN, SECRETARY]
+                }
+            ]
         },
         {
             title: 'Settings',

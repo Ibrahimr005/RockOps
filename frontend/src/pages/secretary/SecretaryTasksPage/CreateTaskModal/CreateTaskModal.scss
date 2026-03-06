@@ -1,0 +1,8 @@
+// All base styles come from global modal.scss
+// Only task-modal-specific overrides here
+
+.modal-container {
+  .modal-body {
+    max-height: calc(90vh - 200px);
+  }
+}
