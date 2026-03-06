@@ -1,1166 +1,930 @@
-@import '../../../styles/theme-variables.css';
-@import '../../../styles/primary-button.scss';
+// ============================================================================
+// Equipment Sarky Matrix - Modern Data Grid Styles
+// A clean, professional spreadsheet-like interface for work hour tracking
+// ============================================================================
 
+// ---------------------------------------------------------------------------
+// Main Container
+// ---------------------------------------------------------------------------
 .sarky-matrix-container {
   background: var(--main-background-color);
   padding: 0;
   border-radius: var(--radius-md);
-  // Remove scroll behavior from container to avoid conflicts
-  // Only the matrix-wrapper should handle scrolling
   height: auto;
   overflow: visible;
-  contain: layout style paint;
+}
 
-  // Loading state
-  .sarky-matrix-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 400px;
+// ---------------------------------------------------------------------------
+// Loading State
+// ---------------------------------------------------------------------------
+.sarky-matrix-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: var(--spacing-md);
 
-    .loader {
-      width: 48px;
-      height: 48px;
-      border: 4px solid var(--border-color);
-      border-top: 4px solid var(--color-primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 16px;
-    }
-
-    p {
-      color: var(--color-text-secondary);
-      font-size: 16px;
-    }
+  .loader {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: sarky-spin 0.8s linear infinite;
   }
 
-  // Header section - Optimized for single scroll container
-  .matrix-header-sticky {
-    background: var(--section-background-color);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: var(--shadow-sm);
-    // Static positioning to avoid scroll conflicts
-    position: static;
-    z-index: auto;
-    
-    // Remove hardware acceleration to prevent layer conflicts
-    will-change: auto;
-    transform: none;
-    
-    // Consistent styling regardless of scroll position
-    &.stuck {
+  p {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0;
+  }
+}
+
+@keyframes sarky-spin {
+  to { transform: rotate(360deg); }
+}
+
+// ---------------------------------------------------------------------------
+// Controls Bar
+// ---------------------------------------------------------------------------
+.sarky-matrix-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--section-background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+}
+
+// ---------------------------------------------------------------------------
+// View Mode Toggle (Month / Custom)
+// ---------------------------------------------------------------------------
+.sarky-matrix-view-toggle {
+  display: inline-flex;
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  border: 1px solid var(--border-color);
+
+  button {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    font-family: var(--font-family);
+    cursor: pointer;
+    border-radius: calc(var(--radius-sm) - 2px);
+    transition: all var(--transition-fast) ease;
+    white-space: nowrap;
+
+    &:hover:not(.active) {
+      color: var(--color-text-primary);
+      background: var(--color-surface-hover);
+    }
+
+    &.active {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
       box-shadow: var(--shadow-sm);
     }
-
-    .header-info {
-      margin-bottom: 20px;
-
-      h2 {
-        margin: 0 0 8px 0;
-        color: var(--head-title-color);
-        font-size: 1.5rem;
-        font-weight: var(--bold-font-weight);
-      }
-
-      p {
-        margin: 0;
-        color: var(--color-text-secondary);
-        font-size: 1rem;
-      }
-    }
-
-    .header-controls {
-      display: flex;
-      gap: 24px;
-      align-items: center;
-      flex-wrap: wrap;
-
-      .view-toggle {
-        display: flex;
-        background: var(--color-surface-hover);
-        border-radius: var(--radius-md);
-        padding: 4px;
-        border: 1px solid var(--border-color);
-
-        button {
-          padding: 8px 16px;
-          border: none;
-          background: transparent;
-          color: var(--color-text-secondary);
-          font-weight: 500;
-          cursor: pointer;
-          border-radius: var(--radius-sm);
-          transition: all var(--transition-fast);
-
-          &:hover {
-            color: var(--color-text-primary);
-          }
-
-          &.active {
-            background: var(--color-primary);
-            color: var(--text-hover);
-          }
-        }
-      }
-
-      .date-selector {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-
-        select {
-          padding: 8px 12px;
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-sm);
-          background: var(--color-surface);
-          color: var(--color-text-primary);
-          font-weight: 500;
-          cursor: pointer;
-
-          &:focus {
-            outline: none;
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
-          }
-        }
-
-        .time-range-files-btn {
-          // Use global button styling - extends .btn class
-          @extend .btn;
-          @extend .btn-info;
-          @extend .btn-sm;
-          
-          // Override only specific properties for this context
-          font-size: 13px;
-          white-space: nowrap;
-          min-width: auto;
-        }
-
-        // Custom date range styling
-        .custom-date-range {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          padding: 8px 12px;
-          background: var(--color-surface);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-sm);
-          
-          .date-input-group {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            
-            label {
-              font-size: 14px;
-              font-weight: 500;
-              color: var(--color-text-secondary);
-              white-space: nowrap;
-            }
-            
-            input[type="date"] {
-              padding: 6px 8px;
-              border: 1px solid var(--border-color);
-              border-radius: var(--radius-sm);
-              background: var(--color-surface);
-              color: var(--color-text-primary);
-              font-size: 14px;
-              min-width: 140px;
-              font-weight: 500;
-              
-              &:focus {
-                outline: none;
-                border-color: var(--color-primary);
-                box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
-              }
-              
-              &::-webkit-calendar-picker-indicator {
-                cursor: pointer;
-                border-radius: 4px;
-                margin-right: 2px;
-                opacity: 0.6;
-                filter: invert(0.8);
-              }
-              
-              &::-webkit-calendar-picker-indicator:hover {
-                opacity: 1;
-              }
-            }
-          }
-          
-          .apply-custom-range-btn {
-            padding: 6px 12px;
-            background: var(--color-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-            
-            &:hover {
-              background: var(--color-primary-hover);
-              transform: translateY(-1px);
-            }
-            
-            &:active {
-              transform: translateY(0);
-            }
-          }
-        }
-      }
-
-      .driver-selector {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-
-        .driver-selector-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-
-          label {
-            color: var(--color-text-secondary);
-            font-weight: 500;
-          }
-
-          select {
-            background: var(--color-surface);
-            color: var(--color-text-primary);
-            border: 1px solid var(--border-color);
-            padding: 8px 12px;
-            border-radius: var(--radius-sm);
-            font-weight: 500;
-            min-width: 150px;
-
-            &:focus {
-              outline: none;
-              border-color: var(--color-primary);
-              box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
-            }
-          }
-        }
-
-        .default-driver-info {
-          display: flex;
-          align-items: flex-start;
-          gap: 8px;
-          background: var(--color-info-light);
-          border: 1px solid var(--color-info);
-          border-radius: var(--radius-md);
-          padding: 12px;
-          margin-top: 4px;
-
-          .info-icon {
-            font-size: 16px;
-            flex-shrink: 0;
-            margin-top: 1px;
-          }
-
-          .info-text {
-            font-size: 14px;
-            line-height: 1.4;
-            color: var(--color-info-dark);
-
-            strong {
-              color: var(--color-info-darker);
-              font-weight: 600;
-            }
-          }
-        }
-      }
-
-      .non-drivable-indicator {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        label {
-          color: var(--color-text-secondary);
-          font-weight: 500;
-        }
-
-        .no-driver-required {
-          // Use global button styling - extends .btn class
-          @extend .btn;
-          @extend .btn-success;
-          @extend .btn-sm;
-          
-          // Override only specific properties for this context
-          font-size: 13px;
-          white-space: nowrap;
-          min-width: auto;
-          gap: 6px;
-          pointer-events: none; // This is just an indicator, not clickable
-        }
-      }
-
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-left: auto;
-
-        .changes-indicator {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-
-          .unsaved-changes {
-            color: var(--color-warning);
-            font-weight: var(--bold-font-weight);
-            font-size: 13px;
-          }
-
-          .validation-errors {
-            color: var(--color-warning);
-            font-weight: var(--bold-font-weight);
-            font-size: 12px;
-            animation: pulseWarning 2s infinite;
-          }
-        }
-
-        .btn-save {
-          padding: 10px 20px;
-          border: none;
-          border-radius: var(--radius-md);
-          background: var(--color-primary);
-          color: var(--text-hover);
-          font-weight: var(--bold-font-weight);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          box-shadow: var(--shadow-sm);
-          white-space: nowrap;
-          font-size: 14px;
-
-          &:hover:not(:disabled) {
-            background: var(--color-primary-dark);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-          }
-
-          &:disabled {
-            background: var(--color-surface-disabled);
-            color: var(--color-text-disabled);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-          }
-
-          &.has-validation-errors {
-            background: var(--color-warning-light, #fff3cd);
-            color: var(--color-warning-dark, #856404);
-            border-color: var(--color-warning, #ffc107);
-            cursor: not-allowed;
-
-            &:hover {
-              background: var(--color-warning-light, #fff3cd);
-              transform: none;
-              box-shadow: none;
-            }
-          }
-        }
-      }
-    }
   }
+}
 
+// ---------------------------------------------------------------------------
+// Date Selector (Month/Year dropdowns or custom date range)
+// ---------------------------------------------------------------------------
+.sarky-matrix-date-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 
-
-  // Quick tips
-  .quick-tips {
-    background: var(--color-info-light);
-    color: var(--text-hover);
-    padding: 12px 20px;
-    border-radius: var(--radius-md);
-    margin-bottom: 20px;
-    display: flex;
-    gap: 24px;
-    font-size: 14px;
-    align-items: center;
-    box-shadow: var(--shadow-sm);
-
-    span:first-child {
-      font-weight: var(--bold-font-weight);
-    }
-  }
-
-  // Matrix wrapper - Fixed scrolling behavior
-  .matrix-wrapper {
-    background: var(--section-background-color);
+  select,
+  input[type="date"] {
+    padding: 6px 10px;
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
-    // Single scroll container - remove conflicting scroll settings
-    overflow: auto;
-    // Optimize scrolling performance
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    // Set reasonable max height to prevent triple scrolling
-    max-height: calc(100vh - 300px);
-    min-height: 400px;
-    // Optimize rendering performance
-    will-change: scroll-position;
-    contain: layout style paint;
-    // Ensure proper scroll containment
-    overscroll-behavior: contain;
-
-    .sarky-matrix {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-
-      thead {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: var(--table-header-bg);
-        // Ensure smooth sticky behavior
-        will-change: transform;
-        transform: translateZ(0);
-
-        th {
-          padding: 16px 8px;
-          text-align: center;
-          font-weight: var(--bold-font-weight);
-          color: var(--color-text-primary);
-          border-bottom: 2px solid var(--table-border);
-          border-right: 1px solid var(--table-border);
-          white-space: nowrap;
-
-          &.date-header {
-            text-align: left;
-            padding-left: 16px;
-            min-width: 120px;
-            background: var(--table-header-bg);
-            position: sticky;
-            left: 0;
-            z-index: 11;
-          }
-
-          &.worktype-header {
-            min-width: 100px;
-            max-width: 150px;
-            word-wrap: break-word;
-
-            .unit-label {
-              display: block;
-              font-size: 11px;
-              font-weight: normal;
-              color: var(--color-text-secondary);
-              margin-top: 2px;
-            }
-          }
-
-          &.add-worktype-header {
-            min-width: 80px;
-          }
-
-          &.total-header {
-            min-width: 80px;
-            background: var(--color-info-light);
-          }
-        }
-      }
-
-      tbody {
-        tr {
-          border-bottom: 1px solid var(--table-border);
-
-          &.blocked {
-            background: var(--color-error-light);
-            opacity: 0.7;
-          }
-
-          &:hover {
-            background: var(--table-row-hover);
-          }
-        }
-
-        .date-cell {
-          padding: 12px 16px;
-          background: var(--table-header-bg);
-          position: sticky;
-          left: 0;
-          z-index: 5;
-          border-right: 1px solid var(--table-border);
-
-          .date-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-
-            .date-full {
-              font-weight: var(--bold-font-weight);
-              font-size: 14px;
-              color: var(--color-text-primary);
-              line-height: 1.2;
-              margin-bottom: 2px;
-            }
-
-            .date-weekday {
-              font-size: 11px;
-              color: var(--color-text-secondary);
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-          }
-        }
-
-        .hours-cell {
-          padding: 4px;
-          text-align: center;
-          border-right: 1px solid var(--table-border);
-          vertical-align: middle;
-          position: relative;
-
-          .cell-content {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            &:hover {
-              .cell-actions {
-                .delete-entry-btn.enhanced-delete {
-                  opacity: 0.9;
-                  transform: scale(1.05);
-                }
-
-                .driver-indicator {
-                  transform: scale(1.1);
-                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-                }
-              }
-            }
-
-            .delete-entry-btn.enhanced-delete:hover {
-              opacity: 1 !important;
-              transform: scale(1.2) !important;
-            }
-
-            // Action buttons container for better alignment
-            .cell-actions {
-              position: absolute;
-              top: -14px;
-              right: -14px;
-              display: flex;
-              gap: 4px;
-              z-index: inherit; // Inherit from parent to work with row z-index management
-              align-items: center;
-
-              // Smooth entrance animation
-              animation: actionsSlideIn 0.2s ease-out;
-
-              // Optional: Add a subtle background for grouping
-              &::before {
-                content: '';
-                position: absolute;
-                top: -2px;
-                left: -2px;
-                right: -2px;
-                bottom: -2px;
-                background: rgba(255, 255, 255, 0.9);
-                border-radius: 12px;
-                z-index: -1;
-                opacity: 0;
-                transition: opacity 0.2s ease;
-                backdrop-filter: blur(4px);
-              }
-
-              &:hover::before {
-                opacity: 1;
-              }
-            }
-
-            .hours-input {
-              width: 60px;
-              padding: 6px 8px;
-              border: 1px solid var(--border-color);
-              border-radius: var(--radius-sm);
-              background: var(--color-surface);
-              color: var(--color-text-primary);
-              font-size: 14px;
-              text-align: center;
-              transition: all var(--transition-fast);
-
-              &:focus {
-                outline: none;
-                border-color: var(--color-primary);
-                box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
-              }
-
-              &.has-value {
-                background: var(--color-primary-light);
-                border-color: var(--color-primary);
-                font-weight: var(--bold-font-weight);
-              }
-
-              &.existing {
-                background: var(--color-success-light);
-                border-color: var(--color-success);
-              }
-
-              &.blocked {
-                background: var(--color-error-light);
-                border-color: var(--color-error);
-                cursor: not-allowed;
-                opacity: 0.6;
-              }
-
-              &.invalid-driver {
-                background: var(--color-danger-light);
-                border: 2px solid var(--color-danger);
-                color: var(--color-danger-dark);
-                box-shadow: 0 0 8px rgba(var(--color-danger-rgb), 0.3);
-              }
-
-              &.using-default-driver {
-                border-left: 3px solid var(--color-info);
-                background: rgba(var(--color-info-rgb, 59, 130, 246), 0.02);
-              }
-
-              &:disabled {
-                background: var(--color-surface-disabled);
-                color: var(--color-text-disabled);
-                cursor: not-allowed;
-              }
-            }
-
-            .driver-indicator {
-              width: 22px;
-              height: 22px;
-              background: var(--color-primary); // Blue for main driver
-              color: var(--text-hover);
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              cursor: pointer;
-              font-size: 10px;
-              transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-              border: 2px solid var(--color-surface);
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-              position: relative;
-              z-index: 1; // Ensure it stays below dropdown content
-
-              &:hover {
-                transform: scale(1.15);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-              }
-
-              &:active {
-                transform: scale(1.05);
-              }
-
-              &.custom-driver {
-                background: var(--color-warning, #ff9800); // Yellow for custom driver (not main driver)
-
-                &:hover {
-                  background: var(--color-warning-dark, #f57c00);
-                }
-              }
-
-              svg {
-                width: 12px;
-                height: 12px;
-                transition: transform var(--transition-fast);
-              }
-
-              &:hover svg {
-                transform: rotate(10deg);
-              }
-            }
-
-            .delete-entry-btn {
-              width: 22px;
-              height: 22px;
-              background: rgba(244, 67, 54, 0.85);
-              color: white;
-              border: none;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              cursor: pointer;
-              font-size: 12px;
-              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-              opacity: 0;
-              backdrop-filter: blur(2px);
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-              border: 2px solid var(--color-surface);
-
-              &.enhanced-delete {
-                &:hover:not(:disabled),
-                &.delete-hover {
-                  transform: scale(1.2);
-                  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.5);
-                  opacity: 1 !important;
-                  background: #f44336;
-                }
-
-                &.deleting {
-                  background: #d32f2f;
-                  transform: scale(0.9);
-                  opacity: 0.9;
-                  animation: deleteAnimation 0.15s ease-out;
-                }
-
-                &:active {
-                  transform: scale(0.85);
-                }
-              }
-
-              &:disabled {
-                background: var(--color-text-disabled);
-                cursor: not-allowed;
-                opacity: 0.2;
-                transform: none;
-                box-shadow: none;
-              }
-
-              svg {
-                width: 12px;
-                height: 12px;
-                transition: transform 0.2s ease;
-              }
-
-              &:hover:not(:disabled) svg {
-                transform: rotate(5deg);
-              }
-            }
-
-            // Animation for delete feedback
-            @keyframes deleteAnimation {
-              0% { transform: scale(1.2); }
-              50% { transform: scale(0.8); }
-              100% { transform: scale(0.9); }
-            }
-
-            // Animation for dropdown
-            @keyframes dropdownSlideIn {
-              0% {
-                opacity: 0;
-                transform: translateY(-10px) scale(0.95);
-              }
-              100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-              }
-            }
-
-            // Animation for action buttons
-            @keyframes actionsSlideIn {
-              0% {
-                opacity: 0;
-                transform: translateY(-5px) scale(0.8);
-              }
-              100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-              }
-            }
-
-            // Animation for invalid driver warning
-            @keyframes pulseWarning {
-              0%, 100% {
-                border-color: var(--color-warning, #ffc107);
-                box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4);
-              }
-              50% {
-                border-color: var(--color-warning-dark, #e0a800);
-                box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.2);
-              }
-            }
-
-            .driver-required-warning {
-              font-size: 16px;
-              color: var(--color-warning, #ffc107);
-              animation: bounce 1.5s infinite;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              width: 20px;
-              height: 20px;
-
-              &:hover {
-                transform: scale(1.2);
-              }
-            }
-
-            .blocked-overlay {
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              background: rgba(244, 67, 54, 0.1);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 16px;
-              border-radius: var(--radius-sm);
-              z-index: 2;
-              pointer-events: none;
-            }
-          }
-        }
-
-        .empty-cell {
-          padding: 12px;
-          text-align: center;
-          border-right: 1px solid var(--table-border);
-        }
-
-        .total-cell {
-          padding: 12px;
-          text-align: center;
-          border-right: 1px solid var(--table-border);
-          background: var(--color-info-light);
-
-          .day-total {
-            font-weight: var(--bold-font-weight);
-            color: var(--color-text-primary);
-          }
-        }
-      }
-
-      tfoot {
-        background: var(--table-header-bg);
-        position: sticky;
-        bottom: 0;
-        z-index: 10;
-        // Ensure smooth sticky behavior
-        will-change: transform;
-        transform: translateZ(0);
-        // Add border to separate from content
-        box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-
-        .totals-row {
-          td {
-            padding: 16px 8px;
-            text-align: center;
-            font-weight: var(--bold-font-weight);
-            color: var(--color-text-primary);
-            border-top: 2px solid var(--table-border);
-            border-right: 1px solid var(--table-border);
-            background: var(--table-header-bg);
-
-            &.total-label {
-              text-align: left;
-              padding-left: 16px;
-              background: var(--table-header-bg);
-              position: sticky;
-              left: 0;
-              z-index: 11;
-            }
-
-            &.grand-total {
-              background: var(--color-success-light);
-              font-size: 16px;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Add work type button
-  .add-worktype-btn {
-    padding: 6px 12px;
-    border: 1px dashed var(--color-primary);
     border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--color-primary);
-    font-size: 12px;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: border-color var(--transition-fast) ease;
 
-    &:hover {
-      background: var(--color-primary-light);
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.12);
     }
   }
 
-  // Z-index management for table rows and dropdowns
+  label {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Driver Selector
+// ---------------------------------------------------------------------------
+.sarky-matrix-driver-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+
+  label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+
+  select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family);
+    font-weight: 500;
+    min-width: 140px;
+    cursor: pointer;
+    transition: border-color var(--transition-fast) ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.12);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Non-Drivable Indicator Badge
+// ---------------------------------------------------------------------------
+.sarky-matrix-non-drivable-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(var(--color-success-rgb), 0.1);
+  color: var(--color-success);
+  border: 1px solid rgba(var(--color-success-rgb), 0.25);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Auto-Save Status Indicator (subtle, non-distracting)
+// ---------------------------------------------------------------------------
+.sarky-matrix-auto-save-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all var(--transition-normal) ease;
+  margin-left: auto;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  &.saving {
+    color: var(--color-warning);
+    background: rgba(var(--color-warning-rgb), 0.08);
+    &::before { background: var(--color-warning); }
+  }
+
+  &.saved {
+    color: var(--color-success);
+    background: rgba(var(--color-success-rgb), 0.08);
+    &::before { background: var(--color-success); }
+  }
+
+  &.unsaved {
+    color: var(--color-text-secondary);
+    background: rgba(var(--color-warning-rgb), 0.06);
+    &::before { background: var(--color-warning); }
+  }
+
+  &.error {
+    color: var(--color-danger);
+    background: rgba(var(--color-danger-rgb), 0.08);
+    &::before { background: var(--color-danger); }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Table Wrapper (scrollable container)
+// ---------------------------------------------------------------------------
+.sarky-matrix-table-wrapper {
+  background: var(--section-background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: auto;
+  max-height: calc(100vh - 280px);
+  min-height: 300px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+
+  // Subtle scrollbar styling
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color-medium);
+    border-radius: 4px;
+
+    &:hover {
+      background: var(--border-color-dark);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main Matrix Table
+// ---------------------------------------------------------------------------
+table.sarky-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  table-layout: auto;
+
+  // ==========================================================================
+  // Table Head
+  // ==========================================================================
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    th {
+      padding: 10px 8px;
+      text-align: center;
+      font-weight: var(--bold-font-weight);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-primary);
+      background: var(--table-header-bg);
+      border-bottom: 2px solid var(--table-border);
+      border-right: 1px solid var(--table-border);
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      user-select: none;
+
+      &:last-child {
+        border-right: none;
+      }
+    }
+  }
+
+  .sarky-matrix-date-header {
+    text-align: left !important;
+    padding-left: var(--spacing-md) !important;
+    min-width: 110px;
+    position: sticky;
+    left: 0;
+    z-index: 11;
+    background: var(--table-header-bg);
+  }
+
+  .sarky-matrix-worktype-header {
+    min-width: 90px;
+    max-width: 140px;
+
+    .unit-label {
+      display: block;
+      font-size: 10px;
+      font-weight: normal;
+      color: var(--color-text-muted);
+      text-transform: none;
+      letter-spacing: normal;
+      margin-top: 2px;
+    }
+  }
+
+  .sarky-matrix-total-header {
+    min-width: 72px;
+    background: var(--color-surface-tertiary);
+    color: var(--color-text-primary);
+  }
+
+  // ==========================================================================
+  // Table Body
+  // ==========================================================================
+  tbody {
+    tr {
+      border-bottom: 1px solid var(--table-border);
+      transition: background-color var(--transition-fast) ease;
+
+      &:hover {
+        background: var(--table-row-hover);
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    // Weekend rows - subtle tint
+    tr.sarky-matrix-weekend {
+      background: var(--color-surface-secondary);
+
+      .sarky-matrix-date-cell {
+        background: var(--color-surface-secondary);
+      }
+
+      &:hover {
+        background: var(--table-row-hover);
+
+        .sarky-matrix-date-cell {
+          background: var(--table-row-hover);
+        }
+      }
+    }
+
+    // Today's row - primary accent
+    tr.sarky-matrix-today {
+      border-left: 3px solid var(--color-primary);
+
+      .sarky-matrix-date-cell {
+        border-left: none;
+
+        .date-full {
+          color: var(--color-primary) !important;
+        }
+      }
+    }
+
+    // Blocked/future rows
+    tr.sarky-matrix-blocked {
+      opacity: 0.5;
+
+      .sarky-matrix-date-cell {
+        opacity: 0.7;
+      }
+    }
+  }
+
+  // ==========================================================================
+  // Date Column Cells (sticky left)
+  // ==========================================================================
+  .sarky-matrix-date-cell {
+    padding: 8px var(--spacing-md);
+    background: var(--color-surface);
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    border-right: 1px solid var(--table-border);
+    min-width: 110px;
+
+    .date-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .date-full {
+      font-weight: var(--bold-font-weight);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      line-height: 1.3;
+    }
+
+    .date-weekday {
+      font-size: 10px;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 1px;
+    }
+  }
+
+  // ==========================================================================
+  // Hours Input Cells
+  // ==========================================================================
+  .sarky-matrix-hours-cell {
+    padding: 4px;
+    text-align: center;
+    border-right: 1px solid var(--table-border);
+    vertical-align: middle;
+    position: relative;
+
+    .cell-content {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+
+      &:hover {
+        .sarky-matrix-cell-actions {
+          opacity: 1;
+          pointer-events: auto;
+        }
+      }
+    }
+  }
+
+  // ==========================================================================
+  // Number Inputs
+  // ==========================================================================
+  input.sarky-matrix-input {
+    width: 56px;
+    padding: 5px 4px;
+    border: 1px solid transparent;
+    border-radius: calc(var(--radius-sm) - 2px);
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family);
+    font-weight: 500;
+    text-align: center;
+    transition: all var(--transition-fast) ease;
+    -moz-appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    &:hover:not(:disabled):not(:focus) {
+      border-color: var(--border-color);
+      background: var(--color-surface);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      background: var(--color-surface);
+      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.15);
+    }
+
+    // Non-zero value
+    &.sarky-matrix-input-has-value {
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+      background: rgba(var(--color-primary-rgb), 0.06);
+    }
+
+    // Saved/existing data from server
+    &.sarky-matrix-input-existing {
+      color: var(--color-success);
+      font-weight: var(--bold-font-weight);
+      background: rgba(var(--color-success-rgb), 0.06);
+      border-left: 2px solid rgba(var(--color-success-rgb), 0.4);
+    }
+
+    // Blocked/disabled future input
+    &.sarky-matrix-input-blocked {
+      background: var(--color-surface-disabled);
+      color: var(--color-text-disabled);
+      cursor: not-allowed;
+      opacity: 0.45;
+      border: none;
+
+      // Diagonal stripe for blocked cells
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 4px,
+        rgba(0, 0, 0, 0.03) 4px,
+        rgba(0, 0, 0, 0.03) 8px
+      );
+    }
+
+    &:disabled {
+      background: var(--color-surface-disabled);
+      color: var(--color-text-disabled);
+      cursor: not-allowed;
+    }
+  }
+
+  // ==========================================================================
+  // Driver Label (visible in cell below the input)
+  // ==========================================================================
+  .sarky-matrix-driver-label {
+    display: block;
+    font-size: 9px;
+    line-height: 1.2;
+    color: var(--color-text-muted);
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+    margin-top: -2px;
+  }
+
+  // ==========================================================================
+  // Total Cells (daily total column)
+  // ==========================================================================
+  .sarky-matrix-total-cell {
+    padding: 8px;
+    text-align: center;
+    background: var(--color-surface-tertiary);
+    font-weight: var(--bold-font-weight);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    border-right: 1px solid var(--table-border);
+    font-variant-numeric: tabular-nums;
+  }
+
+  // ==========================================================================
+  // Footer Totals Row
+  // ==========================================================================
+  tfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+
+    .sarky-matrix-totals-row {
+      td {
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: var(--bold-font-weight);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        background: var(--table-header-bg);
+        border-top: 2px solid var(--table-border);
+        border-right: 1px solid var(--table-border);
+        font-variant-numeric: tabular-nums;
+
+        &:first-child {
+          text-align: left;
+          padding-left: var(--spacing-md);
+          position: sticky;
+          left: 0;
+          z-index: 11;
+          background: var(--table-header-bg);
+          text-transform: uppercase;
+          font-size: var(--font-size-xs);
+          letter-spacing: 0.05em;
+        }
+
+        &:last-child {
+          border-right: none;
+          background: var(--color-surface-tertiary);
+          font-size: var(--font-size-md);
+          color: var(--color-primary);
+        }
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cell Actions Container (driver indicator + delete button)
+// ---------------------------------------------------------------------------
+.sarky-matrix-cell-actions {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 6;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast) ease;
+}
+
+// ---------------------------------------------------------------------------
+// Driver Indicator (small icon in cell corner)
+// ---------------------------------------------------------------------------
+.sarky-matrix-driver-indicator {
+  width: 20px;
+  height: 20px;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  border: 2px solid var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+
+  &:hover {
+    transform: scale(1.15);
+    box-shadow: var(--shadow-md);
+  }
+
+  &.custom-driver {
+    background: var(--color-warning);
+  }
+
+  svg {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Driver Dropdown
+// ---------------------------------------------------------------------------
+.sarky-matrix-driver-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  z-index: inherit;
+}
+
+.sarky-matrix-driver-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  min-width: 180px;
+  max-width: 240px;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: sarky-dropdown-in 0.12s ease-out;
+  transform-origin: top right;
+
+  .dropdown-header {
+    padding: 8px 12px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--color-surface-secondary);
+  }
+
+  .current-driver-info {
+    padding: 8px 12px;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(var(--color-primary-rgb), 0.05);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .driver-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    transition: background-color var(--transition-fast) ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color-light);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: var(--color-surface-hover);
+    }
+
+    &.selected {
+      background: rgba(var(--color-success-rgb), 0.08);
+      color: var(--color-success);
+      font-weight: 600;
+
+      &::after {
+        content: '';
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--color-success);
+        flex-shrink: 0;
+      }
+    }
+
+    &.default {
+      background: rgba(var(--color-info-rgb), 0.06);
+
+      &:not(.selected)::after {
+        content: 'Default';
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--color-info);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+    }
+  }
+}
+
+@keyframes sarky-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Delete Entry Button (appears on hover)
+// ---------------------------------------------------------------------------
+.sarky-matrix-delete-btn {
+  width: 18px;
+  height: 18px;
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0;
+  transition: transform var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+  box-shadow: var(--shadow-sm);
+
+  &:hover:not(:disabled) {
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(var(--color-danger-rgb), 0.4);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  svg {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Add Work Type Button (in column header)
+// ---------------------------------------------------------------------------
+.sarky-matrix-add-worktype-btn {
+  padding: 4px 10px;
+  border: 1px dashed var(--color-primary);
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(var(--color-primary-rgb), 0.08);
+    border-style: solid;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Z-Index Management for Dropdown Rows
+// ---------------------------------------------------------------------------
+.sarky-matrix-container {
   tbody tr {
     position: relative;
     z-index: 1;
 
-    // When a dropdown is active in this row, elevate it above all other content
     &.active-dropdown-row {
-      position: relative;
       z-index: 1000;
     }
-
-    // Reset z-index for other rows when a dropdown is open
-    &:not(.active-dropdown-row) {
-      z-index: 1;
-    }
   }
+}
 
-  // Driver dropdown wrapper and dropdown
-  .driver-dropdown-wrapper {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    z-index: inherit;
-  }
-
-  .driver-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--color-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-xl);
-    z-index: 9999; // Maximum z-index for dropdown content
-    min-width: 180px;
-    max-width: 220px;
-    max-height: 200px;
-    overflow-y: auto;
-    margin-top: 4px;
-    animation: dropdownSlideIn 0.15s ease-out;
-    transform-origin: top right;
-
-    // Ensure dropdown is always visible and clickable
-    pointer-events: auto;
-
-    // Add backdrop filter for better visibility on complex backgrounds
-    backdrop-filter: blur(8px);
-
-    // Ensure it can't be covered by other elements
-    isolation: isolate;
-
-    // Responsive positioning adjustments
-    @media (max-width: 768px) {
-      right: auto;
-      left: 0;
-      min-width: 160px;
-      transform-origin: top left;
-    }
-
-    .dropdown-header {
-      padding: 12px 16px;
-      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-      font-weight: var(--bold-font-weight);
-      font-size: 13px;
-      color: white;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-      border-bottom: 2px solid var(--color-primary-dark);
-      border-top-left-radius: var(--radius-md);
-      border-top-right-radius: var(--radius-md);
-      letter-spacing: 0.5px;
-    }
-
-    .current-driver-info {
-      padding: 10px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--color-info-dark);
-      border-bottom: 2px solid var(--color-info);
-      background: var(--color-info-light);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      &::before {
-        content: '👤';
-        font-size: 14px;
-      }
-    }
-
-    .driver-option {
-      padding: 12px 16px;
-      cursor: pointer;
-      font-size: 14px;
-      color: var(--color-text-primary);
-      background: var(--color-surface);
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--color-surface-hover);
-      position: relative;
-
-      &:last-child {
-        border-bottom: none;
-        border-bottom-left-radius: var(--radius-md);
-        border-bottom-right-radius: var(--radius-md);
-      }
-
-      &:hover {
-        background: var(--color-surface-hover);
-        transform: translateX(4px);
-        padding-left: 20px;
-        box-shadow: inset 4px 0 0 var(--color-primary-light);
-      }
-
-      &.selected {
-        background: linear-gradient(135deg, var(--color-success-light), rgba(var(--color-success-rgb), 0.1));
-        color: var(--color-success-dark);
-        font-weight: 700;
-        border-left: 5px solid var(--color-success);
-        box-shadow: inset 0 0 10px rgba(var(--color-success-rgb), 0.1);
-
-        &::after {
-          content: '✓ CURRENT';
-          background: var(--color-success);
-          color: white;
-          font-weight: 800;
-          font-size: 10px;
-          padding: 3px 8px;
-          border-radius: 12px;
-          text-shadow: none;
-          letter-spacing: 0.5px;
-        }
-
-        &:hover {
-          background: linear-gradient(135deg, var(--color-success), rgba(var(--color-success-rgb), 0.2));
-          transform: translateX(2px);
-          padding-left: 16px;
-        }
-      }
-
-      &.default {
-        background: linear-gradient(135deg, var(--color-info-light), rgba(var(--color-info-rgb), 0.1));
-        color: var(--color-info-dark);
-        font-weight: 600;
-        border-left: 5px solid var(--color-info);
-        box-shadow: inset 0 0 10px rgba(var(--color-info-rgb), 0.1);
-
-        &:not(.selected)::after {
-          content: '⭐ DEFAULT';
-          background: var(--color-info);
-          color: white;
-          font-weight: 800;
-          font-size: 10px;
-          padding: 3px 8px;
-          border-radius: 12px;
-          letter-spacing: 0.5px;
-        }
-
-        &:hover {
-          background: linear-gradient(135deg, var(--color-info), rgba(var(--color-info-rgb), 0.2));
-          transform: translateX(2px);
-          padding-left: 16px;
-        }
-      }
-
-      &.selected.default {
-        background: linear-gradient(135deg, var(--color-warning-light), rgba(var(--color-warning-rgb), 0.15));
-        color: var(--color-warning-dark);
-        border-left: 5px solid var(--color-warning);
-        box-shadow: inset 0 0 15px rgba(var(--color-warning-rgb), 0.1);
-
-        &::after {
-          content: '✓⭐ ACTIVE DEFAULT';
-          background: var(--color-warning);
-          color: white;
-          font-weight: 800;
-          font-size: 9px;
-          padding: 4px 10px;
-          border-radius: 14px;
-          animation: pulse 2s infinite;
-          letter-spacing: 0.3px;
-        }
-
-        &:hover {
-          background: linear-gradient(135deg, var(--color-warning), rgba(var(--color-warning-rgb), 0.25));
-          transform: translateX(2px);
-          padding-left: 16px;
-        }
-      }
-    }
-
-    @keyframes pulse {
-      0%, 100% { 
-        opacity: 1; 
-        transform: scale(1);
-      }
-      50% { 
-        opacity: 0.9; 
-        transform: scale(1.02);
-      }
-    }
-  }
-
-  // Modal styles
+// ---------------------------------------------------------------------------
+// Modal (Work Type Add Modal) - Uses global modal styles as base
+// ---------------------------------------------------------------------------
+.sarky-matrix-container {
   .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: var(--spacing-md);
 
     .modal-content {
       background: var(--section-background-color);
       border-radius: var(--radius-lg);
-      padding: 24px;
-      max-width: 500px;
-      width: 90%;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+      padding: var(--spacing-lg);
+      max-width: 480px;
+      width: 100%;
       max-height: 80vh;
       overflow-y: auto;
-      box-shadow: var(--shadow-xl);
+      animation: sarky-modal-in var(--transition-normal) ease;
 
       h3 {
-        margin: 0 0 16px 0;
+        margin: 0 0 var(--spacing-sm) 0;
         color: var(--head-title-color);
-        font-size: 1.25rem;
+        font-size: var(--font-size-xl);
         font-weight: var(--bold-font-weight);
       }
 
       p {
-        margin: 0 0 16px 0;
+        margin: 0 0 var(--spacing-md) 0;
         color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
         line-height: 1.5;
       }
 
-      input {
+      input[type="text"],
+      input[type="number"],
+      select {
         width: 100%;
-        padding: 12px;
+        padding: 10px 12px;
         border: 1px solid var(--border-color);
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-sm);
         background: var(--color-surface);
         color: var(--color-text-primary);
-        font-size: 14px;
-        margin-bottom: 16px;
+        font-size: var(--font-size-sm);
+        font-family: var(--font-family);
+        margin-bottom: var(--spacing-md);
+        transition: border-color var(--transition-fast) ease;
 
         &:focus {
           outline: none;
           border-color: var(--color-primary);
-          box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
+          box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.12);
         }
       }
 
       .modal-actions {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-sm);
         justify-content: flex-end;
+        padding-top: var(--spacing-sm);
 
         button {
-          padding: 8px 16px;
+          padding: 8px 18px;
           border: 1px solid var(--border-color);
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-sm);
           background: var(--color-surface);
           color: var(--color-text-primary);
-          cursor: pointer;
+          font-size: var(--font-size-sm);
+          font-family: var(--font-family);
           font-weight: 500;
-          transition: all var(--transition-fast);
+          cursor: pointer;
+          transition: all var(--transition-fast) ease;
 
           &:hover {
             background: var(--color-surface-hover);
@@ -1168,7 +932,7 @@
 
           &.btn-primary {
             background: var(--color-primary);
-            color: var(--text-hover);
+            color: var(--color-text-inverse);
             border-color: var(--color-primary);
 
             &:hover {
@@ -1177,161 +941,211 @@
           }
         }
       }
-    }
-  }
 
-  // Spin animation
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+      // Tab buttons inside modal
+      .tab-buttons {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: var(--spacing-md);
 
-  // Responsive design
-  @media (max-width: 768px) {
-    .matrix-header-sticky {
-      .header-controls {
-        flex-direction: column;
-        gap: 16px;
-        align-items: stretch;
+        button {
+          flex: 1;
+          padding: 10px var(--spacing-md);
+          border: none;
+          background: none;
+          cursor: pointer;
+          font-size: var(--font-size-sm);
+          font-family: var(--font-family);
+          font-weight: 500;
+          color: var(--color-text-secondary);
+          transition: color var(--transition-fast) ease, border-color var(--transition-fast) ease;
+          border-bottom: 2px solid transparent;
 
-        .view-toggle,
-        .date-selector,
-        .driver-selector,
-        .non-drivable-indicator {
-          width: 100%;
-          justify-content: center;
-        }
-
-        .date-selector {
-          .custom-date-range {
-            flex-direction: column;
-            gap: 8px;
-            padding: 12px;
-
-            .date-input-group {
-              width: 100%;
-              flex-direction: column;
-              gap: 4px;
-
-              label {
-                align-self: flex-start;
-                font-size: 13px;
-              }
-
-              input[type="date"] {
-                width: 100%;
-                min-width: unset;
-              }
-            }
-
-            .apply-custom-range-btn {
-              width: 100%;
-              padding: 10px;
-            }
-          }
-        }
-
-        .header-actions {
-          margin-left: 0;
-          flex-direction: column;
-          gap: 12px;
-          align-items: center;
-
-          .changes-indicator {
-            text-align: center;
+          &.tab-active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
           }
 
-          .btn-save {
-            width: 100%;
-            padding: 12px 20px;
+          &.tab-inactive:hover {
+            color: var(--color-text-primary);
           }
         }
       }
-    }
 
-    .quick-tips {
-      flex-direction: column;
-      gap: 8px;
-      text-align: center;
-    }
-
-    .matrix-wrapper {
-      .sarky-matrix {
-        font-size: 12px;
-
-        thead th {
-          padding: 8px 4px;
-        }
-
-        tbody {
-          .date-cell {
-            padding: 8px 12px;
-            
-            .date-info {
-              .date-full {
-                font-size: 12px;
-                line-height: 1.1;
-              }
-              
-              .date-weekday {
-                font-size: 10px;
-              }
-            }
-          }
-
-          .hours-cell {
-            .cell-content .hours-input {
-              width: 50px;
-              padding: 4px 6px;
-              font-size: 12px;
-            }
-          }
-        }
+      .no-options-text {
+        color: var(--color-text-secondary);
+        font-style: italic;
+        font-size: var(--font-size-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--color-surface-secondary);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
       }
     }
   }
+}
 
-  // Work Type Modal Tab Styles
-  .tab-buttons {
-    display: flex;
-    border-bottom: 2px solid var(--border-color);
-    margin-bottom: 20px;
+@keyframes sarky-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// ===========================================================================
+// Dark Theme Overrides
+// ===========================================================================
+[data-theme="dark"] {
+  .sarky-matrix-date-cell {
+    background: var(--color-surface);
+  }
+
+  tr.sarky-matrix-weekend .sarky-matrix-date-cell {
+    background: var(--color-surface-secondary);
+  }
+
+  input.sarky-matrix-input {
+    &.sarky-matrix-input-blocked {
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 4px,
+        rgba(255, 255, 255, 0.03) 4px,
+        rgba(255, 255, 255, 0.03) 8px
+      );
+    }
+  }
+
+  .sarky-matrix-cell-actions {
+    .sarky-matrix-driver-indicator {
+      border-color: var(--color-surface);
+    }
+
+    .sarky-matrix-delete-btn {
+      border-color: var(--color-surface);
+    }
+  }
+
+  .sarky-matrix-driver-dropdown {
+    border-color: var(--border-color-medium);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .sarky-matrix-table-wrapper {
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-color-dark);
+
+      &:hover {
+        background: var(--color-text-muted);
+      }
+    }
+  }
+}
+
+// ===========================================================================
+// Responsive - Mobile & Tablet
+// ===========================================================================
+@media (max-width: 768px) {
+  .sarky-matrix-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .sarky-matrix-view-toggle {
+    align-self: stretch;
 
     button {
       flex: 1;
-      padding: 12px 16px;
-      border: none;
-      background: none;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      position: relative;
-
-      &.tab-active {
-        color: var(--color-primary);
-        border-bottom: 2px solid var(--color-primary);
-        background: var(--background-hover);
-      }
-
-      &.tab-inactive {
-        color: var(--color-text-secondary);
-        
-        &:hover {
-          color: var(--color-text);
-          background: var(--background-hover);
-        }
-      }
     }
   }
 
-  .no-options-text {
-    color: var(--color-text-secondary);
-    font-style: italic;
-    margin-top: 8px;
-    padding: 12px;
-    background: var(--background-warning);
+  .sarky-matrix-date-selector {
+    flex-wrap: wrap;
+
+    select,
+    input[type="date"] {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  .sarky-matrix-driver-selector {
+    flex-direction: column;
+    align-items: stretch;
+
+    select {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+
+  .sarky-matrix-auto-save-indicator {
+    margin-left: 0;
+    justify-content: center;
+  }
+
+  .sarky-matrix-table-wrapper {
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border-warning);
+    max-height: calc(100vh - 360px);
+  }
+
+  table.sarky-matrix-table {
+    font-size: var(--font-size-xs);
+
+    thead th {
+      padding: 8px 4px;
+      font-size: 10px;
+    }
+
+    .sarky-matrix-date-cell {
+      padding: 6px 8px;
+      min-width: 90px;
+
+      .date-full {
+        font-size: var(--font-size-xs);
+      }
+
+      .date-weekday {
+        font-size: 9px;
+      }
+    }
+
+    input.sarky-matrix-input {
+      width: 44px;
+      padding: 4px 2px;
+      font-size: var(--font-size-xs);
+    }
+
+    .sarky-matrix-total-cell {
+      padding: 6px 4px;
+      font-size: var(--font-size-xs);
+    }
+
+    tfoot .sarky-matrix-totals-row td {
+      padding: 8px 4px;
+      font-size: var(--font-size-xs);
+
+      &:last-child {
+        font-size: var(--font-size-sm);
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .sarky-matrix-controls {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .sarky-matrix-table-wrapper {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
 }

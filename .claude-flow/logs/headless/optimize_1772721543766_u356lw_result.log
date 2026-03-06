@@ -1,0 +1,13 @@
+[2026-03-05T14:39:03.767Z] RESULT
+============================================================
+{
+  "success": false,
+  "output": "",
+  "durationMs": 1,
+  "model": "sonnet",
+  "sandboxMode": "permissive",
+  "workerType": "optimize",
+  "timestamp": "2026-03-05T14:39:03.767Z",
+  "executionId": "optimize_1772721543766_u356lw",
+  "error": "spawn claude ENOENT"
+}

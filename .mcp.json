@@ -1,0 +1,15 @@
+﻿{
+  "mcpServers": {
+    "claude-flow": {
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\PC\\AppData\\Roaming\\npm\\node_modules\\ruflo\\bin\\ruflo.js",
+        "mcp",
+        "start"
+      ],
+      "env": {
+        "CLAUDE_FLOW_V3_ENABLED": "true"
+      }
+    }
+  }
+}

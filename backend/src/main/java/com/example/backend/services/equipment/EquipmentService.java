@@ -1077,9 +1077,20 @@ public class EquipmentService {
     }
 
     public List<WorkTypeDTO> getSupportedWorkTypesForEquipmentType(UUID typeId) {
-        // This would typically query a relationship table or config
-        // For now returning empty list or mocks
-        return new ArrayList<>();
+        EquipmentType equipmentType = equipmentTypeRepository.findById(typeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + typeId));
+
+        return equipmentType.getSupportedWorkTypes().stream()
+                .filter(WorkType::isActive)
+                .map(workType -> {
+                    WorkTypeDTO dto = new WorkTypeDTO();
+                    dto.setId(workType.getId());
+                    dto.setName(workType.getName());
+                    dto.setDescription(workType.getDescription());
+                    dto.setActive(workType.isActive());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     public EquipmentSarkyAnalyticsDTO getSarkyAnalyticsForEquipment(UUID equipmentId) {

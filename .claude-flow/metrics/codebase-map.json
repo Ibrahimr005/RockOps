@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-03-06T13:37:06.538Z",
+  "projectRoot": "D:\\RockOps",
+  "structure": {
+    "hasPackageJson": false,
+    "hasTsConfig": false,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1772804226538
+}
