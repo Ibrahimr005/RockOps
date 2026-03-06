@@ -35,5 +35,12 @@
       <jdbc-url>jdbc:postgresql://dpg-d4tdb8ur433s738cign0-a.frankfurt-postgres.render.com:5432/rockops_prod</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="OreTech Prod" uuid="faeee668-30ee-4a24-91e5-df3bc9307e4e">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://dpg-d6jfn3cr85hc73f4ane0-a.frankfurt-postgres.render.com/oretech_prod</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
