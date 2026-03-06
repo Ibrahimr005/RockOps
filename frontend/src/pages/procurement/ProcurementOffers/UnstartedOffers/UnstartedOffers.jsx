@@ -225,10 +225,10 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                                                         </div>
                                                         <div className="procurement-unstarted-offers-item-title-container">
                                                             <div className="procurement-unstarted-offers-item-name">{item.itemType?.name || 'Unknown'}</div>
-                                                            <div className="procurement-unstarted-offers-item-category">{item.itemType.category || 'Item'}</div>
+                                                            <div className="procurement-unstarted-offers-item-category">{item.itemType?.category || 'Item'}</div>
                                                         </div>
                                                         <div className="procurement-unstarted-offers-item-badge">
-                                                            {item.quantity} {item.itemType.measuringUnit || 'units'}
+                                                            {item.quantity} {item.itemType?.measuringUnit || 'units'}
                                                         </div>
                                                     </div>
 
