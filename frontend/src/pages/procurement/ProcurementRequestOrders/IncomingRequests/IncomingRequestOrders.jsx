@@ -135,7 +135,7 @@ Original request description: ${selectedRowForApproval.description}`,
             accessor: 'title',
             sortable: true,
             filterable: true,
-            minWidth: '250px'
+            minWidth: '200px'  // Changed from 250px
         },
         {
             id: 'requesterName',
@@ -143,18 +143,18 @@ Original request description: ${selectedRowForApproval.description}`,
             accessor: 'requesterName',
             sortable: true,
             filterable: true,
-            minWidth: '250px'
+            minWidth: '180px'  // Changed from 250px
         },
         {
             id: 'deadline',
             header: 'DEADLINE',
             accessor: 'deadline',
             sortable: true,
-            minWidth: '250px',
+            minWidth: '150px',  // Changed from 250px
             render: (row) => (
                 <span className="pro-roi-date-cell">
-                    {new Date(row.deadline).toLocaleDateString()}
-                </span>
+                {new Date(row.deadline).toLocaleDateString()}
+            </span>
             )
         },
         {
@@ -163,18 +163,18 @@ Original request description: ${selectedRowForApproval.description}`,
             accessor: 'createdBy',
             sortable: true,
             filterable: true,
-            minWidth: '250px'
+            minWidth: '150px'  // Changed from 250px
         },
         {
             id: 'createdAt',
             header: 'CREATED AT',
             accessor: 'createdAt',
             sortable: true,
-            minWidth: '250px',
+            minWidth: '150px',  // Changed from 250px
             render: (row) => (
                 <span className="pro-roi-date-cell">
-                    {new Date(row.createdAt).toLocaleDateString()}
-                </span>
+                {new Date(row.createdAt).toLocaleDateString()}
+            </span>
             )
         }
     ];

@@ -23,27 +23,34 @@ public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
+    @Value("${cors.allowed.origins:http://localhost:5173}")
+    private String corsAllowedOrigins;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration configuration = new CorsConfiguration();
-                    configuration.setAllowedOrigins(Arrays.asList(
-                            // Local development
+
+                    // Start with standard dev origins
+                    java.util.List<String> origins = new java.util.ArrayList<>(Arrays.asList(
                             "http://localhost:5173",
                             "http://localhost:5174",
-                            "http://localhost:3000",
-
-                            // Development deployment
-                            "https://dev-rock-ops.vercel.app",
-
-                            // Test deployment
-                            "https://rock-ops.vercel.app",
-
-                            // Production deployment
-                            "https://rockops.vercel.app"
+                            "http://localhost:3000"
                     ));
-                    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+                    // Add origins from cors.allowed.origins property (comma-separated)
+                    if (corsAllowedOrigins != null && !corsAllowedOrigins.isBlank()) {
+                        for (String origin : corsAllowedOrigins.split(",")) {
+                            String trimmed = origin.trim();
+                            if (!trimmed.isEmpty() && !origins.contains(trimmed)) {
+                                origins.add(trimmed);
+                            }
+                        }
+                    }
+
+                    configuration.setAllowedOrigins(origins);
+                    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE","PATCH", "OPTIONS"));
                     configuration.setAllowedHeaders(Arrays.asList("*"));
                     configuration.setAllowCredentials(true);
                     configuration.setMaxAge(3600L);
