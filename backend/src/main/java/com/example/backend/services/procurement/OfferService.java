@@ -391,6 +391,11 @@ public class OfferService {
                 timelineService.createTimelineEvent(
                         offerId, TimelineEventType.MANAGER_REJECTED,
                         username, rejectionReason, previousStatus, status, attemptNumber);
+            } else if ("INSPECTION_PENDING".equals(status)) {
+                timelineService.createTimelineEvent(
+                        offerId, TimelineEventType.INSPECTION_PENDING,
+                        username, "Equipment offer pending inspection after finance approval",
+                        previousStatus, status, attemptNumber);
             }
 
             System.out.println("=== UPDATE OFFER STATUS SUCCESS ===");
@@ -717,11 +722,28 @@ public class OfferService {
         // Use the main updateOfferStatus method to set status and timeline fields
         OfferDTO updatedOfferDTO = updateOfferStatus(offer.getId(), finalStatus, username, null);
 
-        // If there are accepted items, create a purchase order
+        // If there are accepted items, check if equipment offer needs inspection
         if (acceptedItemsCount > 0) {
             Offer updatedOffer = offerRepository.findById(offerId)
                     .orElseThrow(() -> new RuntimeException("Offer not found"));
-            createPurchaseOrder(updatedOffer, username);
+
+            boolean isEquipmentOffer = updatedOffer.getRequestOrder() != null &&
+                    updatedOffer.getRequestOrder().getRequestItems().stream()
+                            .anyMatch(item -> item.getEquipmentSpec() != null);
+
+            if (isEquipmentOffer) {
+                // Equipment offers go to inspection before PO creation
+                updatedOffer.setStatus("INSPECTION_PENDING");
+                timelineService.createTimelineEvent(
+                        offerId, TimelineEventType.INSPECTION_PENDING,
+                        username, "Equipment offer pending inspection after finance approval",
+                        "MANAGERACCEPTED", "INSPECTION_PENDING",
+                        updatedOffer.getCurrentAttemptNumber());
+                offerRepository.save(updatedOffer);
+                updatedOfferDTO = offerMapper.toDTO(updatedOffer);
+            } else {
+                createPurchaseOrder(updatedOffer, username);
+            }
         }
 
         return updatedOfferDTO;
@@ -838,8 +860,21 @@ public class OfferService {
         String continuingTitle = originalTitle + " (Continued)";
         originalOffer.setTitle(continuingTitle);
 
-        // Update original offer status to move to finalization
-        originalOffer.setStatus("FINALIZING");
+        // Check if this is an equipment offer - route to inspection first
+        boolean isEquipmentOffer = originalOffer.getRequestOrder() != null &&
+                originalOffer.getRequestOrder().getRequestItems().stream()
+                        .anyMatch(item -> item.getEquipmentSpec() != null);
+
+        if (isEquipmentOffer) {
+            originalOffer.setStatus("INSPECTION_PENDING");
+            timelineService.createTimelineEvent(
+                    offerId, TimelineEventType.INSPECTION_PENDING,
+                    username, "Equipment offer pending inspection after finance partial approval",
+                    "MANAGERACCEPTED", "INSPECTION_PENDING",
+                    originalOffer.getCurrentAttemptNumber());
+        } else {
+            originalOffer.setStatus("FINALIZING");
+        }
         originalOffer.getOfferItems().removeAll(rejectedItems);
         Offer continuingOffer = offerRepository.save(originalOffer);
         result.put("acceptedOfferId", continuingOffer.getId());
@@ -1720,19 +1755,36 @@ public class OfferService {
             offer.setFinanceReviewedAt(LocalDateTime.now());
             offer.setFinanceReviewedByUserId(reviewerUserId);
 
-            // Set status to FINALIZING so it appears in Finalize tab in Procurement
-            offer.setStatus("FINALIZING");
+            // Check if this is an equipment offer (any request item has an equipment spec)
+            boolean isEquipmentOffer = offer.getRequestOrder() != null &&
+                    offer.getRequestOrder().getRequestItems().stream()
+                            .anyMatch(item -> item.getEquipmentSpec() != null);
 
-            // Create timeline event for finance approval
-            timelineService.createTimelineEvent(
-                    offer.getId(), // ← Pass ID, not object
-                    TimelineEventType.FINANCE_ACCEPTED,
-                    "Finance Module",
-                    "Offer approved by Finance Module",
-                    "MANAGERACCEPTED",
-                    "FINALIZING",
-                    offer.getCurrentAttemptNumber() // ← Add attempt number
-            );
+            if (isEquipmentOffer) {
+                // Equipment offers go to inspection before finalization
+                offer.setStatus("INSPECTION_PENDING");
+                timelineService.createTimelineEvent(
+                        offer.getId(),
+                        TimelineEventType.INSPECTION_PENDING,
+                        "Finance Module",
+                        "Equipment offer approved by Finance - pending inspection",
+                        "MANAGERACCEPTED",
+                        "INSPECTION_PENDING",
+                        offer.getCurrentAttemptNumber()
+                );
+            } else {
+                // Non-equipment offers go directly to finalization
+                offer.setStatus("FINALIZING");
+                timelineService.createTimelineEvent(
+                        offer.getId(),
+                        TimelineEventType.FINANCE_ACCEPTED,
+                        "Finance Module",
+                        "Offer approved by Finance Module",
+                        "MANAGERACCEPTED",
+                        "FINALIZING",
+                        offer.getCurrentAttemptNumber()
+                );
+            }
 
         } else if ("REJECT".equalsIgnoreCase(decision)) {
             offer.setFinanceValidationStatus(OfferFinanceValidationStatus.FINANCE_REJECTED);
@@ -1805,6 +1857,54 @@ public class OfferService {
                 "MANAGERACCEPTED",
                 offer.getCurrentAttemptNumber() // ← Add attempt number
         );
+
+        Offer savedOffer = offerRepository.save(offer);
+        return offerMapper.toDTO(savedOffer);
+    }
+
+    /**
+     * Handle inspection decision for equipment offers.
+     * Called after both manager and finance have approved.
+     */
+    @Transactional
+    public OfferDTO handleInspectionDecision(UUID offerId, String decision, String username, String notes, String inspectedBy) {
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
+
+        if (!"INSPECTION_PENDING".equals(offer.getStatus())) {
+            throw new IllegalStateException(
+                    "Offer must be in INSPECTION_PENDING status. Current: " + offer.getStatus());
+        }
+
+        // Save who inspected
+        if (inspectedBy != null && !inspectedBy.isBlank()) {
+            offer.setInspectedBy(inspectedBy);
+        }
+
+        String previousStatus = offer.getStatus();
+        int attemptNumber = offer.getCurrentAttemptNumber();
+
+        if ("APPROVE".equalsIgnoreCase(decision)) {
+            offer.setStatus("FINALIZING");
+
+            timelineService.createTimelineEvent(
+                    offerId, TimelineEventType.INSPECTION_ACCEPTED,
+                    username, notes != null ? notes : "Inspection passed",
+                    previousStatus, "FINALIZING", attemptNumber);
+
+        } else if ("REJECT".equalsIgnoreCase(decision)) {
+            offer.setStatus("UNSTARTED");
+            offer.setFinanceValidationStatus(null);
+            offer.setFinanceStatus(null);
+
+            timelineService.createTimelineEvent(
+                    offerId, TimelineEventType.INSPECTION_REJECTED,
+                    username, notes != null ? notes : "Inspection failed",
+                    previousStatus, "UNSTARTED", attemptNumber);
+
+        } else {
+            throw new RuntimeException("Invalid decision: " + decision + ". Must be APPROVE or REJECT");
+        }
 
         Offer savedOffer = offerRepository.save(offer);
         return offerMapper.toDTO(savedOffer);

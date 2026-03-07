@@ -16,6 +16,11 @@ public enum TimelineEventType {
     FINANCE_REJECTED("Finance Rejected", "Offer rejected by finance"),
     FINANCE_PARTIALLY_ACCEPTED("Finance Partially Accepted", "Offer partially approved by finance"),
 
+    // Inspection events (equipment offers only)
+    INSPECTION_PENDING("Inspection Pending", "Equipment offer awaiting inspection after dual approval"),
+    INSPECTION_ACCEPTED("Inspection Accepted", "Equipment offer passed inspection"),
+    INSPECTION_REJECTED("Inspection Rejected", "Equipment offer failed inspection"),
+
     // Final stages
     OFFER_FINALIZING("Offer Finalizing", "Offer is being finalized"),
     OFFER_FINALIZED("Offer Finalized", "Offer finalization completed"),

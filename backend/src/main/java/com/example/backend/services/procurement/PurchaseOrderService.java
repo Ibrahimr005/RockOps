@@ -436,13 +436,25 @@ public class PurchaseOrderService {
     }
 
     private DeliveryItemReceiptDTO convertReceiptToDTO(DeliveryItemReceipt receipt) {
+        PurchaseOrderItem poItem = receipt.getPurchaseOrderItem();
+        String itemName = null;
+        String measuringUnit = null;
+
+        if (poItem.getItemType() != null) {
+            itemName = poItem.getItemType().getName();
+            measuringUnit = poItem.getItemType().getMeasuringUnit() != null ?
+                    poItem.getItemType().getMeasuringUnit().getName() : null;
+        } else if (poItem.getEquipmentSpec() != null) {
+            itemName = poItem.getEquipmentSpec().getName();
+            measuringUnit = "unit";
+        }
+
         DeliveryItemReceiptDTO dto = DeliveryItemReceiptDTO.builder()
                 .id(receipt.getId())
                 .deliverySessionId(receipt.getDeliverySession().getId())
-                .purchaseOrderItemId(receipt.getPurchaseOrderItem().getId())
-                .itemTypeName(receipt.getPurchaseOrderItem().getItemType().getName())
-                .measuringUnit(receipt.getPurchaseOrderItem().getItemType().getMeasuringUnit() != null ?
-                        receipt.getPurchaseOrderItem().getItemType().getMeasuringUnit().getName() : null)
+                .purchaseOrderItemId(poItem.getId())
+                .itemTypeName(itemName)
+                .measuringUnit(measuringUnit)
                 .goodQuantity(receipt.getGoodQuantity())
                 .isRedelivery(receipt.getIsRedelivery())
                 .processedBy(receipt.getDeliverySession().getProcessedBy())
@@ -453,9 +465,9 @@ public class PurchaseOrderService {
                 .build();
 
         // ADD CATEGORY INFO
-        if (receipt.getPurchaseOrderItem().getItemType().getItemCategory() != null) {
-            dto.setItemCategoryName(receipt.getPurchaseOrderItem().getItemType().getItemCategory().getName());
-            dto.setItemCategoryId(receipt.getPurchaseOrderItem().getItemType().getItemCategory().getId());
+        if (poItem.getItemType() != null && poItem.getItemType().getItemCategory() != null) {
+            dto.setItemCategoryName(poItem.getItemType().getItemCategory().getName());
+            dto.setItemCategoryId(poItem.getItemType().getItemCategory().getId());
         }
 
         return dto;
@@ -476,10 +488,14 @@ public class PurchaseOrderService {
                 .resolvedBy(issue.getResolvedBy())
                 .resolvedAt(issue.getResolvedAt())
                 .resolutionNotes(issue.getResolutionNotes())
-                .itemTypeName(issue.getPurchaseOrderItem().getItemType().getName())
-                .measuringUnit(issue.getPurchaseOrderItem().getItemType().getMeasuringUnit() != null ?
-                        issue.getPurchaseOrderItem().getItemType().getMeasuringUnit().getName() : null)
-                .itemTypeCategoryName(issue.getPurchaseOrderItem().getItemType().getItemCategory() != null
+                .itemTypeName(issue.getPurchaseOrderItem().getItemType() != null
+                        ? issue.getPurchaseOrderItem().getItemType().getName()
+                        : (issue.getPurchaseOrderItem().getEquipmentSpec() != null
+                                ? issue.getPurchaseOrderItem().getEquipmentSpec().getName() : "Unknown"))
+                .measuringUnit(issue.getPurchaseOrderItem().getItemType() != null && issue.getPurchaseOrderItem().getItemType().getMeasuringUnit() != null
+                        ? issue.getPurchaseOrderItem().getItemType().getMeasuringUnit().getName()
+                        : (issue.getPurchaseOrderItem().getEquipmentSpec() != null ? "unit" : null))
+                .itemTypeCategoryName(issue.getPurchaseOrderItem().getItemType() != null && issue.getPurchaseOrderItem().getItemType().getItemCategory() != null
                         ? issue.getPurchaseOrderItem().getItemType().getItemCategory().getName()
                         : null)
                 .build();
@@ -650,6 +666,35 @@ public class PurchaseOrderService {
 
         // ✅ ADD CURRENCY
         dto.setCurrency(item.getPurchaseOrder().getCurrency());
+
+        // Equipment spec - also set itemTypeName for display
+        if (item.getEquipmentSpec() != null) {
+            if (dto.getItemTypeName() == null) {
+                dto.setItemTypeName(item.getEquipmentSpec().getName());
+            }
+            if (dto.getMeasuringUnit() == null) {
+                dto.setMeasuringUnit("unit");
+            }
+            EquipmentPurchaseSpec spec = item.getEquipmentSpec();
+            EquipmentPurchaseSpecDTO specDTO = new EquipmentPurchaseSpecDTO();
+            specDTO.setId(spec.getId());
+            specDTO.setName(spec.getName());
+            specDTO.setDescription(spec.getDescription());
+            specDTO.setModel(spec.getModel());
+            specDTO.setManufactureYear(spec.getManufactureYear());
+            specDTO.setCountryOfOrigin(spec.getCountryOfOrigin());
+            specDTO.setSpecifications(spec.getSpecifications());
+            specDTO.setEstimatedBudget(spec.getEstimatedBudget());
+            if (spec.getEquipmentType() != null) {
+                specDTO.setEquipmentTypeId(spec.getEquipmentType().getId());
+                specDTO.setEquipmentTypeName(spec.getEquipmentType().getName());
+            }
+            if (spec.getBrand() != null) {
+                specDTO.setEquipmentBrandId(spec.getBrand().getId());
+                specDTO.setEquipmentBrandName(spec.getBrand().getName());
+            }
+            dto.setEquipmentSpec(specDTO);
+        }
 
         return dto;
     }
@@ -850,19 +895,7 @@ public class PurchaseOrderService {
             }
         }
 
-        // Auto-create equipment if this is an equipment purchase order
-        if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus)) {
-            RequestOrder ro = po.getRequestOrder();
-            if (ro != null && "EQUIPMENT".equals(ro.getPartyType())) {
-                try {
-                    System.out.println("🔧 Equipment PO completed, triggering auto-creation...");
-                    equipmentService.createFromPurchaseOrder(po);
-                } catch (Exception e) {
-                    System.err.println("⚠️ Equipment auto-creation failed for PO "
-                            + po.getPoNumber() + ": " + e.getMessage());
-                    e.printStackTrace();
-                }
-            }
-        }
+        // Equipment is now created during the receiving step (receive-equipment endpoint)
+        // instead of auto-creating with placeholder data on PO completion.
     }
 }

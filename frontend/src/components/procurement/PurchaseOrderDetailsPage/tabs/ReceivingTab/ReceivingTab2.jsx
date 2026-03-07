@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { FiPackage, FiTruck, FiAlertCircle, FiChevronDown, FiChevronUp, FiCheck, FiClock, FiCheckCircle, FiBox, FiPhone, FiMail, FiMapPin,FiFilter } from 'react-icons/fi';
+import { FiPackage, FiTruck, FiAlertCircle, FiChevronDown, FiChevronUp, FiCheck, FiClock, FiCheckCircle, FiBox, FiPhone, FiMail, FiMapPin, FiFilter, FiSettings } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { purchaseOrderService } from '../../../../../services/procurement/purchaseOrderService';
 import './ReceivingTab2.scss';
-import { FiPrinter } from 'react-icons/fi'; // Add FiPrinter to existing imports
+import { FiPrinter } from 'react-icons/fi';
 import { generateMerchantReceivingPDF, generateAllMerchantsReceivingPDF } from '../../../../../services/procurement/receivingPrintService';
 import LanguageSelectionModal from "./LanguageSelectionModal.jsx";
 import { FiDownload } from 'react-icons/fi';
@@ -29,6 +29,11 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
         minReceived: '',
         minRemaining: ''
     });
+
+    // Equipment receiving state
+    const isEquipmentPO = purchaseOrder?.requestOrder?.partyType === 'EQUIPMENT';
+    const [equipmentData, setEquipmentData] = useState({});
+    const [equipmentProcessing, setEquipmentProcessing] = useState(false);
 
     const handlePrintSingleMerchant = () => {
         setLanguageSelectionType('single');
@@ -359,8 +364,251 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
 
 
 
-    // Merchant Selection View
-// Merchant Selection View
+    // Equipment receiving handlers
+    const handleEquipmentFieldChange = (itemId, field, value) => {
+        setEquipmentData(prev => ({
+            ...prev,
+            [itemId]: {
+                ...prev[itemId],
+                [field]: value
+            }
+        }));
+    };
+
+    const handleEquipmentSubmit = async () => {
+        if (!purchaseOrder?.purchaseOrderItems) return;
+
+        const items = purchaseOrder.purchaseOrderItems;
+        const equipmentItems = [];
+
+        for (const item of items) {
+            const spec = item.equipmentSpec;
+            if (!spec) continue;
+
+            const data = equipmentData[item.id] || {};
+            if (!data.serialNumber || !data.serialNumber.trim()) {
+                onError(`Serial number is required for ${spec.name}`);
+                return;
+            }
+
+            equipmentItems.push({
+                purchaseOrderItemId: item.id,
+                serialNumber: data.serialNumber.trim(),
+                shipping: parseFloat(data.shipping) || 0,
+                customs: parseFloat(data.customs) || 0,
+                taxes: parseFloat(data.taxes) || 0,
+                countryOfOrigin: data.countryOfOrigin || spec.countryOfOrigin || '',
+                deliveredDate: data.deliveredDate || new Date().toISOString().split('T')[0],
+                notes: data.notes || ''
+            });
+        }
+
+        if (equipmentItems.length === 0) {
+            onError('No equipment items to receive');
+            return;
+        }
+
+        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        const username = userInfo?.username || 'unknown';
+
+        try {
+            setEquipmentProcessing(true);
+            await purchaseOrderService.receiveEquipment(purchaseOrder.id, {
+                processedBy: username,
+                deliveryNotes: deliveryNotes,
+                equipmentItems
+            });
+            onSuccess('Equipment received successfully and added to fleet');
+            setEquipmentData({});
+            setDeliveryNotes('');
+        } catch (err) {
+            console.error('Error receiving equipment:', err);
+            onError(err.response?.data?.message || err.message || 'Failed to receive equipment');
+        } finally {
+            setEquipmentProcessing(false);
+        }
+    };
+
+    // Equipment PO: render equipment receiving form
+    if (isEquipmentPO) {
+        const items = purchaseOrder?.purchaseOrderItems || [];
+        const allReceived = items.every(item => item.status === 'COMPLETED');
+
+        return (
+            <div className="receiving-tab">
+                <div className="receiving-section">
+                    <h3 className="section-title">
+                        <FiSettings />
+                        Equipment Receiving
+                    </h3>
+                    <p className="section-description">
+                        Enter actual equipment details for each unit. Equipment will be added to the fleet with AVAILABLE status.
+                    </p>
+
+                    {allReceived && (
+                        <div className="equipment-all-received-banner">
+                            <FiCheckCircle />
+                            <span>All equipment items have been received.</span>
+                        </div>
+                    )}
+
+                    {items.map(item => {
+                        const spec = item.equipmentSpec;
+                        if (!spec) return null;
+                        const isItemReceived = item.status === 'COMPLETED';
+                        const data = equipmentData[item.id] || {};
+
+                        return (
+                            <div key={item.id} className={`equipment-receive-card ${isItemReceived ? 'received' : ''}`}>
+                                <div className="equipment-receive-header">
+                                    <h4>{spec.name}</h4>
+                                    {isItemReceived ? (
+                                        <span className="stat-badge completed"><FiCheckCircle /> Received</span>
+                                    ) : (
+                                        <span className="stat-badge pending"><FiClock /> Pending</span>
+                                    )}
+                                </div>
+
+                                {/* Auto-filled spec info */}
+                                <div className="equipment-spec-info">
+                                    <div className="spec-row">
+                                        <span className="spec-label">Type:</span>
+                                        <span className="spec-value">{spec.equipmentTypeName || spec.equipmentType?.name || '-'}</span>
+                                    </div>
+                                    <div className="spec-row">
+                                        <span className="spec-label">Brand:</span>
+                                        <span className="spec-value">{spec.equipmentBrandName || spec.brand?.name || '-'}</span>
+                                    </div>
+                                    <div className="spec-row">
+                                        <span className="spec-label">Model:</span>
+                                        <span className="spec-value">{spec.model || '-'}</span>
+                                    </div>
+                                    <div className="spec-row">
+                                        <span className="spec-label">Year:</span>
+                                        <span className="spec-value">{spec.manufactureYear || '-'}</span>
+                                    </div>
+                                    <div className="spec-row">
+                                        <span className="spec-label">Unit Price:</span>
+                                        <span className="spec-value">{item.totalPrice?.toLocaleString()} {purchaseOrder.currency || 'EGP'}</span>
+                                    </div>
+                                </div>
+
+                                {/* Input fields for procurement to fill */}
+                                {!isItemReceived && (
+                                    <div className="equipment-input-grid">
+                                        <div className="form-group required">
+                                            <label>Serial Number *</label>
+                                            <input
+                                                type="text"
+                                                value={data.serialNumber || ''}
+                                                onChange={(e) => handleEquipmentFieldChange(item.id, 'serialNumber', e.target.value)}
+                                                placeholder="Enter serial number"
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Delivered Date</label>
+                                            <input
+                                                type="date"
+                                                value={data.deliveredDate || new Date().toISOString().split('T')[0]}
+                                                onChange={(e) => handleEquipmentFieldChange(item.id, 'deliveredDate', e.target.value)}
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Shipping Cost</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={data.shipping || ''}
+                                                onChange={(e) => handleEquipmentFieldChange(item.id, 'shipping', e.target.value)}
+                                                placeholder="0.00"
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Customs Cost</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={data.customs || ''}
+                                                onChange={(e) => handleEquipmentFieldChange(item.id, 'customs', e.target.value)}
+                                                placeholder="0.00"
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Taxes</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={data.taxes || ''}
+                                                onChange={(e) => handleEquipmentFieldChange(item.id, 'taxes', e.target.value)}
+                                                placeholder="0.00"
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Country of Origin</label>
+                                            <input
+                                                type="text"
+                                                value={data.countryOfOrigin || spec.countryOfOrigin || ''}
+                                                onChange={(e) => handleEquipmentFieldChange(item.id, 'countryOfOrigin', e.target.value)}
+                                                placeholder="Country of origin"
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <div className="form-group full-width">
+                                            <label>Notes</label>
+                                            <textarea
+                                                value={data.notes || ''}
+                                                onChange={(e) => handleEquipmentFieldChange(item.id, 'notes', e.target.value)}
+                                                placeholder="Any additional notes..."
+                                                rows={2}
+                                                className="form-textarea"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                    {!allReceived && (
+                        <div className="equipment-submit-section">
+                            <div className="form-group full-width">
+                                <label>Delivery Notes</label>
+                                <textarea
+                                    value={deliveryNotes}
+                                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                                    placeholder="General delivery notes..."
+                                    rows={3}
+                                    className="form-textarea"
+                                />
+                            </div>
+                            <div className="submit-actions">
+                                <Button
+                                    variant="primary"
+                                    onClick={handleEquipmentSubmit}
+                                    disabled={equipmentProcessing}
+                                    loading={equipmentProcessing}
+                                    loadingText="Receiving..."
+                                >
+                                    <FiCheck />
+                                    Receive Equipment
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Merchant Selection View (Warehouse POs)
     if (!selectedMerchant) {
         return (
             <>

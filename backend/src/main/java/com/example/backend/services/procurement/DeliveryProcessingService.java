@@ -1,6 +1,8 @@
 package com.example.backend.services.procurement;
 
 import com.example.backend.dto.procurement.*;
+import com.example.backend.models.equipment.Equipment;
+import com.example.backend.models.equipment.EquipmentStatus;
 import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import com.example.backend.models.procurement.*;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
@@ -10,6 +12,7 @@ import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderResolut
 import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.models.warehouse.*;
 import com.example.backend.models.warehouse.Warehouse;
+import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
@@ -18,8 +21,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -36,6 +42,7 @@ public class DeliveryProcessingService {
     private final WarehouseRepository warehouseRepository;
     private final ItemTypeService itemTypeService;
     private final PurchaseOrderService purchaseOrderService;
+    private final EquipmentRepository equipmentRepository;
 
 
     @Transactional
@@ -302,5 +309,106 @@ public class DeliveryProcessingService {
         System.out.println("✅ createWarehouseItems completed for warehouse: " + warehouse.getName());
     }
 
-    
+    @Transactional
+    public List<Equipment> processEquipmentDelivery(UUID purchaseOrderId, EquipmentReceiptRequest request) {
+        PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
+                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
+
+        RequestOrder ro = po.getRequestOrder();
+        if (ro == null || !"EQUIPMENT".equals(ro.getPartyType())) {
+            throw new RuntimeException("This purchase order is not an equipment order");
+        }
+
+        // Create delivery session
+        DeliverySession session = DeliverySession.builder()
+                .purchaseOrder(po)
+                .merchant(po.getPurchaseOrderItems().get(0).getMerchant())
+                .processedBy(request.getProcessedBy())
+                .processedAt(LocalDateTime.now())
+                .deliveryNotes(request.getDeliveryNotes())
+                .itemReceipts(new ArrayList<>())
+                .build();
+
+        List<Equipment> createdEquipment = new ArrayList<>();
+
+        for (EquipmentReceiptRequest.EquipmentReceiptData itemData : request.getEquipmentItems()) {
+            PurchaseOrderItem poItem = purchaseOrderItemRepository.findById(itemData.getPurchaseOrderItemId())
+                    .orElseThrow(() -> new RuntimeException("PO Item not found"));
+
+            EquipmentPurchaseSpec spec = poItem.getEquipmentSpec();
+            if (spec == null) {
+                throw new RuntimeException("PO Item does not have an equipment spec");
+            }
+
+            // Create delivery receipt (quantity 1 per equipment unit)
+            DeliveryItemReceipt receipt = DeliveryItemReceipt.builder()
+                    .deliverySession(session)
+                    .purchaseOrderItem(poItem)
+                    .goodQuantity(1.0)
+                    .isRedelivery(false)
+                    .issues(new ArrayList<>())
+                    .build();
+
+            if (poItem.getItemReceipts() == null) {
+                poItem.setItemReceipts(new ArrayList<>());
+            }
+            poItem.getItemReceipts().add(receipt);
+            session.getItemReceipts().add(receipt);
+
+            // Create Equipment entity with real data
+            Equipment equipment = new Equipment();
+            equipment.setType(spec.getEquipmentType());
+            equipment.setName(spec.getName());
+            equipment.setModel(spec.getModel() != null ? spec.getModel() : "N/A");
+            if (spec.getBrand() != null) {
+                equipment.setBrand(spec.getBrand());
+            }
+            equipment.setManufactureYear(spec.getManufactureYear() != null
+                    ? Year.of(spec.getManufactureYear()) : Year.now());
+
+            // Data from the receipt request
+            equipment.setSerialNumber(itemData.getSerialNumber());
+            equipment.setShipping(itemData.getShipping());
+            equipment.setCustoms(itemData.getCustoms());
+            equipment.setTaxes(itemData.getTaxes());
+            equipment.setCountryOfOrigin(itemData.getCountryOfOrigin() != null
+                    ? itemData.getCountryOfOrigin()
+                    : (spec.getCountryOfOrigin() != null ? spec.getCountryOfOrigin() : "N/A"));
+            equipment.setDeliveredDate(itemData.getDeliveredDate() != null
+                    ? itemData.getDeliveredDate() : LocalDate.now());
+            equipment.setEquipmentComplaints(itemData.getNotes());
+
+            // Data from PO
+            equipment.setEgpPrice(poItem.getTotalPrice());
+            equipment.setDollarPrice(0);
+            equipment.setPurchasedDate(LocalDate.now());
+            equipment.setDepreciationStartDate(LocalDate.now());
+
+            if (poItem.getMerchant() != null) {
+                equipment.setPurchasedFrom(poItem.getMerchant());
+            }
+
+            // Traceability
+            equipment.setPurchaseOrderId(po.getId());
+            equipment.setPurchaseSpec(spec);
+            equipment.setReceivedViaProc(true);
+
+            // Defaults
+            equipment.setStatus(EquipmentStatus.AVAILABLE);
+            equipment.setWorkedHours(0);
+
+            Equipment saved = equipmentRepository.save(equipment);
+            createdEquipment.add(saved);
+
+            System.out.println("✅ Equipment received: '" + saved.getName()
+                    + "' (SN: " + saved.getSerialNumber() + ") from PO " + po.getPoNumber());
+        }
+
+        deliverySessionRepository.save(session);
+        updateItemStatuses(po);
+        updatePOStatus(po);
+        purchaseOrderRepository.save(po);
+
+        return createdEquipment;
+    }
 }

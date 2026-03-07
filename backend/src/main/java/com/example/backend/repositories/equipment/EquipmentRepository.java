@@ -36,7 +36,8 @@ public interface EquipmentRepository extends JpaRepository<Equipment, UUID> {
            "LEFT JOIN FETCH e.site " +
            "LEFT JOIN FETCH e.mainDriver " +
            "LEFT JOIN FETCH e.subDriver " +
-           "LEFT JOIN FETCH e.purchasedFrom")
+           "LEFT JOIN FETCH e.purchasedFrom " +
+           "LEFT JOIN FETCH e.purchaseSpec")
     List<Equipment> findAllWithAssociations();
 
     /**
@@ -49,6 +50,7 @@ public interface EquipmentRepository extends JpaRepository<Equipment, UUID> {
            "LEFT JOIN FETCH e.mainDriver " +
            "LEFT JOIN FETCH e.subDriver " +
            "LEFT JOIN FETCH e.purchasedFrom " +
+           "LEFT JOIN FETCH e.purchaseSpec " +
            "WHERE e.site.id = :siteId")
     List<Equipment> findBySiteIdWithAssociations(UUID siteId);
 }

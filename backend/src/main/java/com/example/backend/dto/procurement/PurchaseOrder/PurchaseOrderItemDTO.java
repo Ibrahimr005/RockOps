@@ -2,6 +2,7 @@ package com.example.backend.dto.procurement.PurchaseOrder;
 
 import com.example.backend.dto.merchant.MerchantDTO;
 import com.example.backend.dto.procurement.DeliveryItemReceiptDTO;
+import com.example.backend.dto.procurement.EquipmentPurchaseSpecDTO;
 import com.example.backend.dto.warehouse.ItemTypeDTO;
 import com.example.backend.models.procurement.PurchaseOrder.POItemPaymentStatus;
 import lombok.AllArgsConstructor;
@@ -62,4 +63,7 @@ public class PurchaseOrderItemDTO {
 
     // Calculated field - how much is left to receive/account for
     private Double remainingQuantity;
+
+    // Equipment spec for equipment POs
+    private EquipmentPurchaseSpecDTO equipmentSpec;
 }

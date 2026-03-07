@@ -10,6 +10,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EquipmentPurchaseSpecDTO {
+    private UUID id;
     private String name;
     private String description;
     private UUID equipmentTypeId;

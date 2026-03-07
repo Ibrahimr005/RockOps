@@ -2,6 +2,7 @@ package com.example.backend.models.equipment;
 
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.procurement.EquipmentPurchaseSpec;
 import com.example.backend.models.site.Site;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -133,8 +134,15 @@ public class Equipment {
     private LocalDateTime financeBalanceUpdatedAt;
 
     // Traceability: links to the PO that created this equipment (if auto-created via procurement)
-    @Column(name = "purchase_order_id", unique = true)
+    @Column(name = "purchase_order_id")
     private UUID purchaseOrderId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchase_spec_id")
+    private EquipmentPurchaseSpec purchaseSpec;
+
+    @Column(name = "received_via_procurement")
+    private Boolean receivedViaProc;
 
 
     public Equipment() {

@@ -1,7 +1,9 @@
 package com.example.backend.models.procurement;
 
+import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.equipment.EquipmentBrand;
 import com.example.backend.models.equipment.EquipmentType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,6 +49,10 @@ public class EquipmentPurchaseSpec {
     private String specifications;
 
     private Double estimatedBudget;
+
+    @OneToOne(mappedBy = "purchaseSpec", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Equipment equipment;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

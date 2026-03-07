@@ -14,6 +14,7 @@ import InProgressOffers from './InprogressOffers/InProgressOffers';
 import SubmittedOffers from './SubmittedOffers/SubmittedOffers';
 import ValidatedOffers from "./ManagerValidatedOffers/ValidatedOffers";
 import FinanceValidatedOffers from "./FinanceValidatedOffers/FinanceValidatedOffers";
+import InspectionOffers from "./InspectionOffers/InspectionOffers.jsx";
 import FinalizeOffers from "./FinalizeOffers/FinalizeOffers.jsx";
 import CompletedOffers from "./CompletedOffers/CompletedOffers.jsx";
 
@@ -23,7 +24,7 @@ import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 // Icons
 import {
     FiSearch, FiEdit, FiSend, FiX, FiChevronRight,
-    FiClock, FiAlertCircle, FiCheckCircle, FiInbox, FiDollarSign
+    FiClock, FiAlertCircle, FiCheckCircle, FiInbox, FiDollarSign, FiClipboard
 } from 'react-icons/fi';
 
 // Add this to your imports at the top
@@ -51,6 +52,7 @@ const ProcurementOffers = () => {
     const [pendingCompletedOffer, setPendingCompletedOffer] = useState(null);
     const [pendingValidatedOffer, setPendingValidatedOffer] = useState(null);
     const [pendingFinanceOffer, setPendingFinanceOffer] = useState(null); // NEW: Track finance validated offer
+    const [pendingInspectionOffer, setPendingInspectionOffer] = useState(null);
 
     // Helper function for authenticated fetch (keep for backward compatibility with child components)
     const fetchWithAuth = async (url, options = {}) => {
@@ -137,6 +139,8 @@ const ProcurementOffers = () => {
                     offersData = await offerService.getMultipleStatuses(['MANAGERACCEPTED', 'MANAGERREJECTED']);
                 } else if (activeTab === 'finance') {
                     offersData = await offerService.getCompletedFinanceOffers();
+                } else if (activeTab === 'inspection') {
+                    offersData = await offerService.getByStatus('INSPECTION_PENDING');
                 } else if (activeTab === 'finalize') {
                     offersData = await offerService.getByStatus('FINALIZING');
                 } else if (activeTab === 'completed') {
@@ -179,6 +183,16 @@ const ProcurementOffers = () => {
                         if (financeOffer) {
                             setActiveOffer(financeOffer);
                             setPendingFinanceOffer(null);
+                        } else {
+                            setActiveOffer(offersData[0]);
+                        }
+                    }
+                    // If we have a pending inspection offer and we're on the inspection tab, select it
+                    else if (pendingInspectionOffer && activeTab === 'inspection') {
+                        const inspectionOffer = offersData.find(offer => offer.id === pendingInspectionOffer.id);
+                        if (inspectionOffer) {
+                            setActiveOffer(inspectionOffer);
+                            setPendingInspectionOffer(null);
                         } else {
                             setActiveOffer(offersData[0]);
                         }
@@ -231,7 +245,7 @@ const ProcurementOffers = () => {
         };
 
         fetchData();
-    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer, pendingValidatedOffer, pendingFinanceOffer]);
+    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer, pendingValidatedOffer, pendingFinanceOffer, pendingInspectionOffer]);
 // ⬆️ IMPORTANT: Removed 'activeOffer' from dependencies to prevent infinite loop; // Add pendingFinanceOffer
 
     // When active offer changes, fetch its request order
@@ -410,6 +424,18 @@ const ProcurementOffers = () => {
         setActiveTab('finance');
     };
 
+    // Handle offer sent to inspection (from finance approval of equipment offers)
+    const handleOfferSentToInspection = (inspectionOffer) => {
+        setPendingInspectionOffer(inspectionOffer);
+        setActiveTab('inspection');
+    };
+
+    // Handle offer reset to unstarted (from failed inspection)
+    const handleOfferResetToUnstarted = (offer) => {
+        setPendingNewOffer(offer);
+        setActiveTab('unstarted');
+    };
+
     // Prepare stats data for the intro card
     const getActiveTabLabel = () => {
         switch(activeTab) {
@@ -418,6 +444,7 @@ const ProcurementOffers = () => {
             case 'submitted': return 'Submitted Offers';
             case 'validated': return 'Validated Offers';
             case 'finance': return 'Finance Validated Offers';
+            case 'inspection': return 'Inspection Offers';
             case 'finalize': return 'Finalize Offers';
             case 'completed': return 'Completed Offers';
             default: return 'Offers';
@@ -482,6 +509,11 @@ const ProcurementOffers = () => {
                         id: 'finance',
                         label: 'Finance Validated',
                         icon: <FiDollarSign />
+                    },
+                    {
+                        id: 'inspection',
+                        label: 'Inspection',
+                        icon: <FiClipboard />
                     },
                     {
                         id: 'finalize',
@@ -612,7 +644,22 @@ const ProcurementOffers = () => {
                                 setError={setError}
                                 setSuccess={setSuccess}
                                 onOfferFinalized={handleOfferSentToFinalize}
+                                onOfferSentToInspection={handleOfferSentToInspection}
                                 onRetryOffer={handleRetryOffer}
+                                onDeleteOffer={handleDeleteOffer}
+                            />
+                        )}
+
+                        {activeTab === 'inspection' && (
+                            <InspectionOffers
+                                offers={filteredOffers}
+                                activeOffer={activeOffer}
+                                setActiveOffer={setActiveOffer}
+                                getTotalPrice={getTotalPrice}
+                                setError={setError}
+                                setSuccess={setSuccess}
+                                onOfferFinalized={handleOfferSentToFinalize}
+                                onOfferResetToUnstarted={handleOfferResetToUnstarted}
                                 onDeleteOffer={handleDeleteOffer}
                             />
                         )}

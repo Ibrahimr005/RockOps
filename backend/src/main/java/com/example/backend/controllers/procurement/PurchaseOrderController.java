@@ -2,6 +2,7 @@ package com.example.backend.controllers.procurement;
 
 import com.example.backend.dto.procurement.*;
 import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderDTO;
+import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.procurement.Offer.Offer;
 import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
 import com.example.backend.services.equipment.EquipmentService;
@@ -360,6 +361,34 @@ public class PurchaseOrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "success", false,
                     "message", "Error retrying equipment creation: " + e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/{id}/receive-equipment")
+    public ResponseEntity<?> receiveEquipment(
+            @PathVariable UUID id,
+            @RequestBody EquipmentReceiptRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            String username = userDetails.getUsername();
+            if (request.getProcessedBy() == null || request.getProcessedBy().isEmpty()) {
+                request.setProcessedBy(username);
+            }
+
+            List<Equipment> created = deliveryProcessingService.processEquipmentDelivery(id, request);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", created.size() + " equipment item(s) received and added to fleet",
+                    "count", created.size()
+            ));
+        } catch (Exception e) {
+            System.err.println("Error receiving equipment: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Error receiving equipment: " + e.getMessage()
             ));
         }
     }

@@ -103,7 +103,20 @@ export const purchaseOrderService = {
         }
     },
 
-    // Resolve multiple issues with individual resolution types
+    // Receive equipment from an equipment purchase order
+    receiveEquipment: async (purchaseOrderId, equipmentData) => {
+        try {
+            const response = await apiClient.post(
+                PURCHASE_ORDER_ENDPOINTS.RECEIVE_EQUIPMENT(purchaseOrderId),
+                equipmentData
+            );
+            return response.data || response;
+        } catch (error) {
+            console.error('Error receiving equipment:', error);
+            throw error;
+        }
+    },
+
     // Resolve multiple issues with individual resolution types
     resolveIssues: async (purchaseOrderId, resolutions) => {
         try {

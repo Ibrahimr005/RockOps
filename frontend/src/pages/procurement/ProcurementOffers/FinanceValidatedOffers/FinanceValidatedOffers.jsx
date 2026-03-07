@@ -806,6 +806,7 @@ const FinanceValidatedOffers = ({
     activeOffer,
     setActiveOffer,
     onOfferFinalized,
+    onOfferSentToInspection,
     onDeleteOffer,
     onRetryOffer,
     onRefresh
@@ -814,6 +815,10 @@ const FinanceValidatedOffers = ({
     const [showSnackbar, setShowSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarType, setSnackbarType] = useState('success');
+
+    // Check if this is an equipment offer
+    const isEquipmentOffer = activeOffer?.requestOrder?.partyType === 'EQUIPMENT' ||
+        activeOffer?.requestOrder?.requestItems?.some(item => item.equipmentSpec || item.equipmentSpecId);
 
     // Dialog states
     const [showRetryConfirm, setShowRetryConfirm] = useState(false);
@@ -903,18 +908,30 @@ const FinanceValidatedOffers = ({
         try {
             console.log('Finalizing offer with full fulfillment...');
 
-            // Just update status to FINALIZING
-            await offerService.updateStatus(activeOffer.id, 'FINALIZING');
+            if (isEquipmentOffer) {
+                // Equipment offers go to inspection before finalization
+                await offerService.updateStatus(activeOffer.id, 'INSPECTION_PENDING');
+                showNotification('Equipment offer sent to inspection.', 'success');
 
-            showNotification('Offer has been sent to finalization.', 'success');
+                if (onOfferSentToInspection) {
+                    const inspectionOffer = {
+                        ...activeOffer,
+                        status: 'INSPECTION_PENDING'
+                    };
+                    onOfferSentToInspection(inspectionOffer);
+                }
+            } else {
+                // Non-equipment offers go directly to finalization
+                await offerService.updateStatus(activeOffer.id, 'FINALIZING');
+                showNotification('Offer has been sent to finalization.', 'success');
 
-            // Switch to finalize tab
-            if (onOfferFinalized) {
-                const finalizedOffer = {
-                    ...activeOffer,
-                    status: 'FINALIZING'
-                };
-                onOfferFinalized(finalizedOffer);
+                if (onOfferFinalized) {
+                    const finalizedOffer = {
+                        ...activeOffer,
+                        status: 'FINALIZING'
+                    };
+                    onOfferFinalized(finalizedOffer);
+                }
             }
 
             // Remove from current tab
@@ -957,15 +974,26 @@ const FinanceValidatedOffers = ({
 
             showNotification(successMessage, 'success');
 
-            // Switch to finalize tab with accepted offer
-            if (result.acceptedOfferId && onOfferFinalized) {
-                const finalizedOffer = {
-                    ...activeOffer,
-                    id: result.acceptedOfferId,
-                    status: 'FINALIZING'
-                };
-                console.log('Switching to finalize tab with offer:', finalizedOffer);
-                onOfferFinalized(finalizedOffer);
+            if (result.acceptedOfferId) {
+                if (isEquipmentOffer && onOfferSentToInspection) {
+                    // Equipment offers go to inspection
+                    const inspectionOffer = {
+                        ...activeOffer,
+                        id: result.acceptedOfferId,
+                        status: 'INSPECTION_PENDING'
+                    };
+                    console.log('Switching to inspection tab with equipment offer:', inspectionOffer);
+                    onOfferSentToInspection(inspectionOffer);
+                } else if (onOfferFinalized) {
+                    // Non-equipment offers go to finalize
+                    const finalizedOffer = {
+                        ...activeOffer,
+                        id: result.acceptedOfferId,
+                        status: 'FINALIZING'
+                    };
+                    console.log('Switching to finalize tab with offer:', finalizedOffer);
+                    onOfferFinalized(finalizedOffer);
+                }
             }
 
             // Handle new offer for rejected items (don't auto-switch)
@@ -1079,7 +1107,7 @@ const FinanceValidatedOffers = ({
         const { hasFullFulfillment, hasAcceptedItems } = calculateFulfillmentStatus(activeOffer);
 
         if (hasFullFulfillment) {
-            // Case 1: Full fulfillment - Show Finalize option
+            // Case 1: Full fulfillment - Show Finalize option (or Send to Inspection for equipment)
             return (
                 <div className="action-buttons-group">
                     <button
@@ -1089,10 +1117,12 @@ const FinanceValidatedOffers = ({
                             handleFinalizeClick();
                         }}
                         disabled={loading || isContinuing}
-                        title="Requested quantities met or exceeded - proceed to finalization"
+                        title={isEquipmentOffer
+                            ? "Send equipment offer for inspection before finalization"
+                            : "Requested quantities met or exceeded - proceed to finalization"}
                     >
                         <FiCheckCircle />
-                        {isContinuing ? 'Processing...' : 'Finalize Offer'}
+                        {isContinuing ? 'Processing...' : (isEquipmentOffer ? 'Send to Inspection' : 'Finalize Offer')}
                     </button>
                     <button
                         className="btn-primary"
@@ -1115,7 +1145,7 @@ const FinanceValidatedOffers = ({
                 </div>
             );
         } else if (hasAcceptedItems) {
-            // Case 2: Partial fulfillment - Show Continue & Return
+            // Case 2: Partial fulfillment - Show Continue & Return (or Send to Inspection for equipment)
             return (
                 <div className="action-buttons-group">
                     <button
@@ -1125,11 +1155,12 @@ const FinanceValidatedOffers = ({
                             handleContinueAndReturnClick();
                         }}
                         disabled={loading || isContinuing}
-                        title="Continue with accepted items and create new offer for remaining quantities"
-
+                        title={isEquipmentOffer
+                            ? "Send accepted items to inspection and create new offer for remaining quantities"
+                            : "Continue with accepted items and create new offer for remaining quantities"}
                     >
                         <FiArrowRight />
-                        {isContinuing ? 'Processing...' : 'Continue & Return'}
+                        {isContinuing ? 'Processing...' : (isEquipmentOffer ? 'Inspect & Return' : 'Continue & Return')}
                     </button>
                     <button
                         className="btn-primary"
@@ -1546,13 +1577,25 @@ const FinanceValidatedOffers = ({
             <ConfirmationDialog
                 isVisible={showContinueConfirm}
                 type={continueDialogType === 'finalize' ? 'success' : 'info'}
-                title={continueDialogType === 'finalize' ? 'Finalize Offer' : 'Continue & Return'}
+                title={
+                    continueDialogType === 'finalize'
+                        ? (isEquipmentOffer ? 'Send to Inspection' : 'Finalize Offer')
+                        : (isEquipmentOffer ? 'Inspect & Return' : 'Continue & Return')
+                }
                 message={
                     continueDialogType === 'finalize'
-                        ? 'Are you sure you want to finalize this offer? Accepted items will proceed to the finalization stage.'
-                        : 'Accepted items will proceed to finalization, and a new offer will be created for the remaining quantities. This action cannot be undone.'
+                        ? (isEquipmentOffer
+                            ? 'Are you sure you want to send this equipment offer for inspection? The equipment team will review before finalization.'
+                            : 'Are you sure you want to finalize this offer? Accepted items will proceed to the finalization stage.')
+                        : (isEquipmentOffer
+                            ? 'Accepted items will be sent for equipment inspection, and a new offer will be created for the remaining quantities. This action cannot be undone.'
+                            : 'Accepted items will proceed to finalization, and a new offer will be created for the remaining quantities. This action cannot be undone.')
                 }
-                confirmText={continueDialogType === 'finalize' ? 'Finalize' : 'Continue & Return'}
+                confirmText={
+                    continueDialogType === 'finalize'
+                        ? (isEquipmentOffer ? 'Send to Inspection' : 'Finalize')
+                        : (isEquipmentOffer ? 'Inspect & Return' : 'Continue & Return')
+                }
                 cancelText="Cancel"
                 onConfirm={continueDialogType === 'finalize' ? confirmFinalize : confirmContinueAndReturn}
                 onCancel={cancelContinue}

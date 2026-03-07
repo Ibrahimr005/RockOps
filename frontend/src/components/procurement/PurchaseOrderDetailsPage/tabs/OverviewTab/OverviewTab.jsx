@@ -36,6 +36,7 @@ const OverviewTab = ({ purchaseOrder }) => {
         return item.itemType?.name ||
             item.offerItem?.requestOrderItem?.itemType?.name ||
             item.itemTypeName ||
+            item.equipmentSpec?.name ||
             "Unknown Item";
     };
 
@@ -44,14 +45,16 @@ const OverviewTab = ({ purchaseOrder }) => {
         return item.itemType?.category?.name ||
             item.offerItem?.requestOrderItem?.itemType?.category?.name ||
             item.itemCategory ||
+            item.equipmentSpec?.equipmentTypeName ||
             null;
     };
 
     // Format quantity
     const formatQuantity = (item) => {
-        const unit = item.itemType?.measuringUnit ||
+        const unit = item.measuringUnit ||
+            item.itemType?.measuringUnit ||
             item.offerItem?.requestOrderItem?.itemType?.measuringUnit ||
-            'units';
+            (item.equipmentSpec ? 'unit' : 'units');
         const quantity = item.quantity || 0;
         return `${quantity} ${unit}`;
     };
