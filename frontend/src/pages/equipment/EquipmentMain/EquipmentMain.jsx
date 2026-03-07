@@ -195,7 +195,9 @@ const EquipmentMain = () => {
                 (item.name && item.name.toLowerCase().includes(lowerCaseSearch)) ||
                 (item.model && item.model.toLowerCase().includes(lowerCaseSearch)) ||
                 (item.brand && item.brand.toLowerCase().includes(lowerCaseSearch)) ||
-                (item.serialNumber && item.serialNumber.toLowerCase().includes(lowerCaseSearch))
+                (item.serialNumber && item.serialNumber.toLowerCase().includes(lowerCaseSearch)) ||
+                (item.mainDriverName && item.mainDriverName.toLowerCase().includes(lowerCaseSearch)) ||
+                (item.subDriverName && item.subDriverName.toLowerCase().includes(lowerCaseSearch))
             );
         }
 
@@ -346,11 +348,6 @@ const EquipmentMain = () => {
             <PageHeader
                 title="Equipment"
                 subtitle="View and manage all equipment in your fleet"
-                filterButton={{
-                    onClick: () => setShowFilters(!showFilters),
-                    isActive: showFilters,
-                    activeCount: getActiveFilterCount()
-                }}
                 actionButton={permissions.canCreate ? {
                     text: "Add Equipment",
                     icon: <FaPlus />,
@@ -359,119 +356,92 @@ const EquipmentMain = () => {
                 } : null}
             />
 
-            {/* Filter Panel */}
+            {/* Search & Filter Toolbar */}
+            <div className="equipment-toolbar-bar">
+                <div className="equipment-toolbar-search">
+                    <FaSearch className="equipment-toolbar-search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Search by name, model, brand, or serial number..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                        <button className="equipment-toolbar-search-clear" onClick={() => setSearchTerm('')}>
+                            &times;
+                        </button>
+                    )}
+                </div>
+                <button
+                    className={`equipment-toolbar-filter-toggle ${showFilters ? 'active' : ''}`}
+                    onClick={() => setShowFilters(!showFilters)}
+                >
+                    <FaFilter />
+                    <span>Filters</span>
+                    {getActiveFilterCount() > 0 && (
+                        <span className="equipment-toolbar-filter-badge">{getActiveFilterCount()}</span>
+                    )}
+                </button>
+                <span className="equipment-toolbar-count">
+                    {filteredEquipment.length} of {equipmentData.length}
+                </span>
+            </div>
+
+            {/* Filter Dropdowns */}
             {showFilters && (
-                <div className="page-header__filter-panel">
-                    <div className="page-header__filter-header">
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <h4>Filter Equipment</h4>
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>
-                                Showing {filteredEquipment.length} out of {equipmentData.length}
-                            </span>
-                        </div>
-                        <div className="filter-actions">
-                            <button
-                                className="filter-reset-btn"
-                                onClick={handleResetFilters}
-                                disabled={getActiveFilterCount() === 0}
-                            >
-                                Clear All
-                            </button>
-                            <button
-                                className={`filter-collapse-btn ${showFilters ? '' : 'collapsed'}`}
-                                onClick={() => setShowFilters(!showFilters)}
-                            >
-                                <FaChevronDown />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="page-header__filter-list">
-                        <div className="page-header__filter-item">
-                            <label>Name</label>
-                            <input
-                                type="text"
-                                placeholder="Search by name..."
-                                value={filterName}
-                                onChange={(e) => setFilterName(e.target.value)}
-                                style={{
-                                    padding: '8px 12px',
-                                    borderRadius: '6px',
-                                    border: '1px solid var(--border-color)',
-                                    backgroundColor: 'var(--bg-secondary)',
-                                    color: 'var(--text-primary)',
-                                    width: '100%'
-                                }}
-                            />
-                        </div>
-
-                        <div className="page-header__filter-item">
+                <div className="equipment-filters-panel">
+                    <div className="equipment-filters-grid">
+                        <div className="equipment-filter-group">
                             <label>Model</label>
-                            <select
-                                value={selectedModel}
-                                onChange={(e) => setSelectedModel(e.target.value)}
-                            >
+                            <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
                                 <option value="">All Models</option>
                                 {uniqueModels.map(model => (
                                     <option key={model} value={model}>{model}</option>
                                 ))}
                             </select>
                         </div>
-
-                        <div className="page-header__filter-item">
-                            <label>Equipment Type</label>
-                            <select
-                                value={selectedType}
-                                onChange={(e) => setSelectedType(e.target.value)}
-                            >
+                        <div className="equipment-filter-group">
+                            <label>Type</label>
+                            <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
                                 <option value="">All Types</option>
                                 {equipmentTypes.map(type => (
                                     <option key={type.id} value={type.id}>{type.name}</option>
                                 ))}
                             </select>
                         </div>
-
-                        <div className="page-header__filter-item">
-                            <label>Equipment Brand</label>
-                            <select
-                                value={selectedBrand}
-                                onChange={(e) => setSelectedBrand(e.target.value)}
-                            >
+                        <div className="equipment-filter-group">
+                            <label>Brand</label>
+                            <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
                                 <option value="">All Brands</option>
                                 {equipmentBrands.map(brand => (
                                     <option key={brand.id} value={brand.id}>{brand.name}</option>
                                 ))}
                             </select>
                         </div>
-
-                        <div className="page-header__filter-item">
+                        <div className="equipment-filter-group">
                             <label>Site</label>
-                            <select
-                                value={selectedSite}
-                                onChange={(e) => setSelectedSite(e.target.value)}
-                            >
+                            <select value={selectedSite} onChange={(e) => setSelectedSite(e.target.value)}>
                                 <option value="">All Sites</option>
                                 {sites.map(site => (
                                     <option key={site.id} value={site.id}>{site.name}</option>
                                 ))}
                             </select>
                         </div>
-
-                        <div className="page-header__filter-item">
+                        <div className="equipment-filter-group">
                             <label>Status</label>
-                            <select
-                                value={selectedStatus}
-                                onChange={(e) => setSelectedStatus(e.target.value)}
-                            >
+                            <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
                                 <option value="">All Statuses</option>
                                 {statusOptions.map(status => (
-                                    <option key={status.value} value={status.value}>
-                                        {status.label}
-                                    </option>
+                                    <option key={status.value} value={status.value}>{status.label}</option>
                                 ))}
                             </select>
                         </div>
                     </div>
+                    {getActiveFilterCount() > 0 && (
+                        <button className="equipment-filters-clear" onClick={handleResetFilters}>
+                            Clear all filters
+                        </button>
+                    )}
                 </div>
             )}
 

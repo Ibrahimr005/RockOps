@@ -74,8 +74,182 @@ $status-colors: (
   /* For modal positioning */
 }
 
-// Intro Card - Using common IntroCard component
-// Custom styles removed as we're using the common component
+// Search & Filter Toolbar
+.equipment-toolbar-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+
+  .equipment-toolbar-search {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    height: 42px;
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: border-color 0.2s;
+
+    &:focus-within {
+      border-color: var(--color-primary);
+    }
+
+    .equipment-toolbar-search-icon {
+      color: var(--color-text-muted);
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 0.9rem;
+      color: var(--color-text-primary);
+      height: 100%;
+
+      &::placeholder {
+        color: var(--color-text-muted);
+      }
+    }
+
+    .equipment-toolbar-search-clear {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      line-height: 1;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 0;
+
+      &:hover {
+        color: var(--color-text-primary);
+      }
+    }
+  }
+
+  .equipment-toolbar-filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 42px;
+    padding: 0 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    &.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #fff;
+    }
+
+    .equipment-toolbar-filter-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      background: var(--color-primary);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    &.active .equipment-toolbar-filter-badge {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  .equipment-toolbar-count {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+}
+
+// Filter Dropdowns Panel
+.equipment-filters-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+
+  .equipment-filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .equipment-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    input,
+    select {
+      height: 36px;
+      padding: 0 0.65rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--main-background-color);
+      color: var(--color-text-primary);
+      font-size: 0.88rem;
+      transition: border-color 0.2s;
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+      }
+
+      &::placeholder {
+        color: var(--color-text-muted);
+      }
+    }
+  }
+
+  .equipment-filters-clear {
+    display: inline-block;
+    margin-top: 0.75rem;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
 
 // Toolbar section with improved layout
 .equipment-toolbar {
