@@ -16,4 +16,4 @@ ENV SPRING_PROFILES_ACTIVE=prod
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+UseG1GC", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx310m", "-Xms200m", "-XX:MaxMetaspaceSize=120m", "-XX:+UseG1GC", "-XX:+UseStringDeduplication", "-jar", "app.jar"]
