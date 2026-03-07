@@ -1,0 +1,276 @@
+.cal {
+  padding: var(--spacing-lg);
+  user-select: none;
+}
+
+// ── Header ─────────────────────────────────────────────────
+.cal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3rem;
+}
+
+.cal__month-picker-wrapper {
+  position: relative;
+}
+
+.cal__month-label {
+  font-size: var(--font-size-lg);
+  font-weight: var(--bold-font-weight);
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-family);
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: var(--color-surface-secondary);
+  }
+}
+
+.cal__month-label-caret {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.cal__nav-btn {
+  background: var(--color-surface-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+
+  &:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+// ── Month/Year Picker Dropdown ─────────────────────────────
+.cal__picker {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--section-background-color);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  z-index: 100;
+  min-width: 220px;
+}
+
+.cal__picker-year {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cal__picker-year-val {
+  font-size: var(--font-size-md);
+  font-weight: var(--bold-font-weight);
+  color: var(--color-text-primary);
+}
+
+.cal__picker-year-btn {
+  background: var(--color-surface-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+
+  &:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+.cal__picker-months {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.cal__picker-month-btn {
+  padding: 6px 4px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  cursor: pointer;
+  text-align: center;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+
+  &:hover {
+    background: var(--color-surface-secondary);
+    border-color: var(--border-color);
+  }
+
+  &--active {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+    border-color: var(--color-primary);
+
+    &:hover {
+      background: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
+    }
+  }
+}
+
+// ── Day names ──────────────────────────────────────────────
+.cal__day-names {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: var(--spacing-xs);
+}
+
+.cal__day-name {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--bold-font-weight);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--spacing-xs) 0;
+}
+
+// ── Grid ───────────────────────────────────────────────────
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal__cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 6px 4px 4px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  min-height: 52px;
+
+  &:hover:not(.cal__cell--empty) {
+    background: var(--color-surface-secondary);
+    border-color: var(--border-color);
+  }
+
+  &--empty {
+    cursor: default;
+  }
+
+  &--today {
+    .cal__day-num {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &--selected {
+    background: rgba(var(--color-primary-rgb), 0.08);
+    border-color: var(--color-primary);
+  }
+
+  &--has-tasks {
+    background: var(--color-surface-tertiary);
+  }
+
+  &--selected.cal__cell--has-tasks {
+    background: rgba(var(--color-primary-rgb), 0.1);
+  }
+}
+
+.cal__day-num {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+// ── Dots ───────────────────────────────────────────────────
+.cal__dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.3rem;
+}
+
+.cal__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+
+  &.dot--low    { background: var(--color-success); }
+  &.dot--medium { background: var(--color-info); }
+  &.dot--high   { background: var(--color-warning); }
+  &.dot--urgent { background: var(--color-danger); }
+}
+
+.cal__dot-more {
+  font-size: 9px;
+  color: var(--color-text-secondary);
+  font-weight: var(--bold-font-weight);
+}
+
+// ── Legend ─────────────────────────────────────────────────
+.cal__legend {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cal__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}

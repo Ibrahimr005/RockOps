@@ -39,6 +39,7 @@ public class AuthenticationService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .username(user.getUsername())
+                .id(user.getId())
                 .build();
     }
 
@@ -55,6 +56,7 @@ public class AuthenticationService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .username(user.getUsername())
+                .id(user.getId())
                 .build();
     }
 

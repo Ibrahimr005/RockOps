@@ -1,0 +1,1435 @@
+[2026-03-04T13:55:01.805Z] PROMPT
+============================================================
+Analyze this codebase for security vulnerabilities:
+- Check for hardcoded secrets (API keys, passwords)
+- Identify SQL injection risks
+- Find XSS vulnerabilities
+- Check for insecure dependencies
+- Identify authentication/authorization issues
+
+Provide a JSON report with:
+{
+  "vulnerabilities": [{ "severity": "high|medium|low", "file": "...", "line": N, "description": "..." }],
+  "riskScore": 0-100,
+  "recommendations": ["..."]
+}
+
+## Codebase Context
+
+--- .claude/helpers/github-safe.js ---
+#!/usr/bin/env node
+
+/**
+ * Safe GitHub CLI Helper
+ * Prevents timeout issues when using gh commands with special characters
+ * 
+ * Usage:
+ *   ./github-safe.js issue comment 123 "Message with `backticks`"
+ *   ./github-safe.js pr create --title "Title" --body "Complex body"
+ */
+
+import { execSync } from 'child_process';
+import { writeFileSync, unlinkSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { randomBytes } from 'crypto';
+
+const args = process.argv.slice(2);
+
+if (args.length < 2) {
+  console.log(`
+Safe GitHub CLI Helper
+
+Usage:
+  ./github-safe.js issue comment <number> <body>
+  ./github-safe.js pr comment <number> <body>
+  ./github-safe.js issue create --title <title> --body <body>
+  ./github-safe.js pr create --title <title> --body <body>
+
+This helper prevents timeout issues with special characters like:
+- Backticks in code examples
+- Command substitution \$(...)
+- Directory paths
+- Special shell characters
+`);
+  process.exit(1);
+}
+
+const [command, subcommand, ...restArgs] = args;
+
+// Handle commands that need body content
+if ((command === 'issue' || command === 'pr') && 
+    (subcommand === 'comment' || subcommand === 'create')) {
+  
+  let bodyIndex = -1;
+  let body = '';
+  
+  if (subcommand === 'comment' && restArgs.length >= 2) {
+    // Simple format: github-safe.js issue comment 123 "body"
+    body = restArgs[1];
+    bodyIndex = 1;
+  } else {
+    // Flag format: --body "content" 
+    bodyIndex = restArgs.indexOf('--body');
+    if (bodyIndex !== -1 && bodyIndex < restArgs.length - 1) {
+      body = restArgs[bodyIndex + 1];
+    }
+  }
+  
+  if (body) {
+    // Use temporary file for body content
+    const tmpFile = join(tmpdir(), `gh-body-${randomBytes(8).toString('hex')}.tmp`);
+    
+    try {
+      writeFileSync(tmpFile, body, 'utf8');
+      
+      // Build new command with --body-file
+      const newArgs = [...restArgs];
+      if (subcommand === 'comment' && bodyIndex === 1) {
+        // Replace body with --body-file
+        newArgs[1] = '--body-file';
+        newArgs.push(tmpFile);
+      } else if (bodyIndex !== -1) {
+        // Replace --body with --body-file
+        newArgs[bodyIndex] = '--body-file';
+        newArgs[bodyIndex + 1] = tmpFile;
+      }
+      
+      // Execute safely
+      const ghCommand = `gh ${command} ${subcommand} ${newArgs.join(' ')}`;
+      console.log(`Executing: ${ghCommand}`);
+      
+      const result = execSync(ghCommand, { 
+        stdio: 'inherit',
+        timeout: 30000 // 30 second timeout
+      });
+      
+    } catch (error) {
+      console.error('Error:', error.message);
+      process.exit(1);
+    } finally {
+      // Clean up
+      try {
+        unlinkSync(tmpFile);
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+    }
+  } else {
+    // No body content, execute normally
+    execSync(`gh ${args.join(' ')}`, { stdio: 'inherit' });
+  }
+} else {
+  // Other commands, execute normally
+  execSync(`gh ${args.join(' ')}`, { stdio: 'inherit' });
+}
+
+
+--- .claude/helpers/memory.js ---
+#!/usr/bin/env node
+/**
+ * Claude Flow Memory Helper
+ * Simple key-value memory for cross-session context
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const MEMORY_DIR = path.join(process.cwd(), '.claude-flow', 'data');
+const MEMORY_FILE = path.join(MEMORY_DIR, 'memory.json');
+
+function loadMemory() {
+  try {
+    if (fs.existsSync(MEMORY_FILE)) {
+      return JSON.parse(fs.readFileSync(MEMORY_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return {};
+}
+
+function saveMemory(memory) {
+  fs.mkdirSync(MEMORY_DIR, { recursive: true });
+  fs.writeFileSync(MEMORY_FILE, JSON.stringify(memory, null, 2));
+}
+
+const commands = {
+  get: (key) => {
+    const memory = loadMemory();
+    const value = key ? memory[key] : memory;
+    console.log(JSON.stringify(value, null, 2));
+    return value;
+  },
+
+  set: (key, value) => {
+    if (!key) {
+      console.error('Key required');
+      return;
+    }
+    const memory = loadMemory();
+    memory[key] = value;
+    memory._updated = new Date().toISOString();
+    saveMemory(memory);
+    console.log(`Set: ${key}`);
+  },
+
+  delete: (key) => {
+    if (!key) {
+      console.error('Key required');
+      return;
+    }
+    const memory = loadMemory();
+    delete memory[key];
+    saveMemory(memory);
+    console.log(`Deleted: ${key}`);
+  },
+
+  clear: () => {
+    saveMemory({});
+    console.log('Memory cleared');
+  },
+
+  keys: () => {
+    const memory = loadMemory();
+    const keys = Object.keys(memory).filter(k => !k.startsWith('_'));
+    console.log(keys.join('\n'));
+    return keys;
+  },
+};
+
+// CLI
+const [,, command, key, ...valueParts] = process.argv;
+const value = valueParts.join(' ');
+
+if (command && commands[command]) {
+  commands[command](key, value);
+} else {
+  console.log('Usage: memory.js <get|set|delete|clear|keys> [key] [value]');
+}
+
+module.exports = commands;
+
+
+--- .claude/helpers/router.js ---
+#!/usr/bin/env node
+/**
+ * Claude Flow Agent Router
+ * Routes tasks to optimal agents based on learned patterns
+ */
+
+const AGENT_CAPABILITIES = {
+  coder: ['code-generation', 'refactoring', 'debugging', 'implementation'],
+  tester: ['unit-testing', 'integration-testing', 'coverage', 'test-generation'],
+  reviewer: ['code-review', 'security-audit', 'quality-check', 'best-practices'],
+  researcher: ['web-search', 'documentation', 'analysis', 'summarization'],
+  architect: ['system-design', 'architecture', 'patterns', 'scalability'],
+  'backend-dev': ['api', 'database', 'server', 'authentication'],
+  'frontend-dev': ['ui', 'react', 'css', 'components'],
+  devops: ['ci-cd', 'docker', 'deployment', 'infrastructure'],
+};
+
+const TASK_PATTERNS = {
+  // Code patterns
+  'implement|create|build|add|write code': 'coder',
+  'test|spec|coverage|unit test|integration': 'tester',
+  'review|audit|check|validate|security': 'reviewer',
+  'research|find|search|documentation|explore': 'researcher',
+  'design|architect|structure|plan': 'architect',
+
+  // Domain patterns
+  'api|endpoint|server|backend|database': 'backend-dev',
+  'ui|frontend|component|react|css|style': 'frontend-dev',
+  'deploy|docker|ci|cd|pipeline|infrastructure': 'devops',
+};
+
+function routeTask(task) {
+  const taskLower = task.toLowerCase();
+
+  // Check patterns
+  for (const [pattern, agent] of Object.entries(TASK_PATTERNS)) {
+    const regex = new RegExp(pattern, 'i');
+    if (regex.test(taskLower)) {
+      return {
+        agent,
+        confidence: 0.8,
+        reason: `Matched pattern: ${pattern}`,
+      };
+    }
+  }
+
+  // Default to coder for unknown tasks
+  return {
+    agent: 'coder',
+    confidence: 0.5,
+    reason: 'Default routing - no specific pattern matched',
+  };
+}
+
+// CLI
+const task = process.argv.slice(2).join(' ');
+
+if (task) {
+  const result = routeTask(task);
+  console.log(JSON.stringify(result, null, 2));
+} else {
+  console.log('Usage: router.js <task description>');
+  console.log('\nAvailable agents:', Object.keys(AGENT_CAPABILITIES).join(', '));
+}
+
+module.exports = { routeTask, AGENT_CAPABILITIES, TASK_PATTERNS };
+
+
+--- .claude/helpers/session.js ---
+#!/usr/bin/env node
+/**
+ * Claude Flow Session Manager
+ * Handles session lifecycle: start, restore, end
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const SESSION_DIR = path.join(process.cwd(), '.claude-flow', 'sessions');
+const SESSION_FILE = path.join(SESSION_DIR, 'current.json');
+
+const commands = {
+  start: () => {
+    const sessionId = `session-${Date.now()}`;
+    const session = {
+      id: sessionId,
+      startedAt: new Date().toISOString(),
+      cwd: process.cwd(),
+      context: {},
+      metrics: {
+        edits: 0,
+        commands: 0,
+        tasks: 0,
+        errors: 0,
+      },
+    };
+
+    fs.mkdirSync(SESSION_DIR, { recursive: true });
+    fs.writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2));
+
+    console.log(`Session started: ${sessionId}`);
+    return session;
+  },
+
+  restore: () => {
+    if (!fs.existsSync(SESSION_FILE)) {
+      console.log('No session to restore');
+      return null;
+    }
+
+    const session = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
+    session.restoredAt = new Date().toISOString();
+    fs.writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2));
+
+    console.log(`Session restored: ${session.id}`);
+    return session;
+  },
+
+  end: () => {
+    if (!fs.existsSync(SESSION_FILE)) {
+      console.log('No active session');
+      return null;
+    }
+
+    const session = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
+    session.endedAt = new Date().toISOString();
+    session.duration = Date.now() - new Date(session.startedAt).getTime();
+
+    // Archive session
+    const archivePath = path.join(SESSION_DIR, `${session.id}.json`);
+    fs.writeFileSync(archivePath, JSON.stringify(session, null, 2));
+    fs.unlinkSync(SESSION_FILE);
+
+    console.log(`Session ended: ${session.id}`);
+    console.log(`Duration: ${Math.round(session.duration / 1000 / 60)} minutes`);
+    console.log(`Metrics: ${JSON.stringify(session.metrics)}`);
+
+    return session;
+  },
+
+  status: () => {
+    if (!fs.existsSync(SESSION_FILE)) {
+      console.log('No active session');
+      return null;
+    }
+
+    const session = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
+    const duration = Date.now() - new Date(session.startedAt).getTime();
+
+    console.log(`Session: ${session.id}`);
+    console.log(`Started: ${session.startedAt}`);
+    console.log(`Duration: ${Math.round(duration / 1000 / 60)} minutes`);
+    console.log(`Metrics: ${JSON.stringify(session.metrics)}`);
+
+    return session;
+  },
+
+  update: (key, value) => {
+    if (!fs.existsSync(SESSION_FILE)) {
+      console.log('No active session');
+      return null;
+    }
+
+    const session = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
+    session.context[key] = value;
+    session.updatedAt = new Date().toISOString();
+    fs.writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2));
+
+    return session;
+  },
+
+  get: (key) => {
+    if (!fs.existsSync(SESSION_FILE)) return null;
+    try {
+      const session = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
+      return key ? (session.context || {})[key] : session.context;
+    } catch { return null; }
+  },
+
+  metric: (name) => {
+    if (!fs.existsSync(SESSION_FILE)) {
+      return null;
+    }
+
+    const session = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
+    if (session.metrics[name] !== undefined) {
+      session.metrics[name]++;
+      fs.writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2));
+    }
+
+    return session;
+  },
+};
+
+// CLI
+const [,, command, ...args] = process.argv;
+
+if (command && commands[command]) {
+  commands[command](...args);
+} else {
+  console.log('Usage: session.js <start|restore|end|status|update|metric> [args]');
+}
+
+module.exports = commands;
+
+
+--- .claude/helpers/statusline.js (truncated) ---
+#!/usr/bin/env node
+/**
+ * Claude Flow V3 Statusline Generator
+ * Displays real-time V3 implementation progress and system status
+ *
+ * Usage: node statusline.js [--json] [--compact]
+ */
+
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+// Configuration
+const CONFIG = {
+  enabled: true,
+  showProgress: true,
+  showSecurity: true,
+  showSwarm: true,
+  showHooks: true,
+  showPerformance: true,
+  refreshInterval: 30000,
+  maxAgents: 15,
+  topology: 'hierarchical-mesh',
+};
+
+// ANSI colors
+const c = {
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+  red: '\x1b[0;31m',
+  green: '\x1b[0;32m',
+  yellow: '\x1b[0;33m',
+  blue: '\x1b[0;34m',
+  purple: '\x1b[0;35m',
+  cyan: '\x1b[0;36m',
+  brightRed: '\x1b[1;31m',
+  brightGreen: '\x1b[1;32m',
+  brightYellow: '\x1b[1;33m',
+  brightBlue: '\x1b[1;34m',
+  brightPurple: '\x1b[1;35m',
+  brightCyan: '\x1b[1;36m',
+  brightWhite: '\x1b[1;37m',
+};
+
+// Get user info
+function getUserInfo() {
+  let name = 'user';
+  let gitBranch = '';
+  let modelName = 'Opus 4.5';
+
+  try {
+    name = execSync('git config user.name 2>/dev/null || echo "user"', { encoding: 'utf-8' }).trim();
+    gitBranch = execSync('git branch --show-current 2>/dev/null || echo ""', { encoding: 'utf-8' }).trim();
+  } catch (e) {
+    // Ignore errors
+  }
+
+  return { name, gitBranch, modelName };
+}
+
+// Get learning stats from memory database
+function getLearningStats() {
+  const memoryPaths = [
+    path.join(process.cwd(), '.swarm', 'memory.db'),
+    path.join(process.cwd(), '.claude', 'memory.db'),
+    path.join(process.cwd(), 'data', 'memory.db'),
+  ];
+
+  let patterns = 0;
+  let sessions = 0;
+  let trajectories = 0;
+
+  // Try to read from sqlite database
+  for (const dbPath of memoryPaths) {
+    if (fs.existsSync(dbPath)) {
+      try {
+        // Count entries in memory file (rough estimate from file size)
+        const stats = fs.statSync(dbPath);
+        const sizeKB = stats.size / 1024;
+        // Estimate: ~2KB per pattern on average
+        patterns = Math.floor(sizeKB / 2);
+        sessions = Math.max(1, Math.floor(patterns / 10));
+        trajectories = Math.floor(patterns / 5);
+        break;
+      } catch (e) {
+        // Ignore
+      }
+    }
+  }
+
+  // Also check for session files
+  const sessionsPath = path.join(process.cwd(), '.claude', 'sessions');
+  if (fs.existsSync(sessionsPath)) {
+    try {
+      const sessionFiles = fs.readdirSync(sessionsPath).filter(f => f.endsWith('.json'));
+      sessions = Math.max(sessions, sessionFiles.length);
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  return { patterns, sessions, trajectories };
+}
+
+// Get V3 progress from learning state (grows as system learns)
+function getV3Progress() {
+  const learning = getLearningStats();
+
+  // DDD progress based on actual learned patterns
+  // New install: 0 patterns = 0/5 domains, 0% DDD
+  // As patterns grow: 10+ patterns = 1 domain, 50+ = 2, 100+ = 3, 200+ = 4, 500+ = 5
+  let domainsCompleted = 0;
+  if (learning.patterns >= 500) domainsCompleted = 5;
+  else if (learning.patterns >= 200) domainsCompleted = 4;
+  else if (learning.patterns >= 100) domainsCompleted = 3;
+  else if (learning.patterns >= 50) domainsCompleted = 2;
+  else if (learning.patterns >= 10) domainsCompleted = 1;
+
+  const totalDomains = 5;
+  const dddProgress = Math.min(100, Math.floor((domainsCompleted / totalDomains) * 100));
+
+  return {
+    domainsCompleted,
+    totalDomains,
+    dddProgress,
+    patternsLearned: learning.patterns,
+    sessionsCompleted: learning.sessions
+  };
+}
+
+// Get security status based on actual scans
+function getSecurityStatus() {
+  // Check for security scan results in memory
+  const scanResultsPath = path.join(process.cwd(), '.claude', 'security-scans');
+  let cvesFixed = 0;
+  const totalCves = 3;
+
+  if (fs.existsSync(scanResultsPath)) {
+    try {
+      const scans = fs.readdirSync(scanResultsPath).filter(f => f.endsWith('.json'));
+      // Each successful scan file = 1 CVE addressed
+      cvesFixed = Math.min(totalCves, scans.length);
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  // Also check .swarm/security for audit results
+  const auditPath = path.join(process.cwd(), '.swarm', 'security');
+  if (fs.existsSync(auditPath)) {
+    try {
+      const audits = fs.readdirSync(auditPath).filter(f => f.includes('audit'));
+      cvesFixed = Math.min(totalCves, Math.max(cvesFixed, audits.length));
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  const status = cvesFixed >= totalCves ? 'CLEAN' : cvesFixed > 0 ? 'IN_PROGRESS' : 'PENDING';
+
+  return {
+    status,
+    cvesFixed,
+    totalCves,
+  };
+}
+
+// Get swarm status
+function getSwarmStatus() {
+  let activeAgents = 0;
+  let coordinationActive = false;
+
+  try {
+    const ps = execSync('ps aux 2>/dev/null | grep -c agentic-flow || echo "0"', { encoding: 'utf-8' });
+    activeAgents = Math.max(0, parseInt(ps.trim()) - 1);
+    coordinationActive = activeAgents > 0;
+  } catch (e) {
+    // Ignore errors
+  }
+
+  return {
+    activeAgen
+
+--- frontend/eslint.config.js ---
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+
+export default [
+  { ignores: ['dist'] },
+  {
+    files: ['**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+]
+
+
+--- frontend/src/components/common/Button/index.js ---
+export { default, Button, IconButton, CloseButton, ButtonGroup } from './Button';
+
+
+--- frontend/src/components/common/EmployeeAvatar/index.js ---
+export { default } from './EmployeeAvatar'; 
+
+--- frontend/src/components/common/PageHeader/index.js ---
+export { default } from './PageHeader.jsx';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--- frontend/src/config/api.config.js (truncated) ---
+// src/config/api.config.js
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
+
+// Direct Purchase Ticket module endpoints
+export const DIRECT_PURCHASE_ENDPOINTS = {
+    BASE: '/api/direct-purchase-tickets',
+    BY_ID: (id) => `/api/direct-purchase-tickets/${id}`,
+    CREATE: '/api/direct-purchase-tickets',
+    UPDATE: (id) => `/api/direct-purchase-tickets/${id}`,
+    DELETE: (id) => `/api/direct-purchase-tickets/${id}`,
+
+    // Query-based endpoints
+    BY_STATUS: (status) => `/api/direct-purchase-tickets?status=${status}`,
+    BY_EQUIPMENT: (equipmentId) => `/api/direct-purchase-tickets?equipmentId=${equipmentId}`,
+    BY_MERCHANT: (merchantId) => `/api/direct-purchase-tickets?merchantId=${merchantId}`,
+
+    // Step endpoints
+    STEPS: {
+        BY_TICKET: (ticketId) => `/api/direct-purchase-tickets/${ticketId}/steps`,
+        BY_ID: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}`,
+        UPDATE: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}`,
+        COMPLETE: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}/complete`,
+        DELETE: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}`
+    }
+};
+// Dashboard endpoints
+export const DASHBOARD_ENDPOINTS = {
+    BASE: '/api/dashboard',
+    ADMIN: '/api/dashboard/admin',
+    SITE_ADMIN: '/api/dashboard/site-admin',
+    EQUIPMENT_MANAGER: '/api/dashboard/equipment-manager',
+    WAREHOUSE_MANAGER: '/api/dashboard/warehouse-manager',
+    HR_MANAGER: '/api/dashboard/hr-manager',
+    HR_EMPLOYEE: '/api/dashboard/hr-employee',
+    FINANCE_MANAGER: '/api/dashboard/finance-manager',
+    FINANCE_EMPLOYEE: '/api/dashboard/finance-employee',
+    MAINTENANCE_MANAGER: '/api/dashboard/maintenance-manager',
+    MAINTENANCE_EMPLOYEE: '/api/dashboard/maintenance-employee',
+    PROCUREMENT: '/api/dashboard/procurement',
+    SECRETARY: '/api/dashboard/secretary',
+    USER: '/api/dashboard/user',
+};
+
+// Equipment module endpoints
+export const EQUIPMENT_ENDPOINTS = {
+    BASE: '/api/equipment',
+    BY_ID: (id) => `/api/equipment/${id}`,
+    TYPES: '/api/equipment-types',
+    TYPE_BY_ID: (id) => `/api/equipment-types/${id}`,
+    TYPE_BY_NAME: (name) => `/api/equipment-types/name/${name}`,
+    TYPE_SUPPORTED_WORK_TYPES: (typeId) => `/api/equipment-types/${typeId}/supported-work-types`,
+    STATUS_OPTIONS: '/api/equipment/status-options',
+    STATUS: (id) => `/api/equipment/status/${id}`,
+    STATUS_DTO: (id) => `/api/equipment/status/dto/${id}`,
+    BY_TYPE: (typeId) => `/api/equipment/type/${typeId}`,
+    CONSUMABLES: (equipmentId) => `/api/equipment/${equipmentId}/consumables`,
+    CONSUMABLES_BY_CATEGORY: (equipmentId, category) => `/api/equipment/${equipmentId}/consumables/by-category/${category}`,
+    CONSUMABLES_ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/consumables/analytics`,
+    MAINTENANCE: (equipmentId) => `/api/equipment/${equipmentId}/maintenance`,
+    MAINTENANCE_TECHNICIANS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/technicians`,
+    MAINTENANCE_BY_ID: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}`,
+    MAINTENANCE_TRANSACTIONS: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/transactions`,
+    MAINTENANCE_CHECK_TRANSACTION: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`,
+    CREATE_DTO: '/api/equipment/dto',
+    UPDATE_DTO: (id) => `/api/equipment/dto/${id}`,
+    ELIGIBLE_DRIVERS: (typeId) => `/api/equipment/type/${typeId}/eligible-drivers`,
+    SARKY_DRIVERS: (typeId) => `/api/equipment/type/${typeId}/sarky-drivers`,
+    SUPPORTED_WORK_TYPES: (typeId) => `/api/equipment/type/${typeId}/supported-work-types`,
+    CHECK_DRIVER_COMPATIBILITY: (equipmentId, employeeId) =>
+        `/api/equipment/${equipmentId}/check-driver-compatibility/${employeeId}`,
+    BRANDS: '/api/equipment/brands',
+    BRAND_BY_ID: (id) => `/api/equipment/brands/${id}`,
+    SARKY_ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/sarky-analytics`,
+    // Transaction endpoints
+    TRANSACTIONS: (equipmentId) => `/api/equipment/${equipmentId}/transactions`,
+    TRANSACTIONS_INITIATED: (equipmentId) => `/api/equipment/${equipmentId}/transactions/initiated`,
+    SEND_TRANSACTION: (equipmentId) => `/api/equipment/${equipmentId}/send-transaction`,
+    RECEIVE_TRANSACTION: (equipmentId) => `/api/equipment/${equipmentId}/receive-transaction`,
+    ACCEPT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept`,
+    REJECT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/reject`,
+    UPDATE_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipment
+
+--- frontend/src/constants/documentTypes.js ---
+// src/constants/documentTypes.js
+
+// Standard document types for general equipment documents
+export const GENERAL_DOCUMENT_TYPES = [
+    { value: 'MANUAL', label: 'Equipment Manual', icon: 'FileText', color: '#4f46e5' },
+    { value: 'WARRANTY', label: 'Warranty Document', icon: 'FileText', color: '#059669' },
+    { value: 'CERTIFICATE', label: 'Certificate', icon: 'FileText', color: '#dc2626' },
+    { value: 'INSURANCE', label: 'Insurance Document', icon: 'FileText', color: '#ea580c' },
+    { value: 'REGISTRATION', label: 'Registration Document', icon: 'FileText', color: '#7c2d12' },
+    { value: 'INSPECTION', label: 'Inspection Certificate', icon: 'FileText', color: '#7c3aed' },
+    { value: 'OTHER_GENERAL', label: 'Other', icon: 'File', color: '#6b7280' }
+];
+
+// Sarky-specific document types for monthly work documentation
+export const SARKY_DOCUMENT_TYPES = [
+    { value: 'DAILY_REPORT', label: 'Daily Work Report', icon: 'FileText', color: '#4f46e5' },
+    { value: 'TIMESHEET', label: 'Timesheet', icon: 'Clock', color: '#059669' },
+    { value: 'MONTHLY_SUMMARY', label: 'Monthly Summary', icon: 'BarChart', color: '#dc2626' },
+    { value: 'WORK_ORDER', label: 'Work Order', icon: 'ClipboardList', color: '#ea580c' },
+    { value: 'MAINTENANCE_LOG', label: 'Maintenance Log', icon: 'Tool', color: '#7c2d12' },
+    { value: 'FUEL_RECORD', label: 'Fuel Record', icon: 'Fuel', color: '#059669' },
+    { value: 'INSPECTION_REPORT', label: 'Inspection Report', icon: 'Search', color: '#7c3aed' },
+    { value: 'PHOTO_DOCUMENTATION', label: 'Photo Documentation', icon: 'Camera', color: '#0369a1' },
+    { value: 'INCIDENT_REPORT', label: 'Incident Report', icon: 'AlertTriangle', color: '#ef4444' },
+    { value: 'SAFETY_CHECKLIST', label: 'Safety Checklist', icon: 'Shield', color: '#22c55e' },
+    { value: 'OPERATOR_LOG', label: 'Operator Log', icon: 'User', color: '#8b5cf6' },
+    { value: 'OTHER_SARKY', label: 'Other', icon: 'File', color: '#6b7280' }
+];
+
+// Document type utility functions
+export const getDocumentTypeByValue = (value, isSarky = false) => {
+    const types = isSarky ? SARKY_DOCUMENT_TYPES : GENERAL_DOCUMENT_TYPES;
+    return types.find(type => type.value === value);
+};
+
+export const getDocumentTypeIcon = (value, isSarky = false) => {
+    const docType = getDocumentTypeByValue(value, isSarky);
+    return docType ? docType.icon : 'File';
+};
+
+export const getDocumentTypeColor = (value, isSarky = false) => {
+    const docType = getDocumentTypeByValue(value, isSarky);
+    return docType ? docType.color : '#6b7280';
+};
+
+export const getDocumentTypeLabel = (value, isSarky = false) => {
+    const docType = getDocumentTypeByValue(value, isSarky);
+    return docType ? docType.label : value;
+};
+
+// Utility to generate auto-naming convention for sarky documents
+export const generateSarkyDocumentName = (equipmentName, month, year, originalFileName, documentType) => {
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    const monthName = monthNames[month - 1];
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
+    const fileExtension = originalFileName.split('.').pop();
+    const baseName = originalFileName.replace(/\.[^/.]+$/, '');
+    
+    // Clean equipment name for filename (remove special characters)
+    const cleanEquipmentName = equipmentName.replace(/[^a-zA-Z0-9]/g, '_');
+    
+    // Get document type label without spaces
+    const docTypeLabel = getDocumentTypeLabel(documentType, true).replace(/\s+/g, '_');
+    
+    return `${cleanEquipmentName}_Sarky_${monthName}${year}_${docTypeLabel}_${baseName}_${timestamp}.${fileExtension}`;
+};
+
+// Month utilities for sarky documents
+export const MONTH_OPTIONS = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' }
+];
+
+export const getMonthLabel = (monthNumber) => {
+    const month = MONTH_OPTIONS.find(m => m.value === monthNumber);
+    return month ? month.label : `Month ${monthNumber}`;
+};
+
+// Year range utility
+export const generateYearOptions = (yearsBack = 2, yearsForward = 1) => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    
+    for (let i = currentYear - yearsBack; i <= currentYear + yearsForward; i++) {
+        years.push({ value: i, label: i.toString() });
+    }
+    
+    return years;
+}; 
+
+--- frontend/src/pages/HR/JobPosition/details/hooks/usePositionData.js ---
+import { useState, useEffect } from 'react';
+import { jobPositionService } from '../../../../../services/hr/jobPositionService.js';
+
+export const usePositionData = (id) => {
+    const [position, setPosition] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const [positionData, setPositionData] = useState({
+        employees: [],
+        vacancies: [],
+        promotionStats: {},
+        salaryStats: {},
+        validation: {},
+        // Simplified promotion data
+        promotionsFromSimple: [],
+        promotionsToSimple: []
+    });
+
+    const fetchPositionDetails = async () => {
+        if (!id) {
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Use the simplified comprehensive details method
+            const comprehensiveData = await jobPositionService.getComprehensiveDetailsSimplified(id);
+            const { position: positionInfo, salaryStats, validation, promotionStatsSimple } = comprehensiveData;
+
+            setPosition(positionInfo);
+
+            // Extract simple data from the position object with proper null checks
+            const employees = positionInfo?.employees || [];
+            const vacancies = positionInfo?.vacancies || [];
+
+            // Get simplified promotion lists only when needed
+            let promotionsFromSimple = [];
+            let promotionsToSimple = [];
+
+            // Only fetch detailed promotion lists if there are any promotions
+            if (promotionStatsSimple?.totalPromotionsFrom > 0 || promotionStatsSimple?.totalPromotionsTo > 0) {
+                try {
+                    const [fromResponse, toResponse] = await Promise.allSettled([
+                        jobPositionService.getPromotionsFromSimple(id),
+                        jobPositionService.getPromotionsToSimple(id)
+                    ]);
+
+                    promotionsFromSimple = fromResponse.status === 'fulfilled' ? fromResponse.value.data : [];
+                    promotionsToSimple = toResponse.status === 'fulfilled' ? toResponse.value.data : [];
+                } catch (promotionError) {
+                    console.warn('Failed to load detailed promotion data:', promotionError);
+                }
+            }
+
+            const newPositionData = {
+                employees,
+                vacancies,
+                promotionStats: promotionStatsSimple || {},
+                salaryStats: salaryStats || {},
+                validation: validation || {},
+                promotionsFromSimple,
+                promotionsToSimple,
+                // Derived data for compatibility
+                careerPaths: promotionStatsSimple?.topPromotionDestinations ?
+                    Object.keys(promotionStatsSimple.topPromotionDestinations).slice(0, 5) : [],
+                eligibleEmployees: employees.filter(emp => emp?.eligibleForPromotion) || []
+            };
+
+            setPositionData(newPositionData);
+
+        } catch (err) {
+            console.error('Error fetching position details:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to load position details';
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPositionDetails();
+    }, [id]);
+
+    return {
+        position,
+        positionData,
+        loading,
+        error,
+        refetch: fetchPositionDetails
+    };
+};
+
+--- frontend/src/pages/maintenance/MaintenanceSteps/index.js ---
+export { default as MaintenanceSteps } from './MaintenanceSteps';
+export { default as MaintenanceStepModal } from './MaintenanceStepModal'; 
+
+--- frontend/src/pages/maintenance/StepTypeManagement/index.js ---
+export { default } from './StepTypeManagement';
+
+
+
+
+
+
+
+
+
+
+
+--- frontend/src/services/adminService.js ---
+// src/services/adminService.js
+import apiClient from '../utils/apiClient';
+import { ADMIN_ENDPOINTS } from '../config/api.config';
+
+export const adminService = {
+    // Get all users
+    getUsers: () => {
+        return apiClient.get(ADMIN_ENDPOINTS.USERS);
+    },
+
+    // Get user by ID
+    getUserById: (userId) => {
+        return apiClient.get(ADMIN_ENDPOINTS.USER_BY_ID(userId));
+    },
+
+    // Create new user
+    createUser: (userData) => {
+        return apiClient.post(ADMIN_ENDPOINTS.CREATE_USER, userData);
+    },
+
+    // Update user role
+    updateUserRole: (userId, roleData) => {
+        return apiClient.put(ADMIN_ENDPOINTS.UPDATE_USER_ROLE(userId), roleData);
+    },
+
+    // Delete user
+    deleteUser: (userId) => {
+        return apiClient.delete(ADMIN_ENDPOINTS.DELETE_USER(userId));
+    }
+}; 
+
+--- frontend/src/services/authService.js ---
+// src/services/authService.js
+import apiClient from '../utils/apiClient.js';
+import { AUTH_ENDPOINTS } from '../config/api.config.js';
+
+export const authService = {
+    // Register new user
+    register: (registerData) => {
+        return apiClient.post(AUTH_ENDPOINTS.REGISTER, registerData);
+    },
+
+    // Authenticate user with username and password
+    authenticate: (loginData) => {
+        return apiClient.post(AUTH_ENDPOINTS.AUTHENTICATE, loginData);
+    },
+
+    // Login (alias for authenticate for consistency)
+    login: (loginData) => {
+        return apiClient.post(AUTH_ENDPOINTS.LOGIN, loginData);
+    },
+
+    // Validate current token
+    validateToken: () => {
+        return apiClient.get(AUTH_ENDPOINTS.VALIDATE);
+    },
+
+    // Refresh token
+    refreshToken: (refreshTokenData) => {
+        return apiClient.post(AUTH_ENDPOINTS.REFRESH, refreshTokenData);
+    },
+
+    // Get current user profile with full details including ID
+    getCurrentUser: () => {
+        return apiClient.get(AUTH_ENDPOINTS.PROFILE);
+    },
+
+    // Logout
+    logout: () => {
+        return apiClient.post(AUTH_ENDPOINTS.LOGOUT);
+    },
+
+    // Change password
+    changePassword: (passwordData) => {
+        return apiClient.post(AUTH_ENDPOINTS.CHANGE_PASSWORD, passwordData);
+    },
+
+    // Request password reset
+    requestPasswordReset: (emailData) => {
+        return apiClient.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, emailData);
+    },
+
+    // Reset password with token
+    resetPassword: (resetData) => {
+        return apiClient.post(AUTH_ENDPOINTS.RESET_PASSWORD, resetData);
+    },
+
+    // Utility functions
+    isTokenExpired: (token) => {
+        if (!token) return true;
+
+        try {
+            const payload = token.split('.')[1];
+            const decodedPayload = JSON.parse(atob(payload));
+
+            if (!decodedPayload.exp) return false;
+
+            return decodedPayload.exp * 1000 < Date.now();
+        } catch (error) {
+            console.error('Error checking token expiration:', error);
+            return true;
+        }
+    },
+
+    getTokenPayload: (token) => {
+        if (!token) return null;
+
+        try {
+            const payload = token.split('.')[1];
+            return JSON.parse(atob(payload));
+        } catch (error) {
+            console.error('Error parsing token payload:', error);
+            return null;
+        }
+    },
+
+    getUserRoleFromToken: (token) => {
+        const payload = authService.getTokenPayload(token);
+        return payload?.role || null;
+    },
+
+    hasRole: (token, role) => {
+        const userRole = authService.getUserRoleFromToken(token);
+        return userRole === role;
+    },
+
+    hasAnyRole: (token, roles) => {
+        const userRole = authService.getUserRoleFromToken(token);
+        return roles.includes(userRole);
+    }
+};
+
+--- frontend/src/services/batchValidationService.js ---
+// batchValidationService.js - Centralized batch validation for equipment transactions
+import apiClient from '../utils/apiClient.js';
+
+export const batchValidationService = {
+    /**
+     * Validate batch number for equipment transactions using backend validation
+     * @param {string} equipmentId - Equipment ID
+     * @param {number} batchNumber - Batch number to validate
+     * @returns {Promise<Object>} Validation result with scenario and transaction details
+     */
+    validateBatchForEquipment: async (equipmentId, batchNumber) => {
+        try {
+            const response = await apiClient.get(
+                `/api/v1/batch-validation/equipment/${equipmentId}/batch/${batchNumber}`
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Error validating batch for equipment:', error);
+            
+            // Handle specific error responses
+            if (error.response?.status === 400) {
+                return {
+                    scenario: 'validation_error',
+                    found: false,
+                    canCreateNew: false,
+                    message: error.response.data?.message || 'Invalid batch number format.',
+                    batchNumber
+                };
+            } else if (error.response?.status === 403) {
+                return {
+                    scenario: 'permission_error',
+                    found: false,
+                    canCreateNew: false,
+                    message: 'You don\'t have permission to validate batch numbers.',
+                    batchNumber
+                };
+            }
+            
+            throw error;
+        }
+    },
+
+    /**
+     * Validate batch number for equipment maintenance transactions
+     * @param {string} equipmentId - Equipment ID
+     * @param {string} maintenanceId - Maintenance record ID
+     * @param {number} batchNumber - Batch number to validate
+     * @returns {Promise<Object>} Enhanced validation result with maintenance context
+     */
+    validateBatchForEquipmentMaintenance: async (equipmentId, maintenanceId, batchNumber) => {
+        try {
+            const response = await apiClient.get(
+                `/api/v1/batch-validation/equipment/${equipmentId}/maintenance/${maintenanceId}/batch/${batchNumber}`
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Error validating batch for equipment maintenance:', error);
+            
+            // Handle specific error responses
+            if (error.response?.status === 400) {
+                return {
+                    scenario: 'validation_error',
+                    found: false,
+                    canCreateNew: false,
+                    message: error.response.data?.message || 'Invalid batch number format.',
+                    batchNumber,
+                    maintenanceContext: true,
+                    maintenanceId
+                };
+            }
+            
+            throw error;
+        }
+    },
+
+    /**
+     * Check if a batch number is available for new transaction creation
+     * @param {number} batchNumber - Batch number to check
+     * @returns {Promise<boolean>} True if available, false if already in use
+     */
+    isBatchNumberAvailable: async (batchNumber) => {
+        try {
+            const response = await apiClient.get(`/api/v1/batch-validation/batch/${batchNumber}/available`);
+            return response.data;
+        } catch (error) {
+            console.error('Error checking batch number availability:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Validate batch number uniqueness before transaction creation
+     * @param {number} batchNumber - Batch number to validate
+     * @returns {Promise<boolean>} True if unique, throws error if not unique
+     */
+    validateBatchNumberUniqueness: async (batchNumber) => {
+        try {
+            await apiClient.post(`/api/v1/batch-validation/batch/${batchNumber}/validate-uniqueness`);
+            return true;
+        } catch (error) {
+            if (error.response?.status === 409) {
+                throw new Error(error.response.data || `Batch number ${batchNumber} is already in use.`);
+            }
+            throw error;
+        }
+    }
+};
+
+--- frontend/src/services/brandService.js ---
+import apiClient from '../utils/apiClient';
+import { BRAND_ENDPOINTS } from '../config/api.config';
+
+export const brandService = {
+    // Get all brands
+    getAllBrands: () => {
+        return apiClient.get(BRAND_ENDPOINTS.BASE);
+    },
+
+    // Get brand by ID
+    getBrandById: (id) => {
+        return apiClient.get(BRAND_ENDPOINTS.BY_ID(id));
+    },
+
+    // Create new brand
+    createBrand: (brandData) => {
+        return apiClient.post(BRAND_ENDPOINTS.BASE, brandData);
+    },
+
+    // Update brand
+    updateBrand: (id, brandData) => {
+        return apiClient.put(BRAND_ENDPOINTS.BY_ID(id), brandData);
+    },
+
+    // Delete brand
+    deleteBrand: (id) => {
+        return apiClient.delete(BRAND_ENDPOINTS.BY_ID(id));
+    }
+}; 
+
+--- frontend/src/services/consumableService.js ---
+import apiClient from '../utils/apiClient';
+import { CONSUMABLE_ENDPOINTS } from '../config/api.config';
+
+export const consumableService = {
+    // Resolve a consumable discrepancy
+    resolveDiscrepancy: (resolutionData) => {
+        return apiClient.post(CONSUMABLE_ENDPOINTS.RESOLVE_DISCREPANCY, resolutionData);
+    },
+
+    // Get resolution history for equipment
+    getResolutionHistory: (equipmentId) => {
+        return apiClient.get(CONSUMABLE_ENDPOINTS.RESOLUTION_HISTORY(equipmentId));
+    },
+
+    // Get unresolved discrepancy consumables
+    getDiscrepancies: (equipmentId) => {
+        return apiClient.get(CONSUMABLE_ENDPOINTS.DISCREPANCIES(equipmentId));
+    },
+
+    // Get resolved consumables
+    getResolved: (equipmentId) => {
+        return apiClient.get(CONSUMABLE_ENDPOINTS.RESOLVED(equipmentId));
+    },
+
+    // Get consumable history by consumable ID
+    getConsumableHistory: (consumableId) => {
+        return apiClient.get(CONSUMABLE_ENDPOINTS.HISTORY_BY_CONSUMABLE(consumableId));
+    }
+}; 
+
+--- frontend/src/services/contactService.js (truncated) ---
+import apiClient from '../utils/apiClient';
+import { CONTACT_ENDPOINTS } from '../config/api.config';
+
+export const contactService = {
+    // Create a new contact
+    createContact: async (contactData) => {
+        try {
+            const response = await apiClient.post(CONTACT_ENDPOINTS.CREATE, contactData);
+            return response;
+        } catch (error) {
+            console.error('Error creating contact:', error);
+            throw error;
+        }
+    },
+
+    // Get contact by ID
+    getContact: async (id) => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.BY_ID(id));
+            return response;
+        } catch (error) {
+            console.error('Error fetching contact:', error);
+            throw error;
+        }
+    },
+
+    // Get all contacts with pagination
+    getContacts: async (page = 0, size = 20) => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.BASE, {
+                params: { page, size }
+            });
+            return response;
+        } catch (error) {
+            console.error('Error fetching contacts:', error);
+            throw error;
+        }
+    },
+
+    // Get contacts with filters
+    getContactsWithFilters: async (filters = {}, page = 0, size = 20) => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.FILTER, {
+                params: { ...filters, page, size }
+            });
+            return response;
+        } catch (error) {
+            console.error('Error fetching contacts with filters:', error);
+            throw error;
+        }
+    },
+
+    // Get all active contacts
+    getActiveContacts: async () => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.ACTIVE);
+            return response;
+        } catch (error) {
+            console.error('Error fetching active contacts:', error);
+            throw error;
+        }
+    },
+
+    // Get contacts by type
+    getContactsByType: async (contactType) => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.BY_TYPE(contactType));
+            return response;
+        } catch (error) {
+            console.error('Error fetching contacts by type:', error);
+            throw error;
+        }
+    },
+
+    // Get available contacts
+    getAvailableContacts: async () => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.AVAILABLE);
+            return response;
+        } catch (error) {
+            console.error('Error fetching available contacts:', error);
+            throw error;
+        }
+    },
+
+    // Get available contacts by specialization
+    getAvailableContactsBySpecialization: async (specialization) => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.AVAILABLE_BY_SPECIALIZATION(specialization));
+            return response;
+        } catch (error) {
+            console.error('Error fetching available contacts by specialization:', error);
+            throw error;
+        }
+    },
+
+    // Get available contacts by type
+    getAvailableContactsByType: async (contactType) => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.AVAILABLE_BY_TYPE(contactType));
+            return response;
+        } catch (error) {
+            console.error('Error fetching available contacts by type:', error);
+            throw error;
+        }
+    },
+
+    // Get emergency contacts
+    getEmergencyContacts: async () => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.EMERGENCY);
+            return response;
+        } catch (error) {
+            console.error('Error fetching emergency contacts:', error);
+            throw error;
+        }
+    },
+
+    // Search contacts
+    searchContacts: async (searchTerm) => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.SEARCH, {
+                params: { searchTerm }
+            });
+            return response;
+        } catch (error) {
+            console.error('Error searching contacts:', error);
+            throw error;
+        }
+    },
+
+    // Update contact
+    updateContact: async (id, contactData) => {
+        try {
+            const response = await apiClient.put(CONTACT_ENDPOINTS.UPDATE(id), contactData);
+            return response;
+        } catch (error) {
+            console.error('Error updating contact:', error);
+            throw error;
+        }
+    },
+
+    // Delete contact
+    deleteContact: async (id) => {
+        try {
+            const response = await apiClient.delete(CONTACT_ENDPOINTS.DELETE(id));
+            return response;
+        } catch (error) {
+            console.error('Error deleting contact:', error);
+            throw error;
+        }
+    },
+
+    // Deactivate contact
+    deactivateContact: async (id) => {
+        try {
+            const response = await apiClient.post(CONTACT_ENDPOINTS.DEACTIVATE(id));
+            return response;
+        } cat
+
+## Instructions
+
+Analyze the above codebase context and provide your response following the format specified in the task.

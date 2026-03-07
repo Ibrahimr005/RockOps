@@ -9,26 +9,16 @@
 
 -- 1. Drop the 'type' column if it still exists
 DO $$
-DECLARE
-    constraint_rec RECORD;
 BEGIN
     IF EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_name = 'deduction_types'
         AND column_name = 'type'
     ) THEN
-        -- Drop all constraints on the type column first
-        FOR constraint_rec IN
-            SELECT con.conname
-            FROM pg_constraint con
-            JOIN pg_attribute a ON a.attnum = ANY(con.conkey)
-            JOIN pg_class t ON t.oid = con.conrelid
-            WHERE t.relname = 'deduction_types'
-            AND a.attname = 'type'
-        LOOP
-            EXECUTE 'ALTER TABLE deduction_types DROP CONSTRAINT IF EXISTS ' || quote_ident(constraint_rec.conname);
-        END LOOP;
-        ALTER TABLE deduction_types DROP COLUMN type CASCADE;
+        -- DROP COLUMN CASCADE removes the column and any constraints that
+        -- depend solely on it (CHECK, NOT NULL, etc.) without touching the PK
+        -- or FK constraints from other tables.
+        ALTER TABLE deduction_types DROP COLUMN IF EXISTS type CASCADE;
         RAISE NOTICE 'Dropped type column from deduction_types';
     ELSE
         RAISE NOTICE 'type column does not exist — nothing to drop';

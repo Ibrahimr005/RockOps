@@ -1262,3 +1262,21 @@ export const EQUIPMENT_PURCHASE_SPEC_ENDPOINTS = {
     BASE: '/api/procurement/equipment-purchase-specs',
     BY_ID: (id) => `/api/procurement/equipment-purchase-specs/${id}`,
 };
+
+export const TASK_ENDPOINTS = {
+    BASE: '/api/v1/tasks',
+    GET_ALL: '/api/v1/tasks',
+    GET_BY_ID: (id) => `/api/v1/tasks/${id}`,
+    BY_USER: (userId) => `/api/v1/tasks/user/${userId}`,
+    BY_STATUS: (status) => `/api/v1/tasks/status/${status}`,
+    BY_USER_AND_STATUS: (userId, status) => `/api/v1/tasks/user/${userId}/status/${status}`,
+    CREATE: (secretaryId) => `/api/v1/tasks?secretaryId=${secretaryId}`,
+    UPDATE: (id) => `/api/v1/tasks/${id}`,
+    UPDATE_STATUS: (id) => `/api/v1/tasks/${id}/status`,
+    DELETE: (id) => `/api/v1/tasks/${id}`,
+};
+
+export const USER_ENDPOINTS = {
+    BASE: '/api/v1/users',
+    GET_ALL: '/api/v1/users',
+};

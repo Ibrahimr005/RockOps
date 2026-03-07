@@ -598,7 +598,7 @@ const EquipmentMain = () => {
                             title={equipment.name || 'Unknown Equipment'}
                             imageUrl={equipment.imageUrl}
                             imageFallback={equipmentimg}
-                            onImageRefresh={handleImageRefresh}
+                            onImageRefresh={equipment.imageUrl ? handleImageRefresh : null}
                             lazyImageFetch={true}
                             onClick={(id) => navigate(`/equipment/${id}`)}
                             stats={[

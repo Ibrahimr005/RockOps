@@ -128,6 +128,10 @@ import Notifications from './pages/notification/Notifications.jsx';
 import { NotificationProvider } from './contexts/NotificationContext.jsx';
 import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
 
+// ===================== Secretary Imports =====================
+import MyTasksPage from "./pages/secretary/MyTasksPage/MyTasksPage.jsx";
+import SecretaryTasksPage from "./pages/secretary/SecretaryTasksPage/SecretaryTasksPage.jsx";
+
 import {
     ADMIN,
     USER,
@@ -329,6 +333,12 @@ function App() {
                                             <Route path="step-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><StepTypeManagement /></RoleRoute>} />
                                             <Route path="contact-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><ContactTypeManagement /></RoleRoute>} />
                                         </Route>
+
+
+                                        {/* ===================== Secretary Routes ===================== */}
+                                        <Route path="/my-tasks" element={<RoleRoute allowedRoles={allRoles}><MyTasksPage/></RoleRoute>}/>
+                                        <Route path="/secretary" element={<Navigate to="/secretary/tasks" replace/>}/>
+                                        <Route path="/secretary/tasks" element={<RoleRoute allowedRoles={[ADMIN, SECRETARY]}><SecretaryTasksPage/></RoleRoute>}/>
 
                                         {/* ===================== Finance Routes ===================== */}
                                         <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><GeneralLedger /></RoleRoute>} />

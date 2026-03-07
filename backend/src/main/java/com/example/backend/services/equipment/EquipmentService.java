@@ -81,15 +81,24 @@ public class EquipmentService {
         this.equipmentBrandRepository = equipmentBrandRepository;
     }
 
-    // Helper method to resolve image URL using the cached key if available
+    // Fast image URL resolution - no S3 network calls, pure computation only
     private String resolveEquipmentImageUrl(Equipment equipment) {
         try {
-            // FAST PATH: If key is in DB, generating URL is pure computation (no network)
             if (equipment.getImageStorageKey() != null && !equipment.getImageStorageKey().isEmpty()) {
                 return minioService.generateUrlFromKey(equipment.getImageStorageKey());
             }
+            return null; // No cached key = show fallback image immediately
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
-            // SLOW PATH: Fallback for unmigrated data (checks S3)
+    // Full image resolution with S3 lookup - only for single equipment detail view
+    private String resolveEquipmentImageUrlWithS3Fallback(Equipment equipment) {
+        try {
+            if (equipment.getImageStorageKey() != null && !equipment.getImageStorageKey().isEmpty()) {
+                return minioService.generateUrlFromKey(equipment.getImageStorageKey());
+            }
             return minioService.getEquipmentMainPhoto(equipment.getId());
         } catch (Exception e) {
             return null;
@@ -114,7 +123,7 @@ public class EquipmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
 
         EquipmentDTO dto = EquipmentDTO.fromEntity(equipment);
-        dto.setImageUrl(resolveEquipmentImageUrl(equipment));
+        dto.setImageUrl(resolveEquipmentImageUrlWithS3Fallback(equipment));
 
         // If equipment is in maintenance, populate the active maintenance record ID
         if (equipment.getStatus() == EquipmentStatus.IN_MAINTENANCE) {
