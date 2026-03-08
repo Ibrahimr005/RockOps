@@ -17,9 +17,9 @@ ENV SPRING_PROFILES_ACTIVE=prod
 EXPOSE 8080
 
 ENTRYPOINT ["java", \
-  "-Xmx230m", \
+  "-Xmx180m", \
   "-Xms128m", \
-  "-XX:MaxMetaspaceSize=90m", \
+  "-XX:MaxMetaspaceSize=150m", \
   "-XX:ReservedCodeCacheSize=32m", \
   "-XX:MaxDirectMemorySize=16m", \
   "-Xss256k", \
