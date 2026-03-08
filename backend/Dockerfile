@@ -16,4 +16,13 @@ ENV SPRING_PROFILES_ACTIVE=prod
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Xmx310m", "-Xms200m", "-XX:MaxMetaspaceSize=120m", "-XX:+UseG1GC", "-XX:+UseStringDeduplication", "-jar", "app.jar"]
+ENTRYPOINT ["java", \
+  "-Xmx230m", \
+  "-Xms128m", \
+  "-XX:MaxMetaspaceSize=90m", \
+  "-XX:ReservedCodeCacheSize=32m", \
+  "-XX:MaxDirectMemorySize=16m", \
+  "-Xss256k", \
+  "-XX:+UseSerialGC", \
+  "-XX:CICompilerCount=2", \
+  "-jar", "app.jar"]
