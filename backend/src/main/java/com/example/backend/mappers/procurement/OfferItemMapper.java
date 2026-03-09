@@ -17,15 +17,16 @@ public class OfferItemMapper {
     private final RequestOrderItemMapper requestOrderItemMapper;
 
     public OfferItemMapper(MerchantMapper merchantMapper,
-                           ItemTypeMapper itemTypeMapper,
-                           RequestOrderItemMapper requestOrderItemMapper) {
+            ItemTypeMapper itemTypeMapper,
+            RequestOrderItemMapper requestOrderItemMapper) {
         this.merchantMapper = merchantMapper;
         this.itemTypeMapper = itemTypeMapper;
         this.requestOrderItemMapper = requestOrderItemMapper;
     }
 
     public OfferItemDTO toDTO(OfferItem offerItem) {
-        if (offerItem == null) return null;
+        if (offerItem == null)
+            return null;
 
         OfferItemDTO.OfferItemDTOBuilder builder = OfferItemDTO.builder()
                 .id(offerItem.getId())
@@ -64,6 +65,16 @@ public class OfferItemMapper {
                     .itemType(itemTypeMapper.toDTO(offerItem.getItemType()));
         }
 
+        // Equipment Spec
+        if (offerItem.getEquipmentSpec() != null) {
+            builder.equipmentSpecId(offerItem.getEquipmentSpec().getId())
+                    .equipmentName(offerItem.getEquipmentSpec().getName() +
+                            (offerItem.getEquipmentSpec().getModel() != null
+                                    && !offerItem.getEquipmentSpec().getModel().isEmpty()
+                                            ? " " + offerItem.getEquipmentSpec().getModel()
+                                            : ""));
+        }
+
         // Purchase Order Item reference
         if (offerItem.getPurchaseOrderItem() != null) {
             builder.purchaseOrderItemId(offerItem.getPurchaseOrderItem().getId())
@@ -76,7 +87,8 @@ public class OfferItemMapper {
     }
 
     public List<OfferItemDTO> toDTOList(List<OfferItem> offerItems) {
-        if (offerItems == null) return new ArrayList<>();
+        if (offerItems == null)
+            return new ArrayList<>();
         return offerItems.stream().map(this::toDTO).collect(Collectors.toList());
     }
 }

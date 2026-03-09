@@ -17,3 +17,9 @@ backend-pipeline.json
 frontend-pipeline.json.
 
 .DS_Store
+
+# IntelliJ / DataGrip IDE files
+.idea/
+*.iml
+*.iws
+*.ipr

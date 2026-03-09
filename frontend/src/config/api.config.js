@@ -720,6 +720,10 @@ export const OFFER_ENDPOINTS = {
     CONTINUE_AND_RETURN: (offerId) => `/api/v1/offers/${offerId}/continue-and-return`,
 
     UPDATE_FINANCE_VALIDATION_STATUS: (id) => `/api/v1/offers/${id}/finance-validation-status`,
+
+    // Inspection operations (equipment offers only)
+    INSPECTION: (offerId) => `/api/v1/offers/${offerId}/inspection`,
+
     // Request Items Modification endpoints
     REQUEST_ITEMS: (offerId) => `/api/procurement/offers/${offerId}/request-items`,
     REQUEST_ITEMS_INITIALIZE: (offerId) => `/api/procurement/offers/${offerId}/request-items/initialize`,
@@ -946,7 +950,8 @@ export const PURCHASE_ORDER_ENDPOINTS = {
     PROCESS_DELIVERY: (id) => `/api/v1/purchaseOrders/${id}/process-delivery`,
     RESOLVE_ISSUES: () => `/api/procurement/issues/resolve`,
     GET_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues`,
-    GET_ACTIVE_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues/active`
+    GET_ACTIVE_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues/active`,
+    RECEIVE_EQUIPMENT: (id) => `/api/v1/purchaseOrders/${id}/receive-equipment`
 };
 
 
@@ -1252,6 +1257,12 @@ export const PO_RETURN_ENDPOINTS = {
     GET_BY_ID: (id) => `/api/v1/purchase-order-returns/${id}`,
     BY_STATUS: (status) => `/api/v1/purchase-order-returns/status/${status}`,
     CREATE: (purchaseOrderId) => `/api/v1/purchase-order-returns/purchase-orders/${purchaseOrderId}`,
+};
+
+// Procurement - Equipment Purchase Spec Endpoints
+export const EQUIPMENT_PURCHASE_SPEC_ENDPOINTS = {
+    BASE: '/api/procurement/equipment-purchase-specs',
+    BY_ID: (id) => `/api/procurement/equipment-purchase-specs/${id}`,
 };
 
 export const TASK_ENDPOINTS = {

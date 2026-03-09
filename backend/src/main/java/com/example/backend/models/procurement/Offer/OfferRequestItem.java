@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import com.example.backend.models.procurement.EquipmentPurchaseSpec;
 
 /**
  * Modified request items specific to this offer.
@@ -36,6 +37,10 @@ public class OfferRequestItem {
     @JoinColumn(name = "item_type_id")
     @JsonManagedReference
     private ItemType itemType;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "equipment_purchase_spec_id")
+    private EquipmentPurchaseSpec equipmentSpec;
 
     private double quantity;
     private String comment;

@@ -539,4 +539,27 @@ public class OfferController {
                     .body("Error processing finance validation response: " + e.getMessage());
         }
     }
+
+    /**
+     * Handle inspection decision for equipment offers
+     * PUT /api/v1/offers/{id}/inspection
+     */
+    @PutMapping("/{id}/inspection")
+    public ResponseEntity<?> handleInspectionDecision(
+            @PathVariable UUID id,
+            @RequestParam String decision,
+            @RequestParam(required = false) String notes,
+            @RequestParam(required = false) String inspectedBy,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            OfferDTO offer = offerService.handleInspectionDecision(
+                    id, decision, userDetails.getUsername(), notes, inspectedBy);
+            return ResponseEntity.ok(offer);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error processing inspection: " + e.getMessage()));
+        }
+    }
 }

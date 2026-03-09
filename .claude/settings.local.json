@@ -22,7 +22,9 @@
       "Bash(xargs sh:*)",
       "Bash(ls:*)",
       "Bash(grep:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "mcp__claude-flow__system_status",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

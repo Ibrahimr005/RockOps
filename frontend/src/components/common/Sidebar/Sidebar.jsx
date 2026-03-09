@@ -1,7 +1,7 @@
-import React, {useEffect, useState, createContext, useContext} from 'react';
-import {NavLink, useLocation, useNavigate} from 'react-router-dom';
-import {useAuth} from '../../../contexts/AuthContext.jsx';
-import {useTranslation} from 'react-i18next';
+import React, { useEffect, useState, createContext, useContext } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext.jsx';
+import { useTranslation } from 'react-i18next';
 import {
     FaBars,
     FaBoxes,
@@ -18,9 +18,12 @@ import {
     FaFileInvoiceDollar,
     FaIdCard,
     FaMapMarkerAlt,
+    FaMoon,
     FaShoppingCart,
+    FaSignOutAlt,
     FaSitemap,
     FaStore,
+    FaSun,
     FaTasks,
     FaTimes,
     FaTools,
@@ -30,6 +33,7 @@ import {
     FaWarehouse,
     FaTags,
     FaListAlt,
+    FaArrowLeft,
     FaBook,
     FaBalanceScale,
     FaReceipt,
@@ -37,15 +41,17 @@ import {
     FaPiggyBank,
     FaFileAlt,
     FaMoneyBillWave,
+    FaChartBar,
     FaArrowUp,
     FaMinusCircle,
     FaCalendarCheck,
     FaCalendarTimes,
     FaAddressBook,
+    FaDatabase,
     FaUserClock,
-    FaMoneyCheckAlt,
     FaGift,
-    FaRulerCombined, FaDollarSign, FaArrowDown
+    FaDollarSign, FaArrowDown,
+    FaMoneyCheckAlt, FaRulerCombined
 } from 'react-icons/fa';
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE } from '../../../utils/roles';
@@ -125,11 +131,13 @@ const Sidebar = () => {
     const {t} = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
-    const {isExpanded, setIsExpanded, isMobile, toggleSidebar} = useSidebar();
+    const { isExpanded, setIsExpanded, isMobile, toggleSidebar } = useSidebar();
     const [expandedMenus, setExpandedMenus] = useState({});
     const [navigationHistory, setNavigationHistory] = useState(['/login']);
 
     const userRole = currentUser?.role || 'USER';
+
+    // Get the appropriate logo based on theme
 
     // Helper function to check if a path is active
     const isPathActive = (itemPath, currentPath) => {
@@ -175,7 +183,7 @@ const Sidebar = () => {
     // Auto-expand submenus when on submenu pages
     useEffect(() => {
         const currentPath = location.pathname;
-        const newExpandedMenus = {...expandedMenus};
+        const newExpandedMenus = { ...expandedMenus };
 
         menuItems.forEach(item => {
             if (item.hasSubmenu && item.submenuItems) {
@@ -302,7 +310,7 @@ const Sidebar = () => {
             title: 'Warehouses',
             icon: <FaWarehouse/>,
             path: '/warehouses',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER','WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER','MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE'],
+            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE'],
             hasSubmenu: true,
             submenuItems: [
                 {
@@ -315,19 +323,19 @@ const Sidebar = () => {
                     title: 'Warehouses',
                     icon: <FaWarehouse/>,
                     path: '/warehouses',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
                 },
                 {
                     title: 'Item Categories',
                     icon: <FaBoxes/>,
                     path: '/warehouses/item-categories',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER','WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
                 },
                 {
                     title: 'Item Types',
                     icon: <FaTags/>,
                     path: '/warehouses/item-types',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
                 },
                 {
                     title: 'Measuring Units',
@@ -548,7 +556,7 @@ const Sidebar = () => {
             title: 'Procurement',
             icon: <FaShoppingCart/>,
             path: '/procurement',
-            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT],
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, EQUIPMENT_MANAGER],
             hasSubmenu: true,
             submenuItems: [
                 {
@@ -561,7 +569,7 @@ const Sidebar = () => {
                     title: 'Request Orders',
                     icon: <FaFileContract/>,
                     path: '/procurement/request-orders',
-                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, EQUIPMENT_MANAGER]
                 },
                 {
                     title: 'Offers',

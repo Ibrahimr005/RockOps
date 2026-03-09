@@ -262,6 +262,7 @@
         color: var(--color-danger);
         font-weight: var(--bold-font-weight);
       }
+
       .timeline-date-finance {
         color: var(--color-danger);
       }
@@ -349,11 +350,11 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  border: 1px solid #93c5fd;
+  background: linear-gradient(135deg, rgba(72, 128, 255, 0.1), rgba(72, 128, 255, 0.05));
+  border: 1px solid var(--color-primary);
   border-radius: var(--radius-md);
   margin-bottom: 2rem;
-  color: #1e40af;
+  color: var(--color-primary);
 
   .notification-icon {
     display: flex;
@@ -361,9 +362,9 @@
     justify-content: center;
     width: 48px;
     height: 48px;
-    background: #3b82f6;
+    background: var(--color-primary);
     border-radius: 50%;
-    color: white;
+    color: var(--color-text-inverse);
     flex-shrink: 0;
   }
 
@@ -374,21 +375,21 @@
       margin: 0 0 0.5rem 0;
       font-size: 1rem;
       font-weight: var(--bold-font-weight);
-      color: #1e40af;
+      color: var(--color-primary);
     }
 
     p {
       margin: 0;
       font-size: 0.875rem;
-      color: #1e40af;
+      color: var(--color-primary);
       opacity: 0.8;
     }
   }
 
   .view-purchase-order-button {
     padding: 0.75rem 1.5rem;
-    background: #3b82f6;
-    color: white;
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
     border: none;
     border-radius: var(--radius-sm);
     font-weight: var(--bold-font-weight);
@@ -397,7 +398,7 @@
     transition: all var(--transition-normal) ease;
 
     &:hover {
-      background: #2563eb;
+      background: var(--color-primary-hover);
       transform: translateY(-1px);
     }
   }
@@ -431,8 +432,8 @@
   }
 
   &.status-not_reviewed {
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--color-surface-secondary);
+    color: var(--color-text-secondary);
   }
 }
 

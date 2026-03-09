@@ -157,8 +157,8 @@ public class SarkyLogService {
                 .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + sarkyLogDTO.getWorkTypeId()));
 
         // Validate that the work type is supported by the equipment type
-        if (!equipment.getType().supportsWorkType(workType)) {
-            throw new IllegalArgumentException("Work type '" + workType.getName() + 
+        if (!equipment.getType().supportsWorkType(workType.getId())) {
+            throw new IllegalArgumentException("Work type '" + workType.getName() +
                 "' is not supported by equipment type '" + equipment.getType().getName() + "'");
         }
 
@@ -336,7 +336,7 @@ public class SarkyLogService {
                     .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + entryDTO.getWorkTypeId()));
 
             // Validate that the work type is supported by the equipment type
-            if (!equipment.getType().supportsWorkType(workType)) {
+            if (!equipment.getType().supportsWorkType(workType.getId())) {
                 throw new IllegalArgumentException("Work type '" + workType.getName() + 
                     "' is not supported by equipment type '" + equipment.getType().getName() + "'");
             }
@@ -439,7 +439,7 @@ public class SarkyLogService {
                     .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + sarkyLogDTO.getWorkTypeId()));
             
             // Validate that the work type is supported by the equipment type
-            if (!sarkyLog.getEquipment().getType().supportsWorkType(workType)) {
+            if (!sarkyLog.getEquipment().getType().supportsWorkType(workType.getId())) {
                 throw new IllegalArgumentException("Work type '" + workType.getName() + 
                     "' is not supported by equipment type '" + sarkyLog.getEquipment().getType().getName() + "'");
             }
@@ -630,7 +630,7 @@ public class SarkyLogService {
                     .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + entryDTO.getWorkTypeId()));
 
             // Validate that the work type is supported by the equipment type
-            if (!sarkyLogRange.getEquipment().getType().supportsWorkType(workType)) {
+            if (!sarkyLogRange.getEquipment().getType().supportsWorkType(workType.getId())) {
                 throw new IllegalArgumentException("Work type '" + workType.getName() + 
                     "' is not supported by equipment type '" + sarkyLogRange.getEquipment().getType().getName() + "'");
             }

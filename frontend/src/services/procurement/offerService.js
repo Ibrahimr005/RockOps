@@ -203,6 +203,19 @@ export const offerService = {
         return response.data || response;
     },
 
+    // Inspection operations (equipment offers only)
+    handleInspection: async (offerId, decision, notes = null, inspectedBy = null) => {
+        const params = new URLSearchParams({ decision });
+        if (notes) {
+            params.append('notes', notes);
+        }
+        if (inspectedBy) {
+            params.append('inspectedBy', inspectedBy);
+        }
+        const response = await apiClient.put(`${OFFER_ENDPOINTS.INSPECTION(offerId)}?${params}`);
+        return response.data || response;
+    },
+
     confirmRFQImport: async (offerId, merchantId, validRowIds, preview) => {
         const params = new URLSearchParams();
         params.append('merchantId', merchantId);

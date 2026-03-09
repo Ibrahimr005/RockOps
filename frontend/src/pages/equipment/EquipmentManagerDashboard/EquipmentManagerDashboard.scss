@@ -15,18 +15,18 @@
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: var(--radius-md);
-  color:var(--color-danger);
+  color: var(--color-danger);
   margin-bottom: 2rem;
-  
+
   svg {
     flex-shrink: 0;
   }
-  
+
   span {
     flex: 1;
     font-weight: 500;
   }
-  
+
   button {
     background: none;
     border: none;
@@ -36,7 +36,7 @@
     padding: 0.25rem;
     border-radius: var(--radius-sm);
     transition: background 0.2s ease;
-    
+
     &:hover {
       background: rgba(239, 68, 68, 0.1);
     }
@@ -118,7 +118,7 @@
           gap: 0.5rem;
           padding: 0.75rem 1.5rem;
           background: #2563eb;
-          color: white;
+          color: var(--color-text-inverse);
           border: none;
           border-radius: var(--radius-md);
           font-weight: 600;
@@ -149,8 +149,13 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // Main Content
@@ -246,7 +251,7 @@
       align-items: center;
       justify-content: center;
       margin-bottom: 1.5rem;
-      color: white;
+      color: var(--color-text-inverse);
       box-shadow: var(--shadow-sm);
     }
 
@@ -896,4 +901,4 @@
   .eq-chart-legend {
     background: rgba(255, 255, 255, 0.02);
   }
-} 
+}

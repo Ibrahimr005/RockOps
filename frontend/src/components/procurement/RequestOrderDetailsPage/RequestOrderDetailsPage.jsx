@@ -94,17 +94,16 @@ const RequestOrderDetailsPage = () => {
 
     // Get item name
     const getItemName = (item) => {
-        return item.itemType?.name || item.itemTypeName || "Unknown Item";
+        return item.itemType?.name || item.itemTypeName || item.equipmentName || item.equipmentSpec?.name || "Unknown Item";
     };
 
     // Get item category
     const getItemCategory = (item) => {
-        // Log the item structure to debug
-        console.log('Item structure:', item);
-        console.log('Item type:', item.itemType);
-        console.log('Item category from itemType:', item.itemType?.itemCategory);
-
-        // Try different possible paths
+        // Equipment items
+        if (item.equipmentSpecId || item.equipmentSpec) {
+            return item.equipmentSpec?.equipmentTypeName || 'Equipment';
+        }
+        // Warehouse items
         const category =
             item.itemType?.itemCategory?.name ||
             item.itemType?.itemCategoryName ||
@@ -118,6 +117,7 @@ const RequestOrderDetailsPage = () => {
 
     // Get measuring unit
     const getMeasuringUnit = (item) => {
+        if (item.equipmentSpecId || item.equipmentSpec) return 'unit';
         return item.itemType?.measuringUnit || item.measuringUnit || 'units';
     };
 
@@ -311,8 +311,6 @@ const RequestOrderDetailsPage = () => {
                     </div>
                 </div>
 
-
-
                 {/* Description Section */}
                 {requestOrder.description && (
                     <div className="ro-details-section">
@@ -405,6 +403,68 @@ const RequestOrderDetailsPage = () => {
                                         </div>
                                         <div className="item-quantity">{formatQuantity(item)}</div>
                                     </div>
+
+                                    {/* Equipment Spec Details — only for equipment items */}
+                                    {item.equipmentSpec && (
+                                        <>
+                                            <div className="item-divider"></div>
+                                            <div className="equipment-spec-section">
+                                                <div className="equipment-spec-title">Equipment Specifications</div>
+                                                <div className="equipment-spec-grid">
+                                                    {item.equipmentSpec.equipmentTypeName && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Equipment Type</span>
+                                                            <span className="spec-value">{item.equipmentSpec.equipmentTypeName}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.equipmentBrandName && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Brand</span>
+                                                            <span className="spec-value">{item.equipmentSpec.equipmentBrandName}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.model && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Model</span>
+                                                            <span className="spec-value">{item.equipmentSpec.model}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.manufactureYear && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Year</span>
+                                                            <span className="spec-value">{item.equipmentSpec.manufactureYear}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.countryOfOrigin && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Country of Origin</span>
+                                                            <span className="spec-value">{item.equipmentSpec.countryOfOrigin}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.equipmentSpec.estimatedBudget != null && (
+                                                        <div className="spec-item">
+                                                            <span className="spec-label">Estimated Budget</span>
+                                                            <span className="spec-value budget">
+                                                                EGP {Number(item.equipmentSpec.estimatedBudget).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {item.equipmentSpec.specifications && (
+                                                    <div className="spec-item full-width">
+                                                        <span className="spec-label">Specifications</span>
+                                                        <span className="spec-value specifications-text">{item.equipmentSpec.specifications}</span>
+                                                    </div>
+                                                )}
+                                                {item.equipmentSpec.description && (
+                                                    <div className="spec-item full-width">
+                                                        <span className="spec-label">Description</span>
+                                                        <span className="spec-value">{item.equipmentSpec.description}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
 
                                     {item.comment && (
                                         <>

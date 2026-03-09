@@ -20,15 +20,15 @@
 .purchase-orders-section-title {
   font-size: 28px;
   font-weight: 700;
-  color: #1a2b42;
+  color: var(--color-text-primary);
   margin: 0;
   margin-right: 16px;
 }
 
 .purchase-orders-count {
   font-size: 14px;
-  color: #6b7280;
-  background-color: #f3f4f6;
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface-secondary);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -52,16 +52,18 @@
 .purchase-orders-search-input {
   width: 100%;
   padding: 12px 18px 12px 42px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   font-size: 14px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
+  background-color: var(--section-background-color);
+  color: var(--color-text-primary);
 }
 
 .purchase-orders-search-input:focus {
   outline: none;
-  border-color: #4f85e5;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 4px rgba(79, 133, 229, 0.1);
 }
 
@@ -72,15 +74,15 @@
   transform: translateY(-50%);
   width: 18px;
   height: 18px;
-  color: #9ca3af;
+  color: var(--color-text-secondary);
 }
 
 /* Table Card Styles */
 .purchase-orders-table-card {
-  background-color: white;
+  background-color: var(--section-background-color);
   border-radius: 16px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 4px 10px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e5e7eb;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
   width: 100%;
   position: relative;
   overflow-x: auto;
@@ -100,10 +102,10 @@
 /* Table Header Styles */
 .purchase-orders-header-row {
   display: table-row;
-  background-color: #f1f3f5;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--table-header-bg);
+  border-bottom: 1px solid var(--border-color);
   font-weight: 600;
-  color: #4b5563;
+  color: var(--color-text-secondary);
   font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -115,14 +117,15 @@
   white-space: nowrap;
   font-size: 12px;
   text-align: left;
-  padding-top: 15px; /* Added more vertical padding */
+  padding-top: 15px;
+  /* Added more vertical padding */
   padding-bottom: 15px;
 }
 
 /* Table Row Styles */
 .purchase-orders-table-row {
   display: table-row;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
   transition: all 0.2s ease;
 
 }
@@ -132,7 +135,7 @@
 }
 
 .purchase-orders-table-row:hover {
-  background-color: #f9fafb;
+  background-color: var(--table-row-hover);
 }
 
 .purchase-orders-table-cell {
@@ -144,6 +147,7 @@
   padding-top: 15px;
   padding-bottom: 15px;
 }
+
 .purchase-orders-table-cell:last-child {
 
   padding-top: 15px;
@@ -196,33 +200,61 @@
 }
 
 .status-created {
-  background-color: #E0E7FF; /* Light blue */
+  background-color: #E0E7FF;
+  /* Light blue */
   color: #4338CA;
 }
 
 .status-pending {
-  background-color: #FEF3C7; /* Yellow */
+  background-color: #FEF3C7;
+  /* Yellow */
   color: #92400E;
 }
 
 .status-partially_received {
-  background-color: #DBEAFE; /* Lighter blue */
+  background-color: #DBEAFE;
+  /* Lighter blue */
   color: #1E40AF;
 }
 
 .status-completed {
-  background-color: #D1FAE5; /* Green */
+  background-color: #D1FAE5;
+  /* Green */
   color: #065F46;
 }
 
 .status-cancelled {
-  background-color: #FEE2E2; /* Red */
+  background-color: #FEE2E2;
+  /* Red */
   color: #B91C1C;
 }
 
 .status-default {
-  background-color: #E2E8F0; /* Gray */
+  background-color: #E2E8F0;
+  /* Gray */
   color: #475569;
+}
+
+/* Party Type Badge */
+.party-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.warehouse {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+  }
+
+  &.equipment {
+    background-color: #FEF3C7;
+    color: #92400E;
+  }
 }
 
 /* Loading State Styles */
@@ -260,7 +292,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #6b7280;
+  color: var(--color-text-secondary);
   z-index: 10;
   width: 100%;
   height: auto;
@@ -269,7 +301,7 @@
 .purchase-orders-empty-icon {
   width: 60px;
   height: 60px;
-  background-color: #f3f4f6;
+  background-color: var(--color-surface-secondary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -280,13 +312,13 @@
 .purchase-orders-empty-icon svg {
   width: 30px;
   height: 30px;
-  color: #9ca3af;
+  color: var(--color-text-secondary);
 }
 
 .purchase-orders-empty-state h3 {
   font-size: 18px;
   margin: 0 0 8px 0;
-  color: #4b5563;
+  color: var(--color-text-primary);
 }
 
 .purchase-orders-empty-state p {
@@ -305,7 +337,7 @@
 }
 
 .purchase-orders-error-container p {
-  color: #ef4444;
+  color: var(--color-danger);
   margin-bottom: 8px;
 }
 
@@ -353,7 +385,7 @@
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-bottom: 8px;
   letter-spacing: 0.05em;
 }
@@ -361,7 +393,7 @@
 .procurement-intro-title {
   font-size: 32px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -381,30 +413,30 @@
 .procurement-stat-item .procurement-stat-value {
   font-size: 24px;
   font-weight: 600;
-  color: #3b82f6;
+  color: var(--color-primary);
   display: block;
 }
 
 .procurement-stat-item .procurement-stat-label {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .procurement-intro-right .procurement-back-button {
   display: flex;
   align-items: center;
   background: none;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  color: #334155;
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 
 .procurement-intro-right .procurement-back-button:hover {
-  background-color: #f1f5f9;
-  border-color: #94a3b8;
+  background-color: var(--color-surface-secondary);
+  border-color: var(--border-color);
 }
 
 .icon-rotate-180 {
@@ -449,11 +481,11 @@
 }
 
 .clickable-row:hover {
-  background-color: #f3f4f8;
+  background-color: var(--table-row-hover);
 }
 
 .clickable-row:active {
-  background-color: #e9ecef;
+  background-color: var(--color-surface-secondary);
 }
 
 /* Responsive Styles */

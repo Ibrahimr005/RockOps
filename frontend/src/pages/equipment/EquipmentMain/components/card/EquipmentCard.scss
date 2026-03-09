@@ -9,19 +9,27 @@
   background-color: var(--color-surface, white);
   transition: all var(--transition-normal, 0.3s ease);
   position: relative;
-  width: 100%; /* Make responsive like warehouse cards */
-  max-width: 450px; /* Prevent cards from becoming too wide */
-  margin: 0; /* Remove margin since grid handles spacing */
+  width: 100%;
+  /* Make responsive like warehouse cards */
+  max-width: 450px;
+  /* Prevent cards from becoming too wide */
+  margin: 0;
+  /* Remove margin since grid handles spacing */
   display: flex;
   flex-direction: column;
-  min-height: 460px; /* Use min-height instead of fixed height */
-  cursor: pointer; /* Add pointer cursor to show it's clickable */
+  min-height: 460px;
+  /* Use min-height instead of fixed height */
+  cursor: pointer;
+  /* Add pointer cursor to show it's clickable */
 }
 
 .equipment-card:hover {
-  transform: translateY(-8px); /* Increased lift effect */
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); /* Stronger shadow */
-  border: 1px solid var(--color-primary, #4066e0); /* Highlight border on hover */
+  transform: translateY(-8px);
+  /* Increased lift effect */
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+  /* Stronger shadow */
+  border: 1px solid var(--color-primary, #4066e0);
+  /* Highlight border on hover */
 }
 
 .equipment-card:after {
@@ -32,17 +40,21 @@
   right: 0;
   bottom: 0;
   border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 0 0 5px rgba(64, 102, 224, 0); /* Invisible outline initially */
+  box-shadow: 0 0 0 5px rgba(64, 102, 224, 0);
+  /* Invisible outline initially */
   transition: box-shadow 0.3s ease;
-  pointer-events: none; /* Don't block clicks */
+  pointer-events: none;
+  /* Don't block clicks */
 }
 
 .equipment-card:hover:after {
-  box-shadow: 0 0 0 3px rgba(64, 102, 224, 0.3); /* Visible outline on hover */
+  box-shadow: 0 0 0 3px rgba(64, 102, 224, 0.3);
+  /* Visible outline on hover */
 }
 
 .equipment-image-container {
-  height: 280px; /* Significantly larger image area */
+  height: 280px;
+  /* Significantly larger image area */
   overflow: hidden;
   position: relative;
   background-color: #f0f2f5;
@@ -67,18 +79,21 @@
 }
 
 .equipment-card:hover .equipment-image {
-  transform: scale(1.08); /* More pronounced image zoom */
+  transform: scale(1.08);
+  /* More pronounced image zoom */
 }
 
 .equipment-details {
-  padding: 16px 20px; /* Slightly reduced padding */
+  padding: 16px 20px;
+  /* Slightly reduced padding */
   flex-grow: 1;
   display: flex;
   flex-direction: column;
 }
 
 .equipment-name {
-  font-size: 20px; /* Slightly smaller to fit */
+  font-size: 20px;
+  /* Slightly smaller to fit */
   font-weight: var(--bold-font-weight, 600);
   text-align: center;
   margin-top: 0;
@@ -97,7 +112,8 @@
 }
 
 .equipment-card:hover .equipment-name {
-  color: var(--color-primary, #4066e0); /* Highlight name on hover */
+  color: var(--color-primary, #4066e0);
+  /* Highlight name on hover */
 }
 
 .equipment-name::after {
@@ -114,13 +130,15 @@
 }
 
 .equipment-card:hover .equipment-name::after {
-  width: 80px; /* Expand underline on hover */
+  width: 80px;
+  /* Expand underline on hover */
 }
 
 /* Stats Styles - more compact */
 .equipment-specs {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* Use minmax to prevent overflow */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* Use minmax to prevent overflow */
   gap: 12px;
   margin-bottom: 12px;
   padding: 12px;
@@ -131,7 +149,8 @@
 }
 
 .equipment-card:hover .equipment-specs {
-  background-color: rgba(64, 102, 224, 0.05); /* Subtle background change on hover */
+  background-color: rgba(64, 102, 224, 0.05);
+  /* Subtle background change on hover */
 }
 
 .spec-row {
@@ -140,8 +159,10 @@
 
 .spec-item {
   margin: 0;
-  min-width: 0; /* Allow items to shrink below their content size */
-  overflow: hidden; /* Ensure content doesn't escape container */
+  min-width: 0;
+  /* Allow items to shrink below their content size */
+  overflow: hidden;
+  /* Ensure content doesn't escape container */
 }
 
 .full-width {
@@ -164,20 +185,26 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0; /* Allow text to shrink */
-  width: 100%; /* Take full available width */
+  min-width: 0;
+  /* Allow text to shrink */
+  width: 100%;
+  /* Take full available width */
 }
 
 /* Specific handling for site names to prevent layout breaking */
 .spec-item:nth-child(1) .spec-value {
-  max-width: 120px; /* Limit site name width to prevent status push-down */
+  max-width: 120px;
+  /* Limit site name width to prevent status push-down */
 }
 
 /* Ensure status indicator container aligns properly */
 .spec-value .status-indicator {
-  vertical-align: baseline; /* Align with text baseline */
-  display: inline-block; /* Change to inline-block for better alignment */
-  margin: 0; /* Remove margin that causes misalignment */
+  vertical-align: baseline;
+  /* Align with text baseline */
+  display: inline-block;
+  /* Change to inline-block for better alignment */
+  margin: 0;
+  /* Remove margin that causes misalignment */
 }
 
 /* Action Buttons */
@@ -190,7 +217,8 @@
   padding-top: 12px;
 }
 
-.btn-view-details, .btn-edit-equipment {
+.btn-view-details,
+.btn-edit-equipment {
   flex: 1;
   padding: 10px 14px;
   border-radius: var(--radius-md, 8px);
@@ -204,8 +232,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10; /* Ensure buttons stay above card for clicks */
-  position: relative; /* Enable z-index */
+  z-index: 10;
+  /* Ensure buttons stay above card for clicks */
+  position: relative;
+  /* Enable z-index */
 }
 
 .btn-edit-equipment {
@@ -221,7 +251,7 @@
 
 .btn-view-details {
   background-color: var(--color-primary, #4066e0);
-  color: white;
+  color: var(--color-text-inverse);
   box-shadow: 0 2px 6px rgba(64, 102, 224, 0.3);
 }
 
@@ -231,7 +261,8 @@
   box-shadow: 0 4px 10px rgba(64, 102, 224, 0.4);
 }
 
-.btn-view-details:active, .btn-edit-equipment:active {
+.btn-view-details:active,
+.btn-edit-equipment:active {
   transform: translateY(0);
 }
 
@@ -243,6 +274,7 @@
 .equipment-card:hover .btn-edit-equipment {
   border-color: var(--color-primary-dark, #3452b6);
 }
+
 .btn-custom-action {
   flex: 1;
   padding: 10px 14px;
@@ -257,8 +289,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10; /* Ensure buttons stay above card for clicks */
-  position: relative; /* Enable z-index */
+  z-index: 10;
+  /* Ensure buttons stay above card for clicks */
+  position: relative;
+  /* Enable z-index */
 }
 
 /* Edit button styling */
@@ -301,7 +335,8 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0;
-  vertical-align: baseline; /* Ensure proper alignment with label */
+  vertical-align: baseline;
+  /* Ensure proper alignment with label */
 }
 
 .status-running {
@@ -364,13 +399,15 @@
     flex-direction: column;
   }
 
-  .btn-view-details, .btn-edit-equipment {
+  .btn-view-details,
+  .btn-edit-equipment {
     width: 100%;
   }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
   .equipment-image-container {
-    height: 240px; /* Slightly smaller on medium screens */
+    height: 240px;
+    /* Slightly smaller on medium screens */
   }
 }

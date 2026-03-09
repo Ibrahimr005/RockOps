@@ -46,6 +46,9 @@ public class OfferDTO {
     private String financeApprovedBy;
     private String rejectionReason;
 
+    // Inspection (equipment offers only)
+    private String inspectedBy;
+
     // For creation/updates
     private LocalDateTime updatedAt;
     private String updatedBy;

@@ -7,6 +7,8 @@ import { itemTypeService } from '../../../services/warehouse/itemTypeService.js'
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService.js';
 import { employeeService } from '../../../services/hr/employeeService.js';
 import { requestOrderService } from '../../../services/procurement/requestOrderService.js';
+import { equipmentPurchaseSpecService } from '../../../services/procurement/equipmentPurchaseSpecService.js';
+import EquipmentItemForm from '../EquipmentItemForm/EquipmentItemForm.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import { Button, CloseButton } from '../../../components/common/Button';
 import './RequestOrderModal.scss';
@@ -20,7 +22,8 @@ const RequestOrderModal = ({
                                existingOrder = null,
                                userType = 'PROCUREMENT', // 'PROCUREMENT' or 'WAREHOUSE'
                                currentWarehouseId = null,
-                               currentSiteId = null
+                               currentSiteId = null,
+                               initialPartyType = 'WAREHOUSE'
                            }) => {
     // Current step state (1, 2, or 3)
     const [currentStep, setCurrentStep] = useState(1);
@@ -32,11 +35,17 @@ const RequestOrderModal = ({
         siteId: '',
         requesterId: '',
         requesterName: '',
+        partyType: initialPartyType,
         items: [{ itemTypeId: '', quantity: '', comment: '', parentCategoryId: '', itemCategoryId: '' }],
         status: 'PENDING',
         deadline: '',
         employeeRequestedBy: ''
     });
+
+    // Equipment items state (separate from warehouse items to avoid coupling)
+    const [equipmentItems, setEquipmentItems] = useState([
+        { name: '', description: '', equipmentTypeId: '', equipmentBrandId: '', model: '', manufactureYear: '', countryOfOrigin: '', specifications: '', estimatedBudget: '', quantity: '1', comment: '' }
+    ]);
 
     // Track if form has been modified
     const [isFormDirty, setIsFormDirty] = useState(false);
@@ -64,16 +73,12 @@ const RequestOrderModal = ({
         };
     }, [isOpen]);
 
-// Update the useEffect to fetch warehouses and set the site properly
     useEffect(() => {
         if (isOpen) {
             const initializeModal = async () => {
-                // First fetch all initial data
                 await fetchInitialData();
 
-                // Then set form data for WAREHOUSE mode
                 if (userType === 'WAREHOUSE' && currentWarehouseId && currentSiteId) {
-                    // Wait a tiny bit for warehouses state to update
                     setTimeout(() => {
                         setFormData(prev => ({
                             ...prev,
@@ -103,10 +108,9 @@ const RequestOrderModal = ({
         }
     }, [warehouses, formData.requesterId]);
 
-// Add this new function to fetch all warehouses
     const fetchAllWarehouses = async () => {
         try {
-            const data = await warehouseService.getAll(); // Assuming this method exists
+            const data = await warehouseService.getAll();
             setWarehouses(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching all warehouses:', err);
@@ -114,7 +118,6 @@ const RequestOrderModal = ({
         }
     };
 
-// Update fetchInitialData to include all warehouses
     const fetchInitialData = async () => {
         try {
             await Promise.all([
@@ -122,7 +125,7 @@ const RequestOrderModal = ({
                 fetchItemTypes(),
                 fetchEmployees(),
                 fetchParentCategories(),
-                fetchAllWarehouses()  // Add this line
+                fetchAllWarehouses()
             ]);
         } catch (error) {
             console.error('Error fetching initial data:', error);
@@ -130,11 +133,6 @@ const RequestOrderModal = ({
         }
     };
 
-
-
-// Update handleSiteChange to filter warehouses instead of replacing them
-
-// Add this new function
     const fetchWarehouseDetails = async (warehouseId) => {
         try {
             const warehouse = await warehouseService.getById(warehouseId);
@@ -142,7 +140,6 @@ const RequestOrderModal = ({
                 ...prev,
                 requesterName: warehouse.name || ''
             }));
-            // Also set it in warehouses array so the banner can find it
             setWarehouses([warehouse]);
         } catch (err) {
             console.error('Error fetching warehouse details:', err);
@@ -189,11 +186,35 @@ const RequestOrderModal = ({
                 siteId: order.siteId || (userType === 'WAREHOUSE' ? currentSiteId : ''),
                 requesterId: order.requesterId || (userType === 'WAREHOUSE' ? currentWarehouseId : ''),
                 requesterName: order.requesterName || '',
+                partyType: order.partyType || 'WAREHOUSE',
                 status: order.status || 'PENDING',
                 deadline: deadline,
                 employeeRequestedBy: order.employeeRequestedBy || '',
                 items: itemsToSet
             });
+
+            // If editing an EQUIPMENT order, populate equipmentItems from existing requestItems
+            if (order.partyType === 'EQUIPMENT' && order.requestItems?.length > 0) {
+                const eqItems = order.requestItems
+                    .filter(item => item.equipmentSpec)
+                    .map(item => ({
+                        id: item.equipmentSpec.id,
+                        name: item.equipmentSpec.name || '',
+                        description: item.equipmentSpec.description || '',
+                        equipmentTypeId: item.equipmentSpec.equipmentType?.id || '',
+                        equipmentBrandId: item.equipmentSpec.brand?.id || '',
+                        model: item.equipmentSpec.model || '',
+                        manufactureYear: item.equipmentSpec.manufactureYear || '',
+                        countryOfOrigin: item.equipmentSpec.countryOfOrigin || '',
+                        specifications: item.equipmentSpec.specifications || '',
+                        estimatedBudget: item.equipmentSpec.estimatedBudget || '',
+                        quantity: item.quantity || 1,
+                        comment: item.comment || ''
+                    }));
+                if (eqItems.length > 0) {
+                    setEquipmentItems(eqItems);
+                }
+            }
 
             if (userType === 'WAREHOUSE' && currentWarehouseId && currentSiteId) {
                 setFormData(prev => ({
@@ -222,7 +243,6 @@ const RequestOrderModal = ({
         }
     };
 
-
     const fetchSites = async () => {
         try {
             const response = await siteService.getAllSites();
@@ -237,13 +257,13 @@ const RequestOrderModal = ({
     const fetchItemTypes = async () => {
         try {
             const data = await itemTypeService.getAll();
-            console.log('Item types response:', JSON.stringify(data[0], null, 2)); // ADD THIS
             setItemTypes(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching item types:', err);
             setItemTypes([]);
         }
     };
+
     const fetchEmployees = async () => {
         try {
             const response = await employeeService.getAll();
@@ -304,7 +324,6 @@ const RequestOrderModal = ({
         }));
 
         if (siteId) {
-            // Filter warehouses by site
             try {
                 const data = await warehouseService.getBySite(siteId);
                 setWarehouses(Array.isArray(data) ? data : []);
@@ -312,7 +331,6 @@ const RequestOrderModal = ({
                 console.error('Error fetching warehouses:', err);
             }
         } else {
-            // If no site selected, show all warehouses again
             await fetchAllWarehouses();
         }
     };
@@ -479,34 +497,68 @@ const RequestOrderModal = ({
             return;
         }
 
-        const requestPayload = {
-            title: formData.title.trim(),
-            description: formData.description.trim() || '',
-            createdBy: isEditMode ? undefined : username,
-            updatedBy: isEditMode ? username : undefined,
-            status: 'DRAFT',
-            partyType: 'WAREHOUSE',
-            requesterId: formData.requesterId || null,
-            employeeRequestedBy: formData.employeeRequestedBy || null,
-            deadline: formData.deadline || null,
-            items: formData.items
-                .filter(item => item.itemTypeId && item.quantity)
-                .map(item => ({
-                    id: item.id || null,
-                    itemTypeId: item.itemTypeId,
-                    quantity: parseFloat(item.quantity),
-                    comment: (item.comment || '').trim()
-                }))
-        };
-
-        // Remove items array if empty
-        if (requestPayload.items.length === 0) {
-            delete requestPayload.items;
-        }
-
         setIsSubmitting(true);
 
         try {
+            let itemsPayload = [];
+
+            if (formData.partyType === 'EQUIPMENT') {
+                // For equipment drafts: create specs first, then reference by ID
+                const validEquipmentItems = equipmentItems.filter(item => item.name && item.quantity);
+                for (const eqItem of validEquipmentItems) {
+                    const specDto = {
+                        name: eqItem.name,
+                        description: eqItem.description || '',
+                        equipmentTypeId: eqItem.equipmentTypeId || null,
+                        equipmentBrandId: eqItem.equipmentBrandId || null,
+                        model: eqItem.model || '',
+                        manufactureYear: eqItem.manufactureYear ? parseInt(eqItem.manufactureYear) : null,
+                        countryOfOrigin: eqItem.countryOfOrigin || '',
+                        specifications: eqItem.specifications || '',
+                        estimatedBudget: eqItem.estimatedBudget ? parseFloat(eqItem.estimatedBudget) : null
+                    };
+                    let specId = eqItem.id;
+                    if (!specId) {
+                        const created = await equipmentPurchaseSpecService.create(specDto);
+                        specId = created.id;
+                    } else {
+                        await equipmentPurchaseSpecService.update(specId, specDto);
+                    }
+                    itemsPayload.push({
+                        equipmentSpecId: specId,
+                        quantity: parseFloat(eqItem.quantity),
+                        comment: (eqItem.comment || '').trim()
+                    });
+                }
+            } else {
+                itemsPayload = formData.items
+                    .filter(item => item.itemTypeId && item.quantity)
+                    .map(item => ({
+                        id: item.id || null,
+                        itemTypeId: item.itemTypeId,
+                        quantity: parseFloat(item.quantity),
+                        comment: (item.comment || '').trim()
+                    }));
+            }
+
+            const requestPayload = {
+                title: formData.title.trim(),
+                description: formData.description.trim() || '',
+                createdBy: isEditMode ? undefined : username,
+                updatedBy: isEditMode ? username : undefined,
+                status: 'DRAFT',
+                partyType: formData.partyType,
+                requesterId: formData.partyType === 'EQUIPMENT' ? null : (formData.requesterId || null),
+                employeeRequestedBy: formData.employeeRequestedBy || null,
+                deadline: formData.deadline || null,
+                items: itemsPayload.length > 0 ? itemsPayload : undefined
+            };
+
+            // Remove items array if empty
+            if (requestPayload.items && requestPayload.items.length === 0) {
+                delete requestPayload.items;
+            }
+
             if (isEditMode && existingOrder?.id) {
                 await requestOrderService.update(existingOrder.id, requestPayload);
                 onSuccess?.('Draft updated successfully');
@@ -538,13 +590,14 @@ const RequestOrderModal = ({
 
     const isStepCompleted = (step) => {
         if (step === 1) {
-            // Step 1: Basic Information
-            return formData.title && formData.description && formData.deadline;
+            return formData.title && formData.description && formData.deadline && formData.partyType;
         } else if (step === 2) {
-            // Step 2: Request Items
+            if (formData.partyType === 'EQUIPMENT') {
+                return equipmentItems.some(item => item.name && item.equipmentTypeId && item.quantity);
+            }
             return formData.items.some(item => item.itemTypeId && item.quantity);
         } else if (step === 3) {
-            // Step 3: Requester Information
+            if (formData.partyType === 'EQUIPMENT') return true;
             return formData.requesterId;
         }
         return false;
@@ -554,39 +607,82 @@ const RequestOrderModal = ({
         e.preventDefault();
         const username = getUserInfo();
 
-        if (!formData.title || !formData.description || !formData.requesterId || !formData.deadline) {
+        if (!formData.title || !formData.description || !formData.deadline) {
             onError?.('Please fill in all required fields');
             return;
         }
 
-        if (!formData.items.some(item => item.itemTypeId && item.quantity)) {
-            onError?.('Please add at least one item with type and quantity');
-            return;
+        if (formData.partyType === 'EQUIPMENT') {
+            if (!equipmentItems.some(item => item.name && item.equipmentTypeId && item.quantity)) {
+                onError?.('Please add at least one equipment item with name, type, and quantity');
+                return;
+            }
+        } else {
+            if (!formData.requesterId) {
+                onError?.('Please select a warehouse');
+                return;
+            }
+            if (!formData.items.some(item => item.itemTypeId && item.quantity)) {
+                onError?.('Please add at least one item with type and quantity');
+                return;
+            }
         }
-
-        const requestPayload = {
-            title: formData.title.trim(),
-            description: formData.description.trim(),
-            createdBy: isEditMode ? undefined : username,
-            updatedBy: isEditMode ? username : undefined,
-            status: 'PENDING',
-            partyType: 'WAREHOUSE',
-            requesterId: formData.requesterId,
-            employeeRequestedBy: formData.employeeRequestedBy || null,
-            deadline: formData.deadline,
-            items: formData.items
-                .filter(item => item.itemTypeId && item.quantity)
-                .map(item => ({
-                    id: item.id || null,
-                    itemTypeId: item.itemTypeId,
-                    quantity: parseFloat(item.quantity),
-                    comment: (item.comment || '').trim()
-                }))
-        };
 
         setIsSubmitting(true);
 
         try {
+            let itemsPayload = [];
+
+            if (formData.partyType === 'EQUIPMENT') {
+                for (const eqItem of equipmentItems.filter(item => item.name && item.quantity)) {
+                    const specDto = {
+                        name: eqItem.name,
+                        description: eqItem.description || '',
+                        equipmentTypeId: eqItem.equipmentTypeId || null,
+                        equipmentBrandId: eqItem.equipmentBrandId || null,
+                        model: eqItem.model || '',
+                        manufactureYear: eqItem.manufactureYear ? parseInt(eqItem.manufactureYear) : null,
+                        countryOfOrigin: eqItem.countryOfOrigin || '',
+                        specifications: eqItem.specifications || '',
+                        estimatedBudget: eqItem.estimatedBudget ? parseFloat(eqItem.estimatedBudget) : null
+                    };
+                    let specId = eqItem.id;
+                    if (!specId) {
+                        const created = await equipmentPurchaseSpecService.create(specDto);
+                        specId = created.id;
+                    } else {
+                        await equipmentPurchaseSpecService.update(specId, specDto);
+                    }
+                    itemsPayload.push({
+                        equipmentSpecId: specId,
+                        quantity: parseFloat(eqItem.quantity),
+                        comment: (eqItem.comment || '').trim()
+                    });
+                }
+            } else {
+                itemsPayload = formData.items
+                    .filter(item => item.itemTypeId && item.quantity)
+                    .map(item => ({
+                        id: item.id || null,
+                        itemTypeId: item.itemTypeId,
+                        quantity: parseFloat(item.quantity),
+                        comment: (item.comment || '').trim()
+                    }));
+            }
+
+            const requestPayload = {
+                title: formData.title.trim(),
+                description: formData.description.trim(),
+                createdBy: isEditMode ? undefined : username,
+                updatedBy: isEditMode ? username : undefined,
+                status: 'PENDING',
+                partyType: formData.partyType,
+                requesterId: formData.partyType === 'EQUIPMENT' ? null : formData.requesterId,
+                employeeRequestedBy: formData.employeeRequestedBy || null,
+                deadline: formData.deadline,
+                items: itemsPayload
+            };
+
             if (isEditMode && existingOrder?.id) {
                 await requestOrderService.update(existingOrder.id, requestPayload);
                 onSuccess?.('Request Order updated successfully');
@@ -623,11 +719,15 @@ const RequestOrderModal = ({
             siteId: '',
             requesterId: '',
             requesterName: '',
+            partyType: 'WAREHOUSE',
             items: [{ itemTypeId: '', quantity: '', comment: '', parentCategoryId: '', itemCategoryId: '' }],
             status: 'PENDING',
             deadline: '',
             employeeRequestedBy: ''
         });
+        setEquipmentItems([
+            { name: '', description: '', equipmentTypeId: '', equipmentBrandId: '', model: '', manufactureYear: '', countryOfOrigin: '', specifications: '', estimatedBudget: '', quantity: '1', comment: '' }
+        ]);
         setWarehouses([]);
         setChildCategoriesByItem({});
         setIsFormDirty(false);
@@ -769,145 +869,178 @@ const RequestOrderModal = ({
                                             disabled={isSubmitting}
                                         />
                                     </div>
+                                    <div className="form-group">
+                                        <label htmlFor="partyType" className="form-label">
+                                            Request Type <span className="required">*</span>
+                                        </label>
+                                        <select
+                                            id="partyType"
+                                            name="partyType"
+                                            className="form-select"
+                                            value={formData.partyType}
+                                            onChange={(e) => {
+                                                setIsFormDirty(true);
+                                                setFormData(prev => ({ ...prev, partyType: e.target.value }));
+                                            }}
+                                            disabled={isSubmitting || (isEditMode && existingOrder?.partyType)}
+                                        >
+                                            <option value="WAREHOUSE">Warehouse Restock</option>
+                                            <option value="EQUIPMENT">Equipment Purchase</option>
+                                        </select>
+                                    </div>
                                 </div>
                             )}
 
                             {/* Step 2: Request Items */}
                             {currentStep === 2 && (
                                 <div className="modal-section">
-                                    <div className="section-header">
-                                        <h3 className="modal-section-title">Request Items</h3>
-                                        <Button
-                                            variant="primary"
-                                            size="sm"
-                                            onClick={handleAddItem}
-                                            disabled={isSubmitting}
-                                        >
-                                            <FaPlus />
-                                            Add Another Item
-                                        </Button>
-                                    </div>
+                                    {formData.partyType === 'EQUIPMENT' ? (
+                                        /* Equipment item picker */
+                                        <EquipmentItemForm
+                                            items={equipmentItems}
+                                            onChange={(updated) => {
+                                                setIsFormDirty(true);
+                                                setEquipmentItems(updated);
+                                            }}
+                                            isSubmitting={isSubmitting}
+                                        />
+                                    ) : (
+                                        /* Warehouse item picker (existing) */
+                                        <>
+                                            <div className="section-header">
+                                                <h3 className="modal-section-title">Request Items</h3>
+                                                <Button
+                                                    variant="primary"
+                                                    size="sm"
+                                                    onClick={handleAddItem}
+                                                    disabled={isSubmitting}
+                                                >
+                                                    <FaPlus />
+                                                    Add Another Item
+                                                </Button>
+                                            </div>
 
-                                    <div className="items-container">
-                                        {formData.items.map((item, index) => (
-                                            <div key={index} className="item-card">
-                                                <div className="item-header">
-                                                    <span className="item-number">Item {index + 1}</span>
-                                                    {formData.items.length > 1 && (
-                                                        <Button
-                                                            variant="danger"
-                                                            size="sm"
-                                                            onClick={() => handleRemoveItem(index)}
-                                                            disabled={isSubmitting}
-                                                        >
-                                                            <FaTimes />
-                                                            Remove
-                                                        </Button>
-                                                    )}
-                                                </div>
-
-                                                <div className="item-body">
-                                                    <div className="form-row">
-                                                        <div className="form-group">
-                                                            <label className="form-label">Parent Category</label>
-                                                            <select
-                                                                className="form-select"
-                                                                value={item.parentCategoryId}
-                                                                onChange={(e) => handleItemChange(index, 'parentCategoryId', e.target.value)}
-                                                                disabled={isSubmitting}
-                                                            >
-                                                                <option value="">All Categories</option>
-                                                                {parentCategories.map((category) => (
-                                                                    <option key={category.id} value={category.id}>
-                                                                        {category.name}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
+                                            <div className="items-container">
+                                                {formData.items.map((item, index) => (
+                                                    <div key={index} className="item-card">
+                                                        <div className="item-header">
+                                                            <span className="item-number">Item {index + 1}</span>
+                                                            {formData.items.length > 1 && (
+                                                                <Button
+                                                                    variant="danger"
+                                                                    size="sm"
+                                                                    onClick={() => handleRemoveItem(index)}
+                                                                    disabled={isSubmitting}
+                                                                >
+                                                                    <FaTimes />
+                                                                    Remove
+                                                                </Button>
+                                                            )}
                                                         </div>
 
-                                                        <div className="form-group">
-                                                            <label className="form-label">Child Category</label>
-                                                            <select
-                                                                className="form-select"
-                                                                value={item.itemCategoryId}
-                                                                onChange={(e) => handleItemChange(index, 'itemCategoryId', e.target.value)}
-                                                                disabled={!item.parentCategoryId || isSubmitting}
-                                                            >
-                                                                <option value="">All child categories</option>
-                                                                {(childCategoriesByItem[index] || []).map((category) => (
-                                                                    <option key={category.id} value={category.id}>
-                                                                        {category.name}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
-                                                    </div>
+                                                        <div className="item-body">
+                                                            <div className="form-row">
+                                                                <div className="form-group">
+                                                                    <label className="form-label">Parent Category</label>
+                                                                    <select
+                                                                        className="form-select"
+                                                                        value={item.parentCategoryId}
+                                                                        onChange={(e) => handleItemChange(index, 'parentCategoryId', e.target.value)}
+                                                                        disabled={isSubmitting}
+                                                                    >
+                                                                        <option value="">All Categories</option>
+                                                                        {parentCategories.map((category) => (
+                                                                            <option key={category.id} value={category.id}>
+                                                                                {category.name}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
 
-                                                    <div className="form-row">
-                                                        <div className="form-group">
-                                                            <label className="form-label">
-                                                                Item Type <span className="required">*</span>
-                                                            </label>
-                                                            <select
-                                                                className="form-select"
-                                                                value={item.itemTypeId}
-                                                                onChange={(e) => handleItemChange(index, 'itemTypeId', e.target.value)}
-                                                                disabled={isSubmitting}
-                                                            >
-                                                                <option value="">Select Item Type</option>
-                                                                {getAvailableItemTypes(index).map(type => (
-                                                                    <option key={type.id} value={type.id}>
-                                                                        {type.name || 'Unknown Item Type'}
-                                                                        {type.measuringUnit ? ` (${type.measuringUnit.name})` : ''}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
+                                                                <div className="form-group">
+                                                                    <label className="form-label">Child Category</label>
+                                                                    <select
+                                                                        className="form-select"
+                                                                        value={item.itemCategoryId}
+                                                                        onChange={(e) => handleItemChange(index, 'itemCategoryId', e.target.value)}
+                                                                        disabled={!item.parentCategoryId || isSubmitting}
+                                                                    >
+                                                                        <option value="">All child categories</option>
+                                                                        {(childCategoriesByItem[index] || []).map((category) => (
+                                                                            <option key={category.id} value={category.id}>
+                                                                                {category.name}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
 
-                                                        <div className="form-group">
-                                                            <label className="form-label">
-                                                                Quantity <span className="required">*</span>
-                                                            </label>
-                                                            <div className="quantity-input-wrapper">
+                                                            <div className="form-row">
+                                                                <div className="form-group">
+                                                                    <label className="form-label">
+                                                                        Item Type <span className="required">*</span>
+                                                                    </label>
+                                                                    <select
+                                                                        className="form-select"
+                                                                        value={item.itemTypeId}
+                                                                        onChange={(e) => handleItemChange(index, 'itemTypeId', e.target.value)}
+                                                                        disabled={isSubmitting}
+                                                                    >
+                                                                        <option value="">Select Item Type</option>
+                                                                        {getAvailableItemTypes(index).map(type => (
+                                                                            <option key={type.id} value={type.id}>
+                                                                                {type.name || 'Unknown Item Type'}
+                                                                                {type.measuringUnit ? ` (${type.measuringUnit.name})` : ''}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+
+                                                                <div className="form-group">
+                                                                    <label className="form-label">
+                                                                        Quantity <span className="required">*</span>
+                                                                    </label>
+                                                                    <div className="quantity-input-wrapper">
+                                                                        <input
+                                                                            type="number"
+                                                                            className="form-input quantity-input"
+                                                                            value={item.quantity}
+                                                                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                                                                            onWheel={(e) => e.target.blur()}
+                                                                            min="0.01"
+                                                                            step="0.01"
+                                                                            placeholder="0.00"
+                                                                            disabled={isSubmitting}
+                                                                        />
+                                                                        {item.itemTypeId && (
+                                                                            <span className="unit-badge">
+                                                                                {itemTypes.find(t => t.id === item.itemTypeId)?.measuringUnit?.name || 'units'}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="form-group">
+                                                                <label className="form-label">Additional Notes</label>
                                                                 <input
-                                                                    type="number"
-                                                                    className="form-input quantity-input"
-                                                                    value={item.quantity}
-                                                                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                                                                    onWheel={(e) => e.target.blur()}
-                                                                    min="0.01"
-                                                                    step="0.01"
-                                                                    placeholder="0.00"
+                                                                    type="text"
+                                                                    className="form-input"
+                                                                    value={item.comment}
+                                                                    onChange={(e) => handleItemChange(index, 'comment', e.target.value)}
+                                                                    placeholder="Add any special instructions or details about this item"
                                                                     disabled={isSubmitting}
                                                                 />
-                                                                {item.itemTypeId && (
-                                                                    <span className="unit-badge">
-                                                                   {itemTypes.find(t => t.id === item.itemTypeId)?.measuringUnit?.name || 'units'}
-                                                                    </span>
-                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
-
-                                                    <div className="form-group">
-                                                        <label className="form-label">Additional Notes</label>
-                                                        <input
-                                                            type="text"
-                                                            className="form-input"
-                                                            value={item.comment}
-                                                            onChange={(e) => handleItemChange(index, 'comment', e.target.value)}
-                                                            placeholder="Add any special instructions or details about this item"
-                                                            disabled={isSubmitting}
-                                                        />
-                                                    </div>
-                                                </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
 
-                            {/* Step 3: Requester Information */}
                             {/* Step 3: Requester Information */}
                             {currentStep === 3 && (
                                 <div className="modal-section">
@@ -936,7 +1069,22 @@ const RequestOrderModal = ({
                                         </select>
                                     </div>
 
-                                    {userType === 'PROCUREMENT' && (
+                                    {/* Equipment requests don't need warehouse/site selection */}
+                                    {formData.partyType === 'EQUIPMENT' && (
+                                        <div className="selected-requester-info">
+                                            <div className="info-icon">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <div className="info-content">
+                                                <span className="info-label">Request Type:</span>
+                                                <span className="info-value">🔧 Equipment Purchase — no warehouse required</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {formData.partyType !== 'EQUIPMENT' && userType === 'PROCUREMENT' && (
                                         <>
                                             <div className="form-row">
                                                 <div className="form-group">
@@ -960,7 +1108,6 @@ const RequestOrderModal = ({
                                                     </select>
                                                 </div>
 
-                                                {/* REMOVED THE CONDITIONAL - Always show warehouse dropdown */}
                                                 <div className="form-group">
                                                     <label htmlFor="requesterId" className="form-label">
                                                         Warehouse <span className="required">*</span>
@@ -1010,10 +1157,10 @@ const RequestOrderModal = ({
                                             <div className="info-content">
                                                 <span className="info-label">Selected Warehouse:</span>
                                                 <span className="info-value">
-                        {warehouses.find(w => w.id === formData.requesterId)?.name ||
-                            formData.requesterName ||
-                            'Current Warehouse'}
-                    </span>
+                                                    {warehouses.find(w => w.id === formData.requesterId)?.name ||
+                                                        formData.requesterName ||
+                                                        'Current Warehouse'}
+                                                </span>
                                             </div>
                                         </div>
                                     )}

@@ -16,15 +16,15 @@ import {
 import { Button } from '../../../../components/common/Button';
 
 const SubmittedOffers = ({
-                             offers,
-                             setOffers, // Add this prop to update the offers list
-                             activeOffer,
-                             setActiveOffer,
-                             onApproveOffer, // Add these new props
-                             onDeclineOffer,  // for handling approve/decline actions
-                             onOfferValidated, // NEW: Add this prop for redirecting to validated tab
-                             managerRoles = ['MANAGER', 'ADMIN', 'PROCUREMENT_MANAGER','PROCUREMENT'] // Default manager roles
-                         }) => {
+    offers,
+    setOffers, // Add this prop to update the offers list
+    activeOffer,
+    setActiveOffer,
+    onApproveOffer, // Add these new props
+    onDeclineOffer,  // for handling approve/decline actions
+    onOfferValidated, // NEW: Add this prop for redirecting to validated tab
+    managerRoles = ['MANAGER', 'ADMIN', 'PROCUREMENT_MANAGER', 'PROCUREMENT'] // Default manager roles
+}) => {
     // Get user role from localStorage
     const [userRole, setUserRole] = React.useState(null);
 
@@ -450,15 +450,28 @@ const SubmittedOffers = ({
                                     <div className="procurement-submitted-items-submitted">
                                         {effectiveRequestItems?.map(requestItem => {
                                             const itemTypeId = requestItem.itemTypeId || requestItem.itemType?.id;
-                                            const offerItems = activeOffer.offerItems.filter(
-                                                item => item.itemType?.id === itemTypeId
-                                            );
+                                            const equipmentSpecId = requestItem.equipmentSpecId || requestItem.equipmentSpec?.id;
+                                            const isEquipmentItem = !!(equipmentSpecId);
+                                            let offerItems = [];
+                                            if (itemTypeId) {
+                                                offerItems = activeOffer.offerItems.filter(
+                                                    item => item.itemType?.id === itemTypeId
+                                                );
+                                            } else if (equipmentSpecId) {
+                                                offerItems = activeOffer.offerItems.filter(
+                                                    item => (item.equipmentSpec?.id === equipmentSpecId) || (item.equipmentSpecId === equipmentSpecId)
+                                                );
+                                            } else {
+                                                offerItems = activeOffer.offerItems.filter(
+                                                    item => item.requestOrderItem?.id === requestItem.id || item.requestOrderItemId === requestItem.id
+                                                );
+                                            }
 
                                             // Only show items that have offer items
                                             if (offerItems.length === 0) return null;
 
-                                            const itemTypeName = requestItem.itemTypeName || requestItem.itemType?.name || 'Item';
-                                            const itemTypeMeasuringUnit = requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units';
+                                            const itemTypeName = requestItem.itemTypeName || requestItem.itemType?.name || requestItem.equipmentName || requestItem.equipmentSpec?.name || 'Item';
+                                            const itemTypeMeasuringUnit = isEquipmentItem ? 'unit' : (requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units');
 
                                             return (
                                                 <div key={requestItem.id} className="procurement-submitted-item-card-submitted">
@@ -477,24 +490,24 @@ const SubmittedOffers = ({
                                                     <div className="submitted-offer-solutions-submitted">
                                                         <table className="procurement-offer-entries-table-submitted">
                                                             <thead>
-                                                            <tr>
-                                                                <th>Merchant</th>
-                                                                <th>Quantity</th>
-                                                                <th>Unit Price</th>
-                                                                <th>Total</th>
-                                                                <th>Est. Delivery</th>
-                                                            </tr>
+                                                                <tr>
+                                                                    <th>Merchant</th>
+                                                                    <th>Quantity</th>
+                                                                    <th>Unit Price</th>
+                                                                    <th>Total</th>
+                                                                    <th>Est. Delivery</th>
+                                                                </tr>
                                                             </thead>
                                                             <tbody>
-                                                            {offerItems.map((offerItem, idx) => (
-                                                                <tr key={offerItem.id || idx}>
-                                                                    <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                    <td>{offerItem.quantity} {itemTypeMeasuringUnit}</td>
-                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice).toFixed(2)}</td>
-                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice).toFixed(2)}</td>
-                                                                    <td>{offerItem.estimatedDeliveryDays ? `${offerItem.estimatedDeliveryDays} days` : 'N/A'}</td>
-                                                                </tr>
-                                                            ))}
+                                                                {offerItems.map((offerItem, idx) => (
+                                                                    <tr key={offerItem.id || idx}>
+                                                                        <td>{offerItem.merchant?.name || 'Unknown'}</td>
+                                                                        <td>{offerItem.quantity} {itemTypeMeasuringUnit}</td>
+                                                                        <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice).toFixed(2)}</td>
+                                                                        <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice).toFixed(2)}</td>
+                                                                        <td>{offerItem.estimatedDeliveryDays ? `${offerItem.estimatedDeliveryDays} days` : 'N/A'}</td>
+                                                                    </tr>
+                                                                ))}
                                                             </tbody>
                                                         </table>
                                                     </div>
@@ -507,7 +520,7 @@ const SubmittedOffers = ({
                                 <div className="procurement-submitted-summary-submitted">
                                     <div className="summary-item">
                                         <FiPackage size={16} />
-                                        <span className="summary-label">Total Items:</span>
+                                        <span className="summary-label">{effectiveRequestItems?.some(item => item.equipmentSpecId || item.equipmentSpec) ? 'Total Equipment:' : 'Total Items:'}</span>
                                         <span className="summary-value">{activeOffer.requestOrder?.requestItems?.length || 0}</span>
                                     </div>
 
@@ -515,13 +528,13 @@ const SubmittedOffers = ({
                                         <FiDollarSign size={18} />
                                         <span className="summary-label">Total Value:</span>
                                         <span className="summary-value total">
-        {Object.entries(getTotalsByCurrency(activeOffer)).map(([currency, total], idx) => (
-            <span key={currency} style={{ marginLeft: idx > 0 ? '8px' : '0' }}>
-                {idx > 0 && '+ '}
-                {currency} {total.toFixed(2)}
-            </span>
-        ))}
-    </span>
+                                            {Object.entries(getTotalsByCurrency(activeOffer)).map(([currency, total], idx) => (
+                                                <span key={currency} style={{ marginLeft: idx > 0 ? '8px' : '0' }}>
+                                                    {idx > 0 && '+ '}
+                                                    {currency} {total.toFixed(2)}
+                                                </span>
+                                            ))}
+                                        </span>
                                     </div>
                                 </div>
                             </div>

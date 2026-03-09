@@ -112,6 +112,19 @@ const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCha
             )
         },
         {
+            id: 'type',
+            header: 'TYPE',
+            accessor: 'requestOrder.partyType',
+            sortable: true,
+            filterable: true,
+            minWidth: '130px',
+            render: (row) => (
+                <span className={`party-type-badge ${row.requestOrder?.partyType?.toLowerCase() || 'warehouse'}`}>
+                    {row.requestOrder?.partyType === 'EQUIPMENT' ? '🔧 Equipment' : '📦 Warehouse'}
+                </span>
+            )
+        },
+        {
             id: 'title',
             header: 'TITLE',
             accessor: 'requestOrder.title',
@@ -199,7 +212,7 @@ const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCha
             label: 'Resolve',
             icon: (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 6L9 17l-5-5"/>
+                    <path d="M20 6L9 17l-5-5" />
                 </svg>
             ),
             onClick: (row) => handleResolveClick(row),

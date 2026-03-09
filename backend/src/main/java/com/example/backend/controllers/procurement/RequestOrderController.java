@@ -1,10 +1,7 @@
 package com.example.backend.controllers.procurement;
 
-
-
 import com.example.backend.dto.procurement.RequestOrderDTO;
-import com.example.backend.dto.procurement.RequestOrderItemDTO;
-import com.example.backend.dto.warehouse.ItemTypeDTO;
+import com.example.backend.mappers.procurement.RequestOrderMapper;
 import com.example.backend.models.procurement.RequestOrder.RequestOrder;
 import com.example.backend.services.procurement.RequestOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +22,8 @@ public class RequestOrderController {
     @Autowired
     private RequestOrderService requestOrderService;
 
+    @Autowired
+    private RequestOrderMapper requestOrderMapper;
 
     @PostMapping()
     public ResponseEntity<?> createRequest(@RequestBody Map<String, Object> requestData) {
@@ -68,12 +67,9 @@ public class RequestOrderController {
             RequestOrder requestOrder = requestOrderService.findById(id)
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND,
-                            "Request Order not found with id: " + id
-                    ));
+                            "Request Order not found with id: " + id));
 
-            // Convert to DTO
-            RequestOrderDTO dto = convertToDTO(requestOrder);
-            return ResponseEntity.ok(dto);
+            return ResponseEntity.ok(requestOrderMapper.toDTO(requestOrder));
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
@@ -81,54 +77,13 @@ public class RequestOrderController {
             e.printStackTrace();
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Error fetching request order: " + e.getMessage()
-            );
+                    "Error fetching request order: " + e.getMessage());
         }
     }
 
-    private RequestOrderDTO convertToDTO(RequestOrder requestOrder) {
-        List<RequestOrderItemDTO> itemDTOs = requestOrder.getRequestItems().stream()
-                .map(item -> RequestOrderItemDTO.builder()
-                        .id(item.getId())
-                        .quantity(item.getQuantity())
-                        .comment(item.getComment())
-                        .requestOrderId(requestOrder.getId())
-                        .itemTypeId(item.getItemType().getId())
-                        .itemType(ItemTypeDTO.builder()
-                                .id(item.getItemType().getId())
-                                .name(item.getItemType().getName())
-                                .measuringUnit(item.getItemType().getMeasuringUnit() != null ?
-                                        item.getItemType().getMeasuringUnit().getName() : null)
-                                .itemCategoryName(item.getItemType().getItemCategory() != null
-                                        ? item.getItemType().getItemCategory().getName()
-                                        : null)
-                                .build())
-                        .build())
-                .collect(java.util.stream.Collectors.toList());
-
-        return RequestOrderDTO.builder()
-                .id(requestOrder.getId())
-                .title(requestOrder.getTitle())
-                .description(requestOrder.getDescription())
-                .createdAt(requestOrder.getCreatedAt())
-                .createdBy(requestOrder.getCreatedBy())
-                .status(requestOrder.getStatus())
-                .partyType(requestOrder.getPartyType())
-                .requesterId(requestOrder.getRequesterId())
-                .requesterName(requestOrder.getRequesterName())
-                .updatedAt(requestOrder.getUpdatedAt())
-                .updatedBy(requestOrder.getUpdatedBy())
-                .approvedAt(requestOrder.getApprovedAt())
-                .approvedBy(requestOrder.getApprovedBy())
-                .employeeRequestedBy(requestOrder.getEmployeeRequestedBy())
-                .deadline(requestOrder.getDeadline())
-                .rejectionReason(requestOrder.getRejectionReason())
-                .requestItems(itemDTOs)
-                .build();
-    }
-
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateRequestOrder(@PathVariable("id") UUID id, @RequestBody Map<String, Object> requestData) {
+    public ResponseEntity<?> updateRequestOrder(@PathVariable("id") UUID id,
+            @RequestBody Map<String, Object> requestData) {
         try {
             RequestOrder updatedOrder = requestOrderService.updateRequest(id, requestData);
             return ResponseEntity.ok(updatedOrder);
@@ -157,8 +112,7 @@ public class RequestOrderController {
     @GetMapping("/warehouse")
     public ResponseEntity<List<RequestOrder>> getRequestsByWarehouseAndStatus(
             @RequestParam UUID warehouseId,
-            @RequestParam String status
-    ) {
+            @RequestParam String status) {
         try {
             List<RequestOrder> requests = requestOrderService.getRequestsByWarehouseAndStatus(warehouseId, status);
             return ResponseEntity.ok(requests);

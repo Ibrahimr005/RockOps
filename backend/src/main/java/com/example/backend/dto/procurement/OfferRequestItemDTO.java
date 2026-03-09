@@ -19,6 +19,11 @@ public class OfferRequestItemDTO {
     private UUID itemTypeId;
     private String itemTypeName;
     private String itemTypeMeasuringUnit;
+
+    // Equipment-specific fields
+    private UUID equipmentSpecId;
+    private String equipmentName;
+
     private double quantity;
     private String comment;
     private UUID originalRequestOrderItemId;

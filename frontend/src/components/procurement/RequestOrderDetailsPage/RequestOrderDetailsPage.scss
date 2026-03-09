@@ -264,6 +264,63 @@
             border-radius: var(--radius-sm);
           }
         }
+
+        .equipment-spec-section {
+          background: var(--color-surface);
+          border: 1px solid var(--border-color-light);
+          border-radius: var(--radius-sm);
+          padding: 14px;
+
+          .equipment-spec-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+          }
+
+          .equipment-spec-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+          }
+
+          .spec-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+
+            &.full-width {
+              grid-column: 1 / -1;
+              margin-top: 6px;
+            }
+
+            .spec-label {
+              font-size: 10px;
+              font-weight: 600;
+              color: var(--color-text-secondary);
+              text-transform: uppercase;
+              letter-spacing: 0.4px;
+            }
+
+            .spec-value {
+              font-size: 13px;
+              font-weight: 600;
+              color: var(--color-text-primary);
+
+              &.budget {
+                color: var(--color-success, #059669);
+              }
+
+              &.specifications-text {
+                white-space: pre-wrap;
+                line-height: 1.5;
+                font-weight: 500;
+              }
+            }
+          }
+        }
       }
     }
 

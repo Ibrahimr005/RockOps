@@ -1,6 +1,7 @@
 // RequestOrderItemMapper.java
 package com.example.backend.mappers.procurement;
 
+import com.example.backend.dto.procurement.EquipmentPurchaseSpecDTO;
 import com.example.backend.dto.procurement.RequestOrderItemDTO;
 import com.example.backend.mappers.warehouse.ItemTypeMapper;
 import com.example.backend.models.procurement.RequestOrder.RequestOrderItem;
@@ -19,7 +20,8 @@ public class RequestOrderItemMapper {
     }
 
     public RequestOrderItemDTO toDTO(RequestOrderItem requestOrderItem) {
-        if (requestOrderItem == null) return null;
+        if (requestOrderItem == null)
+            return null;
 
         RequestOrderItemDTO.RequestOrderItemDTOBuilder builder = RequestOrderItemDTO.builder()
                 .id(requestOrderItem.getId())
@@ -37,11 +39,41 @@ public class RequestOrderItemMapper {
                     .itemType(itemTypeMapper.toDTO(requestOrderItem.getItemType()));
         }
 
+        // Equipment Spec
+        if (requestOrderItem.getEquipmentSpec() != null) {
+            builder.equipmentSpecId(requestOrderItem.getEquipmentSpec().getId())
+                    .equipmentName(requestOrderItem.getEquipmentSpec().getName() +
+                            (requestOrderItem.getEquipmentSpec().getModel() != null
+                                    && !requestOrderItem.getEquipmentSpec().getModel().isEmpty()
+                                            ? " " + requestOrderItem.getEquipmentSpec().getModel()
+                                            : ""));
+
+            // Map full equipment spec details for frontend visibility
+            EquipmentPurchaseSpecDTO specDTO = new EquipmentPurchaseSpecDTO();
+            specDTO.setName(requestOrderItem.getEquipmentSpec().getName());
+            specDTO.setDescription(requestOrderItem.getEquipmentSpec().getDescription());
+            specDTO.setModel(requestOrderItem.getEquipmentSpec().getModel());
+            specDTO.setManufactureYear(requestOrderItem.getEquipmentSpec().getManufactureYear());
+            specDTO.setCountryOfOrigin(requestOrderItem.getEquipmentSpec().getCountryOfOrigin());
+            specDTO.setSpecifications(requestOrderItem.getEquipmentSpec().getSpecifications());
+            specDTO.setEstimatedBudget(requestOrderItem.getEquipmentSpec().getEstimatedBudget());
+            if (requestOrderItem.getEquipmentSpec().getEquipmentType() != null) {
+                specDTO.setEquipmentTypeId(requestOrderItem.getEquipmentSpec().getEquipmentType().getId());
+                specDTO.setEquipmentTypeName(requestOrderItem.getEquipmentSpec().getEquipmentType().getName());
+            }
+            if (requestOrderItem.getEquipmentSpec().getBrand() != null) {
+                specDTO.setEquipmentBrandId(requestOrderItem.getEquipmentSpec().getBrand().getId());
+                specDTO.setEquipmentBrandName(requestOrderItem.getEquipmentSpec().getBrand().getName());
+            }
+            builder.equipmentSpec(specDTO);
+        }
+
         return builder.build();
     }
 
     public List<RequestOrderItemDTO> toDTOList(List<RequestOrderItem> items) {
-        if (items == null) return new ArrayList<>();
+        if (items == null)
+            return new ArrayList<>();
         return items.stream().map(this::toDTO).collect(Collectors.toList());
     }
 }

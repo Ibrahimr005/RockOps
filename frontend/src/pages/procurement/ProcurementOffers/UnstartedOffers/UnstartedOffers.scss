@@ -260,6 +260,36 @@
     }
   }
 
+  .procurement-unstarted-offers-equipment-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
+    margin-top: 0.75rem;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: var(--radius-sm);
+
+    .equip-detail {
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+      font-weight: 500;
+
+      .equip-label {
+        font-weight: 600;
+        color: var(--color-text-muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      &.budget {
+        color: #059669;
+        font-weight: 600;
+      }
+    }
+  }
+
   .procurement-unstarted-offers-item-notes {
     margin-top: 1rem;
     padding-top: 0.75rem;
@@ -289,6 +319,7 @@
 // ===================================
 
 @media (max-width: 768px) {
+
   .procurement-request-summary-card,
   .procurement-unstarted-offers-items-preview {
     padding: 1rem;
@@ -323,28 +354,6 @@
       .procurement-unstarted-offers-item-notes-content {
         font-size: 0.8125rem;
       }
-    }
-  }
-}
-
-// ===================================
-// 5. DARK MODE SPECIFIC ADJUSTMENTS
-// ===================================
-
-[data-theme="dark"] {
-  .procurement-unstarted-offers-item-notes {
-    border-top-color: var(--border-color-medium);
-  }
-
-  .procurement-unstarted-offers-item-preview-card {
-    &:hover {
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-  }
-
-  .request-detail-item {
-    &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
   }
 }

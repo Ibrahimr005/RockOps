@@ -374,7 +374,8 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             // Fetch merchants
             try {
                 const merchantsResponse = await merchantService.getAllMerchants();
-                setMerchants(merchantsResponse.data);
+                const merchantsData = merchantsResponse?.data || merchantsResponse;
+                setMerchants(Array.isArray(merchantsData) ? merchantsData : []);
             } catch (error) {
                 console.error("Error fetching merchants:", error);
                 setMerchants([]);

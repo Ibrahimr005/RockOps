@@ -430,9 +430,31 @@ const enTranslations = {
         merchantName: 'Merchant Name',
         merchantType: 'Merchant Type',
         totalSales: 'Total Sales',
+    },
+    procurement: {
+        partyType: {
+            warehouse: 'Warehouse Restock',
+            equipment: 'Equipment Purchase',
+        },
+        requestType: {
+            label: 'Request Type',
+            warehouseRestock: 'Warehouse Restock',
+            equipmentPurchase: 'Equipment Purchase',
+        },
+        equipmentPurchase: {
+            title: 'Equipment Purchase',
+            equipmentName: 'Equipment Name',
+            manufacturer: 'Manufacturer',
+            model: 'Model',
+            serialNumber: 'Serial Number',
+            specifications: 'Specifications',
+            quantity: 'Quantity',
+            equipmentType: 'Equipment Type',
+        },
     }
 
-// Inside arTranslations
+
+    // Inside arTranslations
 
 
 };

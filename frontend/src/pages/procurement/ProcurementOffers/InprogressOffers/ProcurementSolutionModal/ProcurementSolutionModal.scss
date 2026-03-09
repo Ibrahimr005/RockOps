@@ -19,6 +19,7 @@
     from {
       opacity: 0;
     }
+
     to {
       opacity: 1;
     }
@@ -44,6 +45,7 @@
       transform: translateY(30px);
       opacity: 0;
     }
+
     to {
       transform: translateY(0);
       opacity: 1;
@@ -248,6 +250,72 @@
       }
     }
   }
+
+  // Equipment Details Summary Card
+  .equipment-details-card {
+    background: var(--color-surface-secondary, #f8fafc);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+
+    .equipment-details-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color-light);
+
+      .equipment-icon {
+        font-size: 1.15rem;
+      }
+
+      .equipment-title {
+        font-size: 0.875rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--head-title-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    .equipment-details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .equipment-detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+
+      .detail-label {
+        font-size: 0.75rem;
+        color: var(--color-text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .detail-value {
+        font-size: 0.875rem;
+        font-weight: var(--semi-bold-font-weight, 600);
+        color: var(--color-text-primary);
+
+        &.budget {
+          color: var(--color-success);
+        }
+      }
+    }
+
+    .equipment-details-loading {
+      font-size: 0.8125rem;
+      color: var(--color-text-tertiary);
+      font-style: italic;
+      padding: 0.25rem 0;
+    }
+  }
 }
 
 // Buttons
@@ -292,23 +360,8 @@
   }
 }
 
-// Dark mode adjustments
-[data-theme="dark"] {
-  .modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.8);
-  }
 
-  .modal-content {
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  }
 
-  select {
-    option {
-      background: var(--color-surface);
-      color: var(--color-text-dark);
-    }
-  }
-}
 
 // Responsive design
 @media (max-width: 768px) {

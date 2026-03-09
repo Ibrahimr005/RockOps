@@ -1,7 +1,5 @@
 package com.example.backend.controllers.merchant;
 
-
-
 import com.example.backend.dto.merchant.MerchantPerformanceDTO;
 import com.example.backend.dto.merchant.MerchantTransactionDTO;
 import com.example.backend.models.contact.Contact;
@@ -13,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,8 +22,6 @@ public class MerchantController {
 
     private final MerchantService merchantService;
     private final ContactRepository contactRepository;
-
-
 
     @GetMapping
     public ResponseEntity<?> getAllMerchants(@RequestParam(required = false) String merchantType) {
@@ -38,7 +35,8 @@ public class MerchantController {
             return ResponseEntity.ok(merchants);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            // Return empty list instead of String to prevent frontend crash
+            return ResponseEntity.status(500).body(new ArrayList<>());
         }
     }
 

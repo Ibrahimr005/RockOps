@@ -138,6 +138,19 @@ const DraftRequestOrders = ({ requestOrders, loading, onDataChange }) => {
             )
         },
         {
+            id: 'partyType',
+            header: 'TYPE',
+            accessor: 'partyType',
+            sortable: true,
+            filterable: true,
+            minWidth: '140px',
+            render: (row) => (
+                <span className={`draft-ro-party-badge ${row.partyType?.toLowerCase() || 'warehouse'}`}>
+                    {row.partyType === 'EQUIPMENT' ? '🔧 Equipment' : '📦 Warehouse'}
+                </span>
+            )
+        },
+        {
             id: 'items',
             header: 'ITEMS',
             accessor: 'requestItems',

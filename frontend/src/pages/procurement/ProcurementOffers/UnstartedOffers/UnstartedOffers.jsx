@@ -213,7 +213,11 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                                 {/* Show list of request items that will need procurement with updated class names */}
                                 {activeOffer.requestOrder.requestItems && activeOffer.requestOrder.requestItems.length > 0 && (
                                     <div className="procurement-unstarted-offers-items-preview">
-                                        <h4>Items That Will Need Procurement</h4>
+                                        <h4>
+                                            {activeOffer.requestOrder.requestItems.some(item => item.equipmentSpecId || item.equipmentSpec)
+                                                ? 'Equipment That Will Need Procurement'
+                                                : 'Items That Will Need Procurement'}
+                                        </h4>
 
                                         {/* Updated Item Cards with specific class names */}
                                         <div className="procurement-unstarted-offers-items-grid">
@@ -224,13 +228,39 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                                                             <FiPackage className="procurement-unstarted-offers-item-icon" size={20} />
                                                         </div>
                                                         <div className="procurement-unstarted-offers-item-title-container">
-                                                            <div className="procurement-unstarted-offers-item-name">{item.itemType?.name || 'Unknown'}</div>
-                                                            <div className="procurement-unstarted-offers-item-category">{item.itemType.category || 'Item'}</div>
+                                                            <div className="procurement-unstarted-offers-item-name">{item.itemType?.name || item.equipmentName || item.equipmentSpec?.name || 'Unknown'}</div>
+                                                            <div className="procurement-unstarted-offers-item-category">{(item.equipmentSpecId || item.equipmentSpec) ? 'Equipment' : (item.itemType?.category || 'Item')}</div>
                                                         </div>
                                                         <div className="procurement-unstarted-offers-item-badge">
-                                                            {item.quantity} {item.itemType.measuringUnit || 'units'}
+                                                            {item.quantity} {(item.equipmentSpecId || item.equipmentSpec) ? 'unit' : (item.itemType?.measuringUnit || 'units')}
                                                         </div>
                                                     </div>
+
+                                                    {/* Equipment Details — only show for equipment items */}
+                                                    {(item.equipmentSpecId || item.equipmentSpec) && item.equipmentSpec && (
+                                                        <div className="procurement-unstarted-offers-equipment-details">
+                                                            {item.equipmentSpec.equipmentTypeName && (
+                                                                <div className="equip-detail">
+                                                                    <span className="equip-label">Type:</span> {item.equipmentSpec.equipmentTypeName}
+                                                                </div>
+                                                            )}
+                                                            {item.equipmentSpec.equipmentBrandName && (
+                                                                <div className="equip-detail">
+                                                                    <span className="equip-label">Brand:</span> {item.equipmentSpec.equipmentBrandName}
+                                                                </div>
+                                                            )}
+                                                            {item.equipmentSpec.model && (
+                                                                <div className="equip-detail">
+                                                                    <span className="equip-label">Model:</span> {item.equipmentSpec.model}
+                                                                </div>
+                                                            )}
+                                                            {item.equipmentSpec.estimatedBudget != null && (
+                                                                <div className="equip-detail budget">
+                                                                    <span className="equip-label">Budget:</span> EGP {Number(item.equipmentSpec.estimatedBudget).toLocaleString()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
 
                                                     {item.comment && (
                                                         <div className="procurement-unstarted-offers-item-notes">

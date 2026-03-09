@@ -52,18 +52,21 @@ public class EquipmentTypeService {
         this.jobPositionRepository = jobPositionRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<EquipmentTypeDTO> getAllEquipmentTypes() {
         return equipmentTypeRepository.findAll().stream()
                 .map(EquipmentTypeDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public EquipmentTypeDTO getEquipmentTypeById(UUID id) {
         return equipmentTypeRepository.findById(id)
                 .map(EquipmentTypeDTO::fromEntity)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + id));
     }
 
+    @Transactional(readOnly = true)
     public EquipmentTypeDTO getEquipmentTypeByName(String name) {
         return equipmentTypeRepository.findByName(name)
                 .map(EquipmentTypeDTO::fromEntity)
@@ -202,6 +205,7 @@ public class EquipmentTypeService {
         return EquipmentTypeDTO.fromEntity(updatedEntity);
     }
 
+    @Transactional
     public void deleteEquipmentType(UUID id) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + id));
@@ -392,6 +396,7 @@ public class EquipmentTypeService {
     /**
      * Get supported work types for an equipment type
      */
+    @Transactional(readOnly = true)
     public List<WorkTypeDTO> getSupportedWorkTypes(UUID equipmentTypeId) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
                 .orElseThrow(

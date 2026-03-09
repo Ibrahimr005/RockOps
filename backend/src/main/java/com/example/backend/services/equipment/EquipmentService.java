@@ -15,6 +15,9 @@ import com.example.backend.models.equipment.*;
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.procurement.EquipmentPurchaseSpec;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrder;
+import com.example.backend.models.procurement.PurchaseOrder.PurchaseOrderItem;
 import com.example.backend.models.user.Role;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.services.MinioService;
@@ -205,7 +208,7 @@ public class EquipmentService {
         // Set depreciation fields
         equipment.setUsefulLifeYears(createDTO.getUsefulLifeYears());
         equipment.setSalvageValue(createDTO.getSalvageValue());
-// Use purchased date as depreciation start date by default
+        // Use purchased date as depreciation start date by default
         equipment.setDepreciationStartDate(createDTO.getDepreciationStartDate() != null
                 ? createDTO.getDepreciationStartDate()
                 : createDTO.getPurchasedDate());
@@ -279,7 +282,7 @@ public class EquipmentService {
         // Upload photo if provided (stored in equipment/{equipmentId}/ folder)
         if (equipmentPhoto != null && !equipmentPhoto.isEmpty()) {
             String fileName = minioService.uploadEquipmentFile(savedEquipment.getId(), equipmentPhoto, "Main_Image");
-            
+
             // CRITICAL: Save the storage key using the standard structure
             String storageKey = "equipment/" + savedEquipment.getId() + "/" + fileName;
             savedEquipment.setImageStorageKey(storageKey);
@@ -380,12 +383,12 @@ public class EquipmentService {
         if (requestBody.get("workedHours") != null)
             createDTO.setWorkedHours(Integer.parseInt(requestBody.get("workedHours").toString()));
 
-
         if (requestBody.get("usefulLifeYears") != null)
             createDTO.setUsefulLifeYears(Integer.parseInt(requestBody.get("usefulLifeYears").toString()));
         if (requestBody.get("salvageValue") != null)
             createDTO.setSalvageValue(Double.parseDouble(requestBody.get("salvageValue").toString()));
-        if (requestBody.get("depreciationStartDate") != null && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
+        if (requestBody.get("depreciationStartDate") != null
+                && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
             createDTO.setDepreciationStartDate(LocalDate.parse(requestBody.get("depreciationStartDate").toString()));
 
         // FIX: Parse relationships - handle both naming conventions
@@ -566,7 +569,7 @@ public class EquipmentService {
         // Upload photo if provided (stored in equipment/{equipmentId}/ folder)
         if (equipmentPhoto != null && !equipmentPhoto.isEmpty()) {
             String fileName = minioService.uploadEquipmentFile(id, equipmentPhoto, "Main_Image");
-            
+
             // CRITICAL: Save the storage key
             String storageKey = "equipment/" + equipment.getId() + "/" + fileName;
             equipment.setImageStorageKey(storageKey);
@@ -578,7 +581,6 @@ public class EquipmentService {
         // Create and return DTO
         EquipmentDTO resultDTO = EquipmentDTO.fromEntity(updatedEquipment);
         resultDTO.setImageUrl(resolveEquipmentImageUrl(updatedEquipment));
-
 
         // Send notifications to EQUIPMENT_MANAGER and ADMIN users
         try {
@@ -673,12 +675,12 @@ public class EquipmentService {
         if (requestBody.get("workedHours") != null && !requestBody.get("workedHours").toString().isEmpty())
             updateDTO.setWorkedHours(Integer.parseInt(requestBody.get("workedHours").toString()));
 
-
         if (requestBody.get("usefulLifeYears") != null && !requestBody.get("usefulLifeYears").toString().isEmpty())
             updateDTO.setUsefulLifeYears(Integer.parseInt(requestBody.get("usefulLifeYears").toString()));
         if (requestBody.get("salvageValue") != null && !requestBody.get("salvageValue").toString().isEmpty())
             updateDTO.setSalvageValue(Double.parseDouble(requestBody.get("salvageValue").toString()));
-        if (requestBody.get("depreciationStartDate") != null && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
+        if (requestBody.get("depreciationStartDate") != null
+                && !requestBody.get("depreciationStartDate").toString().trim().isEmpty())
             updateDTO.setDepreciationStartDate(LocalDate.parse(requestBody.get("depreciationStartDate").toString()));
 
         // FIX: Parse relationships - handle both naming conventions
@@ -806,6 +808,121 @@ public class EquipmentService {
     }
 
     /**
+     * Auto-create Equipment records from a completed purchase order.
+     * Called by PurchaseOrderService when an equipment PO reaches COMPLETED status.
+     *
+     * - Iterates PO items that have an EquipmentPurchaseSpec attached
+     * - Maps spec fields to new Equipment entities
+     * - Idempotent: checks existsByPurchaseOrderId before creating
+     * - Per-item error handling: one failure won't block other items
+     *
+     * @param po The completed PurchaseOrder
+     * @return List of created Equipment entities (may be empty if idempotency guard
+     *         fires)
+     */
+    @Transactional
+    public List<Equipment> createFromPurchaseOrder(PurchaseOrder po) {
+        List<Equipment> createdEquipment = new ArrayList<>();
+
+        // Idempotency guard: skip if equipment already created for this PO
+        if (equipmentRepository.existsByPurchaseOrderId(po.getId())) {
+            System.out.println("⚠️ Equipment already exists for PO " + po.getPoNumber() + ", skipping auto-creation");
+            return createdEquipment;
+        }
+
+        for (PurchaseOrderItem poItem : po.getPurchaseOrderItems()) {
+            EquipmentPurchaseSpec spec = poItem.getEquipmentSpec();
+            if (spec == null) {
+                continue; // Skip non-equipment items
+            }
+
+            try {
+                Equipment equipment = new Equipment();
+
+                // Map from spec — use the related EquipmentType entity directly
+                if (spec.getEquipmentType() != null) {
+                    equipment.setType(spec.getEquipmentType());
+                }
+                equipment.setName(spec.getName());
+                equipment.setModel(spec.getModel() != null ? spec.getModel() : "N/A");
+                // Use the related EquipmentBrand entity directly
+                if (spec.getBrand() != null) {
+                    equipment.setBrand(spec.getBrand());
+                }
+                equipment.setManufactureYear(spec.getManufactureYear() != null
+                        ? Year.of(spec.getManufactureYear())
+                        : Year.now());
+                equipment.setCountryOfOrigin(spec.getCountryOfOrigin() != null
+                        ? spec.getCountryOfOrigin()
+                        : "N/A");
+
+                // Map from PO data
+                equipment.setEgpPrice(poItem.getTotalPrice());
+                equipment.setDollarPrice(0);
+                equipment.setPurchasedDate(LocalDate.now());
+                equipment.setDeliveredDate(LocalDate.now());
+                equipment.setDepreciationStartDate(LocalDate.now());
+
+                // Set merchant from PO item if available
+                if (poItem.getMerchant() != null) {
+                    equipment.setPurchasedFrom(poItem.getMerchant());
+                }
+
+                // Auto-generate unique serial number
+                String serialNumber = "EQ-PO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                equipment.setSerialNumber(serialNumber);
+
+                // Set traceability
+                equipment.setPurchaseOrderId(po.getId());
+
+                // Default values for required fields
+                equipment.setStatus(EquipmentStatus.AVAILABLE);
+                equipment.setWorkedHours(0);
+                equipment.setShipping(0);
+                equipment.setCustoms(0);
+                equipment.setTaxes(0);
+
+                // Store spec description as equipment complaints/notes for reference
+                if (spec.getSpecifications() != null) {
+                    equipment.setEquipmentComplaints("Purchase Spec: " + spec.getSpecifications());
+                }
+
+                Equipment saved = equipmentRepository.save(equipment);
+                createdEquipment.add(saved);
+
+                System.out.println("✅ Auto-created equipment '" + saved.getName()
+                        + "' (SN: " + saved.getSerialNumber() + ") from PO " + po.getPoNumber());
+
+            } catch (Exception e) {
+                System.err.println("❌ Failed to create equipment from spec "
+                        + spec.getId() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        // Send notification if any equipment was created
+        if (!createdEquipment.isEmpty()) {
+            try {
+                String title = "Equipment Auto-Created from Purchase Order";
+                String message = createdEquipment.size() + " equipment item(s) created from PO "
+                        + po.getPoNumber() + ". Please review and complete equipment details.";
+                String actionUrl = "/equipment";
+
+                notificationService.sendNotificationToUsersByRoles(
+                        Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN),
+                        title, message,
+                        NotificationType.SUCCESS,
+                        actionUrl,
+                        po.getId().toString());
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to send equipment creation notification: " + e.getMessage());
+            }
+        }
+
+        return createdEquipment;
+    }
+
+    /**
      * Validates if an employee can be assigned as a driver for a specific equipment
      * 
      * @param equipment The equipment to check
@@ -828,7 +945,8 @@ public class EquipmentService {
      */
     public List<EmployeeSummaryDTO> getEligibleDriversForEquipmentType(UUID equipmentTypeId) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
 
         String requiredPosition = equipmentType.getDriverPositionName();
 
@@ -841,35 +959,37 @@ public class EquipmentService {
     }
 
     /**
-     * Get drivers for Sarky logs (anyone who can drive this type) - simplified version
+     * Get drivers for Sarky logs (anyone who can drive this type) - simplified
+     * version
      */
     public List<EmployeeSummaryDTO> getDriversForSarkyByEquipmentType(UUID equipmentTypeId) {
-        // Reuse logic from getEligibleDrivers since we don't need to filter by availability for Sarky logs
+        // Reuse logic from getEligibleDrivers since we don't need to filter by
+        // availability for Sarky logs
         // Just need the list of people qualified to operate it
         return getEligibleDriversForEquipmentType(equipmentTypeId);
     }
-    
+
     /**
      * Check compatibility between a specific driver and equipment
      */
     public DriverCompatibilityResponse checkDriverCompatibility(UUID equipmentId, UUID employeeId) {
         Equipment equipment = equipmentRepository.findById(equipmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
-            
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
+
         Employee employee = employeeRepository.findById(employeeId)
-            .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
-            
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
+
         boolean compatible = validateDriverForEquipment(equipment, employee);
         String message = compatible ? "Driver is compatible" : "Driver is not qualified for this equipment type";
-        
+
         return new DriverCompatibilityResponse(compatible, message);
     }
-    
+
     @Data
     public static class DriverCompatibilityResponse {
         private boolean compatible;
         private String message;
-        
+
         public DriverCompatibilityResponse(boolean compatible, String message) {
             this.compatible = compatible;
             this.message = message;
@@ -888,7 +1008,8 @@ public class EquipmentService {
 
         // Validate compatibility
         if (!validateDriverForEquipment(equipment, driver)) {
-            throw new IllegalArgumentException("Driver " + driver.getFullName() + " is not qualified for " + equipment.getType().getName());
+            throw new IllegalArgumentException(
+                    "Driver " + driver.getFullName() + " is not qualified for " + equipment.getType().getName());
         }
 
         if ("main".equalsIgnoreCase(type)) {
@@ -906,7 +1027,7 @@ public class EquipmentService {
         }
 
         Equipment saved = equipmentRepository.save(equipment);
-        
+
         // Return DTO with resolved image
         EquipmentDTO dto = EquipmentDTO.fromEntity(saved);
         dto.setImageUrl(resolveEquipmentImageUrl(saved));
@@ -937,7 +1058,7 @@ public class EquipmentService {
         }
 
         Equipment saved = equipmentRepository.save(equipment);
-        
+
         // Return DTO with resolved image
         EquipmentDTO dto = EquipmentDTO.fromEntity(saved);
         dto.setImageUrl(resolveEquipmentImageUrl(saved));
@@ -948,7 +1069,8 @@ public class EquipmentService {
      * Helper to assign drivers to equipment's site
      */
     private void assignDriversToEquipmentSite(Equipment equipment) {
-        if (equipment.getSite() == null) return;
+        if (equipment.getSite() == null)
+            return;
 
         if (equipment.getMainDriver() != null && equipment.getMainDriver().getSite() == null) {
             Employee mainDriver = equipment.getMainDriver();
@@ -964,9 +1086,20 @@ public class EquipmentService {
     }
 
     public List<WorkTypeDTO> getSupportedWorkTypesForEquipmentType(UUID typeId) {
-        // This would typically query a relationship table or config
-        // For now returning empty list or mocks
-        return new ArrayList<>();
+        EquipmentType equipmentType = equipmentTypeRepository.findById(typeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + typeId));
+
+        return equipmentType.getSupportedWorkTypes().stream()
+                .filter(WorkType::isActive)
+                .map(workType -> {
+                    WorkTypeDTO dto = new WorkTypeDTO();
+                    dto.setId(workType.getId());
+                    dto.setName(workType.getName());
+                    dto.setDescription(workType.getDescription());
+                    dto.setActive(workType.isActive());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     public EquipmentSarkyAnalyticsDTO getSarkyAnalyticsForEquipment(UUID equipmentId) {

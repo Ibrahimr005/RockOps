@@ -2,6 +2,7 @@ package com.example.backend.models.procurement.PurchaseOrder;
 
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.DeliveryItemReceipt;
+import com.example.backend.models.procurement.EquipmentPurchaseSpec;
 import com.example.backend.models.procurement.Offer.OfferItem;
 import com.example.backend.models.warehouse.ItemType;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -39,6 +40,10 @@ public class PurchaseOrderItem {
     @JoinColumn(name = "item_type_id")
     @JsonManagedReference
     private ItemType itemType;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "equipment_purchase_spec_id")
+    private EquipmentPurchaseSpec equipmentSpec;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "merchant_id")

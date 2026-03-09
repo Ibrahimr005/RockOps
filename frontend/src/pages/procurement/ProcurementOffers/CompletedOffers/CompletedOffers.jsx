@@ -23,11 +23,11 @@ import { Button } from '../../../../components/common/Button';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 
 const CompletedOffers = ({
-                             offers,
-                             activeOffer,
-                             setActiveOffer,
-                             getTotalPrice
-                         }) => {
+    offers,
+    activeOffer,
+    setActiveOffer,
+    getTotalPrice
+}) => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [purchaseOrder, setPurchaseOrder] = useState(null);
@@ -76,21 +76,29 @@ const CompletedOffers = ({
             // Only include items that have been through finance review
             if (offerItem.financeStatus === 'ACCEPTED' || offerItem.financeStatus === 'REJECTED') {
                 const itemTypeId = offerItem.itemType?.id;
-                const itemTypeName = offerItem.itemType?.name || 'Unknown Item';
-                const measuringUnit = offerItem.itemType?.measuringUnit || 'units';
+                const equipmentSpecId = offerItem.equipmentSpecId || offerItem.equipmentSpec?.id;
+                const isEquipmentItem = !!(equipmentSpecId && !itemTypeId);
+                const groupKey = itemTypeId || equipmentSpecId;
 
-                if (itemTypeId) {
-                    if (!itemsMap[itemTypeId]) {
-                        itemsMap[itemTypeId] = {
+                if (groupKey) {
+                    const itemTypeName = isEquipmentItem
+                        ? (offerItem.equipmentName || offerItem.equipmentSpec?.name || 'Unknown Equipment')
+                        : (offerItem.itemType?.name || 'Unknown Item');
+                    const measuringUnit = isEquipmentItem
+                        ? 'unit'
+                        : (offerItem.itemType?.measuringUnit || 'units');
+
+                    if (!itemsMap[groupKey]) {
+                        itemsMap[groupKey] = {
                             itemType: offerItem.itemType,
                             name: itemTypeName,
                             measuringUnit: measuringUnit,
                             offerItems: []
                         };
                     }
-                    itemsMap[itemTypeId].offerItems.push(offerItem);
+                    itemsMap[groupKey].offerItems.push(offerItem);
                 } else {
-                    console.warn('Offer item missing itemType:', offerItem);
+                    console.warn('Offer item missing both itemType and equipmentSpec:', offerItem);
                 }
             } else {
                 console.log('Skipping item - finance status:', offerItem.financeStatus);
@@ -219,48 +227,48 @@ const CompletedOffers = ({
                                                     <div className="submitted-offer-solutions-completed">
                                                         <table className="procurement-offer-entries-table-completed">
                                                             <thead>
-                                                            <tr>
-                                                                <th>Merchant</th>
-                                                                <th>Quantity</th>
-                                                                <th>Unit Price</th>
-                                                                <th>Total</th>
-                                                                <th>Finance Status</th>
-                                                                <th>Finalization</th>
-                                                            </tr>
+                                                                <tr>
+                                                                    <th>Merchant</th>
+                                                                    <th>Quantity</th>
+                                                                    <th>Unit Price</th>
+                                                                    <th>Total</th>
+                                                                    <th>Finance Status</th>
+                                                                    <th>Finalization</th>
+                                                                </tr>
                                                             </thead>
                                                             <tbody>
-                                                            {itemGroup.offerItems.map((offerItem, idx) => (
-                                                                <tr key={offerItem.id || idx} className={`item-${offerItem.financeStatus.toLowerCase()} ${offerItem.finalized ? 'finalized' : 'not-finalized'}`}>
-                                                                    <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                    <td>{offerItem.quantity} {itemGroup.measuringUnit}</td>
-                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice).toFixed(2)}</td>
-                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice).toFixed(2)}</td>
-                                                                    <td>
-                                                                        {offerItem.financeStatus === 'ACCEPTED' ? (
-                                                                            <span className="completed-item-status accepted">
-                                                                                <FiCheckCircle size={14} /> Accepted
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="completed-item-status rejected">
-                                                                                <FiX size={14} /> Rejected
-                                                                            </span>
-                                                                        )}
-                                                                    </td>
-                                                                    <td>
-                                                                        {offerItem.finalized ? (
-                                                                            <span className="finalization-status finalized">
-                                                                                <FiShoppingCart size={14} />
-                                                                                <span>Finalized</span>
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="finalization-status not-finalized">
-                                                                                <FiClock size={14} />
-                                                                                <span>Not Finalized</span>
-                                                                            </span>
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
+                                                                {itemGroup.offerItems.map((offerItem, idx) => (
+                                                                    <tr key={offerItem.id || idx} className={`item-${offerItem.financeStatus.toLowerCase()} ${offerItem.finalized ? 'finalized' : 'not-finalized'}`}>
+                                                                        <td>{offerItem.merchant?.name || 'Unknown'}</td>
+                                                                        <td>{offerItem.quantity} {itemGroup.measuringUnit}</td>
+                                                                        <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice).toFixed(2)}</td>
+                                                                        <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice).toFixed(2)}</td>
+                                                                        <td>
+                                                                            {offerItem.financeStatus === 'ACCEPTED' ? (
+                                                                                <span className="completed-item-status accepted">
+                                                                                    <FiCheckCircle size={14} /> Accepted
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="completed-item-status rejected">
+                                                                                    <FiX size={14} /> Rejected
+                                                                                </span>
+                                                                            )}
+                                                                        </td>
+                                                                        <td>
+                                                                            {offerItem.finalized ? (
+                                                                                <span className="finalization-status finalized">
+                                                                                    <FiShoppingCart size={14} />
+                                                                                    <span>Finalized</span>
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="finalization-status not-finalized">
+                                                                                    <FiClock size={14} />
+                                                                                    <span>Not Finalized</span>
+                                                                                </span>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
                                                             </tbody>
                                                         </table>
                                                     </div>

@@ -13,7 +13,7 @@
 }
 
 .maintenance-transaction-modal {
-  background-color: white;
+  background-color: var(--section-background-color);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   width: 90%;
@@ -29,6 +29,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -59,6 +60,7 @@
   cursor: pointer;
   color: #666;
   transition: color 0.2s;
+
   &:hover {
     color: #ff4d4f;
   }
@@ -114,7 +116,9 @@
     color: #444;
   }
 
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid #d9d9d9;
@@ -159,7 +163,7 @@
   }
 
   .verify-button {
-    background-color: #fff;
+    background-color: var(--section-background-color);
     border: 1px solid #d9d9d9;
     border-radius: 4px;
     padding: 0 16px;
@@ -254,6 +258,7 @@
   &:disabled {
     color: #d9d9d9;
     cursor: not-allowed;
+
     &:hover {
       border-color: #d9d9d9;
     }
@@ -294,7 +299,8 @@
   border-top: 1px solid #f0f0f0;
 }
 
-.cancel-button, .submit-button {
+.cancel-button,
+.submit-button {
   padding: 8px 18px;
   font-size: 0.95rem;
   border-radius: 4px;
@@ -303,7 +309,7 @@
 }
 
 .cancel-button {
-  background-color: white;
+  background-color: var(--section-background-color);
   border: 1px solid #d9d9d9;
   color: #666;
 
@@ -321,7 +327,7 @@
 .submit-button {
   background-color: #1890ff;
   border: 1px solid #1890ff;
-  color: white;
+  color: var(--color-text-inverse);
 
   &:hover {
     background-color: #40a9ff;
@@ -376,7 +382,8 @@
   border-collapse: collapse;
   margin-bottom: 20px;
 
-  th, td {
+  th,
+  td {
     padding: 10px;
     text-align: left;
     border-bottom: 1px solid #e8e8e8;

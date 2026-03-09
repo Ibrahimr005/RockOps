@@ -1382,3 +1382,137 @@
   }
 }
 
+// ============================================================================
+// EQUIPMENT RECEIVING STYLES
+// ============================================================================
+
+.equipment-all-received-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--color-success-bg, #ecfdf5);
+  border: 1px solid var(--color-success-border, #a7f3d0);
+  border-radius: var(--radius-md);
+  color: var(--color-success, #059669);
+  font-weight: 500;
+  margin: 16px 0;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+}
+
+.equipment-receive-card {
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-top: 16px;
+  background: var(--color-surface);
+
+  &.received {
+    opacity: 0.7;
+    background: var(--color-surface-secondary, #f9fafb);
+  }
+
+  .equipment-receive-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    h4 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+  }
+
+  .equipment-spec-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    padding: 14px;
+    background: var(--color-surface-secondary, #f9fafb);
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+
+    .spec-row {
+      display: flex;
+      gap: 8px;
+      font-size: 13px;
+
+      .spec-label {
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .spec-value {
+        color: var(--color-text-primary);
+        font-weight: 600;
+      }
+    }
+  }
+
+  .equipment-input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      &.required label::after {
+        content: '';
+      }
+
+      &.full-width {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+      }
+
+      .form-input,
+      .form-textarea {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color-light);
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        color: var(--color-text-primary);
+        background: var(--color-surface);
+        transition: border-color 0.2s;
+
+        &:focus {
+          outline: none;
+          border-color: var(--color-primary);
+          box-shadow: 0 0 0 3px var(--color-primary-alpha, rgba(59, 130, 246, 0.1));
+        }
+
+        &::placeholder {
+          color: var(--color-text-tertiary);
+        }
+      }
+    }
+  }
+}
+
+.equipment-submit-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color-light);
+
+  .full-width {
+    margin-bottom: 16px;
+  }
+}
+

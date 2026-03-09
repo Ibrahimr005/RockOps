@@ -43,6 +43,10 @@ public class OfferItemDTO {
     private UUID itemTypeId;
     private ItemTypeDTO itemType;
 
+    // Equipment specific fields
+    private UUID equipmentSpecId;
+    private String equipmentName;
+
     // Purchase Order Item reference (minimal to avoid circular deps)
     private UUID purchaseOrderItemId;
     private boolean hasPurchaseOrderItem;

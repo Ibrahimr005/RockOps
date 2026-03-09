@@ -68,7 +68,8 @@ public class OfferMapper {
                 .managerApprovedBy(offer.getManagerApprovedBy())
                 .financeApprovedAt(offer.getFinanceApprovedAt())
                 .financeApprovedBy(offer.getFinanceApprovedBy())
-                .rejectionReason(offer.getRejectionReason());
+                .rejectionReason(offer.getRejectionReason())
+                .inspectedBy(offer.getInspectedBy());
 
         return builder.build();
     }

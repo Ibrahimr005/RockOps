@@ -22,16 +22,16 @@ import { offerRequestItemService } from '../../../../services/procurement/offerR
 import { itemTypeService } from '../../../../services/itemTypeService.js';
 
 const InProgressOffers = ({
-                              offers,
-                              activeOffer,
-                              setActiveOffer,
-                              handleOfferStatusChange,
-                              fetchWithAuth,
-                              API_URL,
-                              setError,
-                              setSuccess,
-                              onDeleteOffer
-                          }) => {
+    offers,
+    activeOffer,
+    setActiveOffer,
+    handleOfferStatusChange,
+    fetchWithAuth,
+    API_URL,
+    setError,
+    setSuccess,
+    onDeleteOffer
+}) => {
     // State for InProgress tab
     const [merchants, setMerchants] = useState([]);
     const [selectedRequestItem, setSelectedRequestItem] = useState(null);
@@ -75,7 +75,7 @@ const InProgressOffers = ({
             try {
                 const response = await procurementService.getAllMerchants();
                 const merchantsData = response.data || response;
-                setMerchants(merchantsData);
+                setMerchants(Array.isArray(merchantsData) ? merchantsData : []);
             } catch (error) {
                 console.error('Error fetching merchants:', error);
                 showSnackbar('error', 'Failed to load merchants. Please try again.');
@@ -273,7 +273,7 @@ const InProgressOffers = ({
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
 
             // Force re-render with updated data
-            setTimeout(() => setActiveOffer({...updatedOffer}), 100);
+            setTimeout(() => setActiveOffer({ ...updatedOffer }), 100);
 
             showSnackbar('success', 'Procurement solution deleted successfully!');
         } catch (error) {
@@ -293,10 +293,14 @@ const InProgressOffers = ({
 
         return effectiveRequestItems.every(requestItem => {
             const itemTypeId = requestItem.itemTypeId || requestItem.itemType?.id;
+            const equipmentSpecId = requestItem.equipmentSpecId || requestItem.equipmentSpec?.id;
 
-            // Get offer items that match this item type
+            // Get offer items that match this item type or equipment spec
             const offerItems = (offer.offerItems || []).filter(
-                item => item.itemType?.id === itemTypeId
+                item => (itemTypeId && item.itemType?.id === itemTypeId) ||
+                    (equipmentSpecId && item.equipmentSpec?.id === equipmentSpecId) ||
+                    item.requestOrderItem?.id === requestItem.id ||
+                    item.requestOrderItemId === requestItem.id
             );
 
             const totalOfferedQuantity = offerItems.reduce(
@@ -308,13 +312,18 @@ const InProgressOffers = ({
     };
 
 
-    const hasOfferItem = (requestItemId, itemTypeId) => {
+    const hasOfferItem = (requestItemId, itemTypeId, equipmentSpecId) => {
         if (!activeOffer || !activeOffer.offerItems) return false;
 
-        // Match by item type ID (handles both original and modified items)
+        // Match by item type ID or equipment spec ID (handles both original and modified items)
         if (itemTypeId) {
             return activeOffer.offerItems.some(
                 item => item.itemType?.id === itemTypeId
+            );
+        }
+        if (equipmentSpecId) {
+            return activeOffer.offerItems.some(
+                item => (item.equipmentSpec?.id === equipmentSpecId) || (item.equipmentSpecId === equipmentSpecId)
             );
         }
 
@@ -325,14 +334,18 @@ const InProgressOffers = ({
     };
 
     // Get offer items for a specific request item
-    // Get offer items for a specific request item (matches by item type ID)
-    const getOfferItemsForRequestItem = (requestItemId, itemTypeId) => {
+    const getOfferItemsForRequestItem = (requestItemId, itemTypeId, equipmentSpecId) => {
         if (!activeOffer || !activeOffer.offerItems) return [];
 
-        // Match by item type ID (this handles both original and modified items)
+        // Match by item type ID or equipment spec ID
         if (itemTypeId) {
             return activeOffer.offerItems.filter(
                 item => item.itemType?.id === itemTypeId
+            );
+        }
+        if (equipmentSpecId) {
+            return activeOffer.offerItems.filter(
+                item => (item.equipmentSpec?.id === equipmentSpecId) || (item.equipmentSpecId === equipmentSpecId)
             );
         }
 
@@ -392,7 +405,8 @@ const InProgressOffers = ({
                 } else {
                     const itemToAdd = {
                         ...formData,
-                        itemTypeId: selectedRequestItem.itemTypeId || selectedRequestItem.itemType?.id
+                        itemTypeId: selectedRequestItem.itemTypeId || selectedRequestItem.itemType?.id,
+                        equipmentSpecId: selectedRequestItem.equipmentSpecId || selectedRequestItem.equipmentSpec?.id
                     };
 
                     if (!itemToAdd.merchantId) {
@@ -577,7 +591,7 @@ const InProgressOffers = ({
         loadAllEffectiveItems();
     }, [offers]);
 
-// Keep the existing useEffect for activeOffer
+    // Keep the existing useEffect for activeOffer
     useEffect(() => {
         const loadEffectiveItems = async () => {
             if (activeOffer && activeOffer.id) {
@@ -611,6 +625,9 @@ const InProgressOffers = ({
 
 
 
+    // Detect if this is an equipment offer (component-level flag)
+    const isEquipmentOffer = effectiveRequestItems?.some(item => item.equipmentSpecId || item.equipmentSpec) || false;
+
     return (
         <div className="procurement-offers-main-content">
             {/* Offers List */}
@@ -632,8 +649,12 @@ const InProgressOffers = ({
 
                             const isComplete = offerEffectiveItems.length > 0 && offerEffectiveItems.every(requestItem => {
                                 const itemTypeId = requestItem.itemTypeId || requestItem.itemType?.id;
+                                const equipmentSpecId = requestItem.equipmentSpecId || requestItem.equipmentSpec?.id;
                                 const offerItems = (offer.offerItems || []).filter(
-                                    item => item.itemType?.id === itemTypeId
+                                    item => (itemTypeId && item.itemType?.id === itemTypeId) ||
+                                        (equipmentSpecId && item.equipmentSpec?.id === equipmentSpecId) ||
+                                        item.requestOrderItem?.id === requestItem.id ||
+                                        item.requestOrderItemId === requestItem.id
                                 );
                                 const totalOfferedQuantity = offerItems.reduce(
                                     (total, item) => total + (item.quantity || 0), 0
@@ -651,22 +672,22 @@ const InProgressOffers = ({
                                         <h4>{offer.title}</h4>
                                     </div>
                                     <div className="procurement-item-footer">
-                <span className="procurement-item-date">
-                    <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
-                </span>
+                                        <span className="procurement-item-date">
+                                            <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
+                                        </span>
                                     </div>
                                     <div className="procurement-item-footer">
-                <span className={`procurement-item-status ${isComplete ? 'completion-complete' : 'completion-incomplete'}`}>
-                    {isComplete ? (
-                        <>
-                            <FiCheckCircle /> Complete
-                        </>
-                    ) : (
-                        <>
-                            <FiAlertCircle /> Incomplete
-                        </>
-                    )}
-                </span>
+                                        <span className={`procurement-item-status ${isComplete ? 'completion-complete' : 'completion-incomplete'}`}>
+                                            {isComplete ? (
+                                                <>
+                                                    <FiCheckCircle /> Complete
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FiAlertCircle /> Incomplete
+                                                </>
+                                            )}
+                                        </span>
                                     </div>
                                 </div>
                             );
@@ -682,12 +703,12 @@ const InProgressOffers = ({
                             <div className="procurement-title-section">
                                 <h2 className="procurement-main-title">{activeOffer.title}</h2>
                                 <div className="procurement-header-meta-inprogress">
-                                <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
-                                    {activeOffer.status}
-                                </span>
+                                    <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
+                                        {activeOffer.status}
+                                    </span>
                                     <span className="procurement-meta-item-inprogress">
-                                    <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                                </span>
+                                        <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                    </span>
                                 </div>
                             </div>
 
@@ -738,39 +759,43 @@ const InProgressOffers = ({
 
                                 <div className="procurement-request-summary-card-inprogress procurement-request-items-summary">
                                     <h4>
-                                        <span>Request Order Items</span>
-                                        <div className="request-items-actions">
-                                            <button
-                                                className="btn-modify-items"
-                                                onClick={handleModifyItems}
-                                                title="Modify Request Items"
-                                            >
-                                                <FiEdit /> Modify Items
-                                            </button>
-                                            <button
-                                                className="btn-modify-items"
-                                                onClick={handleExportRFQ}
-                                                title="Export RFQ to Excel"
-                                            >
-                                                <FiDownload /> Export RFQ
-                                            </button>
-                                            <button
-                                                className="btn-modify-items"
-                                                onClick={handleImportRFQ}
-                                                title="Import RFQ Response"
-                                            >
-                                                <FiUpload /> Import Response
-                                            </button>
-                                        </div>
+                                        <span>{isEquipmentOffer ? 'Equipment Sourcing' : 'Request Order Items'}</span>
+                                        {!isEquipmentOffer && (
+                                            <div className="request-items-actions">
+                                                <button
+                                                    className="btn-modify-items"
+                                                    onClick={handleModifyItems}
+                                                    title="Modify Request Items"
+                                                >
+                                                    <FiEdit /> Modify Items
+                                                </button>
+                                                <button
+                                                    className="btn-modify-items"
+                                                    onClick={handleExportRFQ}
+                                                    title="Export RFQ to Excel"
+                                                >
+                                                    <FiDownload /> Export RFQ
+                                                </button>
+                                                <button
+                                                    className="btn-modify-items"
+                                                    onClick={handleImportRFQ}
+                                                    title="Import RFQ Response"
+                                                >
+                                                    <FiUpload /> Import Response
+                                                </button>
+                                            </div>
+                                        )}
                                     </h4>
                                     <p className="procurement-section-description-inprogress">
-                                        Complete all items below to submit this procurement offer.
+                                        {isEquipmentOffer
+                                            ? 'Complete equipment sourcing below to submit this procurement offer.'
+                                            : 'Complete all items below to submit this procurement offer.'}
                                     </p>
 
                                     <div className="procurement-overall-progress-inprogress">
                                         <div className="procurement-progress-stats-inprogress">
                                             <div className="procurement-progress-stat-inprogress">
-                                                <div className="procurement-progress-stat-label-inprogress">Total Items</div>
+                                                <div className="procurement-progress-stat-label-inprogress">{isEquipmentOffer ? 'Total Equipment' : 'Total Items'}</div>
                                                 <div className="procurement-progress-stat-value-inprogress">
                                                     {effectiveRequestItems?.length || 0}
                                                 </div>
@@ -778,13 +803,13 @@ const InProgressOffers = ({
 
 
                                             <div className="procurement-progress-stat-inprogress">
-                                                <div className="procurement-progress-stat-label-inprogress">Items Covered</div>
-                                                <div className={`procurement-progress-stat-value-inprogress ${
-                                                    isOfferComplete(activeOffer) ? 'fulfilled' : 'unfulfilled'
-                                                }`}>
+                                                <div className="procurement-progress-stat-label-inprogress">{isEquipmentOffer ? 'Equipment Sourced' : 'Items Covered'}</div>
+                                                <div className={`procurement-progress-stat-value-inprogress ${isOfferComplete(activeOffer) ? 'fulfilled' : 'unfulfilled'
+                                                    }`}>
                                                     {effectiveRequestItems?.filter(item => {
                                                         const itemTypeId = item.itemTypeId || item.itemType?.id;
-                                                        return hasOfferItem(item.id, itemTypeId);
+                                                        const equipmentSpecId = item.equipmentSpecId || item.equipmentSpec?.id;
+                                                        return hasOfferItem(item.id, itemTypeId, equipmentSpecId);
                                                     }).length || 0} / {effectiveRequestItems?.length || 0}
                                                 </div>
                                             </div>
@@ -814,17 +839,20 @@ const InProgressOffers = ({
 
                                 <div className="procurement-request-items-section-inprogress">
                                     {effectiveRequestItems?.map(requestItem => {
+                                        const equipmentSpecId = requestItem.equipmentSpecId || requestItem.equipmentSpec?.id;
                                         const offerItems = getOfferItemsForRequestItem(
                                             requestItem.id,
-                                            requestItem.itemTypeId || requestItem.itemType?.id
+                                            requestItem.itemTypeId || requestItem.itemType?.id,
+                                            equipmentSpecId
                                         );
                                         const totalOffered = offerItems.reduce((total, item) => total + (item.quantity || 0), 0);
                                         const progress = Math.min(100, (totalOffered / requestItem.quantity) * 100);
                                         const isComplete = totalOffered >= requestItem.quantity;
 
                                         // Handle both DTO format and full object format
-                                        const itemTypeName = requestItem.itemTypeName || requestItem.itemType?.name || 'Item';
-                                        const itemTypeMeasuringUnit = requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units';
+                                        const itemTypeName = requestItem.itemTypeName || requestItem.itemType?.name || requestItem.equipmentName || requestItem.equipmentSpec?.name || 'Item';
+                                        const isEquipmentItem = !!(requestItem.equipmentSpecId || requestItem.equipmentSpec);
+                                        const itemTypeMeasuringUnit = isEquipmentItem ? 'unit' : (requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units');
 
                                         return (
                                             <div key={requestItem.id} className="procurement-request-item-card-inprogress">
@@ -838,12 +866,12 @@ const InProgressOffers = ({
 
                                                     {isComplete ? (
                                                         <span className="procurement-status-badge status-complete">
-                                                        <FiCheckCircle size={14} /> Complete
-                                                    </span>
+                                                            <FiCheckCircle size={14} /> {isEquipmentItem ? 'Sourced' : 'Complete'}
+                                                        </span>
                                                     ) : (
                                                         <span className="procurement-status-badge status-needed">
-    <FiAlertCircle size={14} /> Needs {requestItem.quantity - totalOffered} more {itemTypeMeasuringUnit}
-</span>
+                                                            <FiAlertCircle size={14} /> {isEquipmentItem ? 'Needs Procurement Solution' : `Needs ${requestItem.quantity - totalOffered} more ${itemTypeMeasuringUnit}`}
+                                                        </span>
                                                     )}
                                                 </div>
 
@@ -876,14 +904,14 @@ const InProgressOffers = ({
                                                         <h6>Current Procurement Solutions</h6>
                                                         <table className="procurement-offer-entries-table-inprogress">
                                                             <thead>
-                                                            <tr>
-                                                                <th>Merchant</th>
-                                                                <th>Quantity</th>
-                                                                <th>Unit Price</th>
-                                                                <th>Total</th>
-                                                                <th>Delivery</th>
-                                                                <th>Actions</th>
-                                                            </tr>
+                                                                <tr>
+                                                                    <th>Merchant</th>
+                                                                    <th>Quantity</th>
+                                                                    <th>Unit Price</th>
+                                                                    <th>Total</th>
+                                                                    <th>Delivery</th>
+                                                                    <th>Actions</th>
+                                                                </tr>
                                                             </thead>
                                                             <tbody>
                                                             {offerItems.map((offerItem, idx) => (
@@ -1035,7 +1063,7 @@ const InProgressOffers = ({
                 onClose={hideSnackbar}
                 duration={3000}
             />
-        </div>
+        </div >
     );
 };
 

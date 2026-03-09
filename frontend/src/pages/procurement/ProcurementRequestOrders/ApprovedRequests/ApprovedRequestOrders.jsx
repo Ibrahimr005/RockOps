@@ -65,6 +65,19 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
             minWidth: '200px'
         },
         {
+            id: 'partyType',
+            header: 'TYPE',
+            accessor: 'partyType',
+            sortable: true,
+            filterable: true,
+            minWidth: '140px',
+            render: (row) => (
+                <span className={`pro-roa-party-badge ${row.partyType?.toLowerCase() || 'warehouse'}`}>
+                    {row.partyType === 'EQUIPMENT' ? '🔧 Equipment' : '📦 Warehouse'}
+                </span>
+            )
+        },
+        {
             id: 'requesterName',
             header: 'REQUESTER',
             accessor: 'requesterName',

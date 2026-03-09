@@ -1,0 +1,161 @@
+// InspectionOffers card styling - follows same pattern as SubmittedOffers
+
+.procurement-items-list {
+  .procurement-item-card-inspection {
+    border: 1px solid var(--border-color-light);
+    border-left: 3px solid #f59e0b;
+    background: linear-gradient(to right, rgba(245, 158, 11, 0.05), var(--section-background-color));
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+    transition: all var(--transition-normal) ease;
+    position: relative;
+
+    &:hover {
+      border-color: #f59e0b;
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+      background: linear-gradient(to right, rgba(245, 158, 11, 0.08), var(--color-surface-hover));
+    }
+
+    &.selected {
+      border: 2px solid #f59e0b;
+      border-left: 5px solid #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), var(--shadow-md);
+      background-color: var(--color-surface);
+      transform: translateY(-1px);
+      position: relative;
+      z-index: 5;
+    }
+
+    .procurement-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+
+      h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-dark);
+        margin-right: 1rem;
+      }
+    }
+
+    .procurement-item-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+
+      svg {
+        margin-right: 0.3rem;
+        vertical-align: -1px;
+      }
+
+      .procurement-item-date {
+        color: var(--color-text-muted);
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// Inspection status badge
+.procurement-status-badge {
+  &.status-inspection {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    color: #fff;
+  }
+}
+
+// Inspected By field
+.inspection-examined-by {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-color-light);
+
+  label {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--head-title-color);
+    margin-bottom: 0.5rem;
+
+    .required {
+      color: #ef4444;
+    }
+  }
+
+  .inspection-examined-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    color: var(--color-text-dark);
+    background: var(--color-surface);
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    }
+
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+  }
+}
+
+// Approval Status Summary
+.inspection-approval-summary {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-color-light);
+
+  h4 {
+    font-size: 1rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    margin: 0 0 1rem 0;
+  }
+
+  .inspection-status-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .inspection-status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-text-dark);
+
+    .inspection-status-icon {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+    }
+
+    &.approved {
+      .inspection-status-icon {
+        color: var(--color-success);
+      }
+    }
+
+    &.pending {
+      color: #f59e0b;
+
+      .inspection-status-icon {
+        color: #f59e0b;
+      }
+    }
+  }
+}

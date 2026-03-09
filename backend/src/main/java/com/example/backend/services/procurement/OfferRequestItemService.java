@@ -23,267 +23,310 @@ import java.util.UUID;
 @Service
 public class OfferRequestItemService {
 
-    private final OfferRepository offerRepository;
-    private final OfferRequestItemRepository offerRequestItemRepository;
-    private final RequestItemModificationRepository modificationRepository;
-    private final ItemTypeRepository itemTypeRepository;
-    private final OfferItemRepository offerItemRepository;
-    private final OfferRequestItemMapper offerRequestItemMapper;
-    private final RequestItemModificationMapper modificationMapper;
+        private final OfferRepository offerRepository;
+        private final OfferRequestItemRepository offerRequestItemRepository;
+        private final RequestItemModificationRepository modificationRepository;
+        private final ItemTypeRepository itemTypeRepository;
+        private final OfferItemRepository offerItemRepository;
+        private final OfferRequestItemMapper offerRequestItemMapper;
+        private final RequestItemModificationMapper modificationMapper;
 
-    @Autowired
-    public OfferRequestItemService(OfferRepository offerRepository,
-                                   OfferRequestItemRepository offerRequestItemRepository,
-                                   RequestItemModificationRepository modificationRepository,
-                                   ItemTypeRepository itemTypeRepository,
-                                   OfferItemRepository offerItemRepository,
-                                   OfferRequestItemMapper offerRequestItemMapper,
-                                   RequestItemModificationMapper modificationMapper) {
-        this.offerRepository = offerRepository;
-        this.offerRequestItemRepository = offerRequestItemRepository;
-        this.modificationRepository = modificationRepository;
-        this.itemTypeRepository = itemTypeRepository;
-        this.offerItemRepository = offerItemRepository;
-        this.offerRequestItemMapper = offerRequestItemMapper;
-        this.modificationMapper = modificationMapper;
-    }
-
-    /**
-     * Get effective request items (modified or original)
-     */
-    public List<OfferRequestItemDTO> getEffectiveRequestItems(UUID offerId) {
-        Offer offer = offerRepository.findById(offerId)
-                .orElseThrow(() -> new RuntimeException("Offer not found"));
-
-        List<OfferRequestItem> offerRequestItems = offerRequestItemRepository.findByOffer(offer);
-
-        if (!offerRequestItems.isEmpty()) {
-            // Return modified items
-            return offerRequestItemMapper.toDTOList(offerRequestItems);
-        } else {
-            // Return original request order items converted to DTO format
-            return offer.getRequestOrder().getRequestItems().stream()
-                    .map(item -> OfferRequestItemDTO.builder()
-                            .id(item.getId())
-                            .offerId(offerId)
-                            .itemTypeId(item.getItemType().getId())
-                            .itemTypeName(item.getItemType().getName())
-                            .itemTypeMeasuringUnit(item.getItemType().getMeasuringUnit() != null ?
-                                    item.getItemType().getMeasuringUnit().getName() : null)
-                            .quantity(item.getQuantity())
-                            .comment(item.getComment())
-                            .originalRequestOrderItemId(item.getId())
-                            .build())
-                    .toList();
-        }
-    }
-
-    /**
-     * Add a new request item to the offer
-     */
-    @Transactional
-    public OfferRequestItemDTO addRequestItem(UUID offerId, OfferRequestItemDTO dto, String username) {
-        Offer offer = offerRepository.findById(offerId)
-                .orElseThrow(() -> new RuntimeException("Offer not found"));
-
-        ItemType itemType = itemTypeRepository.findById(dto.getItemTypeId())
-                .orElseThrow(() -> new RuntimeException("Item type not found"));
-
-        // Create the new offer request item
-        OfferRequestItem newItem = OfferRequestItem.builder()
-                .offer(offer)
-                .itemType(itemType)
-                .quantity(dto.getQuantity())
-                .comment(dto.getComment())
-                .originalRequestOrderItemId(dto.getOriginalRequestOrderItemId())
-                .createdAt(LocalDateTime.now())
-                .createdBy(username)
-                .lastModifiedAt(LocalDateTime.now())
-                .lastModifiedBy(username)
-                .build();
-
-        OfferRequestItem savedItem = offerRequestItemRepository.save(newItem);
-
-        // Record the modification
-        recordModification(offer, RequestItemModification.ModificationAction.ADD,
-                itemType, null, dto.getQuantity(), null, dto.getComment(), username,
-                "Added new item: " + itemType.getName());
-
-        return offerRequestItemMapper.toDTO(savedItem);
-    }
-
-    /**
-     * Update an existing request item
-     */
-    @Transactional
-    public OfferRequestItemDTO updateRequestItem(UUID itemId, OfferRequestItemDTO dto, String username) {
-        System.out.println("=== UPDATE REQUEST ITEM DEBUG START ===");
-        System.out.println("Item ID received: " + itemId);
-        System.out.println("DTO: " + dto);
-        System.out.println("Username: " + username);
-
-        try {
-            // Check if item exists
-            boolean exists = offerRequestItemRepository.existsById(itemId);
-            System.out.println("Item exists in DB: " + exists);
-
-            if (!exists) {
-                System.out.println("ERROR: Item not found with ID: " + itemId);
-                throw new RuntimeException("Offer request item not found with ID: " + itemId);
-            }
-
-            System.out.println("Attempting to fetch item with details...");
-            OfferRequestItem item = offerRequestItemRepository.findByIdWithDetails(itemId)
-                    .orElseThrow(() -> {
-                        System.out.println("ERROR: findByIdWithDetails returned empty!");
-                        return new RuntimeException("Offer request item not found");
-                    });
-
-            System.out.println("Item fetched successfully: " + item.getId());
-            System.out.println("Item type: " + item.getItemType().getName());
-
-            double oldQuantity = item.getQuantity();
-            String oldComment = item.getComment();
-
-            System.out.println("Old quantity: " + oldQuantity + ", New quantity: " + dto.getQuantity());
-
-            // Update fields
-            item.setQuantity(dto.getQuantity());
-            item.setComment(dto.getComment());
-            item.setLastModifiedAt(LocalDateTime.now());
-            item.setLastModifiedBy(username);
-
-            System.out.println("Saving item...");
-            OfferRequestItem updatedItem = offerRequestItemRepository.save(item);
-            System.out.println("Item saved successfully");
-
-            // Record modification
-            recordModification(item.getOffer(), RequestItemModification.ModificationAction.EDIT,
-                    item.getItemType(), oldQuantity, dto.getQuantity(), oldComment, dto.getComment(), username,
-                    "Updated item: " + item.getItemType().getName());
-
-            System.out.println("=== UPDATE REQUEST ITEM DEBUG END - SUCCESS ===");
-            return offerRequestItemMapper.toDTO(updatedItem);
-
-        } catch (Exception e) {
-            System.err.println("!!! EXCEPTION CAUGHT !!!");
-            System.err.println("Exception type: " + e.getClass().getName());
-            System.err.println("Exception message: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
-    /**
-     * Delete a request item and its associated offer items
-     */
-    @Transactional
-    public void deleteRequestItem(UUID itemId, String username) {
-        OfferRequestItem item = offerRequestItemRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("Offer request item not found"));
-
-        Offer offer = item.getOffer();
-        ItemType itemType = item.getItemType();
-        double quantity = item.getQuantity();
-        String comment = item.getComment();
-
-        // Delete associated offer items first
-        List<OfferItem> associatedOfferItems = offerItemRepository.findAll().stream()
-                .filter(oi -> oi.getOffer().getId().equals(offer.getId()) &&
-                        oi.getItemType().getId().equals(itemType.getId()))
-                .toList();
-
-        for (OfferItem offerItem : associatedOfferItems) {
-            offerItemRepository.delete(offerItem);
+        @Autowired
+        public OfferRequestItemService(OfferRepository offerRepository,
+                        OfferRequestItemRepository offerRequestItemRepository,
+                        RequestItemModificationRepository modificationRepository,
+                        ItemTypeRepository itemTypeRepository,
+                        OfferItemRepository offerItemRepository,
+                        OfferRequestItemMapper offerRequestItemMapper,
+                        RequestItemModificationMapper modificationMapper) {
+                this.offerRepository = offerRepository;
+                this.offerRequestItemRepository = offerRequestItemRepository;
+                this.modificationRepository = modificationRepository;
+                this.itemTypeRepository = itemTypeRepository;
+                this.offerItemRepository = offerItemRepository;
+                this.offerRequestItemMapper = offerRequestItemMapper;
+                this.modificationMapper = modificationMapper;
         }
 
-        // Delete the request item
-        offerRequestItemRepository.delete(item);
+        /**
+         * Get effective request items (modified or original)
+         */
+        public List<OfferRequestItemDTO> getEffectiveRequestItems(UUID offerId) {
+                Offer offer = offerRepository.findById(offerId)
+                                .orElseThrow(() -> new RuntimeException("Offer not found"));
 
-        // Record the modification
-        recordModification(offer, RequestItemModification.ModificationAction.DELETE,
-                itemType, quantity, null, comment, null, username,
-                "Deleted item: " + itemType.getName() + " (quantity: " + quantity + ")");
-    }
+                List<OfferRequestItem> offerRequestItems = offerRequestItemRepository.findByOffer(offer);
 
-    /**
-     * Initialize modified items from original request order
-     * Call this when user first starts modifying items
-     */
-    @Transactional
-    public List<OfferRequestItemDTO> initializeModifiedItems(UUID offerId, String username) {
-        Offer offer = offerRepository.findById(offerId)
-                .orElseThrow(() -> new RuntimeException("Offer not found"));
+                if (!offerRequestItems.isEmpty()) {
+                        // Return modified items
+                        return offerRequestItemMapper.toDTOList(offerRequestItems);
+                } else {
+                        // Return original request order items converted to DTO format
+                        return offer.getRequestOrder().getRequestItems().stream()
+                                        .map(item -> {
+                                                OfferRequestItemDTO.OfferRequestItemDTOBuilder builder = OfferRequestItemDTO
+                                                                .builder()
+                                                                .id(item.getId())
+                                                                .offerId(offerId)
+                                                                .quantity(item.getQuantity())
+                                                                .comment(item.getComment())
+                                                                .originalRequestOrderItemId(item.getId());
 
-        // Check if already initialized
-        List<OfferRequestItem> existing = offerRequestItemRepository.findByOffer(offer);
-        if (!existing.isEmpty()) {
-            return offerRequestItemMapper.toDTOList(existing);
+                                                if (item.getItemType() != null) {
+                                                        builder.itemTypeId(item.getItemType().getId())
+                                                                        .itemTypeName(item.getItemType().getName())
+                                                                        .itemTypeMeasuringUnit(item.getItemType()
+                                                                                        .getMeasuringUnit() != null
+                                                                                                        ? item.getItemType()
+                                                                                                                        .getMeasuringUnit()
+                                                                                                                        .getName()
+                                                                                                        : null);
+                                                } else if (item.getEquipmentSpec() != null) {
+                                                        builder.equipmentSpecId(item.getEquipmentSpec().getId())
+                                                                        .equipmentName(item.getEquipmentSpec().getName()
+                                                                                        +
+                                                                                        (item.getEquipmentSpec()
+                                                                                                        .getModel() != null
+                                                                                                        && !item.getEquipmentSpec()
+                                                                                                                        .getModel()
+                                                                                                                        .isEmpty() ? " " + item
+                                                                                                                                        .getEquipmentSpec()
+                                                                                                                                        .getModel()
+                                                                                                                                        : ""));
+                                                }
+                                                return builder.build();
+                                        })
+                                        .toList();
+                }
         }
 
-        // Copy from original request order
-        List<OfferRequestItem> newItems = offer.getRequestOrder().getRequestItems().stream()
-                .map(original -> OfferRequestItem.builder()
-                        .offer(offer)
-                        .itemType(original.getItemType())
-                        .quantity(original.getQuantity())
-                        .comment(original.getComment())
-                        .originalRequestOrderItemId(original.getId())
-                        .createdAt(LocalDateTime.now())
-                        .createdBy(username)
-                        .lastModifiedAt(LocalDateTime.now())
-                        .lastModifiedBy(username)
-                        .build())
-                .toList();
+        /**
+         * Add a new request item to the offer
+         */
+        @Transactional
+        public OfferRequestItemDTO addRequestItem(UUID offerId, OfferRequestItemDTO dto, String username) {
+                Offer offer = offerRepository.findById(offerId)
+                                .orElseThrow(() -> new RuntimeException("Offer not found"));
 
-        List<OfferRequestItem> savedItems = offerRequestItemRepository.saveAll(newItems);
+                ItemType itemType = dto.getItemTypeId() != null
+                                ? itemTypeRepository.findById(dto.getItemTypeId()).orElse(null)
+                                : null;
+                // Not adding support for creating completely NEW equipment specs here yet,
+                // typically requests already have them linked via originalRequestOrderItemId
+                // for Equipment.
+                // We will just map the itemType for now if it exists.
 
-        // Record initialization
-        RequestItemModification initModification = RequestItemModification.builder()
-                .offer(offer)
-                .timestamp(LocalDateTime.now())
-                .actionBy(username)
-                .action(RequestItemModification.ModificationAction.ADD)
-                .notes("Initialized modified items from original request order")
-                .build();
-        modificationRepository.save(initModification);
+                // Create the new offer request item
+                OfferRequestItem newItem = OfferRequestItem.builder()
+                                .offer(offer)
+                                .itemType(itemType)
+                                .quantity(dto.getQuantity())
+                                .comment(dto.getComment())
+                                .originalRequestOrderItemId(dto.getOriginalRequestOrderItemId())
+                                .createdAt(LocalDateTime.now())
+                                .createdBy(username)
+                                .lastModifiedAt(LocalDateTime.now())
+                                .lastModifiedBy(username)
+                                .build();
 
-        return offerRequestItemMapper.toDTOList(savedItems);
-    }
+                OfferRequestItem savedItem = offerRequestItemRepository.save(newItem);
 
-    /**
-     * Get modification history for an offer
-     */
-    public List<RequestItemModificationDTO> getModificationHistory(UUID offerId) {
-        Offer offer = offerRepository.findById(offerId)
-                .orElseThrow(() -> new RuntimeException("Offer not found"));
+                // Record the modification
+                recordModification(offer, RequestItemModification.ModificationAction.ADD,
+                                itemType, null, dto.getQuantity(), null, dto.getComment(), username,
+                                "Added new item: " + (itemType != null ? itemType.getName() : "Equipment Item"));
 
-        List<RequestItemModification> modifications = modificationRepository.findByOfferOrderByTimestampDesc(offer);
-        return modificationMapper.toDTOList(modifications);
-    }
+                return offerRequestItemMapper.toDTO(savedItem);
+        }
 
-    /**
-     * Helper method to record modifications
-     */
-    private void recordModification(Offer offer, RequestItemModification.ModificationAction action,
-                                    ItemType itemType, Double oldQuantity, Double newQuantity,
-                                    String oldComment, String newComment, String username, String notes) {
-        RequestItemModification modification = RequestItemModification.builder()
-                .offer(offer)
-                .timestamp(LocalDateTime.now())
-                .actionBy(username)
-                .action(action)
-                .itemTypeId(itemType.getId())
-                .itemTypeName(itemType.getName())
-                .itemTypeMeasuringUnit(itemType.getMeasuringUnit() != null ?
-                        itemType.getMeasuringUnit().getName() : null)
-                .oldQuantity(oldQuantity)
-                .newQuantity(newQuantity)
-                .oldComment(oldComment)
-                .newComment(newComment)
-                .notes(notes)
-                .build();
+        /**
+         * Update an existing request item
+         */
+        @Transactional
+        public OfferRequestItemDTO updateRequestItem(UUID itemId, OfferRequestItemDTO dto, String username) {
+                System.out.println("=== UPDATE REQUEST ITEM DEBUG START ===");
+                System.out.println("Item ID received: " + itemId);
+                System.out.println("DTO: " + dto);
+                System.out.println("Username: " + username);
 
-        modificationRepository.save(modification);
-    }
+                try {
+                        // Check if item exists
+                        boolean exists = offerRequestItemRepository.existsById(itemId);
+                        System.out.println("Item exists in DB: " + exists);
+
+                        if (!exists) {
+                                System.out.println("ERROR: Item not found with ID: " + itemId);
+                                throw new RuntimeException("Offer request item not found with ID: " + itemId);
+                        }
+
+                        System.out.println("Attempting to fetch item with details...");
+                        OfferRequestItem item = offerRequestItemRepository.findByIdWithDetails(itemId)
+                                        .orElseThrow(() -> {
+                                                System.out.println("ERROR: findByIdWithDetails returned empty!");
+                                                return new RuntimeException("Offer request item not found");
+                                        });
+
+                        System.out.println("Item fetched successfully: " + item.getId());
+                        String itemName = item.getItemType() != null ? item.getItemType().getName()
+                                        : (item.getEquipmentSpec() != null ? item.getEquipmentSpec().getName()
+                                                        : "Unknown");
+                        System.out.println("Item name: " + itemName);
+
+                        double oldQuantity = item.getQuantity();
+                        String oldComment = item.getComment();
+
+                        System.out.println("Old quantity: " + oldQuantity + ", New quantity: " + dto.getQuantity());
+
+                        // Update fields
+                        item.setQuantity(dto.getQuantity());
+                        item.setComment(dto.getComment());
+                        item.setLastModifiedAt(LocalDateTime.now());
+                        item.setLastModifiedBy(username);
+
+                        System.out.println("Saving item...");
+                        OfferRequestItem updatedItem = offerRequestItemRepository.save(item);
+                        System.out.println("Item saved successfully");
+
+                        // Record modification
+                        recordModification(item.getOffer(), RequestItemModification.ModificationAction.EDIT,
+                                        item.getItemType(), oldQuantity, dto.getQuantity(), oldComment,
+                                        dto.getComment(), username,
+                                        "Updated item: " + itemName);
+
+                        System.out.println("=== UPDATE REQUEST ITEM DEBUG END - SUCCESS ===");
+                        return offerRequestItemMapper.toDTO(updatedItem);
+
+                } catch (Exception e) {
+                        System.err.println("!!! EXCEPTION CAUGHT !!!");
+                        System.err.println("Exception type: " + e.getClass().getName());
+                        System.err.println("Exception message: " + e.getMessage());
+                        e.printStackTrace();
+                        throw e;
+                }
+        }
+
+        /**
+         * Delete a request item and its associated offer items
+         */
+        @Transactional
+        public void deleteRequestItem(UUID itemId, String username) {
+                OfferRequestItem item = offerRequestItemRepository.findById(itemId)
+                                .orElseThrow(() -> new RuntimeException("Offer request item not found"));
+
+                Offer offer = item.getOffer();
+                ItemType itemType = item.getItemType();
+                double quantity = item.getQuantity();
+                String comment = item.getComment();
+
+                // Delete associated offer items first
+                List<OfferItem> associatedOfferItems = offerItemRepository.findAll().stream()
+                                .filter(oi -> oi.getOffer().getId().equals(offer.getId()) &&
+                                                ((oi.getItemType() != null && itemType != null
+                                                                && oi.getItemType().getId().equals(itemType.getId())) ||
+                                                                (oi.getRequestOrderItem() != null && item
+                                                                                .getOriginalRequestOrderItemId() != null
+                                                                                && oi.getRequestOrderItem().getId()
+                                                                                                .equals(item.getOriginalRequestOrderItemId()))))
+                                .toList();
+
+                for (OfferItem offerItem : associatedOfferItems) {
+                        offerItemRepository.delete(offerItem);
+                }
+
+                // Delete the request item
+                offerRequestItemRepository.delete(item);
+
+                String itemName = itemType != null ? itemType.getName()
+                                : (item.getEquipmentSpec() != null ? item.getEquipmentSpec().getName()
+                                                : "Equipment Item");
+
+                // Record the modification
+                recordModification(offer, RequestItemModification.ModificationAction.DELETE,
+                                itemType, quantity, null, comment, null, username,
+                                "Deleted item: " + itemName + " (quantity: " + quantity + ")");
+        }
+
+        /**
+         * Initialize modified items from original request order
+         * Call this when user first starts modifying items
+         */
+        @Transactional
+        public List<OfferRequestItemDTO> initializeModifiedItems(UUID offerId, String username) {
+                Offer offer = offerRepository.findById(offerId)
+                                .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+                // Check if already initialized
+                List<OfferRequestItem> existing = offerRequestItemRepository.findByOffer(offer);
+                if (!existing.isEmpty()) {
+                        return offerRequestItemMapper.toDTOList(existing);
+                }
+
+                // Copy from original request order
+                List<OfferRequestItem> newItems = offer.getRequestOrder().getRequestItems().stream()
+                                .map(original -> OfferRequestItem.builder()
+                                                .offer(offer)
+                                                .itemType(original.getItemType())
+                                                .equipmentSpec(original.getEquipmentSpec())
+                                                .quantity(original.getQuantity())
+                                                .comment(original.getComment())
+                                                .originalRequestOrderItemId(original.getId())
+                                                .createdAt(LocalDateTime.now())
+                                                .createdBy(username)
+                                                .lastModifiedAt(LocalDateTime.now())
+                                                .lastModifiedBy(username)
+                                                .build())
+                                .toList();
+
+                List<OfferRequestItem> savedItems = offerRequestItemRepository.saveAll(newItems);
+
+                // Record initialization
+                RequestItemModification initModification = RequestItemModification.builder()
+                                .offer(offer)
+                                .timestamp(LocalDateTime.now())
+                                .actionBy(username)
+                                .action(RequestItemModification.ModificationAction.ADD)
+                                .notes("Initialized modified items from original request order")
+                                .build();
+                modificationRepository.save(initModification);
+
+                return offerRequestItemMapper.toDTOList(savedItems);
+        }
+
+        /**
+         * Get modification history for an offer
+         */
+        public List<RequestItemModificationDTO> getModificationHistory(UUID offerId) {
+                Offer offer = offerRepository.findById(offerId)
+                                .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+                List<RequestItemModification> modifications = modificationRepository
+                                .findByOfferOrderByTimestampDesc(offer);
+                return modificationMapper.toDTOList(modifications);
+        }
+
+        /**
+         * Helper method to record modifications
+         */
+        private void recordModification(Offer offer, RequestItemModification.ModificationAction action,
+                        ItemType itemType, Double oldQuantity, Double newQuantity,
+                        String oldComment, String newComment, String username, String notes) {
+                RequestItemModification modification = RequestItemModification.builder()
+                                .offer(offer)
+                                .timestamp(LocalDateTime.now())
+                                .actionBy(username)
+                                .action(action)
+                                .itemTypeId(itemType != null ? itemType.getId() : null)
+                                .itemTypeName(itemType != null ? itemType.getName() : null)
+                                .itemTypeMeasuringUnit(itemType != null && itemType.getMeasuringUnit() != null
+                                                ? itemType.getMeasuringUnit().getName()
+                                                : null)
+                                .oldQuantity(oldQuantity)
+                                .newQuantity(newQuantity)
+                                .oldComment(oldComment)
+                                .newComment(newComment)
+                                .notes(notes)
+                                .build();
+
+                modificationRepository.save(modification);
+        }
 }

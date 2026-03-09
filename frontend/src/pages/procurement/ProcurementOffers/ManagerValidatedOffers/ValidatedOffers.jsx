@@ -18,14 +18,14 @@ import { offerService } from '../../../../services/procurement/offerService.js';
 
 
 const ValidatedOffers = ({
-                             offers,
-                             activeOffer,
-                             setActiveOffer,
-                             getTotalPrice,
-                             onRetryOffer,
-                             onDeleteOffer,
-                             onOfferSentToFinance = null
-                         }) => {
+    offers,
+    activeOffer,
+    setActiveOffer,
+    getTotalPrice,
+    onRetryOffer,
+    onDeleteOffer,
+    onOfferSentToFinance = null
+}) => {
     // Snackbar state
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
@@ -240,9 +240,9 @@ const ValidatedOffers = ({
         }
     };
 
-// Alternative approach: Check your offerService.js file
-// The issue might be in how the updateStatus method is implemented
-// Here's what to look for in your offerService.js:
+    // Alternative approach: Check your offerService.js file
+    // The issue might be in how the updateStatus method is implemented
+    // Here's what to look for in your offerService.js:
 
     /*
     Expected method signature might be one of these:
@@ -254,7 +254,7 @@ const ValidatedOffers = ({
     Check your offerService.js file and see which signature it expects!
     */
 
-// Quick debugging function to add to your component:
+    // Quick debugging function to add to your component:
     const debugOfferService = () => {
         console.log('🔍 Debugging offerService:');
         console.log('Methods available:', Object.getOwnPropertyNames(offerService));
@@ -525,15 +525,28 @@ const ValidatedOffers = ({
                                     <div className="procurement-submitted-items-manager">
                                         {effectiveRequestItems?.map(requestItem => {
                                             const itemTypeId = requestItem.itemTypeId || requestItem.itemType?.id;
-                                            const offerItems = activeOffer.offerItems.filter(
-                                                item => item.itemType?.id === itemTypeId
-                                            );
+                                            const equipmentSpecId = requestItem.equipmentSpecId || requestItem.equipmentSpec?.id;
+                                            const isEquipmentItem = !!(equipmentSpecId);
+                                            let offerItems = [];
+                                            if (itemTypeId) {
+                                                offerItems = activeOffer.offerItems.filter(
+                                                    item => item.itemType?.id === itemTypeId
+                                                );
+                                            } else if (equipmentSpecId) {
+                                                offerItems = activeOffer.offerItems.filter(
+                                                    item => (item.equipmentSpec?.id === equipmentSpecId) || (item.equipmentSpecId === equipmentSpecId)
+                                                );
+                                            } else {
+                                                offerItems = activeOffer.offerItems.filter(
+                                                    item => item.requestOrderItem?.id === requestItem.id || item.requestOrderItemId === requestItem.id
+                                                );
+                                            }
 
                                             // Only show items that have offer items
                                             if (offerItems.length === 0) return null;
 
-                                            const itemTypeName = requestItem.itemTypeName || requestItem.itemType?.name || 'Item';
-                                            const itemTypeMeasuringUnit = requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units';
+                                            const itemTypeName = requestItem.itemTypeName || requestItem.itemType?.name || requestItem.equipmentName || requestItem.equipmentSpec?.name || 'Item';
+                                            const itemTypeMeasuringUnit = isEquipmentItem ? 'unit' : (requestItem.itemTypeMeasuringUnit || requestItem.itemType?.measuringUnit || 'units');
 
                                             return (
                                                 <div key={requestItem.id} className="procurement-submitted-item-card-manager">
@@ -552,30 +565,30 @@ const ValidatedOffers = ({
                                                     <div className="submitted-offer-solutions-manager">
                                                         <table className="procurement-offer-entries-table-manager">
                                                             <thead>
-                                                            <tr>
-                                                                <th>Merchant</th>
-                                                                <th>Quantity</th>
-                                                                <th>Unit Price</th>
-                                                                <th>Total</th>
-                                                                <th>Est. Delivery</th>
-                                                                <th>Finance Status</th>
-                                                            </tr>
+                                                                <tr>
+                                                                    <th>Merchant</th>
+                                                                    <th>Quantity</th>
+                                                                    <th>Unit Price</th>
+                                                                    <th>Total</th>
+                                                                    <th>Est. Delivery</th>
+                                                                    <th>Finance Status</th>
+                                                                </tr>
                                                             </thead>
                                                             <tbody>
-                                                            {offerItems.map((offerItem, idx) => (
-                                                                <tr key={offerItem.id || idx}>
-                                                                    <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                    <td>{offerItem.quantity} {itemTypeMeasuringUnit}</td>
-                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice).toFixed(2)}</td>
-                                                                    <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice).toFixed(2)}</td>
-                                                                    <td>{offerItem.estimatedDeliveryDays ? `${offerItem.estimatedDeliveryDays} days` : 'N/A'}</td>
-                                                                    <td>
-                                <span className={`submitted-offer-finance-status-badge ${(offerItem.financeStatus || 'PENDING').toLowerCase()}`}>
-                                    {offerItem.financeStatus || 'PENDING'}
-                                </span>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
+                                                                {offerItems.map((offerItem, idx) => (
+                                                                    <tr key={offerItem.id || idx}>
+                                                                        <td>{offerItem.merchant?.name || 'Unknown'}</td>
+                                                                        <td>{offerItem.quantity} {itemTypeMeasuringUnit}</td>
+                                                                        <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.unitPrice).toFixed(2)}</td>
+                                                                        <td>{offerItem.currency || 'EGP'} {parseFloat(offerItem.totalPrice).toFixed(2)}</td>
+                                                                        <td>{offerItem.estimatedDeliveryDays ? `${offerItem.estimatedDeliveryDays} days` : 'N/A'}</td>
+                                                                        <td>
+                                                                            <span className={`submitted-offer-finance-status-badge ${(offerItem.financeStatus || 'PENDING').toLowerCase()}`}>
+                                                                                {offerItem.financeStatus || 'PENDING'}
+                                                                            </span>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
                                                             </tbody>
                                                         </table>
                                                     </div>
@@ -588,7 +601,7 @@ const ValidatedOffers = ({
                                 <div className="procurement-submitted-summary-manager">
                                     <div className="summary-item">
                                         <FiPackage size={16} />
-                                        <span className="summary-label">Total Items:</span>
+                                        <span className="summary-label">{effectiveRequestItems?.some(item => item.equipmentSpecId || item.equipmentSpec) ? 'Total Equipment:' : 'Total Items:'}</span>
                                         <span className="summary-value">{activeOffer.requestOrder?.requestItems?.length || 0}</span>
                                     </div>
 
@@ -596,13 +609,13 @@ const ValidatedOffers = ({
                                         <FiDollarSign size={18} />
                                         <span className="summary-label">Total Value:</span>
                                         <span className="summary-value total">
-    {Object.entries(getTotalsByCurrency(activeOffer)).map(([currency, total], idx) => (
-        <span key={currency} style={{ marginLeft: idx > 0 ? '8px' : '0' }}>
-            {idx > 0 && '+ '}
-            {currency} {total.toFixed(2)}
-        </span>
-    ))}
-</span>
+                                            {Object.entries(getTotalsByCurrency(activeOffer)).map(([currency, total], idx) => (
+                                                <span key={currency} style={{ marginLeft: idx > 0 ? '8px' : '0' }}>
+                                                    {idx > 0 && '+ '}
+                                                    {currency} {total.toFixed(2)}
+                                                </span>
+                                            ))}
+                                        </span>
                                     </div>
                                 </div>
                             </div>

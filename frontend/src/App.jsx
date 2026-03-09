@@ -1,11 +1,11 @@
-import {useState} from 'react'
-import {BrowserRouter as Router, Navigate, Outlet, Route, Routes} from 'react-router-dom';
+import { useState } from 'react'
+import { BrowserRouter as Router, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import './App.css'
-import {LanguageProvider} from "./contexts/LanguageContext.jsx";
-import {ThemeProvider} from "./contexts/ThemeContext.jsx";
-import {AuthProvider, useAuth} from "./contexts/AuthContext.jsx";
+import { LanguageProvider } from "./contexts/LanguageContext.jsx";
+import { ThemeProvider } from "./contexts/ThemeContext.jsx";
+import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
 import Login from "./pages/login/Login.jsx";
-import Sidebar, {SidebarProvider} from "./components/common/Sidebar/Sidebar.jsx";
+import Sidebar, { SidebarProvider } from "./components/common/Sidebar/Sidebar.jsx";
 import AdminPage from "./pages/admin/AdminPage.jsx";
 import DashboardPage from "./pages/dashboards/DashboardPage.jsx";
 import AdminDashboard from "./pages/dashboards/AdminDashboard.jsx";
@@ -28,7 +28,7 @@ import SitesLayout from "./pages/site/SitesLayout.jsx";
 import Partners from "./pages/partners/Partners.jsx";
 import SiteDetails from "./pages/site/SiteDetails/SiteDetails.jsx";
 import EquipmentMain from "./pages/equipment/EquipmentMain/EquipmentMain.jsx";
-import {SnackbarProvider} from "./contexts/SnackbarContext.jsx";
+import { SnackbarProvider } from "./contexts/SnackbarContext.jsx";
 import EquipmentBrandManagement from "./pages/equipment/EquipmentManagement/EquipmentBrandManagement.jsx";
 import EquipmentTypeManagement from "./pages/equipment/EquipmentManagement/EquipmentTypeManagement.jsx";
 import WorkTypeManagement from "./pages/equipment/EquipmentManagement/WorkTypeManagement.jsx";
@@ -153,17 +153,17 @@ import ProcessPaymentPage from "./pages/finance/AccountsPayable/Payments/Process
 
 
 const AuthRedirect = () => {
-    const {currentUser, isAuthenticated, loading} = useAuth();
-    if (loading) return <LoadingPage/>;
-    if (!isAuthenticated) return <Navigate to="/login" replace/>;
-    return <Navigate to={currentUser?.role === 'ADMIN' ? '/admin' : '/dashboard'} replace/>;
+    const { currentUser, isAuthenticated, loading } = useAuth();
+    if (loading) return <LoadingPage />;
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    return <Navigate to={currentUser?.role === 'ADMIN' ? '/admin' : '/dashboard'} replace />;
 };
 
-const RoleRoute = ({allowedRoles, children, redirectPath = '/dashboard'}) => {
-    const {currentUser, isAuthenticated, loading} = useAuth();
-    if (loading) return <LoadingPage/>;
-    if (!isAuthenticated) return <Navigate to="/login" replace/>;
-    if (!allowedRoles.includes(currentUser?.role)) return <Navigate to={redirectPath} replace/>;
+const RoleRoute = ({ allowedRoles, children, redirectPath = '/dashboard' }) => {
+    const { currentUser, isAuthenticated, loading } = useAuth();
+    if (loading) return <LoadingPage />;
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    if (!allowedRoles.includes(currentUser?.role)) return <Navigate to={redirectPath} replace />;
     return children;
 };
 
@@ -194,55 +194,55 @@ function App() {
                         <AuthProvider>
                             <NotificationProvider>
                                 <Routes>
-                                    <Route path="/login" element={<Login/>}/>
-                                    <Route path="/" element={<AuthRedirect/>}/>
+                                    <Route path="/login" element={<Login />} />
+                                    <Route path="/" element={<AuthRedirect />} />
 
-                                    <Route element={<MainLayout/>}>
-                                        <Route path="/admin" element={<RoleRoute allowedRoles={[ADMIN]}><AdminPage/></RoleRoute>}/>
+                                    <Route element={<MainLayout />}>
+                                        <Route path="/admin" element={<RoleRoute allowedRoles={[ADMIN]}><AdminPage /></RoleRoute>} />
 
-                                        <Route path="/dashboard" element={<RoleRoute allowedRoles={allRoles}><DashboardPage/></RoleRoute>}/>
+                                        <Route path="/dashboard" element={<RoleRoute allowedRoles={allRoles}><DashboardPage /></RoleRoute>} />
 
                                         {/* Individual Dashboard Routes for Admin */}
-                                        <Route path="/dashboards/admin" element={<RoleRoute allowedRoles={[ADMIN]}><AdminDashboard/></RoleRoute>}/>
-                                        <Route path="/dashboards/site-admin" element={<RoleRoute allowedRoles={[ADMIN]}><SiteAdminDashboard/></RoleRoute>}/>
-                                        <Route path="/dashboards/equipment-manager" element={<RoleRoute allowedRoles={[ADMIN]}><EquipmentManagerDashboard/></RoleRoute>}/>
-                                        <Route path="/dashboards/warehouse-manager" element={<RoleRoute allowedRoles={[ADMIN]}><WarehouseManagerDashboard/></RoleRoute>}/>
-                                        <Route path="/dashboards/hr-manager" element={<RoleRoute allowedRoles={[ADMIN]}><HRManagerDashboard/></RoleRoute>}/>
-                                        <Route path="/dashboards/finance-manager" element={<RoleRoute allowedRoles={[ADMIN]}><FinanceManagerDashboard/></RoleRoute>}/>
-                                        <Route path="/dashboards/procurement" element={<RoleRoute allowedRoles={[ADMIN]}><ProcurementDashboard/></RoleRoute>}/>
+                                        <Route path="/dashboards/admin" element={<RoleRoute allowedRoles={[ADMIN]}><AdminDashboard /></RoleRoute>} />
+                                        <Route path="/dashboards/site-admin" element={<RoleRoute allowedRoles={[ADMIN]}><SiteAdminDashboard /></RoleRoute>} />
+                                        <Route path="/dashboards/equipment-manager" element={<RoleRoute allowedRoles={[ADMIN]}><EquipmentManagerDashboard /></RoleRoute>} />
+                                        <Route path="/dashboards/warehouse-manager" element={<RoleRoute allowedRoles={[ADMIN]}><WarehouseManagerDashboard /></RoleRoute>} />
+                                        <Route path="/dashboards/hr-manager" element={<RoleRoute allowedRoles={[ADMIN]}><HRManagerDashboard /></RoleRoute>} />
+                                        <Route path="/dashboards/finance-manager" element={<RoleRoute allowedRoles={[ADMIN]}><FinanceManagerDashboard /></RoleRoute>} />
+                                        <Route path="/dashboards/procurement" element={<RoleRoute allowedRoles={[ADMIN]}><ProcurementDashboard /></RoleRoute>} />
 
-                                        <Route path="/partners" element={<RoleRoute allowedRoles={[ADMIN, SITE_ADMIN]}><Partners/></RoleRoute>}/>
+                                        <Route path="/partners" element={<RoleRoute allowedRoles={[ADMIN, SITE_ADMIN]}><Partners /></RoleRoute>} />
 
                                         {/* ===================== Notifications Route ===================== */}
-                                        <Route path="/notifications" element={<RoleRoute allowedRoles={allRoles}><Notifications/></RoleRoute>}/>
+                                        <Route path="/notifications" element={<RoleRoute allowedRoles={allRoles}><Notifications /></RoleRoute>} />
 
                                         {/* ===================== Site Management Routes ===================== */}
-                                        <Route path="/sites" element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
-                                            <Route index element={<RoleRoute allowedRoles={allRoles}><AllSites/></RoleRoute>}/>
-                                            <Route path="details/:siteId" element={<RoleRoute allowedRoles={allRoles}><SiteDetails/></RoleRoute>}/>
-                                            <Route path="employee-details/:id" element={<RoleRoute allowedRoles={allRoles}><EmployeeDetails/></RoleRoute>}/>
+                                        <Route path="/sites" element={<RoleRoute allowedRoles={allRoles}><SitesLayout /></RoleRoute>}>
+                                            <Route index element={<RoleRoute allowedRoles={allRoles}><AllSites /></RoleRoute>} />
+                                            <Route path="details/:siteId" element={<RoleRoute allowedRoles={allRoles}><SiteDetails /></RoleRoute>} />
+                                            <Route path="employee-details/:id" element={<RoleRoute allowedRoles={allRoles}><EmployeeDetails /></RoleRoute>} />
                                         </Route>
 
                                         {/* ===================== Warehouse Management Routes ===================== */}
-                                        <Route path="/warehouses" element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
-                                            <Route index element={<RoleRoute allowedRoles={allRoles}><WarehousesList/></RoleRoute>}/>
-                                            <Route path="item-categories" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemCategoriesTable/></RoleRoute>}/>
-                                            <Route path="item-types" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemTypesTable/></RoleRoute>}/>
-                                            <Route path="measuring-units" element={<RoleRoute allowedRoles={['ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE']}><MeasuringUnits/></RoleRoute>}/>
-                                            <Route path=":id" element={<WarehouseDetails/>}/>
-                                            <Route path="warehouse-details/:id" element={<WarehouseInformation/>}/>
-                                            <Route path=":id/items/:itemTypeId" element={<ItemDetailsPage/>}/>
+                                        <Route path="/warehouses" element={<RoleRoute allowedRoles={allRoles}><SitesLayout /></RoleRoute>}>
+                                            <Route index element={<RoleRoute allowedRoles={allRoles}><WarehousesList /></RoleRoute>} />
+                                            <Route path="item-categories" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemCategoriesTable /></RoleRoute>} />
+                                            <Route path="item-types" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemTypesTable /></RoleRoute>} />
+                                            <Route path="measuring-units" element={<RoleRoute allowedRoles={['ADMIN', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE']}><MeasuringUnits /></RoleRoute>} />
+                                            <Route path=":id" element={<WarehouseDetails />} />
+                                            <Route path="warehouse-details/:id" element={<WarehouseInformation />} />
+                                            <Route path=":id/items/:itemTypeId" element={<ItemDetailsPage />} />
                                             <Route path=":id/request-orders/:requestOrderId" element={<RequestOrderDetailsPage />} />
                                             <Route path=":id/transactions/:transaction" element={<TransactionDetailsPage />} />
-                                            <Route path="item-types/:itemTypeId" element={<RoleRoute allowedRoles={allRoles}><ItemTypeDetailsPage/></RoleRoute>}/>
+                                            <Route path="item-types/:itemTypeId" element={<RoleRoute allowedRoles={allRoles}><ItemTypeDetailsPage /></RoleRoute>} />
                                         </Route>
 
                                         {/* ===================== Merchant Routes ===================== */}
-                                        <Route path="/merchants" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><ProcurementMerchants/></RoleRoute>}/>
-                                        <Route path="/merchants/:id" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><MerchantDetails/></RoleRoute>}/>
+                                        <Route path="/merchants" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><ProcurementMerchants /></RoleRoute>} />
+                                        <Route path="/merchants/:id" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><MerchantDetails /></RoleRoute>} />
 
                                         {/* ===================== Procurement Routes ===================== */}
-                                        <Route path="/procurement" element={<RoleRoute allowedRoles={[PROCUREMENT, SITE_ADMIN, ADMIN]}><SitesLayout/></RoleRoute>}>
+                                        <Route path="/procurement" element={<RoleRoute allowedRoles={[PROCUREMENT, SITE_ADMIN, ADMIN, EQUIPMENT_MANAGER]}><SitesLayout/></RoleRoute>}>
                                             <Route path="request-orders" element={<ProcurementRequestOrders/>}/>
                                             <Route path="request-orders/:requestOrderId" element={<RequestOrderDetailsPage/>}/>
                                             <Route path="offers" element={<ProcurementOffers/>}/>
@@ -313,25 +313,25 @@ function App() {
                                         </Route>
 
                                         {/* ===================== Equipment Management Routes ===================== */}
-                                        <Route path="/equipment" element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
-                                            <Route index element={<RoleRoute allowedRoles={allRoles}><EquipmentMain/></RoleRoute>}/>
-                                            <Route path="brand-management" element={<RoleRoute allowedRoles={allRoles}><EquipmentBrandManagement/></RoleRoute>}/>
-                                            <Route path="type-management" element={<RoleRoute allowedRoles={allRoles}><EquipmentTypeManagement/></RoleRoute>}/>
-                                            <Route path="work-type-management" element={<RoleRoute allowedRoles={allRoles}><WorkTypeManagement/></RoleRoute>}/>
-                                            <Route path="maintenance-type-management" element={<RoleRoute allowedRoles={allRoles}><MaintenanceTypeManagement/></RoleRoute>}/>
-                                            <Route path="info/:EquipmentID" element={<RoleRoute allowedRoles={allRoles}><ViewEquipmentData/></RoleRoute>}/>
-                                            <Route path=":EquipmentID" element={<RoleRoute allowedRoles={allRoles}><EquipmentDetails/></RoleRoute>}/>
+                                        <Route path="/equipment" element={<RoleRoute allowedRoles={allRoles}><SitesLayout /></RoleRoute>}>
+                                            <Route index element={<RoleRoute allowedRoles={allRoles}><EquipmentMain /></RoleRoute>} />
+                                            <Route path="brand-management" element={<RoleRoute allowedRoles={allRoles}><EquipmentBrandManagement /></RoleRoute>} />
+                                            <Route path="type-management" element={<RoleRoute allowedRoles={allRoles}><EquipmentTypeManagement /></RoleRoute>} />
+                                            <Route path="work-type-management" element={<RoleRoute allowedRoles={allRoles}><WorkTypeManagement /></RoleRoute>} />
+                                            <Route path="maintenance-type-management" element={<RoleRoute allowedRoles={allRoles}><MaintenanceTypeManagement /></RoleRoute>} />
+                                            <Route path="info/:EquipmentID" element={<RoleRoute allowedRoles={allRoles}><ViewEquipmentData /></RoleRoute>} />
+                                            <Route path=":EquipmentID" element={<RoleRoute allowedRoles={allRoles}><EquipmentDetails /></RoleRoute>} />
                                         </Route>
 
                                         {/* ===================== Maintenance Team Routes ===================== */}
-                                        <Route path="/maintenance" element={<RoleRoute allowedRoles={[ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]}><MaintenanceLayout/></RoleRoute>}>
-                                            <Route index element={<MaintenanceManagerDashboard/>}/>
-                                            <Route path="records" element={<MaintenanceRecords/>}/>
-                                            <Route path="records/:recordId" element={<MaintenanceRecordDetail/>}/>
-                                            <Route path="direct-purchase/:ticketId" element={<DirectPurchaseDetailView/>}/>
-                                            <Route path="contacts" element={<Contacts/>}/>
-                                            <Route path="step-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><StepTypeManagement/></RoleRoute>}/>
-                                            <Route path="contact-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><ContactTypeManagement/></RoleRoute>}/>
+                                        <Route path="/maintenance" element={<RoleRoute allowedRoles={[ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]}><MaintenanceLayout /></RoleRoute>}>
+                                            <Route index element={<MaintenanceManagerDashboard />} />
+                                            <Route path="records" element={<MaintenanceRecords />} />
+                                            <Route path="records/:recordId" element={<MaintenanceRecordDetail />} />
+                                            <Route path="direct-purchase/:ticketId" element={<DirectPurchaseDetailView />} />
+                                            <Route path="contacts" element={<Contacts />} />
+                                            <Route path="step-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><StepTypeManagement /></RoleRoute>} />
+                                            <Route path="contact-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><ContactTypeManagement /></RoleRoute>} />
                                         </Route>
 
 
@@ -341,15 +341,15 @@ function App() {
                                         <Route path="/secretary/tasks" element={<RoleRoute allowedRoles={[ADMIN, SECRETARY]}><SecretaryTasksPage/></RoleRoute>}/>
 
                                         {/* ===================== Finance Routes ===================== */}
-                                        <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><GeneralLedger/></RoleRoute>} />
-                                        <Route path="/finance/payables" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><Payables/></RoleRoute>} />
-                                        <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><FixedAssets/></RoleRoute>} />
-                                        <Route path="/finance/bank-reconciliation" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><BankReconciliation/></RoleRoute>} />
-                                        <Route path="/finance/inventory-valuation" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><InventoryValuation/></RoleRoute>} />
-                                        <Route path="/finance/balances" element={<RoleRoute allowedRoles={allRoles}><Balances/></RoleRoute>} />
-                                        <Route path="/finance/accounts-payable" element={<RoleRoute allowedRoles={allRoles}><AccountsPayable/></RoleRoute>} />
-                                        <Route path="/finance/accounts-payable/payment-requests/:id" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><PaymentRequestDetailsPage/></RoleRoute>} />
-                                        <Route path="/finance/accounts-payable/process-payment" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><ProcessPaymentPage/></RoleRoute>}/>
+                                        <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><GeneralLedger /></RoleRoute>} />
+                                        <Route path="/finance/payables" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><Payables /></RoleRoute>} />
+                                        <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><FixedAssets /></RoleRoute>} />
+                                        <Route path="/finance/bank-reconciliation" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><BankReconciliation /></RoleRoute>} />
+                                        <Route path="/finance/inventory-valuation" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><InventoryValuation /></RoleRoute>} />
+                                        <Route path="/finance/balances" element={<RoleRoute allowedRoles={allRoles}><Balances /></RoleRoute>} />
+                                        <Route path="/finance/accounts-payable" element={<RoleRoute allowedRoles={allRoles}><AccountsPayable /></RoleRoute>} />
+                                        <Route path="/finance/accounts-payable/payment-requests/:id" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><PaymentRequestDetailsPage /></RoleRoute>} />
+                                        <Route path="/finance/accounts-payable/process-payment" element={<RoleRoute allowedRoles={[ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE]}><ProcessPaymentPage /></RoleRoute>} />
 
                                         <Route path="/finance/company-loans" element={<CompanyLoansPage />} />
                                         <Route path="/finance/company-loans/new" element={<CreateLoanPage />} />
@@ -359,11 +359,11 @@ function App() {
                                         <Route path="/finance/company-loans/institutions/:id" element={<CreateInstitutionPage />} />
                                         <Route path="/finance/company-loans/:id" element={<LoanDetailsPage />} />
                                         {/* ===================== Generic Related Documents Route ===================== */}
-                                        <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
-                                        <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
+                                        <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments /></RoleRoute>} />
+                                        <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments /></RoleRoute>} />
                                     </Route>
 
-                                    <Route path="*" element={<Navigate to="/" replace/>}/>
+                                    <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
                             </NotificationProvider>
                         </AuthProvider>

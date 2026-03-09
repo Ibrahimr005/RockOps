@@ -103,6 +103,10 @@ public class Offer {
     @JsonBackReference
     private OfferFinancialReview offerFinancialReview;
 
+    // Inspection fields (equipment offers only)
+    @Column(name = "inspected_by")
+    private String inspectedBy;
+
     // Helper methods
     public void addTimelineEvent(OfferTimelineEvent event) {
         event.setOffer(this);

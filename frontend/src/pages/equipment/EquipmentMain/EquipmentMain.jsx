@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaFilter, FaSearch, FaExclamationCircle, FaChevronDown } from "react-icons/fa";
 import EquipmentModal from "./components/EquipmentModal/EquipmentModal.jsx";
+import EquipmentEntryTypeModal from "./components/EquipmentEntryTypeModal/EquipmentEntryTypeModal.jsx";
+import RequestOrderModal from "../../../components/procurement/RequestOrderModal/RequestOrderModal.jsx";
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
 import "./EquipmentMain.scss";
@@ -14,6 +16,7 @@ import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 import PageHeader from "../../../components/common/PageHeader/index.js";
 import equipmentimg from "../../../assets/imgs/equipmentimg.jpg"
 import { FaTools } from 'react-icons/fa';
+import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 
 // Default placeholder for equipment image
 const equipmentPlaceholder = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eEquipment%3c/text%3e%3c/svg%3e";
@@ -84,8 +87,11 @@ const EquipmentMain = () => {
     const [selectedModel, setSelectedModel] = useState("");
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState("");
+    const [snackbar, setSnackbar] = useState({ show: false, type: 'success', message: '' });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [equipmentToEdit, setEquipmentToEdit] = useState(null);
+    const [showEntryTypeModal, setShowEntryTypeModal] = useState(false);
+    const [showRequestOrderModal, setShowRequestOrderModal] = useState(false);
 
     const equipmentCardsRefs = useRef([]);
     const actionsSetFlags = useRef({});
@@ -189,7 +195,9 @@ const EquipmentMain = () => {
                 (item.name && item.name.toLowerCase().includes(lowerCaseSearch)) ||
                 (item.model && item.model.toLowerCase().includes(lowerCaseSearch)) ||
                 (item.brand && item.brand.toLowerCase().includes(lowerCaseSearch)) ||
-                (item.serialNumber && item.serialNumber.toLowerCase().includes(lowerCaseSearch))
+                (item.serialNumber && item.serialNumber.toLowerCase().includes(lowerCaseSearch)) ||
+                (item.mainDriverName && item.mainDriverName.toLowerCase().includes(lowerCaseSearch)) ||
+                (item.subDriverName && item.subDriverName.toLowerCase().includes(lowerCaseSearch))
             );
         }
 
@@ -227,8 +235,27 @@ const EquipmentMain = () => {
     }, [equipmentData, searchTerm, selectedType, selectedBrand, selectedSite, selectedStatus, filterName, selectedModel]);
 
     const handleAddEquipment = () => {
+        setShowEntryTypeModal(true);
+    };
+
+    const handleManualEntry = () => {
+        setShowEntryTypeModal(false);
         setEquipmentToEdit(null);
         setIsModalOpen(true);
+    };
+
+    const handleProcurementRequest = () => {
+        setShowEntryTypeModal(false);
+        setShowRequestOrderModal(true);
+    };
+
+    const handleRequestOrderSaved = () => {
+        setShowRequestOrderModal(false);
+        setSnackbar({ show: true, type: 'success', message: 'Equipment procurement request submitted successfully!' });
+    };
+
+    const handleRequestOrderError = (errorMsg) => {
+        setSnackbar({ show: true, type: 'error', message: errorMsg || 'Failed to submit procurement request. Please try again.' });
     };
 
     const handleEditEquipment = (equipmentId) => {
@@ -321,11 +348,6 @@ const EquipmentMain = () => {
             <PageHeader
                 title="Equipment"
                 subtitle="View and manage all equipment in your fleet"
-                filterButton={{
-                    onClick: () => setShowFilters(!showFilters),
-                    isActive: showFilters,
-                    activeCount: getActiveFilterCount()
-                }}
                 actionButton={permissions.canCreate ? {
                     text: "Add Equipment",
                     icon: <FaPlus />,
@@ -334,119 +356,92 @@ const EquipmentMain = () => {
                 } : null}
             />
 
-            {/* Filter Panel */}
+            {/* Search & Filter Toolbar */}
+            <div className="equipment-toolbar-bar">
+                <div className="equipment-toolbar-search">
+                    <FaSearch className="equipment-toolbar-search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Search by name, model, brand, or serial number..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                        <button className="equipment-toolbar-search-clear" onClick={() => setSearchTerm('')}>
+                            &times;
+                        </button>
+                    )}
+                </div>
+                <button
+                    className={`equipment-toolbar-filter-toggle ${showFilters ? 'active' : ''}`}
+                    onClick={() => setShowFilters(!showFilters)}
+                >
+                    <FaFilter />
+                    <span>Filters</span>
+                    {getActiveFilterCount() > 0 && (
+                        <span className="equipment-toolbar-filter-badge">{getActiveFilterCount()}</span>
+                    )}
+                </button>
+                <span className="equipment-toolbar-count">
+                    {filteredEquipment.length} of {equipmentData.length}
+                </span>
+            </div>
+
+            {/* Filter Dropdowns */}
             {showFilters && (
-                <div className="page-header__filter-panel">
-                    <div className="page-header__filter-header">
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <h4>Filter Equipment</h4>
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>
-                                Showing {filteredEquipment.length} out of {equipmentData.length}
-                            </span>
-                        </div>
-                        <div className="filter-actions">
-                            <button
-                                className="filter-reset-btn"
-                                onClick={handleResetFilters}
-                                disabled={getActiveFilterCount() === 0}
-                            >
-                                Clear All
-                            </button>
-                            <button
-                                className={`filter-collapse-btn ${showFilters ? '' : 'collapsed'}`}
-                                onClick={() => setShowFilters(!showFilters)}
-                            >
-                                <FaChevronDown />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="page-header__filter-list">
-                        <div className="page-header__filter-item">
-                            <label>Name</label>
-                            <input
-                                type="text"
-                                placeholder="Search by name..."
-                                value={filterName}
-                                onChange={(e) => setFilterName(e.target.value)}
-                                style={{
-                                    padding: '8px 12px',
-                                    borderRadius: '6px',
-                                    border: '1px solid var(--border-color)',
-                                    backgroundColor: 'var(--bg-secondary)',
-                                    color: 'var(--text-primary)',
-                                    width: '100%'
-                                }}
-                            />
-                        </div>
-
-                        <div className="page-header__filter-item">
+                <div className="equipment-filters-panel">
+                    <div className="equipment-filters-grid">
+                        <div className="equipment-filter-group">
                             <label>Model</label>
-                            <select
-                                value={selectedModel}
-                                onChange={(e) => setSelectedModel(e.target.value)}
-                            >
+                            <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
                                 <option value="">All Models</option>
                                 {uniqueModels.map(model => (
                                     <option key={model} value={model}>{model}</option>
                                 ))}
                             </select>
                         </div>
-
-                        <div className="page-header__filter-item">
-                            <label>Equipment Type</label>
-                            <select
-                                value={selectedType}
-                                onChange={(e) => setSelectedType(e.target.value)}
-                            >
+                        <div className="equipment-filter-group">
+                            <label>Type</label>
+                            <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
                                 <option value="">All Types</option>
                                 {equipmentTypes.map(type => (
                                     <option key={type.id} value={type.id}>{type.name}</option>
                                 ))}
                             </select>
                         </div>
-
-                        <div className="page-header__filter-item">
-                            <label>Equipment Brand</label>
-                            <select
-                                value={selectedBrand}
-                                onChange={(e) => setSelectedBrand(e.target.value)}
-                            >
+                        <div className="equipment-filter-group">
+                            <label>Brand</label>
+                            <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
                                 <option value="">All Brands</option>
                                 {equipmentBrands.map(brand => (
                                     <option key={brand.id} value={brand.id}>{brand.name}</option>
                                 ))}
                             </select>
                         </div>
-
-                        <div className="page-header__filter-item">
+                        <div className="equipment-filter-group">
                             <label>Site</label>
-                            <select
-                                value={selectedSite}
-                                onChange={(e) => setSelectedSite(e.target.value)}
-                            >
+                            <select value={selectedSite} onChange={(e) => setSelectedSite(e.target.value)}>
                                 <option value="">All Sites</option>
                                 {sites.map(site => (
                                     <option key={site.id} value={site.id}>{site.name}</option>
                                 ))}
                             </select>
                         </div>
-
-                        <div className="page-header__filter-item">
+                        <div className="equipment-filter-group">
                             <label>Status</label>
-                            <select
-                                value={selectedStatus}
-                                onChange={(e) => setSelectedStatus(e.target.value)}
-                            >
+                            <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
                                 <option value="">All Statuses</option>
                                 {statusOptions.map(status => (
-                                    <option key={status.value} value={status.value}>
-                                        {status.label}
-                                    </option>
+                                    <option key={status.value} value={status.value}>{status.label}</option>
                                 ))}
                             </select>
                         </div>
                     </div>
+                    {getActiveFilterCount() > 0 && (
+                        <button className="equipment-filters-clear" onClick={handleResetFilters}>
+                            Clear all filters
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -640,12 +635,40 @@ const EquipmentMain = () => {
                 </div>
             )}
 
-            {/* Equipment Modal */}
+            {/* Entry Type Selection Modal */}
+            <EquipmentEntryTypeModal
+                isOpen={showEntryTypeModal}
+                onClose={() => setShowEntryTypeModal(false)}
+                onSelectManualEntry={handleManualEntry}
+                onSelectProcurementRequest={handleProcurementRequest}
+            />
+
+            {/* Equipment Modal (Manual Entry) */}
             <EquipmentModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveEquipment}
                 equipmentToEdit={equipmentToEdit}
+            />
+
+            {/* Procurement Request Order Modal */}
+            {showRequestOrderModal && (
+                <RequestOrderModal
+                    isOpen={showRequestOrderModal}
+                    onClose={() => setShowRequestOrderModal(false)}
+                    onSuccess={handleRequestOrderSaved}
+                    onError={handleRequestOrderError}
+                    initialPartyType="EQUIPMENT"
+                />
+            )}
+
+            {/* Snackbar for procurement request feedback */}
+            <Snackbar
+                type={snackbar.type}
+                message={snackbar.message}
+                show={snackbar.show}
+                onClose={() => setSnackbar(prev => ({ ...prev, show: false }))}
+                duration={4000}
             />
         </main>
     );

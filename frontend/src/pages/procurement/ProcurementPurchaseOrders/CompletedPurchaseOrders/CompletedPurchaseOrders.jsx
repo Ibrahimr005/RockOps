@@ -62,6 +62,19 @@ const CompletedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataCh
             )
         },
         {
+            id: 'type',
+            header: 'TYPE',
+            accessor: 'requestOrder.partyType',
+            sortable: true,
+            filterable: true,
+            minWidth: '130px',
+            render: (row) => (
+                <span className={`party-type-badge ${row.requestOrder?.partyType?.toLowerCase() || 'warehouse'}`}>
+                    {row.requestOrder?.partyType === 'EQUIPMENT' ? '🔧 Equipment' : '📦 Warehouse'}
+                </span>
+            )
+        },
+        {
             id: 'title',
             header: 'TITLE',
             accessor: 'requestOrder.title',
