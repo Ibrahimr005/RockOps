@@ -5,113 +5,14 @@
 }
 
 .my-tasks-stats {
-  margin-bottom: var(--spacing-lg);
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
 
-// ── View Toggle ────────────────────────────────────────────
-.my-tasks-view-toggle {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: var(--spacing-lg);
-}
-
-.my-tasks-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0.5rem 1.25rem;
-  border: 1.5px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  background: var(--section-background-color);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--bold-font-weight);
-  font-family: var(--font-family);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-
-  &:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-  }
-
-  &--active {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-    color: var(--color-text-inverse);
-
-    &:hover {
-      background: var(--color-primary-hover);
-      border-color: var(--color-primary-hover);
-      color: var(--color-text-inverse);
-    }
-  }
-}
-
-// ── List View ──────────────────────────────────────────────
 .my-tasks-content {
   margin-top: var(--spacing-md);
 }
 
 .my-tasks-table-container {
   margin-top: var(--spacing-md);
-}
-
-// ── Calendar View ──────────────────────────────────────────
-.my-tasks-calendar-view {
-  margin-top: var(--spacing-md);
-}
-
-.my-tasks-calendar-body {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: var(--spacing-lg);
-  align-items: start;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.my-tasks-calendar-left,
-.my-tasks-calendar-right {
-  background: var(--section-background-color);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-// ── Table Container ────────────────────────────────────────
-.my-tasks-stats {
-  margin-bottom: 2rem;
-  margin-top: 3rem;
-}
-
-.my-tasks-content {
-  margin-top: 3rem;
-}
-
-.my-tasks-header-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-lg);
-
-  // Override PageHeader's own border/margin so the row controls it
-  .global-page-header {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-    flex: 1;
-  }
-
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 1rem;
-  margin-bottom: 2rem;
-}
-
-.my-tasks-view-toggle {
-  display: flex;
-  gap: 1rem;
-  align-self: center;
 }

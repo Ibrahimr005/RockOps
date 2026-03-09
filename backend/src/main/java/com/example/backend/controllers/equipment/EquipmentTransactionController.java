@@ -1,18 +1,13 @@
 package com.example.backend.controllers.equipment;
 
 import com.example.backend.dto.equipment.EquipmentTransactionAcceptRequestDTO;
-import com.example.backend.dto.equipment.EquipmentTransactionRequestDTO;
 import com.example.backend.dto.equipment.EquipmentTransactionMaintenanceAcceptRequestDTO;
 import com.example.backend.dto.equipment.MaintenanceDTO;
 import com.example.backend.dto.equipment.MaintenanceSearchCriteria;
 import com.example.backend.dto.transaction.TransactionDTO;
-import com.example.backend.models.*;
-import com.example.backend.models.equipment.Equipment;
+import com.example.backend.models.PartyType;
 import com.example.backend.models.transaction.Transaction;
-import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.transaction.TransactionPurpose;
-import com.example.backend.models.transaction.TransactionStatus;
-import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.services.equipment.MaintenanceIntegrationService;
@@ -26,12 +21,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
@@ -50,233 +43,34 @@ public class EquipmentTransactionController {
     @Autowired
     private ItemTypeRepository itemTypeRepository;
 
+    @Autowired
+    private MaintenanceIntegrationService maintenanceIntegrationService;
+
+    // ========================================
+    // QUERY
+    // ========================================
+
     /**
-     * Get all transactions for a specific equipment
+     * Get all transactions where this equipment is the receiver.
      */
     @GetMapping("/{equipmentId}/transactions")
     public ResponseEntity<List<TransactionDTO>> getEquipmentTransactions(@PathVariable UUID equipmentId) {
         try {
-        List<Transaction> transactions = transactionService.getTransactionsForEquipment(equipmentId);
-            List<TransactionDTO> responseDTOs = transactionMapperService.toDTOs(transactions);
-            return ResponseEntity.ok(responseDTOs);
+            List<Transaction> transactions = transactionService.getTransactionsForEquipment(equipmentId);
+            return ResponseEntity.ok(transactionMapperService.toDTOs(transactions));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(null);
         }
     }
 
-    /**
-     * Get transactions initiated by equipment
-     */
-    @GetMapping("/{equipmentId}/transactions/initiated")
-    public ResponseEntity<List<TransactionDTO>> getInitiatedTransactions(@PathVariable UUID equipmentId) {
-        try {
-        List<Transaction> transactions = transactionService.getPendingTransactionsInitiatedByEquipment(equipmentId);
-            List<TransactionDTO> responseDTOs = transactionMapperService.toDTOs(transactions);
-            return ResponseEntity.ok(responseDTOs);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(null);
-        }
-    }
+    // ========================================
+    // ACCEPT
+    // Equipment validates what it actually received.
+    // ========================================
 
     /**
-     * Create a new transaction with equipment as sender
-     */
-    @PostMapping("/{equipmentId}/send-transaction")
-    public ResponseEntity<TransactionDTO> createSenderTransaction(
-            @PathVariable UUID equipmentId,
-            @RequestParam UUID receiverId,
-            @RequestParam PartyType receiverType,
-            @RequestParam int batchNumber,
-            @RequestParam(required = false) LocalDateTime transactionDate,
-            @RequestParam(required = false, defaultValue = "GENERAL") TransactionPurpose purpose,
-            @RequestParam(required = false) String description,
-            @RequestBody List<Map<String, Object>> items,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        try {
-        // Validate the equipment exists
-        Equipment equipment = equipmentRepository.findById(equipmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
-
-        // Convert the items list to TransactionItem objects
-        List<TransactionItem> transactionItems = items.stream()
-                .map(itemMap -> {
-                    UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
-                    int quantity = Integer.parseInt(itemMap.get("quantity").toString());
-
-                    ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                            .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
-
-                    return TransactionItem.builder()
-                            .itemType(itemType)
-                            .quantity(quantity)
-                            .status(TransactionStatus.PENDING)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        // Use the provided transaction date or default to current time
-        LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
-
-        // Create the transaction
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.EQUIPMENT, equipmentId,
-                receiverType, receiverId,
-                transactionItems,
-                effectiveTransactionDate,
-                userDetails.getUsername(),
-                batchNumber,
-                equipmentId, // Equipment is the sender initiating the transaction
-                purpose
-        );
-
-            TransactionDTO responseDTO = transactionMapperService.toDTO(transaction);
-            return ResponseEntity.ok(responseDTO);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(null);
-        }
-    }
-
-    /**
-     * Create a new transaction with equipment as receiver
-     */
-    @PostMapping("/{equipmentId}/receive-transaction")
-    public ResponseEntity<TransactionDTO> createReceiverTransaction(
-            @PathVariable UUID equipmentId,
-            @RequestParam UUID senderId,
-            @RequestParam PartyType senderType,
-            @RequestParam int batchNumber,
-            @RequestParam(required = false) LocalDateTime transactionDate,
-            @RequestParam(required = false, defaultValue = "GENERAL") TransactionPurpose purpose,
-            @RequestParam(required = false) String description,
-            @RequestBody List<Map<String, Object>> items,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        try {
-            System.out.println("Received Transaction" + equipmentId);
-
-        // Validate the equipment exists
-        Equipment equipment = equipmentRepository.findById(equipmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
-
-        // Convert the items list to TransactionItem objects
-        List<TransactionItem> transactionItems = items.stream()
-                .map(itemMap -> {
-                    UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
-                    int quantity = Integer.parseInt(itemMap.get("quantity").toString());
-
-                    ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                            .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
-
-                    return TransactionItem.builder()
-                            .itemType(itemType)
-                            .quantity(quantity)
-                            .status(TransactionStatus.PENDING)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        // Use the provided transaction date or default to current time
-        LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
-
-        // Create the transaction
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                senderType, senderId,
-                PartyType.EQUIPMENT, equipmentId,
-                transactionItems,
-                effectiveTransactionDate,
-                userDetails.getUsername(),
-                batchNumber,
-                equipmentId, // Equipment is the receiver initiating the transaction
-                purpose
-        );
-
-            TransactionDTO responseDTO = transactionMapperService.toDTO(transaction);
-            return ResponseEntity.ok(responseDTO);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(null);
-        }
-    }
-
-    /**
-     * Update a pending transaction
-     */
-    @PutMapping("/{equipmentId}/transactions/{transactionId}")
-    public ResponseEntity<TransactionDTO> updateTransaction(
-            @PathVariable UUID equipmentId,
-            @PathVariable UUID transactionId,
-            @RequestParam UUID senderId,
-            @RequestParam PartyType senderType,
-            @RequestParam UUID receiverId,
-            @RequestParam PartyType receiverType,
-            @RequestParam int batchNumber,
-            @RequestParam(required = false) LocalDateTime transactionDate,
-            @RequestParam(required = false) TransactionPurpose purpose,
-            @RequestParam(required = false) String description,
-            @RequestBody List<Map<String, Object>> items,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        try {
-        // Verify the transaction involves this equipment
-        Transaction transaction = transactionService.getTransactionById(transactionId);
-        boolean isInvolved = (transaction.getSenderType() == PartyType.EQUIPMENT &&
-                transaction.getSenderId().equals(equipmentId)) ||
-                (transaction.getReceiverType() == PartyType.EQUIPMENT &&
-                        transaction.getReceiverId().equals(equipmentId));
-
-        if (!isInvolved) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        // Convert the items list to TransactionItem objects
-        List<TransactionItem> transactionItems = items.stream()
-                .map(itemMap -> {
-                    UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
-                    int quantity = Integer.parseInt(itemMap.get("quantity").toString());
-
-                    ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                            .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
-
-                    return TransactionItem.builder()
-                            .itemType(itemType)
-                            .quantity(quantity)
-                            .status(TransactionStatus.PENDING)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        // Use the provided transaction date or default to current time
-        LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
-
-        // Update the transaction
-        Transaction updatedTransaction = transactionService.updateEquipmentTransaction(
-                transactionId,
-                senderType, senderId,
-                receiverType, receiverId,
-                transactionItems,
-                effectiveTransactionDate,
-                userDetails.getUsername(),
-                batchNumber,
-                purpose
-        );
-
-            TransactionDTO responseDTO = transactionMapperService.toDTO(updatedTransaction);
-            return ResponseEntity.ok(responseDTO);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(null);
-        }
-    }
-
-    /**
-     * Accept a transaction
+     * Accept an incoming transaction sent by a warehouse to this equipment.
      */
     @PostMapping("/{equipmentId}/transactions/{transactionId}/accept")
     public ResponseEntity<TransactionDTO> acceptTransaction(
@@ -286,53 +80,43 @@ public class EquipmentTransactionController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Verify the transaction involves this equipment
-            Transaction transaction = transactionService.getTransactionById(transactionId);
-            boolean isInvolved = (transaction.getSenderType() == PartyType.EQUIPMENT &&
-                    transaction.getSenderId().equals(equipmentId)) ||
-                    (transaction.getReceiverType() == PartyType.EQUIPMENT &&
-                            transaction.getReceiverId().equals(equipmentId));
+            verifyEquipmentIsReceiver(transactionId, equipmentId);
 
-            if (!isInvolved) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            // Convert String keys to UUID
             Map<UUID, Integer> receivedQuantities = new HashMap<>();
-            requestBody.getReceivedQuantities().forEach((key, value) -> {
-                receivedQuantities.put(UUID.fromString(key), value);
-            });
+            requestBody.getReceivedQuantities().forEach((key, value) ->
+                    receivedQuantities.put(UUID.fromString(key), value));
 
-            // Convert itemsNotReceived from String keys to UUID keys
             Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
             if (requestBody.getItemsNotReceived() != null) {
-                requestBody.getItemsNotReceived().forEach((key, value) -> {
-                    itemsNotReceived.put(UUID.fromString(key), value);
-                });
+                requestBody.getItemsNotReceived().forEach((key, value) ->
+                        itemsNotReceived.put(UUID.fromString(key), value));
             }
 
-
-            // Accept the transaction
-            Transaction updatedTransaction = transactionService.acceptEquipmentTransaction(
+            Transaction updated = transactionService.acceptTransactionWithPurpose(
                     transactionId,
                     receivedQuantities,
-                    itemsNotReceived, // Use extracted data instead of empty HashMap
+                    itemsNotReceived,
                     userDetails.getUsername(),
                     requestBody.getComment(),
                     requestBody.getPurpose()
             );
 
-            TransactionDTO responseDTO = transactionMapperService.toDTO(updatedTransaction);
-            return ResponseEntity.ok(responseDTO);
+            return ResponseEntity.ok(transactionMapperService.toDTO(updated));
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(null);
         }
     }
 
+    // ========================================
+    // REJECT
+    // ========================================
+
     /**
-     * Reject a transaction
+     * Reject an incoming transaction. Reverts sender warehouse inventory.
      */
     @PostMapping("/{equipmentId}/transactions/{transactionId}/reject")
     public ResponseEntity<TransactionDTO> rejectTransaction(
@@ -342,28 +126,18 @@ public class EquipmentTransactionController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Verify the transaction involves this equipment
-            Transaction transaction = transactionService.getTransactionById(transactionId);
-            boolean isInvolved = (transaction.getSenderType() == PartyType.EQUIPMENT &&
-                    transaction.getSenderId().equals(equipmentId)) ||
-                    (transaction.getReceiverType() == PartyType.EQUIPMENT &&
-                            transaction.getReceiverId().equals(equipmentId));
+            verifyEquipmentIsReceiver(transactionId, equipmentId);
 
-            if (!isInvolved) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            String rejectionReason = requestBody.get("rejectionReason");
-
-            Transaction rejectedTransaction = transactionService.rejectEquipmentTransaction(
+            Transaction rejected = transactionService.rejectTransaction(
                     transactionId,
-                    rejectionReason,
+                    requestBody.get("rejectionReason"),
                     userDetails.getUsername()
             );
 
-            TransactionDTO responseDTO = transactionMapperService.toDTO(rejectedTransaction);
-            return ResponseEntity.ok(responseDTO);
+            return ResponseEntity.ok(transactionMapperService.toDTO(rejected));
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(null);
@@ -371,129 +145,11 @@ public class EquipmentTransactionController {
     }
 
     // ========================================
-    // LEGACY SUPPORT METHODS
-    // Keep existing Map-based endpoints for backward compatibility
+    // MAINTENANCE INTEGRATION
     // ========================================
-
-    @PostMapping("/{equipmentId}/send-transaction-legacy")
-    public ResponseEntity<Transaction> createSenderTransactionLegacy(
-            @PathVariable UUID equipmentId,
-            @RequestParam UUID receiverId,
-            @RequestParam PartyType receiverType,
-            @RequestParam int batchNumber,
-            @RequestParam(required = false) LocalDateTime transactionDate,
-            @RequestParam(required = false, defaultValue = "GENERAL") TransactionPurpose purpose,
-            @RequestBody List<Map<String, Object>> items,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        // Validate the equipment exists
-        Equipment equipment = equipmentRepository.findById(equipmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
-
-        // Convert the items list to TransactionItem objects
-        List<TransactionItem> transactionItems = items.stream()
-                .map(itemMap -> {
-                    UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
-                    int quantity = Integer.parseInt(itemMap.get("quantity").toString());
-
-                    ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                            .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
-
-                    return TransactionItem.builder()
-                            .itemType(itemType)
-                            .quantity(quantity)
-                            .status(TransactionStatus.PENDING)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        // Use the provided transaction date or default to current time
-        LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
-
-        // Create the transaction
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.EQUIPMENT, equipmentId,
-                receiverType, receiverId,
-                transactionItems,
-                effectiveTransactionDate,
-                userDetails.getUsername(),
-                batchNumber,
-                equipmentId, // Equipment is the sender initiating the transaction
-                purpose
-        );
-
-        return ResponseEntity.ok(transaction);
-    }
-
-    @PostMapping("/{equipmentId}/transactions/{transactionId}/accept-legacy")
-    public ResponseEntity<Transaction> acceptTransactionLegacy(
-            @PathVariable UUID equipmentId,
-            @PathVariable UUID transactionId,
-            @RequestBody Map<String, Object> requestBody,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        // Verify the transaction involves this equipment
-        Transaction transaction = transactionService.getTransactionById(transactionId);
-        boolean isInvolved = (transaction.getSenderType() == PartyType.EQUIPMENT &&
-                transaction.getSenderId().equals(equipmentId)) ||
-                (transaction.getReceiverType() == PartyType.EQUIPMENT &&
-                        transaction.getReceiverId().equals(equipmentId));
-
-        if (!isInvolved) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        // Extract received quantities and other data
-        @SuppressWarnings("unchecked")
-        Map<String, Integer> receivedQuantitiesMap = (Map<String, Integer>) requestBody.get("receivedQuantities");
-        String comment = (String) requestBody.get("comment");
-
-        // Get transaction purpose if provided (defaults to current purpose if not specified)
-        TransactionPurpose purpose = null;
-        if (requestBody.containsKey("purpose")) {
-            purpose = TransactionPurpose.valueOf(requestBody.get("purpose").toString());
-        }
-
-        // Convert String keys to UUID
-        Map<UUID, Integer> receivedQuantities = new HashMap<>();
-        receivedQuantitiesMap.forEach((key, value) -> {
-            receivedQuantities.put(UUID.fromString(key), value);
-        });
-
-        // Extract itemsNotReceived if present
-        Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
-        if (requestBody.containsKey("itemsNotReceived")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Boolean> itemsNotReceivedMap = (Map<String, Boolean>) requestBody.get("itemsNotReceived");
-            if (itemsNotReceivedMap != null) {
-                itemsNotReceivedMap.forEach((key, value) -> {
-                    itemsNotReceived.put(UUID.fromString(key), value);
-                });
-            }
-        }
-
-        // Accept the transaction
-        Transaction updatedTransaction = transactionService.acceptEquipmentTransaction(
-                transactionId,
-                receivedQuantities,
-                itemsNotReceived, // Use extracted data instead of empty HashMap
-                userDetails.getUsername(),
-                comment,
-                purpose
-        );
-
-        return ResponseEntity.ok(updatedTransaction);
-    }
-
-    // ========================================
-    // MAINTENANCE INTEGRATION ENDPOINTS
-    // ========================================
-
-    @Autowired
-    private MaintenanceIntegrationService maintenanceIntegrationService;
 
     /**
-     * Search maintenance records for linking to transactions
+     * Search maintenance records for linking to transactions.
      */
     @GetMapping("/{equipmentId}/maintenance/search")
     public ResponseEntity<List<MaintenanceDTO>> searchMaintenanceRecords(
@@ -517,8 +173,8 @@ public class EquipmentTransactionController {
                     .hasLinkedTransactions(hasLinkedTransactions)
                     .build();
 
-            List<MaintenanceDTO> maintenanceRecords = maintenanceIntegrationService.searchMaintenanceRecords(equipmentId, criteria);
-            return ResponseEntity.ok(maintenanceRecords);
+            return ResponseEntity.ok(
+                    maintenanceIntegrationService.searchMaintenanceRecords(equipmentId, criteria));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -527,14 +183,13 @@ public class EquipmentTransactionController {
     }
 
     /**
-     * Get maintenance records suitable for linking (recent and relevant)
+     * Get maintenance records suitable for linking (recent and relevant).
      */
     @GetMapping("/{equipmentId}/maintenance/for-linking")
     public ResponseEntity<List<MaintenanceDTO>> getMaintenanceRecordsForLinking(@PathVariable UUID equipmentId) {
         try {
-            List<MaintenanceDTO> maintenanceRecords = maintenanceIntegrationService.getMaintenanceRecordsForLinking(equipmentId);
-            return ResponseEntity.ok(maintenanceRecords);
-
+            return ResponseEntity.ok(
+                    maintenanceIntegrationService.getMaintenanceRecordsForLinking(equipmentId));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(null);
@@ -542,7 +197,7 @@ public class EquipmentTransactionController {
     }
 
     /**
-     * Accept transaction with maintenance integration
+     * Accept a transaction and optionally link or create a maintenance record.
      */
     @PostMapping("/{equipmentId}/transactions/{transactionId}/accept-with-maintenance")
     public ResponseEntity<Map<String, Object>> acceptTransactionWithMaintenance(
@@ -552,19 +207,9 @@ public class EquipmentTransactionController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Verify the transaction involves this equipment
-            Transaction transaction = transactionService.getTransactionById(transactionId);
-            boolean isInvolved = (transaction.getSenderType() == PartyType.EQUIPMENT &&
-                    transaction.getSenderId().equals(equipmentId)) ||
-                    (transaction.getReceiverType() == PartyType.EQUIPMENT &&
-                            transaction.getReceiverId().equals(equipmentId));
+            verifyEquipmentIsReceiver(transactionId, equipmentId);
 
-            if (!isInvolved) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            // Accept the transaction with maintenance handling
-            Transaction acceptedTransaction = transactionService.acceptTransactionWithMaintenanceHandling(
+            Transaction accepted = transactionService.acceptTransactionWithMaintenanceHandling(
                     transactionId,
                     request.getReceivedQuantities(),
                     request.getItemsNotReceived(),
@@ -574,46 +219,57 @@ public class EquipmentTransactionController {
                     request.getMaintenanceLinkingRequest()
             );
 
-            // Handle maintenance linking if requested
             Object linkedMaintenance = null;
             if (request.getMaintenanceLinkingRequest() != null) {
                 switch (request.getMaintenanceLinkingRequest().getAction()) {
                     case LINK_EXISTING:
                         maintenanceIntegrationService.linkTransactionToMaintenance(
-                                transactionId, 
-                                request.getMaintenanceLinkingRequest().getExistingMaintenanceId()
-                        );
+                                transactionId,
+                                request.getMaintenanceLinkingRequest().getExistingMaintenanceId());
                         break;
                     case CREATE_NEW:
                         linkedMaintenance = maintenanceIntegrationService.createMaintenanceAndLinkTransaction(
                                 equipmentId,
                                 request.getMaintenanceLinkingRequest().getNewMaintenanceRequest(),
-                                transactionId
-                        );
+                                transactionId);
                         break;
                     case SKIP_MAINTENANCE:
-                        // No maintenance linking needed
                         break;
                 }
             }
 
-            // Prepare response
             Map<String, Object> response = new HashMap<>();
-            response.put("transaction", transactionMapperService.toDTO(acceptedTransaction));
-            if (linkedMaintenance != null) {
-                response.put("maintenance", linkedMaintenance);
-                response.put("maintenanceLinked", true);
-            } else {
-                response.put("maintenanceLinked", false);
-            }
+            response.put("transaction", transactionMapperService.toDTO(accepted));
+            response.put("maintenanceLinked", linkedMaintenance != null);
+            if (linkedMaintenance != null) response.put("maintenance", linkedMaintenance);
 
             return ResponseEntity.ok(response);
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             e.printStackTrace();
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.status(500).body(errorResponse);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
+    // ========================================
+    // PRIVATE HELPERS
+    // ========================================
+
+    /**
+     * Ensures the given equipment is the receiver of the transaction.
+     * Equipment can never be the sender.
+     */
+    private void verifyEquipmentIsReceiver(UUID transactionId, UUID equipmentId) {
+        Transaction transaction = transactionService.getTransactionById(transactionId);
+        boolean isReceiver = transaction.getReceiverType() == PartyType.EQUIPMENT
+                && transaction.getReceiverId().equals(equipmentId);
+        if (!isReceiver) {
+            throw new IllegalArgumentException(
+                    "Equipment " + equipmentId + " is not the receiver of transaction " + transactionId);
         }
     }
 }

@@ -121,7 +121,7 @@
 
 .dtp__task-actions {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
@@ -258,4 +258,11 @@
     color: var(--color-danger);
     &:hover { background: rgba(var(--color-danger-rgb), 0.08); }
   }
+}
+
+.dtp__action-btn--cancel {
+  background: rgba(var(--color-danger-rgb), 0.10);
+  color: var(--color-danger);
+
+  &:hover { background: rgba(var(--color-danger-rgb), 0.20); }
 }

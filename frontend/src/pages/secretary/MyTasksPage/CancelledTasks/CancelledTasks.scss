@@ -24,9 +24,7 @@
   color: var(--color-primary);
   margin-left: 2px;
 
-  &:hover {
-    text-decoration: underline;
-  }
+  &:hover { text-decoration: underline; }
 }
 
 .can-badge {
@@ -49,4 +47,71 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   font-style: italic;
+}
+
+.can-due-date {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+
+  &--overdue {
+    color: var(--color-danger);
+    font-weight: var(--bold-font-weight);
+  }
+}
+
+.can-assignee {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--bold-font-weight);
+}
+
+.can-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--bold-font-weight);
+  white-space: nowrap;
+
+  &.can-role--admin      { background: rgba(var(--color-danger-rgb),  0.12); color: var(--color-danger); }
+  &.can-role--secretary  { background: rgba(var(--color-primary-rgb), 0.12); color: var(--color-primary); }
+  &.can-role--manager    { background: rgba(var(--color-warning-rgb), 0.12); color: var(--color-warning); }
+  &.can-role--employee   { background: rgba(var(--color-success-rgb), 0.12); color: var(--color-success); }
+}
+
+.can-status-btn {
+  padding: 6px 18px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--bold-font-weight);
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.can-status-btn--delete {
+  background: rgba(var(--color-danger-rgb), 0.12);
+  color: var(--color-danger);
+  &:hover:not(:disabled) { background: rgba(var(--color-danger-rgb), 0.22); }
+}
+
+.can-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background var(--transition-fast);
+
+  &--delete {
+    background: rgba(var(--color-danger-rgb), 0.12);
+    color: var(--color-danger);
+    &:hover { background: rgba(var(--color-danger-rgb), 0.22); }
+  }
 }

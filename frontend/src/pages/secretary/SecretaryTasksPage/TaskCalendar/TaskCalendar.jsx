@@ -16,13 +16,36 @@ const PRIORITY_COLORS = {
     URGENT: 'dot--urgent',
 };
 
-const TaskCalendar = ({ tasks, selectedDate, currentMonth, onDayClick, onMonthChange, onNewTask }) => {
+const ROLE_LABELS = {
+    ADMIN:               'Admin',
+    SECRETARY:           'Secretary',
+    WAREHOUSE_MANAGER:   'Warehouse Manager',
+    WAREHOUSE_EMPLOYEE:  'Warehouse Employee',
+};
+
+const TaskCalendar = ({
+                          tasks,
+                          selectedDate,
+                          currentMonth,
+                          onDayClick,
+                          onMonthChange,
+                          onNewTask,
+                          users = [],
+                          filterRole,
+                          filterAssignee,
+                          filterPriority,
+                          filterStatus,
+                          onFilterRoleChange,
+                          onFilterAssigneeChange,
+                          onFilterPriorityChange,
+                          onFilterStatusChange,
+                      }) => {
 
     const year  = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
 
-    const [showPicker, setShowPicker] = useState(false);
-    const [pickerYear, setPickerYear] = useState(year);
+    const [showPicker, setShowPicker]   = useState(false);
+    const [pickerYear, setPickerYear]   = useState(year);
     const pickerRef = useRef(null);
 
     useEffect(() => {
@@ -70,8 +93,79 @@ const TaskCalendar = ({ tasks, selectedDate, currentMonth, onDayClick, onMonthCh
 
     const monthLabel = currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
+    const filteredUsersByRole = useMemo(() => {
+        return filterRole ? users.filter(u => u.role === filterRole) : users;
+    }, [users, filterRole]);
+
+    const activeFilterCount = [filterRole, filterAssignee, filterPriority, filterStatus].filter(Boolean).length;
+
     return (
         <div className="cal">
+            {/* Filter Toolbar — top of card */}
+            <div className="cal__toolbar">
+                <select
+                    className="cal__filter-select"
+                    value={filterRole}
+                    onChange={e => { onFilterRoleChange(e.target.value); onFilterAssigneeChange(''); }}
+                >
+                    <option value="">All Roles</option>
+                    {Object.entries(ROLE_LABELS).map(([val, label]) => (
+                        <option key={val} value={val}>{label}</option>
+                    ))}
+                </select>
+
+                <select
+                    className="cal__filter-select"
+                    value={filterAssignee}
+                    onChange={e => onFilterAssigneeChange(e.target.value)}
+                >
+                    <option value="">All Assignees</option>
+                    {filteredUsersByRole.map(u => (
+                        <option key={u.id} value={u.id}>
+                            {u.firstName} {u.lastName}
+                        </option>
+                    ))}
+                </select>
+
+                <select
+                    className="cal__filter-select"
+                    value={filterPriority}
+                    onChange={e => onFilterPriorityChange(e.target.value)}
+                >
+                    <option value="">All Priorities</option>
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                </select>
+
+                <select
+                    className="cal__filter-select"
+                    value={filterStatus}
+                    onChange={e => onFilterStatusChange(e.target.value)}
+                >
+                    <option value="">All Statuses</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                </select>
+
+                {activeFilterCount > 0 && (
+                    <button
+                        className="cal__filter-clear"
+                        onClick={() => {
+                            onFilterRoleChange('');
+                            onFilterAssigneeChange('');
+                            onFilterPriorityChange('');
+                            onFilterStatusChange('');
+                        }}
+                    >
+                        Clear
+                    </button>
+                )}
+            </div>
+
             {/* Header */}
             <div className="cal__header">
                 <button className="cal__nav-btn" onClick={prevMonth}>
@@ -89,14 +183,11 @@ const TaskCalendar = ({ tasks, selectedDate, currentMonth, onDayClick, onMonthCh
 
                     {showPicker && (
                         <div className="cal__picker">
-                            {/* Year row */}
                             <div className="cal__picker-year">
                                 <button className="cal__picker-year-btn" onClick={() => setPickerYear(y => y - 1)}>‹</button>
                                 <span className="cal__picker-year-val">{pickerYear}</span>
                                 <button className="cal__picker-year-btn" onClick={() => setPickerYear(y => y + 1)}>›</button>
                             </div>
-
-                            {/* Month grid */}
                             <div className="cal__picker-months">
                                 {MONTHS.map((m, i) => (
                                     <button
@@ -112,9 +203,11 @@ const TaskCalendar = ({ tasks, selectedDate, currentMonth, onDayClick, onMonthCh
                     )}
                 </div>
 
-                <button className="cal__nav-btn" onClick={nextMonth}>
-                    <FaChevronRight />
-                </button>
+                <div className="cal__header-right">
+                    <button className="cal__nav-btn" onClick={nextMonth}>
+                        <FaChevronRight />
+                    </button>
+                </div>
             </div>
 
             {/* Day names */}

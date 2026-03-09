@@ -75,7 +75,7 @@
 
 .ip-status-actions {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: 1.5rem;
 }
 
 .ip-status-btn {
@@ -96,6 +96,66 @@
   }
 
   &--cancelled {
+    background: rgba(var(--color-danger-rgb), 0.12);
+    color: var(--color-danger);
+    &:hover:not(:disabled) { background: rgba(var(--color-danger-rgb), 0.22); }
+  }
+}
+
+.ip-assignee {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--bold-font-weight);
+}
+
+.ip-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--bold-font-weight);
+  white-space: nowrap;
+
+  &.ip-role--admin      { background: rgba(var(--color-danger-rgb),   0.12); color: var(--color-danger); }
+  &.ip-role--secretary  { background: rgba(var(--color-primary-rgb),  0.12); color: var(--color-primary); }
+  &.ip-role--manager    { background: rgba(var(--color-warning-rgb),  0.12); color: var(--color-warning); }
+  &.ip-role--employee   { background: rgba(var(--color-success-rgb),  0.12); color: var(--color-success); }
+}
+
+.ip-status-btn--delete {
+  background: rgba(var(--color-danger-rgb), 0.12);
+  color: var(--color-danger);
+  &:hover:not(:disabled) { background: rgba(var(--color-danger-rgb), 0.22); }
+}
+
+.ip-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background var(--transition-fast);
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  &--complete {
+    background: rgba(var(--color-success-rgb), 0.12);
+    color: var(--color-success);
+    &:hover:not(:disabled) { background: rgba(var(--color-success-rgb), 0.22); }
+  }
+
+  &--cancel {
+    background: rgba(var(--color-warning-rgb), 0.12);
+    color: var(--color-warning);
+    &:hover:not(:disabled) { background: rgba(var(--color-warning-rgb), 0.22); }
+  }
+
+  &--delete {
     background: rgba(var(--color-danger-rgb), 0.12);
     color: var(--color-danger);
     &:hover:not(:disabled) { background: rgba(var(--color-danger-rgb), 0.22); }

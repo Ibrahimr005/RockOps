@@ -1,14 +1,20 @@
 .cal {
-  padding: var(--spacing-lg);
   user-select: none;
 }
 
-// ── Header ─────────────────────────────────────────────────
+// ── Header ───────────────────────────────────────────────────
 .cal__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 3rem;
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: 0;
+}
+
+.cal__header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .cal__month-picker-wrapper {
@@ -60,7 +66,64 @@
   }
 }
 
-// ── Month/Year Picker Dropdown ─────────────────────────────
+// ── Filter Toolbar ────────────────────────────────────────────
+.cal__toolbar {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  padding: 1.1rem;
+  border-bottom: 1px solid var(--border-color);
+
+  .cal__filter-select {
+    flex: 1;
+    max-width: none;
+  }
+}
+
+.cal__filter-select {
+  flex: 1;
+  min-width: 0;
+  max-width: 200px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+  }
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+}
+
+.cal__filter-clear {
+  padding: 10px 16px;
+  border: 1.5px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  background: rgba(var(--color-danger-rgb), 0.07);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  font-weight: var(--bold-font-weight);
+  font-family: var(--font-family);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: rgba(var(--color-danger-rgb), 0.14);
+  }
+}
+
+// ── Month/Year Picker Dropdown ────────────────────────────────
 .cal__picker {
   position: absolute;
   top: calc(100% + 6px);
@@ -146,11 +209,12 @@
   }
 }
 
-// ── Day names ──────────────────────────────────────────────
+// ── Day names ─────────────────────────────────────────────────
 .cal__day-names {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   margin-bottom: var(--spacing-xs);
+  padding: var(--spacing-md) var(--spacing-lg) 0;
 }
 
 .cal__day-name {
@@ -163,11 +227,12 @@
   padding: var(--spacing-xs) 0;
 }
 
-// ── Grid ───────────────────────────────────────────────────
+// ── Grid ──────────────────────────────────────────────────────
 .cal__grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
+  padding: 0 var(--spacing-lg);
 }
 
 .cal__cell {
@@ -227,7 +292,7 @@
   margin-bottom: 4px;
 }
 
-// ── Dots ───────────────────────────────────────────────────
+// ── Dots ──────────────────────────────────────────────────────
 .cal__dots {
   display: flex;
   align-items: center;
@@ -256,12 +321,12 @@
   font-weight: var(--bold-font-weight);
 }
 
-// ── Legend ─────────────────────────────────────────────────
+// ── Legend ────────────────────────────────────────────────────
 .cal__legend {
   display: flex;
   gap: var(--spacing-md);
   margin-top: var(--spacing-md);
-  padding-top: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
   border-top: 1px solid var(--border-color);
   justify-content: center;
   flex-wrap: wrap;

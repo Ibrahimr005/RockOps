@@ -13,7 +13,6 @@ const ValidatedTransactionsTable = ({
                                         warehouseId,
                                         refreshTrigger,
                                         onCountUpdate,
-                                        lastSeenTimestamp,  // Add this line
                                         onTransactionUpdate
                                     }) => {
     const [loading, setLoading] = useState(false);
@@ -22,45 +21,33 @@ const ValidatedTransactionsTable = ({
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewTransaction, setViewTransaction] = useState(null);
 
-    // Scroll lock for inline modals
+    // Snackbar state
+    const [snackbar, setSnackbar] = useState({ isOpen: false, message: "", type: "success" });
+
+    const showSnackbar = (message, type = "success") => {
+        setSnackbar({ isOpen: true, message, type });
+    };
+
+    // ─── Scroll lock ──────────────────────────────────────────────────────────
+
     useEffect(() => {
         if (modalInfo || isViewModalOpen) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
         }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
+        return () => { document.body.style.overflow = 'unset'; };
     }, [modalInfo, isViewModalOpen]);
 
-    // Snackbar state
-    const [snackbar, setSnackbar] = useState({
-        isOpen: false,
-        message: "",
-        type: "success"
-    });
-
-    // Helper function to show snackbar
-    const showSnackbar = (message, type = "success") => {
-        setSnackbar({
-            isOpen: true,
-            message,
-            type
-        });
-    };
-
-    // Helper function to close snackbar
-    const closeSnackbar = () => {
-        setSnackbar({
-            ...snackbar,
-            isOpen: false
-        });
-    };
+    // ─── Data Fetching ────────────────────────────────────────────────────────
 
     useEffect(() => {
         fetchValidatedTransactions();
-    }, [warehouseId]);
+    }, [warehouseId, refreshTrigger]);
+
+    useEffect(() => {
+        if (onCountUpdate) onCountUpdate(validatedTransactions.length, validatedTransactions);
+    }, [validatedTransactions.length, onCountUpdate]);
 
     const fetchValidatedTransactions = async () => {
         if (!warehouseId) return;
@@ -68,37 +55,44 @@ const ValidatedTransactionsTable = ({
 
         try {
             const data = await transactionService.getTransactionsForWarehouse(warehouseId);
-            const validatedData = await Promise.all(
-                data
-                    .filter(tx =>
-                        (tx.status === "ACCEPTED" || tx.status === "REJECTED" || tx.status === "RESOLVING" || tx.status === "RESOLVED") &&
-                        (tx.senderId === warehouseId || tx.receiverId === warehouseId)
-                    )
-                    .map(async (tx) => {
-                        const sender = await fetchEntityDetails(tx.senderType, tx.senderId);
-                        const receiver = await fetchEntityDetails(tx.receiverType, tx.receiverId);
 
-                        // Process entity data for consistent display
-                        const processedSender = processEntityData(tx.senderType, sender);
-                        const processedReceiver = processEntityData(tx.receiverType, receiver);
-
-                        // Preserve all original transaction data and only add processed sender/receiver
-                        return {
-                            ...tx, // Keep all original transaction properties
-                            sender: processedSender,
-                            receiver: processedReceiver,
-                            // Explicitly preserve important properties that might be getting lost
-                            items: tx.items || [],
-                            quantity: tx.quantity,
-                            receivedQuantity: tx.receivedQuantity,
-                            sentFirst: tx.sentFirst,
-                            senderId: tx.senderId,
-                            receiverId: tx.receiverId
-                        };
-                    })
+            const filteredTransactions = data.filter(tx =>
+                (tx.status === "ACCEPTED" || tx.status === "REJECTED" || tx.status === "RESOLVING" || tx.status === "RESOLVED") &&
+                (tx.senderId === warehouseId || tx.receiverId === warehouseId)
             );
 
-            console.log('Validated transactions data:', validatedData);
+            if (filteredTransactions.length === 0) {
+                setValidatedTransactions([]);
+                return;
+            }
+
+            // Deduplicate entity fetches
+            const entityMap = new Map();
+            filteredTransactions.forEach(tx => {
+                const senderKey = `${tx.senderType}-${tx.senderId}`;
+                const receiverKey = `${tx.receiverType}-${tx.receiverId}`;
+                if (!entityMap.has(senderKey)) entityMap.set(senderKey, { type: tx.senderType, id: tx.senderId });
+                if (!entityMap.has(receiverKey)) entityMap.set(receiverKey, { type: tx.receiverType, id: tx.receiverId });
+            });
+
+            const entityResults = await Promise.all(
+                Array.from(entityMap.entries()).map(async ([key, entity]) => {
+                    try {
+                        const details = await fetchEntityDetails(entity.type, entity.id);
+                        return [key, details];
+                    } catch {
+                        return [key, null];
+                    }
+                })
+            );
+            const entityCache = new Map(entityResults);
+
+            const validatedData = filteredTransactions.map(tx => ({
+                ...tx,
+                sender: processEntityData(tx.senderType, entityCache.get(`${tx.senderType}-${tx.senderId}`)),
+                receiver: processEntityData(tx.receiverType, entityCache.get(`${tx.receiverType}-${tx.receiverId}`)),
+            }));
+
             setValidatedTransactions(validatedData);
         } catch (err) {
             console.error("Error fetching validated transactions:", err);
@@ -108,18 +102,29 @@ const ValidatedTransactionsTable = ({
         }
     };
 
-    // Helper function to process entity data for consistent display
-// Helper function to process entity data for consistent display
-    const processEntityData = (entityType, entityData) => {
-        // 🆕 Handle LOSS type specially - no entity data needed
-        if (entityType === "LOSS") {
-            return {
-                id: "00000000-0000-0000-0000-000000000000",
-                name: "Loss/Disposal",
-                type: "LOSS"
-            };
+    const fetchEntityDetails = async (entityType, entityId) => {
+        if (!entityType || !entityId) return null;
+        try {
+            let response;
+            if (entityType === "WAREHOUSE") {
+                response = await warehouseService.getById(entityId);
+            } else if (entityType === "SITE") {
+                response = await siteService.getById(entityId);
+            } else if (entityType === "EQUIPMENT") {
+                response = await equipmentService.getEquipmentById(entityId);
+            } else {
+                return null;
+            }
+            return response.data || response; // unwrap correctly
+        } catch {
+            return null;
         }
+    };
 
+    const processEntityData = (entityType, entityData) => {
+        if (entityType === "LOSS") {
+            return { id: "00000000-0000-0000-0000-000000000000", name: "Loss/Disposal", type: "LOSS" };
+        }
         if (!entityData) return null;
 
         switch (entityType) {
@@ -131,130 +136,41 @@ const ValidatedTransactionsTable = ({
                     type: "EQUIPMENT"
                 };
             case "WAREHOUSE":
-                return {
-                    id: entityData.id,
-                    name: entityData.name,
-                    type: "WAREHOUSE"
-                };
+                return { id: entityData.id, name: entityData.name, type: "WAREHOUSE" };
             case "SITE":
-                return {
-                    id: entityData.id,
-                    name: entityData.name,
-                    type: "SITE"
-                };
+                return { id: entityData.id, name: entityData.name, type: "SITE" };
             default:
-                return {
-                    id: entityData.id,
-                    name: entityData.name || "Unknown",
-                    type: entityType
-                };
-        }
-    };
-    const fetchEntityDetails = async (entityType, entityId) => {
-        if (!entityType || !entityId) return null;
-
-        try {
-            if (entityType === "WAREHOUSE") {
-                return await warehouseService.getById(entityId);
-            } else if (entityType === "SITE") {
-                return await siteService.getById(entityId);
-            } else if (entityType === "EQUIPMENT") {
-                return await equipmentService.getEquipmentById(entityId);
-            } else {
-                console.error(`Unsupported entity type: ${entityType}`);
-                return null;
-            }
-        } catch (error) {
-            console.error(`Failed to fetch ${entityType} details:`, error);
-            return null;
+                return { id: entityData.id, name: entityData.name || "Unknown", type: entityType };
         }
     };
 
-    // Report count to parent
-    useEffect(() => {
-        if (onCountUpdate) {
-            onCountUpdate(validatedTransactions.length, validatedTransactions);
-        }
-    }, [validatedTransactions.length, onCountUpdate]);
-
-    // Listen to refreshTrigger changes
-    useEffect(() => {
-        fetchValidatedTransactions();
-    }, [refreshTrigger]);
+    // ─── Handlers ─────────────────────────────────────────────────────────────
 
     const handleInfoClick = (event, transaction) => {
         event.stopPropagation();
-
-        // Set modal info based on transaction status
         if (transaction.status === "REJECTED" && transaction.rejectionReason) {
-            setModalInfo({
-                title: "Rejection Reason",
-                content: transaction.rejectionReason,
-                transaction: transaction
-            });
+            setModalInfo({ title: "Rejection Reason", content: transaction.rejectionReason, transaction });
         } else if (transaction.status === "ACCEPTED" && transaction.acceptanceComment) {
-            setModalInfo({
-                title: "Acceptance Comments",
-                content: transaction.acceptanceComment,
-                transaction: transaction
-            });
+            setModalInfo({ title: "Acceptance Comments", content: transaction.acceptanceComment, transaction });
         }
     };
 
-    // Function to handle opening the view modal
     const handleOpenViewModal = (transaction) => {
-        console.log('Opening modal with transaction:', transaction);
-        console.log('Current warehouse ID:', warehouseId);
-        console.log('Transaction senderId:', transaction.senderId);
-        console.log('Transaction sentFirst:', transaction.sentFirst);
-        console.log('Transaction items:', transaction.items);
-
         setViewTransaction(transaction);
         setIsViewModalOpen(true);
     };
 
-    // Function to close the view modal
-    const handleCloseViewModal = () => {
-        setIsViewModalOpen(false);
-        setViewTransaction(null);
-    };
+    // ─── Formatters ───────────────────────────────────────────────────────────
 
-    const closeModal = () => {
-        setModalInfo(null);
-    };
-
-    // Close modal when clicking outside of it
-    const handleOverlayClick = (e) => {
-        if (e.target.classList.contains('modal-backdrop')) {
-            closeModal();
-        }
-    };
-
-    // Format date helper functions
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
         return new Date(dateString).toLocaleDateString('en-GB');
     };
 
-    const formatDateTime = (dateString) => {
-        if (!dateString) return "N/A";
-        return new Date(dateString).toLocaleString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-    };
+    const getEntityDisplayName = (entity) => entity?.name || "N/A";
 
-    // Helper function to get entity display name
-    const getEntityDisplayName = (entity, entityType) => {
-        if (!entity) return "N/A";
-        return entity.name || entity.equipment?.fullModelName || "N/A";
-    };
+    // ─── Table Config ─────────────────────────────────────────────────────────
 
-    // Define table columns for DataTable with export formatters
     const columns = [
         {
             header: 'SENDER',
@@ -262,8 +178,8 @@ const ValidatedTransactionsTable = ({
             sortable: true,
             width: '200px',
             minWidth: '150px',
-            render: (row) => getEntityDisplayName(row.sender, row.senderType),
-            exportFormatter: (value, row) => getEntityDisplayName(row.sender, row.senderType)
+            render: (row) => getEntityDisplayName(row.sender),
+            exportFormatter: (value, row) => getEntityDisplayName(row.sender)
         },
         {
             header: 'RECEIVER',
@@ -271,8 +187,8 @@ const ValidatedTransactionsTable = ({
             sortable: true,
             width: '200px',
             minWidth: '150px',
-            render: (row) => getEntityDisplayName(row.receiver, row.receiverType),
-            exportFormatter: (value, row) => getEntityDisplayName(row.receiver, row.receiverType)
+            render: (row) => getEntityDisplayName(row.receiver),
+            exportFormatter: (value, row) => getEntityDisplayName(row.receiver)
         },
         {
             header: 'BATCH NUMBER',
@@ -304,71 +220,34 @@ const ValidatedTransactionsTable = ({
                     </span>
                 </div>
             ),
-            exportFormatter: (value) => value // Just export the raw status value
+            exportFormatter: (value) => value
         }
     ];
 
-    // Filterable columns for DataTable
     const filterableColumns = [
-        {
-            header: 'SENDER',
-            accessor: 'sender',
-            filterType: 'text'
-        },
-        {
-            header: 'RECEIVER',
-            accessor: 'receiver',
-            filterType: 'text'
-        },
-        {
-            header: 'BATCH NUMBER',
-            accessor: 'batchNumber',
-            filterType: 'number'
-        },
-        {
-            header: 'TRANSACTION DATE',
-            accessor: 'transactionDate',
-            filterType: 'text'
-        },
-        {
-            header: 'STATUS',
-            accessor: 'status',
-            filterType: 'select'
-        }
+        { header: 'SENDER', accessor: 'sender', filterType: 'text' },
+        { header: 'RECEIVER', accessor: 'receiver', filterType: 'text' },
+        { header: 'BATCH NUMBER', accessor: 'batchNumber', filterType: 'number' },
+        { header: 'TRANSACTION DATE', accessor: 'transactionDate', filterType: 'text' },
+        { header: 'STATUS', accessor: 'status', filterType: 'select' }
     ];
 
-    // Actions array for DataTable
-    const actions = [
-
-    ];
-
-    // 🎯 Excel export event handlers
-    const handleExportStart = () => {
-        showSnackbar("Starting export...", "info");
-    };
-
-    const handleExportComplete = (exportInfo) => {
+    const handleExportStart = () => showSnackbar("Starting export...", "info");
+    const handleExportComplete = (exportInfo) =>
         showSnackbar(`Successfully exported ${exportInfo.rowCount} transactions to ${exportInfo.filename}`, "success");
-    };
-
-    const handleExportError = (error) => {
-        console.error('Export error:', error);
+    const handleExportError = () =>
         showSnackbar("Failed to export data. Please try again.", "error");
-    };
+
+    // ─── Render ───────────────────────────────────────────────────────────────
 
     return (
         <div className="transaction-table-section">
-            <div className="table-header-section">
-
-            </div>
-
-            {/* 🎯 DataTable Component with Excel Export */}
             <DataTable
                 data={validatedTransactions}
                 columns={columns}
                 loading={loading}
                 emptyMessage="There are no accepted or rejected transactions for this warehouse"
-                actions={actions}
+                actions={[]}
                 className="validated-transactions-table"
                 showSearch={true}
                 showFilters={true}
@@ -376,8 +255,6 @@ const ValidatedTransactionsTable = ({
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
                 actionsColumnWidth="150px"
-
-                // Excel Export Configuration
                 showExportButton={true}
                 exportButtonText="Export Transactions"
                 exportFileName="validated_transactions"
@@ -393,7 +270,7 @@ const ValidatedTransactionsTable = ({
                 onExportStart={handleExportStart}
                 onExportComplete={handleExportComplete}
                 onExportError={handleExportError}
-                onRowClick={handleOpenViewModal}  // Add this line
+                onRowClick={handleOpenViewModal}
             />
 
             {/* View Transaction Modal */}
@@ -401,21 +278,20 @@ const ValidatedTransactionsTable = ({
                 <TransactionViewModal
                     transaction={viewTransaction}
                     isOpen={isViewModalOpen}
-                    onClose={handleCloseViewModal}
+                    onClose={() => { setIsViewModalOpen(false); setViewTransaction(null); }}
                     hideItemQuantities={false}
                     currentWarehouseId={warehouseId}
                 />
             )}
 
-            {/* Modal for comments/reasons */}
+            {/* Comments / Rejection Reason Modal */}
             {modalInfo && (
-                <div className="modal-backdrop" onClick={handleOverlayClick}>
+                <div className="modal-backdrop" onClick={(e) => { if (e.target.classList.contains('modal-backdrop')) setModalInfo(null); }}>
                     <div className="comment-modal">
                         <div className="comment-modal-header">
                             <h3>{modalInfo.title}</h3>
-                            <CloseButton onClick={closeModal} />
+                            <CloseButton onClick={() => setModalInfo(null)} />
                         </div>
-
                         <div className="comment-modal-content">
                             <div className="transaction-summary">
                                 <div className="summary-row">
@@ -432,11 +308,7 @@ const ValidatedTransactionsTable = ({
                                 </div>
                                 <div className="summary-row">
                                     <span className="label">Date:</span>
-                                    <span className="value">
-                                        {modalInfo.transaction.transactionDate
-                                            ? new Date(modalInfo.transaction.transactionDate).toLocaleDateString('en-GB')
-                                            : "N/A"}
-                                    </span>
+                                    <span className="value">{formatDate(modalInfo.transaction.transactionDate)}</span>
                                 </div>
                                 <div className="summary-row">
                                     <span className="label">Status:</span>
@@ -445,7 +317,6 @@ const ValidatedTransactionsTable = ({
                                     </span>
                                 </div>
                             </div>
-
                             <div className="comment-content">
                                 <h4>{modalInfo.title}:</h4>
                                 <p>{modalInfo.content || "No comments provided."}</p>
@@ -455,12 +326,11 @@ const ValidatedTransactionsTable = ({
                 </div>
             )}
 
-            {/* Snackbar Component */}
             <Snackbar
                 isOpen={snackbar.isOpen}
                 message={snackbar.message}
                 type={snackbar.type}
-                onClose={closeSnackbar}
+                onClose={() => setSnackbar(prev => ({ ...prev, isOpen: false }))}
                 duration={3000}
                 position="bottom-right"
             />

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaEllipsisV } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaEllipsisV, FaBan } from 'react-icons/fa';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import './DayTasksPanel.scss';
 
@@ -18,8 +18,8 @@ const STATUS_CONFIG = {
 };
 
 const STATUS_ACTIONS = {
-    PENDING:     [{ label: 'Start',    next: 'IN_PROGRESS' }, { label: 'Cancel', next: 'CANCELLED' }],
-    IN_PROGRESS: [{ label: 'Complete', next: 'COMPLETED'   }, { label: 'Cancel', next: 'CANCELLED' }],
+    PENDING:     [{ label: 'Start',    next: 'IN_PROGRESS' }],
+    IN_PROGRESS: [{ label: 'Complete', next: 'COMPLETED'   }],
     COMPLETED:   [],
     CANCELLED:   [],
 };
@@ -30,13 +30,12 @@ const ACTION_DIALOG = {
     CANCELLED:   { type: 'danger',  title: 'Cancel Task?',    message: 'Are you sure you want to cancel this task? This cannot be undone.', confirmText: 'Cancel Task' },
 };
 
-const ThreeDotsMenu = ({ task, onStatusUpdate }) => {
+const ThreeDotsMenu = ({ task, actions, onStatusUpdate }) => {
     const [open, setOpen] = useState(false);
     const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-    const [pendingAction, setPendingAction] = useState(null); // { next, label }
+    const [pendingAction, setPendingAction] = useState(null);
     const btnRef = useRef(null);
     const wrapperRef = useRef(null);
-    const actions = STATUS_ACTIONS[task.status] || [];
 
     useEffect(() => {
         const handleClick = (e) => {
@@ -121,7 +120,9 @@ const ThreeDotsMenu = ({ task, onStatusUpdate }) => {
     );
 };
 
-const DayTasksPanel = ({ date, tasks, loading, onEdit, onDelete, onNewTask, readOnly = false, showStatusUpdate = false, onStatusUpdate }) => {
+const DayTasksPanel = ({ date, tasks, loading, onEdit, onDelete, onNewTask, readOnly = false, showStatusUpdate = false, canCancel = false, onStatusUpdate }) => {
+    const [cancelDialog, setCancelDialog] = useState({ visible: false, taskId: null });
+
     const dateLabel = date.toLocaleDateString(undefined, {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
@@ -158,7 +159,12 @@ const DayTasksPanel = ({ date, tasks, loading, onEdit, onDelete, onNewTask, read
                     tasks.map(task => {
                         const priority  = PRIORITY_CONFIG[task.priority] || {};
                         const status    = STATUS_CONFIG[task.status]     || {};
-                        const canModify = !readOnly && task.status === 'PENDING';
+                        const canEdit   = !readOnly && task.status === 'PENDING';
+                        const canDelete = !readOnly;
+                        const showCancelBtn = canCancel && task.status !== 'COMPLETED' && task.status !== 'CANCELLED';
+
+                        // 3-dot actions for user's MyTasksPage only (no cancel)
+                        const menuActions = STATUS_ACTIONS[task.status] || [];
 
                         return (
                             <div key={task.id} className="dtp__task-card">
@@ -166,29 +172,39 @@ const DayTasksPanel = ({ date, tasks, loading, onEdit, onDelete, onNewTask, read
                                     <span className="dtp__task-title">{task.title}</span>
 
                                     <div className="dtp__task-actions">
-                                        {/* Edit/Delete — secretary page only (canModify) */}
-                                        {canModify && (
-                                            <>
-                                                <button
-                                                    className="dtp__action-btn dtp__action-btn--edit"
-                                                    onClick={() => onEdit(task)}
-                                                    title="Edit"
-                                                >
-                                                    <FaEdit />
-                                                </button>
-                                                <button
-                                                    className="dtp__action-btn dtp__action-btn--delete"
-                                                    onClick={() => onDelete(task.id)}
-                                                    title="Delete"
-                                                >
-                                                    <FaTrash />
-                                                </button>
-                                            </>
+                                        {/* Edit — pending only */}
+                                        {canEdit && (
+                                            <button
+                                                className="dtp__action-btn dtp__action-btn--edit"
+                                                onClick={() => onEdit(task)}
+                                                title="Edit"
+                                            >
+                                                <FaEdit />
+                                            </button>
                                         )}
-
-                                        {/* 3-dot menu — my tasks calendar only */}
-                                        {showStatusUpdate && (
-                                            <ThreeDotsMenu task={task} onStatusUpdate={onStatusUpdate} />
+                                        {/* Delete — any status */}
+                                        {canDelete && (
+                                            <button
+                                                className="dtp__action-btn dtp__action-btn--delete"
+                                                onClick={() => onDelete(task.id)}
+                                                title="Delete"
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        )}
+                                        {/* Cancel button — secretary only, pending/in-progress */}
+                                        {showCancelBtn && (
+                                            <button
+                                                className="dtp__action-btn dtp__action-btn--cancel"
+                                                onClick={(e) => { e.stopPropagation(); setCancelDialog({ visible: true, taskId: task.id }); }}
+                                                title="Cancel task"
+                                            >
+                                                <FaBan />
+                                            </button>
+                                        )}
+                                        {/* 3-dot menu — user MyTasksPage calendar only */}
+                                        {showStatusUpdate && menuActions.length > 0 && (
+                                            <ThreeDotsMenu task={task} actions={menuActions} onStatusUpdate={onStatusUpdate} />
                                         )}
                                     </div>
                                 </div>
@@ -215,6 +231,21 @@ const DayTasksPanel = ({ date, tasks, loading, onEdit, onDelete, onNewTask, read
                     })
                 )}
             </div>
+
+            <ConfirmationDialog
+                isVisible={cancelDialog.visible}
+                type="danger"
+                title="Cancel Task?"
+                message="Are you sure you want to cancel this task? This cannot be undone."
+                confirmText="Cancel Task"
+                cancelText="Go Back"
+                onConfirm={() => {
+                    onStatusUpdate(cancelDialog.taskId, 'CANCELLED');
+                    setCancelDialog({ visible: false, taskId: null });
+                }}
+                onCancel={() => setCancelDialog({ visible: false, taskId: null })}
+                onClose={() => setCancelDialog({ visible: false, taskId: null })}
+            />
         </div>
     );
 };
