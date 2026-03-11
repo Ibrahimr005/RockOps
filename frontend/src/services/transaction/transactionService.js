@@ -68,4 +68,12 @@ export const transactionService = {
         const response = await apiClient.get(TRANSACTION_ENDPOINTS.BY_EQUIPMENT(equipmentId));
         return response.data || response;
     },
+
+    // Fetch all ItemResolution records for a given transaction
+    // Endpoint: GET /api/v1/transactions/resolutions/transaction/{transactionId}
+    getResolutionsByTransaction: async (transactionId) => {
+        const response = await apiClient.get(TRANSACTION_ENDPOINTS.RESOLUTIONS_BY_TX(transactionId));
+        return response.data || response;
+    },
+
 };

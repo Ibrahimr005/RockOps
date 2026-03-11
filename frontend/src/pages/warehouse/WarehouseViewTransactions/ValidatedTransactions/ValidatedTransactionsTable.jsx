@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "../WarehouseViewTransactions.scss";
-import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
-import { CloseButton } from '../../../../components/common/Button';
 import { transactionService } from '../../../../services/transaction/transactionService.js';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
 import { siteService } from '../../../../services/siteService';
@@ -15,11 +14,10 @@ const ValidatedTransactionsTable = ({
                                         onCountUpdate,
                                         onTransactionUpdate
                                     }) => {
+    const navigate = useNavigate();
+
     const [loading, setLoading] = useState(false);
     const [validatedTransactions, setValidatedTransactions] = useState([]);
-    const [modalInfo, setModalInfo] = useState(null);
-    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-    const [viewTransaction, setViewTransaction] = useState(null);
 
     // Snackbar state
     const [snackbar, setSnackbar] = useState({ isOpen: false, message: "", type: "success" });
@@ -27,17 +25,6 @@ const ValidatedTransactionsTable = ({
     const showSnackbar = (message, type = "success") => {
         setSnackbar({ isOpen: true, message, type });
     };
-
-    // ─── Scroll lock ──────────────────────────────────────────────────────────
-
-    useEffect(() => {
-        if (modalInfo || isViewModalOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => { document.body.style.overflow = 'unset'; };
-    }, [modalInfo, isViewModalOpen]);
 
     // ─── Data Fetching ────────────────────────────────────────────────────────
 
@@ -115,7 +102,7 @@ const ValidatedTransactionsTable = ({
             } else {
                 return null;
             }
-            return response.data || response; // unwrap correctly
+            return response.data || response;
         } catch {
             return null;
         }
@@ -146,18 +133,8 @@ const ValidatedTransactionsTable = ({
 
     // ─── Handlers ─────────────────────────────────────────────────────────────
 
-    const handleInfoClick = (event, transaction) => {
-        event.stopPropagation();
-        if (transaction.status === "REJECTED" && transaction.rejectionReason) {
-            setModalInfo({ title: "Rejection Reason", content: transaction.rejectionReason, transaction });
-        } else if (transaction.status === "ACCEPTED" && transaction.acceptanceComment) {
-            setModalInfo({ title: "Acceptance Comments", content: transaction.acceptanceComment, transaction });
-        }
-    };
-
-    const handleOpenViewModal = (transaction) => {
-        setViewTransaction(transaction);
-        setIsViewModalOpen(true);
+    const handleRowClick = (transaction) => {
+        navigate(`/warehouses/${warehouseId}/transactions/${transaction.id}`);
     };
 
     // ─── Formatters ───────────────────────────────────────────────────────────
@@ -270,61 +247,8 @@ const ValidatedTransactionsTable = ({
                 onExportStart={handleExportStart}
                 onExportComplete={handleExportComplete}
                 onExportError={handleExportError}
-                onRowClick={handleOpenViewModal}
+                onRowClick={handleRowClick}
             />
-
-            {/* View Transaction Modal */}
-            {isViewModalOpen && viewTransaction && (
-                <TransactionViewModal
-                    transaction={viewTransaction}
-                    isOpen={isViewModalOpen}
-                    onClose={() => { setIsViewModalOpen(false); setViewTransaction(null); }}
-                    hideItemQuantities={false}
-                    currentWarehouseId={warehouseId}
-                />
-            )}
-
-            {/* Comments / Rejection Reason Modal */}
-            {modalInfo && (
-                <div className="modal-backdrop" onClick={(e) => { if (e.target.classList.contains('modal-backdrop')) setModalInfo(null); }}>
-                    <div className="comment-modal">
-                        <div className="comment-modal-header">
-                            <h3>{modalInfo.title}</h3>
-                            <CloseButton onClick={() => setModalInfo(null)} />
-                        </div>
-                        <div className="comment-modal-content">
-                            <div className="transaction-summary">
-                                <div className="summary-row">
-                                    <span className="label">Transaction:</span>
-                                    <span className="value">Batch #{modalInfo.transaction.batchNumber}</span>
-                                </div>
-                                <div className="summary-row">
-                                    <span className="label">From:</span>
-                                    <span className="value">{modalInfo.transaction.sender?.name || "N/A"}</span>
-                                </div>
-                                <div className="summary-row">
-                                    <span className="label">To:</span>
-                                    <span className="value">{modalInfo.transaction.receiver?.name || "N/A"}</span>
-                                </div>
-                                <div className="summary-row">
-                                    <span className="label">Date:</span>
-                                    <span className="value">{formatDate(modalInfo.transaction.transactionDate)}</span>
-                                </div>
-                                <div className="summary-row">
-                                    <span className="label">Status:</span>
-                                    <span className={`value status-${modalInfo.transaction.status.toLowerCase()}`}>
-                                        {modalInfo.transaction.status}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="comment-content">
-                                <h4>{modalInfo.title}:</h4>
-                                <p>{modalInfo.content || "No comments provided."}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <Snackbar
                 isOpen={snackbar.isOpen}

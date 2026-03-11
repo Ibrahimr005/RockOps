@@ -1,5 +1,6 @@
 package com.example.backend.models.warehouse;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,12 +14,22 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class ItemResolution {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = false)
+    @JsonIgnoreProperties({
+            "hibernateLazyInitializer", "handler",
+            "warehouse", "transactionItem",
+            "batchNumber", "transactionId",
+            "itemPriceApprovals", "priceApprovedBy", "priceApprovedAt",
+            "sourceReference", "merchantName", "comment",
+            "createdBy", "createdAt", "itemSource",
+            "unitPrice", "totalValue"
+    })
     private Item item;
 
     @Enumerated(EnumType.STRING)

@@ -29,5 +29,9 @@
     "deny": [],
     "ask": []
   },
-  "outputStyle": "default"
+  "enabledMcpjsonServers": [
+    "claude-flow"
+  ],
+  "outputStyle": "default",
+  "enableAllProjectMcpServers": true
 }

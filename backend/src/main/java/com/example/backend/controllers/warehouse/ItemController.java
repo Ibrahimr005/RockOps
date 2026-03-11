@@ -38,6 +38,8 @@ public class ItemController {
     @Autowired
     private ItemRepository itemRepository;
 
+
+
     // Existing endpoints
     @GetMapping("/warehouse/{warehouseId}")
     public ResponseEntity<List<Item>> getItemsByWarehouse(@PathVariable UUID warehouseId) {
@@ -418,6 +420,7 @@ public class ItemController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
 
     /**
      * GET all item history for a warehouse (all sources)

@@ -1,0 +1,177 @@
+// ResolveDiscrepancyModal.scss
+// Relies on global modal styles (modal-backdrop, modal-container, modal-header,
+// modal-body, modal-footer). Only component-specific styles live here.
+
+.resolve-discrepancy-modal {
+
+  // ── Item Summary Block ────────────────────────────────────────────────────
+  .rdm-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+
+  .rdm-summary-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px;
+    background: var(--color-surface-secondary);
+    border-bottom: 1px solid var(--border-color-light);
+
+    &:nth-last-child(-n+2) {
+      border-bottom: none;
+    }
+
+    &:nth-child(odd) {
+      border-right: 1px solid var(--border-color-light);
+    }
+  }
+
+  .rdm-summary-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+  }
+
+  .rdm-summary-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .rdm-status-pill {
+    display: inline-block;
+    width: fit-content;
+    padding: 3px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+
+    &.rdm-status-missing {
+      background: rgba(var(--color-warning-rgb, 255, 152, 0), 0.12);
+      color: var(--color-warning);
+    }
+
+    &.rdm-status-overreceived {
+      background: rgba(var(--color-info-rgb, 33, 150, 243), 0.12);
+      color: var(--color-info);
+    }
+  }
+
+  // ── Form ─────────────────────────────────────────────────────────────────
+  .rdm-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .rdm-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      font-size: 14px;
+      font-family: var(--font-family);
+      transition: border-color var(--transition-fast);
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px var(--color-edit-bg);
+      }
+
+      &::placeholder {
+        color: var(--color-text-secondary);
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      line-height: 1.5;
+    }
+  }
+
+  .rdm-required {
+    color: var(--color-danger);
+    font-weight: bold;
+    margin-left: 2px;
+  }
+
+  // ── Confirmation Notice ───────────────────────────────────────────────────
+  .rdm-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    line-height: 1.5;
+
+    svg {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    &.rdm-notice-warning {
+      background: rgba(255, 152, 0, 0.1);
+      border: 1px solid var(--color-warning);
+      color: var(--color-warning);
+    }
+
+    &.rdm-notice-info {
+      background: rgba(33, 150, 243, 0.1);
+      border: 1px solid var(--color-info);
+      color: var(--color-info);
+    }
+  }
+
+  // ── Responsive ────────────────────────────────────────────────────────────
+  @media (max-width: 540px) {
+    .rdm-summary {
+      grid-template-columns: 1fr;
+
+      .rdm-summary-row {
+        border-right: none !important;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &:nth-last-child(-n+2) {
+          border-bottom: 1px solid var(--border-color-light);
+        }
+
+        &:last-child {
+          border-bottom: none !important;
+        }
+      }
+    }
+  }
+}

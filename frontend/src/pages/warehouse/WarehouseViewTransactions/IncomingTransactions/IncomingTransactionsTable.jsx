@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "../WarehouseViewTransactions.scss";
 import "./AcceptRejectModal.scss";
-import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx";
 import AcceptTransactionModal from "./AcceptTransactionModal.jsx";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
@@ -17,14 +17,14 @@ const IncomingTransactionsTable = ({
                                        onCountUpdate,
                                        onTransactionUpdate
                                    }) => {
+    const navigate = useNavigate();
+
     const [loading, setLoading] = useState(false);
     const [pendingTransactions, setPendingTransactions] = useState([]);
 
     // Modal state
     const [isAcceptModalOpen, setIsAcceptModalOpen] = useState(false);
-    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
-    const [viewTransaction, setViewTransaction] = useState(null);
 
     // Reject dialog state
     const [rejectDialog, setRejectDialog] = useState({
@@ -61,7 +61,6 @@ const IncomingTransactionsTable = ({
         try {
             const data = await transactionService.getTransactionsForWarehouse(warehouseId);
 
-            // Incoming = warehouse is the receiver and status is still pending
             const filteredTransactions = data.filter(transaction =>
                 transaction.status === "PENDING" &&
                 transaction.receiverId === warehouseId
@@ -72,7 +71,6 @@ const IncomingTransactionsTable = ({
                 return;
             }
 
-            // Collect unique entities to avoid duplicate fetches
             const entityMap = new Map();
             filteredTransactions.forEach(transaction => {
                 const senderKey = `${transaction.senderType}-${transaction.senderId}`;
@@ -146,16 +144,15 @@ const IncomingTransactionsTable = ({
         }
     };
 
-    // ─── Modal / Action Handlers ──────────────────────────────────────────────
+    // ─── Handlers ─────────────────────────────────────────────────────────────
+
+    const handleRowClick = (transaction) => {
+        navigate(`/warehouses/${warehouseId}/transactions/${transaction.id}`);
+    };
 
     const handleOpenAcceptModal = (transaction) => {
         setSelectedTransaction(transaction);
         setIsAcceptModalOpen(true);
-    };
-
-    const handleOpenViewModal = (transaction) => {
-        setViewTransaction(transaction);
-        setIsViewModalOpen(true);
     };
 
     const handleOpenRejectDialog = (transactionId) => {
@@ -281,19 +278,8 @@ const IncomingTransactionsTable = ({
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
                 actionsColumnWidth="200px"
-                onRowClick={handleOpenViewModal}
+                onRowClick={handleRowClick}
             />
-
-            {/* View Modal */}
-            {isViewModalOpen && viewTransaction && (
-                <TransactionViewModal
-                    transaction={viewTransaction}
-                    isOpen={isViewModalOpen}
-                    onClose={() => { setIsViewModalOpen(false); setViewTransaction(null); }}
-                    hideItemQuantities={false}
-                    currentWarehouseId={warehouseId}
-                />
-            )}
 
             {/* Accept Modal */}
             <AcceptTransactionModal

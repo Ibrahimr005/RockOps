@@ -797,19 +797,19 @@ export const ATTENDANCE_ENDPOINTS = {
     DAILY_SUMMARY: '/api/v1/attendance/daily-summary'
 };
 
-// Transaction module endpoints
 
 export const TRANSACTION_ENDPOINTS = {
-    BASE:         '/api/v1/transactions',
-    CREATE:       '/api/v1/transactions/create',
-    BY_ID:        (transactionId) => `/api/v1/transactions/${transactionId}`,
-    BY_BATCH:     (batchNumber)   => `/api/v1/transactions/batch/${batchNumber}`,
-    ACCEPT:       (transactionId) => `/api/v1/transactions/${transactionId}/accept`,
-    REJECT:       (transactionId) => `/api/v1/transactions/${transactionId}/reject`,
-    UPDATE:       (transactionId) => `/api/v1/transactions/${transactionId}`,
-    DELETE:       (transactionId) => `/api/v1/transactions/${transactionId}`,
-    BY_WAREHOUSE: (warehouseId)   => `/api/v1/transactions/warehouse/${warehouseId}`,
-    BY_EQUIPMENT: (equipmentId)   => `/api/v1/transactions/equipment/${equipmentId}`,
+    BASE:                  '/api/v1/transactions',
+    CREATE:                '/api/v1/transactions/create',
+    BY_ID:                 (transactionId) => `/api/v1/transactions/${transactionId}`,
+    BY_BATCH:              (batchNumber)   => `/api/v1/transactions/batch/${batchNumber}`,
+    ACCEPT:                (transactionId) => `/api/v1/transactions/${transactionId}/accept`,
+    REJECT:                (transactionId) => `/api/v1/transactions/${transactionId}/reject`,
+    UPDATE:                (transactionId) => `/api/v1/transactions/${transactionId}`,
+    DELETE:                (transactionId) => `/api/v1/transactions/${transactionId}`,
+    BY_WAREHOUSE:          (warehouseId)   => `/api/v1/transactions/warehouse/${warehouseId}`,
+    BY_EQUIPMENT:          (equipmentId)   => `/api/v1/transactions/equipment/${equipmentId}`,
+    RESOLUTIONS_BY_TX:     (transactionId) => `/api/v1/transactions/resolutions/transaction/${transactionId}`,
 };
 
 // Item Type module endpoints

@@ -3,8 +3,10 @@ package com.example.backend.controllers.transaction;
 import com.example.backend.dto.transaction.*;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.transaction.TransactionStatus;
+import com.example.backend.models.warehouse.ItemResolution;
 import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.repositories.transaction.TransactionRepository;
+import com.example.backend.repositories.warehouse.ItemResolutionRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.services.transaction.TransactionMapperService;
 import com.example.backend.services.transaction.TransactionService;
@@ -33,6 +35,9 @@ public class TransactionController {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private ItemResolutionRepository itemResolutionRepository;
 
     // ========================================
     // CREATE
@@ -359,6 +364,19 @@ public class TransactionController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+
+    @GetMapping("/resolutions/transaction/{transactionId}")
+    public ResponseEntity<List<ItemResolution>> getResolutionsByTransaction(@PathVariable UUID transactionId) {
+        try {
+            // transactionId is stored as String in ItemResolution — convert UUID to String
+            List<ItemResolution> resolutions = itemResolutionRepository.findByTransactionId(transactionId.toString());
+            return ResponseEntity.ok(resolutions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
         }
     }
 }
