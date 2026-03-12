@@ -1,9 +1,7 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Clock, Package, CheckCircle, Plus, RefreshCw } from 'lucide-react';
-import PageHeader from '../../common/PageHeader';
+import { Package, CheckCircle, RefreshCw } from 'lucide-react';
 import './TransactionHub.scss';
 import UnifiedTransactionProcessor from './UnifiedTransactionProcessor';
-import TransactionQuickActions from './TransactionQuickActions';
 import { equipmentService } from '../../../services/equipmentService';
 import Snackbar from '../../common/Snackbar2/Snackbar2';
 import { Button } from '../../../components/common/Button';
@@ -17,14 +15,12 @@ const TransactionHub = forwardRef(({
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     
     // Transaction data states
-    const [pendingTransactions, setPendingTransactions] = useState([]);
     const [incomingTransactions, setIncomingTransactions] = useState([]);
     const [transactionHistory, setTransactionHistory] = useState([]);
     
     // UI states
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [showProcessor, setShowProcessor] = useState(false);
-    const [showQuickActions, setShowQuickActions] = useState(false);
     
     // Snackbar state
     const [snackbar, setSnackbar] = useState({
@@ -35,24 +31,17 @@ const TransactionHub = forwardRef(({
 
     // Tab configuration
     const tabs = [
-        { 
-            id: "incoming", 
-            label: "Incoming Transactions", 
-            icon: Package, 
+        {
+            id: "incoming",
+            label: "Incoming Transactions",
+            icon: Package,
             count: incomingTransactions.length,
             description: "Transactions requiring your action"
         },
-        { 
-            id: "pending", 
-            label: "Pending Transactions", 
-            icon: Clock, 
-            count: pendingTransactions.length,
-            description: "Transactions you initiated, awaiting confirmation"
-        },
-        { 
-            id: "history", 
-            label: "Transaction History", 
-            icon: CheckCircle, 
+        {
+            id: "history",
+            label: "Transaction History",
+            icon: CheckCircle,
             count: transactionHistory.length,
             description: "Completed and resolved transactions"
         }
@@ -77,33 +66,22 @@ const TransactionHub = forwardRef(({
             const transactions = response.data || [];
             
             // Process and categorize transactions
-            const enrichedTransactions = await Promise.all(
-                transactions.map(async (transaction) => {
-                    const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
-                    const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
-                    
-                    return {
-                        ...transaction,
-                        senderName: sender?.name || sender?.fullModelName || 'Unknown',
-                        receiverName: receiver?.name || receiver?.fullModelName || 'Unknown',
-                        isIncoming: transaction.receiverId === equipmentId && transaction.sentFirst !== equipmentId,
-                        isPending: transaction.senderId === equipmentId && transaction.sentFirst === equipmentId,
-                        requiresAction: transaction.status === 'PENDING' && 
-                                      transaction.receiverId === equipmentId && 
-                                      transaction.sentFirst !== equipmentId
-                    };
-                })
-            );
+            const enrichedTransactions = transactions.map((transaction) => ({
+                ...transaction,
+                senderName: transaction.senderName || 'Unknown',
+                receiverName: transaction.receiverName || 'Unknown',
+                isIncoming: transaction.receiverId === equipmentId && transaction.status === 'PENDING',
+                requiresAction: transaction.status === 'PENDING' &&
+                              transaction.receiverId === equipmentId
+            }));
             
             // Categorize transactions
-            const incoming = enrichedTransactions.filter(t => t.isIncoming && t.status === 'PENDING');
-            const pending = enrichedTransactions.filter(t => t.isPending && t.status === 'PENDING');
-            const history = enrichedTransactions.filter(t => 
+            const incoming = enrichedTransactions.filter(t => t.isIncoming);
+            const history = enrichedTransactions.filter(t =>
                 ['ACCEPTED', 'REJECTED', 'PARTIALLY_ACCEPTED', 'RESOLVED'].includes(t.status)
             );
-            
+
             setIncomingTransactions(incoming);
-            setPendingTransactions(pending);
             setTransactionHistory(history);
             
         } catch (error) {
@@ -111,21 +89,6 @@ const TransactionHub = forwardRef(({
             showSnackbar('error', 'Failed to load transactions');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchEntityDetails = async (entityType, entityId) => {
-        try {
-            if (entityType === 'WAREHOUSE') {
-                const response = await equipmentService.getWarehouseById(entityId);
-                return response.data;
-            } else if (entityType === 'EQUIPMENT') {
-                const response = await equipmentService.getEquipmentById(entityId);
-                return response.data;
-            }
-        } catch (error) {
-            console.error(`Failed to fetch ${entityType} details:`, error);
-            return null;
         }
     };
 
@@ -158,14 +121,6 @@ const TransactionHub = forwardRef(({
 
     const triggerRefresh = () => {
         setRefreshTrigger(prev => prev + 1);
-    };
-
-    const handleQuickActionComplete = () => {
-        setShowQuickActions(false);
-        triggerRefresh();
-        if (onTransactionUpdate) {
-            onTransactionUpdate();
-        }
     };
 
     const renderTransactionCard = (transaction) => (
@@ -226,9 +181,6 @@ const TransactionHub = forwardRef(({
             case 'incoming':
                 transactions = incomingTransactions;
                 break;
-            case 'pending':
-                transactions = pendingTransactions;
-                break;
             case 'history':
                 transactions = transactionHistory;
                 break;
@@ -273,19 +225,14 @@ const TransactionHub = forwardRef(({
 
     return (
         <div className="transaction-hub-container">
-            <PageHeader
-                title="Equipment Transactions"
-                subtitle="Unified interface for all equipment transaction scenarios"
-            />
-
             <div className="transaction-hub-header">
                 <div className="transaction-hub-title-section">
-                    <h2 className="transaction-hub-title">Equipment Transaction Management</h2>
+                    <h2 className="transaction-hub-title">Equipment Transactions</h2>
                     <p className="transaction-hub-subtitle">
-                        Unified interface for all equipment transaction scenarios
+                        Manage incoming and completed transactions
                     </p>
                 </div>
-                
+
                 <div className="transaction-hub-actions">
                     <Button
                         variant="ghost"
@@ -295,15 +242,6 @@ const TransactionHub = forwardRef(({
                     >
                         <RefreshCw size={16} className={loading ? 'spinning' : ''} />
                         Refresh
-                    </Button>
-
-                    <Button
-                        variant="primary"
-                        className="transaction-hub-quick-action-btn"
-                        onClick={() => setShowQuickActions(true)}
-                    >
-                        <Plus size={16} />
-                        Quick Actions
                     </Button>
                 </div>
             </div>
@@ -342,15 +280,6 @@ const TransactionHub = forwardRef(({
                     transaction={selectedTransaction}
                     onComplete={handleTransactionProcessed}
                     onCancel={() => setShowProcessor(false)}
-                />
-            )}
-
-            {/* Quick Actions Modal */}
-            {showQuickActions && (
-                <TransactionQuickActions
-                    equipmentId={equipmentId}
-                    onComplete={handleQuickActionComplete}
-                    onCancel={() => setShowQuickActions(false)}
                 />
             )}
 

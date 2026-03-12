@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * scenarios
  * 
  * Tests every possible combination of:
- * - Warehouse-initiated vs Equipment-initiated
+ * - Warehouse-initiated transactions (equipment can only receive, not initiate)
  * - CONSUMABLE vs MAINTENANCE purpose
  * - Perfect match vs Quantity mismatch vs Never received vs Mixed results
  * - Single item vs Multi-item transactions
@@ -236,22 +236,22 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .build());
 
         int batchNumber = generateUniqueBatchNumber();
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(), // Warehouse is sender
+        Transaction transaction = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(), // Warehouse is sender (always)
                 PartyType.EQUIPMENT, excavator.getId(), // Equipment is receiver
                 items,
                 LocalDateTime.now(),
                 "warehouse-manager",
                 batchNumber,
-                mainWarehouse.getId(), // Warehouse initiated
-                TransactionPurpose.GENERAL // Warehouse doesn't know purpose yet
+                TransactionPurpose.GENERAL, // Warehouse doesn't know purpose yet
+                null
         );
 
         // Equipment team confirms: "Yes, we received exactly 50 bolts for consumption"
         Map<UUID, Integer> receivedQuantities = new HashMap<>();
         receivedQuantities.put(transaction.getItems().get(0).getId(), 50); // Perfect match
 
-        Transaction result = transactionService.acceptEquipmentTransaction(
+        Transaction result = transactionService.acceptTransactionWithPurpose(
                 transaction.getId(),
                 receivedQuantities,
                 new HashMap<>(),
@@ -289,21 +289,20 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .build());
 
         int batchNumber = generateUniqueBatchNumber();
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(),
+        Transaction transaction = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(),
                 PartyType.EQUIPMENT, excavator.getId(),
                 items,
                 LocalDateTime.now(),
                 "warehouse-manager",
                 batchNumber,
-                mainWarehouse.getId(),
-                TransactionPurpose.CONSUMABLE);
+                TransactionPurpose.CONSUMABLE, null);
 
         // Equipment team reports: "We only received 60 liters, not 75"
         Map<UUID, Integer> receivedQuantities = new HashMap<>();
         receivedQuantities.put(transaction.getItems().get(0).getId(), 60); // Mismatch!
 
-        Transaction result = transactionService.acceptEquipmentTransaction(
+        Transaction result = transactionService.acceptTransactionWithPurpose(
                 transaction.getId(),
                 receivedQuantities,
                 new HashMap<>(),
@@ -343,15 +342,14 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .build());
 
         int batchNumber = generateUniqueBatchNumber();
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(),
+        Transaction transaction = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(),
                 PartyType.EQUIPMENT, excavator.getId(),
                 items,
                 LocalDateTime.now(),
                 "warehouse-manager",
                 batchNumber,
-                mainWarehouse.getId(),
-                TransactionPurpose.CONSUMABLE);
+                TransactionPurpose.CONSUMABLE, null);
 
         // Equipment team reports: "We never received any filters"
         Map<UUID, Integer> receivedQuantities = new HashMap<>();
@@ -360,7 +358,7 @@ class EquipmentWarehouseTransactionRealWorldTest {
         Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
         itemsNotReceived.put(transaction.getItems().get(0).getId(), true); // Mark as not received
 
-        Transaction result = transactionService.acceptEquipmentTransaction(
+        Transaction result = transactionService.acceptTransactionWithPurpose(
                 transaction.getId(),
                 receivedQuantities,
                 itemsNotReceived,
@@ -401,15 +399,14 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .build());
 
         int batchNumber = generateUniqueBatchNumber();
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(),
+        Transaction transaction = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(),
                 PartyType.EQUIPMENT, excavator.getId(),
                 items,
                 LocalDateTime.now(),
                 "warehouse-manager",
                 batchNumber,
-                mainWarehouse.getId(),
-                TransactionPurpose.CONSUMABLE);
+                TransactionPurpose.CONSUMABLE, null);
 
         // Equipment team reports mixed results
         Map<UUID, Integer> receivedQuantities = new HashMap<>();
@@ -420,7 +417,7 @@ class EquipmentWarehouseTransactionRealWorldTest {
         Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
         itemsNotReceived.put(transaction.getItems().get(2).getId(), true); // Filters not received
 
-        Transaction result = transactionService.acceptEquipmentTransaction(
+        Transaction result = transactionService.acceptTransactionWithPurpose(
                 transaction.getId(),
                 receivedQuantities,
                 itemsNotReceived,
@@ -490,22 +487,21 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .build());
 
         int batchNumber = generateUniqueBatchNumber();
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(), // Items still flow FROM warehouse
+        Transaction transaction = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(), // Items flow FROM warehouse
                 PartyType.EQUIPMENT, excavator.getId(), // TO equipment
                 items,
                 LocalDateTime.now(),
                 "equipment-manager",
                 batchNumber,
-                excavator.getId(), // Equipment initiated the request
-                TransactionPurpose.CONSUMABLE);
+                TransactionPurpose.CONSUMABLE, null);
 
         // Warehouse team delivers exactly what was requested
         // Equipment confirms: "Perfect, received exactly 40 bolts as requested"
         Map<UUID, Integer> receivedQuantities = new HashMap<>();
         receivedQuantities.put(transaction.getItems().get(0).getId(), 40);
 
-        Transaction result = transactionService.acceptEquipmentTransaction(
+        Transaction result = transactionService.acceptTransactionWithPurpose(
                 transaction.getId(),
                 receivedQuantities,
                 new HashMap<>(),
@@ -538,21 +534,20 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .build());
 
         int batchNumber = generateUniqueBatchNumber();
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(),
+        Transaction transaction = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(),
                 PartyType.EQUIPMENT, excavator.getId(),
                 items,
                 LocalDateTime.now(),
                 "equipment-manager",
                 batchNumber,
-                excavator.getId(), // Equipment initiated
-                TransactionPurpose.CONSUMABLE);
+                TransactionPurpose.CONSUMABLE, null);
 
         // Equipment reports: "We only received 45L, not the 60L we requested"
         Map<UUID, Integer> receivedQuantities = new HashMap<>();
         receivedQuantities.put(transaction.getItems().get(0).getId(), 45); // Less than requested
 
-        Transaction result = transactionService.acceptEquipmentTransaction(
+        Transaction result = transactionService.acceptTransactionWithPurpose(
                 transaction.getId(),
                 receivedQuantities,
                 new HashMap<>(),
@@ -602,16 +597,15 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .build());
 
         int batchNumber = generateUniqueBatchNumber();
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(),
+        Transaction transaction = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(),
                 PartyType.EQUIPMENT, excavator.getId(),
                 items,
                 LocalDateTime.now(),
                 "warehouse-manager",
                 batchNumber,
-                mainWarehouse.getId(),
-                TransactionPurpose.GENERAL // Warehouse doesn't know it's for maintenance
-        );
+                TransactionPurpose.GENERAL, // Warehouse doesn't know it's for maintenance
+                null);
         System.out.println("📦 Warehouse created transaction with GENERAL purpose");
 
         // Step 3: Equipment validates and links to maintenance
@@ -624,7 +618,7 @@ class EquipmentWarehouseTransactionRealWorldTest {
         transaction.setMaintenance(maintenance);
         transaction = transactionRepository.save(transaction);
 
-        Transaction result = transactionService.acceptEquipmentTransaction(
+        Transaction result = transactionService.acceptTransactionWithPurpose(
                 transaction.getId(),
                 receivedQuantities,
                 new HashMap<>(),
@@ -684,15 +678,14 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .build());
 
         int batchNumber = generateUniqueBatchNumber();
-        Transaction transaction = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(),
+        Transaction transaction = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(),
                 PartyType.EQUIPMENT, excavator.getId(),
                 items,
                 LocalDateTime.now(),
                 "maintenance-supervisor",
                 batchNumber,
-                excavator.getId(), // Equipment initiated emergency request
-                TransactionPurpose.MAINTENANCE);
+                TransactionPurpose.MAINTENANCE, null);
 
         // Link to emergency maintenance
         transaction.setMaintenance(emergencyMaintenance);
@@ -703,7 +696,7 @@ class EquipmentWarehouseTransactionRealWorldTest {
         receivedQuantities.put(transaction.getItems().get(0).getId(), 120); // Oil delivered
         receivedQuantities.put(transaction.getItems().get(1).getId(), 20); // Bolts delivered
 
-        Transaction result = transactionService.acceptEquipmentTransaction(
+        Transaction result = transactionService.acceptTransactionWithPurpose(
                 transaction.getId(),
                 receivedQuantities,
                 new HashMap<>(),
@@ -740,15 +733,14 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .status(TransactionStatus.PENDING)
                         .build());
 
-        Transaction transaction1 = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(),
+        Transaction transaction1 = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(),
                 PartyType.EQUIPMENT, excavator.getId(),
                 items1,
                 LocalDateTime.now(),
                 "warehouse-manager",
                 conflictingBatchNumber,
-                mainWarehouse.getId(),
-                TransactionPurpose.CONSUMABLE);
+                TransactionPurpose.CONSUMABLE, null);
 
         // Second team tries to use same batch number
         assertThrows(IllegalArgumentException.class, () -> {
@@ -774,15 +766,14 @@ class EquipmentWarehouseTransactionRealWorldTest {
                         .build());
 
         int batchNumber = generateUniqueBatchNumber();
-        Transaction consumableTransaction = transactionService.createEquipmentTransaction(
-                PartyType.WAREHOUSE, mainWarehouse.getId(),
+        Transaction consumableTransaction = transactionService.createTransactionWithPurpose(
+                mainWarehouse.getId(),
                 PartyType.EQUIPMENT, excavator.getId(),
                 consumableItems,
                 LocalDateTime.now(),
                 "warehouse-manager",
                 batchNumber,
-                mainWarehouse.getId(),
-                TransactionPurpose.CONSUMABLE);
+                TransactionPurpose.CONSUMABLE, null);
 
         // Try to validate same batch for different equipment
         Equipment anotherEquipment = new Equipment();

@@ -79,14 +79,12 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
             const data = response.data;
             // Filter for only pending transactions where:
             // 1. Status is PENDING
-            // 2. Current equipment is involved (as sender or receiver)
-            // 3. Current equipment is NOT the entity that initiated the transaction (sentFirst)
+            // 2. Current equipment is the receiver
             const pendingData = await Promise.all(
                 data
                     .filter(transaction =>
                         transaction.status === "PENDING" &&
-                        (transaction.receiverId === equipmentId || transaction.senderId === equipmentId) &&
-                        transaction.sentFirst !== equipmentId
+                        transaction.receiverId === equipmentId
                     )
                     .map(async (transaction) => {
                         const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);

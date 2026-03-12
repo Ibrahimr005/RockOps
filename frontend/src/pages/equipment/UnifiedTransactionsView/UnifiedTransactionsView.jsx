@@ -1,6 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactions.scss";
-import EquipmentPendingTransactionsTable from "./EquipmentPendingTransactionsTable.jsx";
 import EquipmentValidatedTransactionsTable from "./EquipmentValidatedTransactionsTable.jsx";
 import EquipmentIncomingTransactionsTable from "./EquipmentIncomingTransactionsTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2";
@@ -21,7 +20,7 @@ const UnifiedTransactionsView = forwardRef(({
     const [pendingTransactions, setPendingTransactions] = useState([]);
 
     // Tab state
-    const [activeTab, setActiveTab] = useState("pending");
+    const [activeTab, setActiveTab] = useState("incoming");
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // Snackbar states
@@ -31,9 +30,8 @@ const UnifiedTransactionsView = forwardRef(({
         text: ''
     });
 
-    // Tab configuration - exactly like warehouse
+    // Tab configuration
     const tabs = [
-        { id: "pending", label: "Pending Transactions", component: EquipmentPendingTransactionsTable },
         { id: "incoming", label: "Incoming Transactions", component: EquipmentIncomingTransactionsTable },
         { id: "validated", label: "Validated Transactions", component: EquipmentValidatedTransactionsTable }
     ];

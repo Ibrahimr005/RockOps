@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Calendar, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { Search, Plus, Calendar, User, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react';
 import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 import { maintenanceTypeService } from '../../../services/maintenanceTypeService';
 import { employeeService } from '../../../services/hr/employeeService';
@@ -350,10 +350,10 @@ const MaintenanceRecordSelector = ({
                             {transactionItems.map((item, index) => (
                                 <div key={index} className="maintenance-selector-item-preview">
                                     <span className="maintenance-selector-item-name">
-                                        {item.itemType?.name || 'Unknown Item'}
+                                        {item.itemTypeName || 'Unknown Item'}
                                     </span>
                                     <span className="maintenance-selector-item-quantity">
-                                        {item.quantity} {item.itemType?.unit || 'units'}
+                                        {item.quantity} {item.itemUnit || 'units'}
                                     </span>
                                 </div>
                             ))}

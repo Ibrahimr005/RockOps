@@ -103,16 +103,16 @@ const SiteEquipmentTab = ({siteId}) => {
 
     const fetchEquipment = async () => {
         try {
-            const response = await siteService.getSiteEquipment(siteId);
-            const data = response.data;
+            const response = await siteService.getSiteEquipmentDTO(siteId);
+            const data = response.data || response;
 
             if (Array.isArray(data)) {
                 const transformedData = data.map((item, index) => ({
                     conventionalId: `EQ-${String(index + 1).padStart(3, '0')}`,
                     equipmentID: item.id,
-                    equipmentType: item.type?.name || '',
+                    equipmentType: item.typeName || '',
                     status: item.status,
-                    driverName: item.mainDriver ? `${item.mainDriver.firstName} ${item.mainDriver.lastName}` : "No Driver",
+                    driverName: item.mainDriverName || "No Driver",
                     manufactureDate: item.manufactureYear,
                     purchaseDate: item.purchasedDate,
                 }));

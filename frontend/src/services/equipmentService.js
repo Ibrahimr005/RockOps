@@ -224,69 +224,6 @@ export const equipmentService = {
         return apiClient.get(EQUIPMENT_ENDPOINTS.TRANSACTIONS(equipmentId));
     },
 
-    // Get transactions initiated by equipment
-    getInitiatedTransactions: (equipmentId) => {
-        return apiClient.get(EQUIPMENT_ENDPOINTS.TRANSACTIONS_INITIATED(equipmentId));
-    },
-
-    // Create transaction with equipment as sender
-    sendTransaction: (equipmentId, requestData) => {
-        const params = new URLSearchParams({
-            receiverId: requestData.receiverId,
-            receiverType: requestData.receiverType,
-            batchNumber: requestData.batchNumber.toString(),
-            purpose: requestData.purpose || 'GENERAL'
-        });
-
-        if (requestData.transactionDate) {
-            params.append('transactionDate', requestData.transactionDate);
-        }
-
-        if (requestData.description) {
-            params.append('description', requestData.description);
-        }
-
-        return apiClient.post(
-            `${EQUIPMENT_ENDPOINTS.SEND_TRANSACTION(equipmentId)}?${params.toString()}`,
-            requestData.items
-        );
-    },
-
-    // Create transaction with equipment as receiver
-    receiveTransaction: (equipmentId, senderId, senderType, batchNumber, purpose, items, transactionDate, description) => {
-        console.log('🔧 EquipmentService.receiveTransaction called with:', {
-            equipmentId,
-            senderId,
-            senderType,
-            batchNumber,
-            purpose,
-            items,
-            transactionDate,
-            description
-        });
-
-        const params = new URLSearchParams({
-            senderId: senderId,
-            senderType: senderType,
-            batchNumber: batchNumber.toString(),
-            purpose: purpose || 'GENERAL'
-        });
-
-        if (transactionDate) {
-            params.append('transactionDate', transactionDate);
-        }
-
-        if (description) {
-            params.append('description', description);
-        }
-
-        const url = `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`;
-        console.log('🌐 EquipmentService: Making POST request to:', url);
-        console.log('📦 EquipmentService: Request body (items):', items);
-
-        return apiClient.post(url, items);
-    },
-
     // Accept equipment transaction
     acceptEquipmentTransaction: (equipmentId, transactionId, acceptanceData) => {
         return apiClient.post(

@@ -184,50 +184,53 @@
 // Transaction buttons styling
 .r4m-transaction-buttons {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
   justify-content: center;
   min-height: 32px;
+  flex-wrap: wrap;
 }
 
 .r4m-transaction-eye-button {
-  background-color: #f8fafc;
-  color: #4a90e2;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 4px 6px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  height: 28px;
+  gap: 0.25rem;
+  padding: 0.375rem 0.625rem;
+  min-width: 32px;
+  height: 30px;
+  background: rgba(var(--color-primary-rgb), 0.08);
+  color: var(--color-primary);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
 
   &:hover {
-    background-color: #f1f5f9;
-    border-color: #cbd5e1;
-    color: #3b82f6;
+    background: rgba(var(--color-primary-rgb), 0.15);
+    border-color: var(--color-primary);
+    color: var(--color-primary-dark);
+    box-shadow: 0 2px 6px rgba(var(--color-primary-rgb), 0.2);
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   &:active {
     transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
   }
 
   svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
   }
 }
 
 .r4m-no-transactions {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-style: italic;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   display: flex;
   align-items: center;
   justify-content: center;

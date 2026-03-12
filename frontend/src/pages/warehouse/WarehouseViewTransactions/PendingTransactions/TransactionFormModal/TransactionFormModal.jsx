@@ -183,11 +183,12 @@ const TransactionFormModal = ({
             if (entityType === "WAREHOUSE") {
                 response = await siteService.getSiteWarehouses(siteId);
             } else if (entityType === "EQUIPMENT") {
-                response = await siteService.getSiteEquipment(siteId);
+                response = await siteService.getSiteEquipmentDTO(siteId);
             } else {
                 return [];
             }
             const data = response.data || response;
+            console.log(`Fetched ${entityType} for site ${siteId}:`, data);
             return Array.isArray(data) ? data : [];
         } catch (error) {
             console.error(`Failed to fetch ${entityType} for site ${siteId}:`, error);
@@ -251,7 +252,8 @@ const TransactionFormModal = ({
     const handleReceiverSiteChange = (e) => {
         setIsFormDirty(true);
         setSelectedReceiverSite(e.target.value);
-        setNewTransaction(prev => ({ ...prev, receiverType: "", receiverId: "" }));
+        // Keep receiverType so the user doesn't have to re-select it; only reset receiverId
+        setNewTransaction(prev => ({ ...prev, receiverId: "" }));
     };
 
     // ─── Item Handlers ────────────────────────────────────────────────────────
@@ -423,7 +425,9 @@ const TransactionFormModal = ({
 
         const transactionData = {
             transactionDate: newTransaction.transactionDate,
+            senderType: "WAREHOUSE",                        // always WAREHOUSE
             senderId: warehouseId,                          // always this warehouse
+            sentFirst: warehouseId,                         // warehouse initiates the transaction
             receiverType: newTransaction.receiverType,
             receiverId: newTransaction.receiverType === "LOSS"
                 ? "00000000-0000-0000-0000-000000000000"
@@ -752,7 +756,7 @@ const TransactionFormModal = ({
                                                 {receiverOptions.length > 0 ? (
                                                     receiverOptions.map(entity => {
                                                         const displayName = newTransaction.receiverType === "EQUIPMENT"
-                                                            ? entity.fullModelName || "No model name"
+                                                            ? (entity.model && entity.name ? `${entity.model} ${entity.name}` : entity.name || "No model name")
                                                             : entity.name;
                                                         return (
                                                             <option key={entity.id} value={entity.id}>

@@ -42,7 +42,7 @@ public class TransactionDTO {
     private Integer batchNumber;
     private UUID sentFirst;
     private TransactionPurpose purpose;
-    
+    private UUID maintenanceId;
 
     private List<TransactionItemDTO> items;
 } 

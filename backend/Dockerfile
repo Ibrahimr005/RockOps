@@ -5,7 +5,7 @@ WORKDIR /app
 # Copy Maven files (they're in the backend folder, which is the context)
 COPY pom.xml .
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -Dmaven.test.skip=true
 
 # Runtime stage
 FROM public.ecr.aws/docker/library/eclipse-temurin:21-jre
