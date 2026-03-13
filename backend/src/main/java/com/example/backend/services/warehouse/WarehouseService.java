@@ -11,6 +11,7 @@ import com.example.backend.repositories.warehouse.WarehouseRepository;
 import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class WarehouseService {
     private NotificationService notificationService;
 
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllWarehouses() {
         try {
             List<Warehouse> warehouses = warehouseRepository.findAll();
@@ -85,6 +87,7 @@ public class WarehouseService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Warehouse getWarehouseById(UUID id) {
         Warehouse warehouse = warehouseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Warehouse not found"));
@@ -95,6 +98,7 @@ public class WarehouseService {
         return warehouse;
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> getWarehouseDetails(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new RuntimeException("Warehouse not found"));
@@ -133,6 +137,7 @@ public class WarehouseService {
 
 
 
+    @Transactional(readOnly = true)
     public List<Employee> getEmployeesByWarehouseId(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new RuntimeException("Warehouse not found"));
@@ -140,6 +145,7 @@ public class WarehouseService {
         return new ArrayList<>(warehouse.getEmployees());
     }
 
+    @Transactional(readOnly = true)
     public List<Warehouse> getWarehousesBySite(UUID siteId) {
         return warehouseRepository.findBySiteId(siteId);
     }
@@ -149,6 +155,7 @@ public class WarehouseService {
 
 // Update your WarehouseService updateWarehouse method to this:
 
+    @Transactional
     public Warehouse updateWarehouse(UUID id, Map<String, Object> warehouseData) {
         try {
             Warehouse existingWarehouse = warehouseRepository.findById(id)
@@ -288,6 +295,7 @@ public class WarehouseService {
     }
 
 
+    @Transactional
     public void deleteWarehouse(UUID id) {
         try {
             Warehouse warehouse = warehouseRepository.findById(id)

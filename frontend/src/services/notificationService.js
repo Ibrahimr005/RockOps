@@ -102,6 +102,8 @@ export const notificationService = {
      * @returns {string} WebSocket URL
      */
     getWebSocketUrl: () => {
-        return 'ws://localhost:8080/ws';
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const baseUrl = API_BASE_URL.replace(/^https?:/, wsProtocol);
+        return `${baseUrl}/ws`;
     }
 };

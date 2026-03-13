@@ -58,6 +58,7 @@ public class AdminService {
     /**
      * Get all users in the system - returns DTOs to avoid circular references
      */
+    @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
         checkAdminAccess();
         List<User> users = userRepository.findAll();
@@ -69,6 +70,7 @@ public class AdminService {
     /**
      * Get user by their ID - returns DTO
      */
+    @Transactional(readOnly = true)
     public Optional<UserDTO> getUserById(UUID userId) {
         checkAdminAccess();
         Optional<User> user = userRepository.findById(userId);
@@ -81,6 +83,7 @@ public class AdminService {
     /**
      * Get users by role - returns DTOs
      */
+    @Transactional(readOnly = true)
     public List<UserDTO> getUsersByRole(Role role) {
         checkAdminAccess();
         List<User> users = userRepository.findByRole(role);
@@ -149,7 +152,8 @@ public class AdminService {
                 .id(warehouse.getId())
                 .name(warehouse.getName())
                 .photoUrl(warehouse.getPhotoUrl())
-                .site(warehouse.getSite())
+                .siteId(warehouse.getSite() != null ? warehouse.getSite().getId() : null)
+                .siteName(warehouse.getSite() != null ? warehouse.getSite().getName() : null)
                 .build();
     }
 

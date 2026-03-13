@@ -1,5 +1,6 @@
 package com.example.backend.config.notification;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -9,9 +10,15 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    @Value("${cors.allowed.origins:http://localhost:5173}")
+    private String corsAllowedOrigins;
 
     @Bean
     public TaskScheduler heartBeatScheduler() {
@@ -24,52 +31,41 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable simple broker with proper configuration and heartbeat
         config.enableSimpleBroker("/topic", "/queue")
-                .setHeartbeatValue(new long[]{10000, 10000}) // Server sends every 10s, expects client every 10s
-                .setTaskScheduler(heartBeatScheduler()); // Use our custom scheduler
+                .setHeartbeatValue(new long[]{10000, 10000})
+                .setTaskScheduler(heartBeatScheduler());
 
-        // Set application destination prefix
         config.setApplicationDestinationPrefixes("/app");
-
-        // Set user destination prefix
         config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register STOMP endpoint with proper CORS configuration for your deployments
+        String[] origins = buildAllowedOrigins();
+
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns(
-                        // Local development
-                        "http://localhost:3000",
-                        "http://localhost:5173",
-                        "http://127.0.0.1:*",
-                        "http://localhost:*",
-
-                        // AWS S3 deployment - ADD THIS LINE
-                        "http://rockops.s3-website-us-east-1.amazonaws.com",
-
-                        // Your specific Vercel deployments
-                        "https://dev-rock-ops.vercel.app",
-                        "https://rock-ops.vercel.app",
-
-                        // All Vercel subdomains (backup)
-                        "https://*.vercel.app"
-                )
+                .setAllowedOriginPatterns(origins)
                 .withSockJS()
-                .setHeartbeatTime(25000); // SockJS heartbeat (backup to STOMP heartbeat)
+                .setHeartbeatTime(25000);
+    }
 
-        // Native WebSocket endpoint (without SockJS)
-        registry.addEndpoint("/ws-native")
-                .setAllowedOriginPatterns(
-                        "http://localhost:3000",
-                        "http://localhost:5173",
-                        "http://127.0.0.1:*",
-                        "http://localhost:*",
-                        "http://rockops.s3-website-us-east-1.amazonaws.com",  // ADD THIS LINE TOO
-                        "https://dev-rock-ops.vercel.app",
-                        "https://rock-ops.vercel.app"
-                );
+    private String[] buildAllowedOrigins() {
+        List<String> origins = new ArrayList<>();
+
+        // Local development
+        origins.add("http://localhost:*");
+        origins.add("http://127.0.0.1:*");
+
+        // Add origins from cors.allowed.origins property
+        if (corsAllowedOrigins != null && !corsAllowedOrigins.isBlank()) {
+            for (String origin : corsAllowedOrigins.split(",")) {
+                String trimmed = origin.trim();
+                if (!trimmed.isEmpty()) {
+                    origins.add(trimmed);
+                }
+            }
+        }
+
+        return origins.toArray(new String[0]);
     }
 }

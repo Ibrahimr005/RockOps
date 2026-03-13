@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../../../config/api.config';
 import './ProcurementRequestOrderDetails.scss';
 
 const ProcurementRequestOrderDetails = () => {
@@ -17,7 +18,7 @@ const ProcurementRequestOrderDetails = () => {
     const fetchRequestOrderDetails = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/requestOrders/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/requestOrders/${id}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,

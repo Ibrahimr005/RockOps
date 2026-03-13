@@ -23,7 +23,7 @@ import com.example.backend.services.id.EntityIdGeneratorService;
 import com.example.backend.services.notification.NotificationService;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -134,6 +134,7 @@ public class SiteAdminService
         }
     }
 
+    @Transactional
     public void deleteSite(UUID id)
     {
         try {
@@ -632,6 +633,7 @@ public class SiteAdminService
     }
 
 
+    @Transactional
     public Employee removeEmployeeFromSite(UUID siteId, UUID employeeId) {
         Optional<Employee> optionalEmployee = employeeRepository.findById(employeeId);
         Optional<Site> optionalSite = siteRepository.findById(siteId);
@@ -763,6 +765,7 @@ public class SiteAdminService
         }
     }
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getWarehouseEmployees(UUID warehouseId) {
         try {
             System.out.println("=== Fetching employees for warehouse: " + warehouseId + " ===");

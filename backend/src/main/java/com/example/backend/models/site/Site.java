@@ -91,11 +91,11 @@ public class Site
 
 
     public int getEquipmentCount() {
-        return equipment != null ? equipment.size() : 0;
+        return equipmentCount;
     }
 
     public int getEmployeeCount() {
-        return employees != null ? employees.size() : 0;
+        return employeeCount;
     }
 
     public void setEquipmentCount(int count) {
