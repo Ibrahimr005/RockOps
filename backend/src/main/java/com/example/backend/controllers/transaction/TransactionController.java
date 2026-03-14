@@ -4,11 +4,11 @@ import com.example.backend.dto.transaction.*;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.transaction.TransactionStatus;
 import com.example.backend.models.warehouse.ItemType;
-import com.example.backend.repositories.transaction.TransactionRepository;
-import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.services.transaction.TransactionMapperService;
 import com.example.backend.services.transaction.TransactionService;
 import com.example.backend.models.transaction.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,17 +22,13 @@ import java.util.*;
 @RequestMapping("/api/v1/transactions")
 public class TransactionController {
 
+    private static final Logger log = LoggerFactory.getLogger(TransactionController.class);
+
     @Autowired
     private TransactionService transactionService;
 
     @Autowired
     private TransactionMapperService transactionMapperService;
-
-    @Autowired
-    private ItemTypeRepository itemTypeRepository;
-
-    @Autowired
-    private TransactionRepository transactionRepository;
 
     // ========================================
     // CREATE
@@ -44,8 +40,7 @@ public class TransactionController {
         try {
             List<TransactionItem> items = new ArrayList<>();
             for (TransactionItemRequestDTO itemRequest : request.getItems()) {
-                ItemType itemType = itemTypeRepository.findById(itemRequest.getItemTypeId())
-                        .orElseThrow(() -> new IllegalArgumentException("Item type not found: " + itemRequest.getItemTypeId()));
+                ItemType itemType = transactionService.getItemTypeById(itemRequest.getItemTypeId());
 
                 TransactionItem item = TransactionItem.builder()
                         .itemType(itemType)
@@ -68,7 +63,7 @@ public class TransactionController {
 
             if (request.getHandledBy() != null) {
                 transaction.setHandledBy(request.getHandledBy());
-                transaction = transactionRepository.save(transaction);
+                transaction = transactionService.saveTransaction(transaction);
             }
 
             return ResponseEntity.ok(transactionMapperService.toDTO(transaction));
@@ -76,7 +71,7 @@ public class TransactionController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(null);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error creating transaction", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -91,8 +86,7 @@ public class TransactionController {
             @PathVariable UUID transactionId,
             @RequestBody Map<String, Object> requestBody) {
 
-        System.out.println("=== ACCEPT TRANSACTION ===");
-        System.out.println("Transaction ID: " + transactionId);
+        log.debug("Accept transaction request for ID: {}", transactionId);
 
         try {
             String username = (String) requestBody.get("username");
@@ -129,21 +123,20 @@ public class TransactionController {
                 receivedQuantities.put(itemId, receivedQuantity);
                 itemsNotReceived.put(itemId, notReceived);
 
-                System.out.println("  Item " + i + ": id=" + itemId + " qty=" + receivedQuantity + " notReceived=" + notReceived);
+                log.debug("Item {}: id={} qty={} notReceived={}", i, itemId, receivedQuantity, notReceived);
             }
 
             Transaction transaction = transactionService.acceptTransaction(
                     transactionId, receivedQuantities, itemsNotReceived, username, acceptanceComment);
 
-            System.out.println("=== ACCEPT SUCCESS ===");
+            log.debug("Transaction {} accepted successfully", transactionId);
             return ResponseEntity.ok(transactionMapperService.toDTO(transaction));
 
         } catch (IllegalArgumentException e) {
-            System.err.println("Accept failed - bad request: " + e.getMessage());
+            log.warn("Accept failed - bad request: {}", e.getMessage());
             return ResponseEntity.badRequest().body(null);
         } catch (Exception e) {
-            System.err.println("Accept failed - server error: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Accept failed - server error for transaction {}", transactionId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -172,7 +165,7 @@ public class TransactionController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(null);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error rejecting transaction {}", transactionId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -189,8 +182,7 @@ public class TransactionController {
         try {
             List<TransactionItem> items = new ArrayList<>();
             for (TransactionItemRequestDTO itemRequest : request.getItems()) {
-                ItemType itemType = itemTypeRepository.findById(itemRequest.getItemTypeId())
-                        .orElseThrow(() -> new IllegalArgumentException("Item type not found: " + itemRequest.getItemTypeId()));
+                ItemType itemType = transactionService.getItemTypeById(itemRequest.getItemTypeId());
 
                 TransactionItem item = new TransactionItem();
                 item.setItemType(itemType);
@@ -215,7 +207,7 @@ public class TransactionController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(null);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error updating transaction {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -227,7 +219,7 @@ public class TransactionController {
     @DeleteMapping("/{transactionId}")
     public ResponseEntity<Map<String, Object>> deleteTransaction(@PathVariable UUID transactionId) {
         try {
-            System.out.println("DELETE /transactions/" + transactionId);
+            log.debug("DELETE /transactions/{}", transactionId);
             transactionService.deleteTransaction(transactionId);
 
             Map<String, Object> response = new HashMap<>();
@@ -247,7 +239,7 @@ public class TransactionController {
             return ResponseEntity.badRequest().body(error);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error deleting transaction {}", transactionId, e);
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("error", "Server Error");
@@ -264,13 +256,12 @@ public class TransactionController {
     @GetMapping("/{transactionId}")
     public ResponseEntity<TransactionDTO> getTransactionById(@PathVariable UUID transactionId) {
         try {
-            Optional<Transaction> transaction = transactionRepository.findById(transactionId);
-            if (transaction.isPresent()) {
-                return ResponseEntity.ok(transactionMapperService.toDTO(transaction.get()));
-            }
+            Transaction transaction = transactionService.getTransactionById(transactionId);
+            return ResponseEntity.ok(transactionMapperService.toDTO(transaction));
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error fetching transaction {}", transactionId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -281,7 +272,7 @@ public class TransactionController {
             List<Transaction> transactions = transactionService.getTransactionsForWarehouse(warehouseId);
             return ResponseEntity.ok(transactionMapperService.toDTOs(transactions));
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error fetching transactions for warehouse {}", warehouseId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -292,7 +283,7 @@ public class TransactionController {
             List<Transaction> transactions = transactionService.getTransactionsForEquipment(equipmentId);
             return ResponseEntity.ok(transactionMapperService.toDTOs(transactions));
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error fetching transactions for equipment {}", equipmentId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -300,13 +291,13 @@ public class TransactionController {
     @GetMapping("/batch/{batchNumber}")
     public ResponseEntity<TransactionDTO> findByBatchNumber(@PathVariable int batchNumber) {
         try {
-            Optional<Transaction> transaction = transactionRepository.findByBatchNumber(batchNumber);
+            Optional<Transaction> transaction = transactionService.findByBatchNumber(batchNumber);
             if (transaction.isPresent()) {
                 return ResponseEntity.ok(transactionMapperService.toDTO(transaction.get()));
             }
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error fetching transaction by batch number {}", batchNumber, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -320,20 +311,19 @@ public class TransactionController {
             @PathVariable UUID id,
             @RequestBody Map<String, String> updates) {
         try {
-            Transaction transaction = transactionRepository.findById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+            Transaction transaction = transactionService.getTransactionById(id);
 
             if (updates.containsKey("description"))       transaction.setDescription(updates.get("description"));
             if (updates.containsKey("handledBy"))         transaction.setHandledBy(updates.get("handledBy"));
             if (updates.containsKey("rejectionReason"))   transaction.setRejectionReason(updates.get("rejectionReason"));
             if (updates.containsKey("acceptanceComment")) transaction.setAcceptanceComment(updates.get("acceptanceComment"));
 
-            return ResponseEntity.ok(transactionMapperService.toDTO(transactionRepository.save(transaction)));
+            return ResponseEntity.ok(transactionMapperService.toDTO(transactionService.saveTransaction(transaction)));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(null);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error updating transaction details for {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -343,8 +333,7 @@ public class TransactionController {
             @PathVariable UUID transactionId,
             @RequestBody Map<String, String> request) {
         try {
-            Transaction transaction = transactionRepository.findById(transactionId)
-                    .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+            Transaction transaction = transactionService.getTransactionById(transactionId);
 
             transaction.setStatus(TransactionStatus.RESOLVED);
             transaction.setCompletedAt(LocalDateTime.now());
@@ -352,12 +341,12 @@ public class TransactionController {
             if (request.containsKey("resolvedBy"))        transaction.setApprovedBy(request.get("resolvedBy"));
             if (request.containsKey("resolutionComment")) transaction.setAcceptanceComment(request.get("resolutionComment"));
 
-            return ResponseEntity.ok(transactionMapperService.toDTO(transactionRepository.save(transaction)));
+            return ResponseEntity.ok(transactionMapperService.toDTO(transactionService.saveTransaction(transaction)));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(null);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error resolving transaction {}", transactionId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }

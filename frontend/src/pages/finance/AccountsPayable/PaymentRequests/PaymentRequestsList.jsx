@@ -39,8 +39,6 @@ const PaymentRequestsList = () => {
                 response = await financeService.accountsPayable.paymentRequests.getAll();
             }
 
-            console.log('Payment Requests Response:', response);
-            console.log('First payment request:', response.data?.[0]);
 
             setPaymentRequests(response.data || []);
         } catch (err) {

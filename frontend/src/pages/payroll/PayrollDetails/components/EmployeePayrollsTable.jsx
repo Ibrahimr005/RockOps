@@ -70,7 +70,6 @@ const EmployeePayrollsTable = ({ employeePayrolls, payroll, onRefresh, loading }
             const types = Array.isArray(response) ? response :
                          (response?.data ? response.data :
                          (response?.content ? response.content : []));
-            console.log('Payment types loaded:', types);
             setPaymentTypes(types);
         } catch (error) {
             console.error('Error fetching payment types:', error);

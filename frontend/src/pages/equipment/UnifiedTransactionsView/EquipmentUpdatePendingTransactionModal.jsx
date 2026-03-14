@@ -57,8 +57,6 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
     // Initialize the form when the modal opens
     useEffect(() => {
         if (transaction && isOpen) {
-            console.log("🔍 FULL TRANSACTION OBJECT:", JSON.stringify(transaction, null, 2));
-
             // Format items correctly based on actual API structure
             const formattedItems = (transaction.items || []).map(item => ({
                 itemType: {
@@ -211,8 +209,8 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
             }
             onClose();
         } catch (error) {
-            showSnackbar('error', error.message || 'Failed to update transaction. Please try again.');
-            setError(error.message || "Failed to update transaction");
+            showSnackbar('error', 'Failed to update transaction. Please try again.');
+            setError("Failed to update transaction. Please try again.");
         } finally {
             setIsLoading(false);
         }

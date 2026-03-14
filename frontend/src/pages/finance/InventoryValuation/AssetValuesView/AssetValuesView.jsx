@@ -94,9 +94,7 @@ const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
             setLoading(true);
             try {
                 const data = await inventoryValuationService.getSiteBalance(siteId);
-                console.log('📦 WAREHOUSE DATA:', data.warehouses);
                 data.warehouses.forEach((warehouse, index) => {
-                    console.log(`Warehouse ${index}:`, warehouse);
                 });
                 setWarehousesData(data.warehouses || []);
             } catch (error) {
@@ -115,13 +113,9 @@ const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
             const response = await siteService.getSiteEquipmentDTO(siteId);
             const data = response.data || response || []; // ✅ Handle response wrapping
 
-            console.log('🔧 EQUIPMENT RESPONSE:', response);
-            console.log('🔧 EQUIPMENT DATA:', data);
 
             if (Array.isArray(data)) {
                 data.forEach((equipment, index) => {
-                    console.log(`Equipment ${index}:`, equipment);
-                    console.log('  - imageUrl:', equipment.imageUrl);
                 });
 
                 setEquipmentData(data);

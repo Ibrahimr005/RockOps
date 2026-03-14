@@ -35,7 +35,7 @@ public class DocumentController {
             return ResponseEntity.ok(documentService.getDocumentsByEntity(type, id));
         } catch (IllegalArgumentException e) {
             // Log the error
-            System.err.println("Invalid parameters: " + e.getMessage());
+            // Invalid parameters
             // Return empty list instead of error
             return ResponseEntity.ok(Collections.emptyList());
         }
@@ -90,10 +90,10 @@ public class DocumentController {
             EntityType type = EntityType.valueOf(entityType.toUpperCase());
             return ResponseEntity.ok(documentService.getSarkyDocumentsByMonth(type, id, month, year));
         } catch (IllegalArgumentException e) {
-            System.err.println("Invalid parameters for sarky documents: " + e.getMessage());
+            // Invalid parameters for sarky documents
             return ResponseEntity.ok(Collections.emptyList());
         } catch (Exception e) {
-            System.err.println("Database error for sarky documents: " + e.getMessage());
+            // Database error for sarky documents
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
         }
@@ -127,7 +127,7 @@ public class DocumentController {
             EntityType type = EntityType.valueOf(entityType.toUpperCase());
             return ResponseEntity.ok(documentService.getAllSarkyDocuments(type, id));
         } catch (IllegalArgumentException e) {
-            System.err.println("Invalid parameters for all sarky documents: " + e.getMessage());
+            // Invalid parameters for all sarky documents
             return ResponseEntity.ok(Collections.emptyList());
         }
     }

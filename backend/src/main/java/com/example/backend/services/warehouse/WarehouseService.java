@@ -35,7 +35,7 @@ public class WarehouseService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllWarehouses() {
         try {
-            List<Warehouse> warehouses = warehouseRepository.findAll();
+            List<Warehouse> warehouses = warehouseRepository.findAllWithSiteAndEmployees();
             List<Map<String, Object>> warehouseList = new ArrayList<>();
 
             for (Warehouse warehouse : warehouses) {
@@ -100,7 +100,7 @@ public class WarehouseService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getWarehouseDetails(UUID warehouseId) {
-        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+        Warehouse warehouse = warehouseRepository.findByIdWithSiteAndEmployees(warehouseId)
                 .orElseThrow(() -> new RuntimeException("Warehouse not found"));
 
         Map<String, Object> response = new HashMap<>();

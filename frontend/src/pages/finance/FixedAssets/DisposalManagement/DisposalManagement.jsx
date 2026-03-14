@@ -144,11 +144,6 @@ const DisposalManagement = () => {
                 notes: formData.notes || null
             };
 
-            console.log('=== DEBUGGING DISPOSAL REQUEST ===');
-            console.log('Form Data:', formData);
-            console.log('Disposal Request Data:', disposalRequestData);
-            console.log('Selected File:', selectedFile);
-            console.log('Asset ID from URL:', formData.assetId);
 
             // Create FormData for multipart request
             const formDataToSend = new FormData();
@@ -161,15 +156,9 @@ const DisposalManagement = () => {
                 formDataToSend.append('document', selectedFile);
             }
 
-            console.log('Sending disposal request:', {
-                assetId: formData.assetId,
-                disposalData: disposalRequestData,
-                hasDocument: !!selectedFile
-            });
 
             // Use the service method for disposal
             const result = await financeService.fixedAssets.dispose(formData.assetId, formDataToSend);
-            console.log('Disposal successful:', result);
 
             // Refresh disposal data
             await fetchDisposalData();

@@ -265,8 +265,6 @@ const FinalizeOffers = ({
         setShowUnfinalizedItemsDialog(false);
 
         try {
-            console.log('🔵 Finalizing offer with ID:', activeOffer.id);
-            console.log('🔵 Finalized item IDs:', finalizedItemIds);
 
             let responseData;
 
@@ -276,11 +274,9 @@ const FinalizeOffers = ({
                 responseData = await purchaseOrderService.finalizeOffer(activeOffer.id, finalizedItemIds);
             }
 
-            console.log('✅ Offer finalized, PO created:', responseData);
 
             // Extract PO ID and Offer ID
             // ✅ NEW CODE - Check multiple possible locations for PO ID
-            console.log('🔵 Full responseData:', responseData);
 
             // Try different possible locations for the PO ID
             const purchaseOrderId = responseData.id ||
@@ -291,21 +287,16 @@ const FinalizeOffers = ({
 
             const offerId = activeOffer.id;
 
-            console.log('🔵 Extracted PO ID:', purchaseOrderId);
-            console.log('🔵 Extracted Offer ID:', offerId);
-            console.log('🔵 Response structure:', Object.keys(responseData));
 
 
             // ✅ CREATE PAYMENT REQUEST using financeService
             if (purchaseOrderId && offerId) {
                 try {
-                    console.log('🔵 Creating payment request via financeService...');
 
                     // Get username from localStorage
                     const userInfo = JSON.parse(localStorage.getItem('userInfo'));
                     const username = userInfo?.username || userInfo?.name || 'system';
 
-                    console.log('🔵 Username:', username);
 
                     // Call financeService.paymentRequests.createFromPurchaseOrder
                     const response = await financeService.accountsPayable.paymentRequests.createFromPurchaseOrder(
@@ -315,7 +306,6 @@ const FinalizeOffers = ({
                     );
 
                     const paymentRequest = response.data || response;
-                    console.log('✅ Payment request created successfully:', paymentRequest);
 
                     handleSuccess(
                         'Offer finalized successfully! Purchase Order and Payment Request created.'

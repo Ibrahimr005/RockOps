@@ -27,7 +27,7 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                 setParentCategories(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Error fetching parent categories:", error);
-                setError(error.message);
+                setError('Failed to load parent categories. Please try again.');
                 setParentCategories([]);
             } finally {
                 setLoading(false);

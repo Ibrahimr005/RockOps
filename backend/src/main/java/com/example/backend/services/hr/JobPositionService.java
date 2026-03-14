@@ -342,6 +342,20 @@ public class JobPositionService {
     }
 
     /**
+     * Get root job positions (no parent)
+     */
+    public List<JobPosition> getRootPositions() {
+        return jobPositionRepository.findByParentJobPositionIsNull();
+    }
+
+    /**
+     * Get child positions for a given parent ID
+     */
+    public List<JobPosition> getChildPositions(UUID parentId) {
+        return jobPositionRepository.findByParentJobPositionId(parentId);
+    }
+
+    /**
      * Get all job positions as DTOs with eager loading of sites
      */
     public List<JobPositionDTO> getAllJobPositionDTOs() {

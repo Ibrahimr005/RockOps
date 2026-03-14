@@ -52,7 +52,6 @@ const OvertimeReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDial
     const fetchOvertimeStatus = async () => {
         try {
             const status = await payrollService.getOvertimeStatus(payroll.id);
-            console.log('📊 Overtime Status:', status);
             setOvertimeStatus(status);
         } catch (error) {
             console.error('Error fetching overtime status:', error);
@@ -63,7 +62,6 @@ const OvertimeReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDial
     const fetchOvertimeRecords = async () => {
         try {
             const data = await payrollService.getOvertimeRecordsForPayroll(payroll.id);
-            console.log('📊 Overtime Records:', data);
             setOvertimeRecords(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching overtime records:', error);
@@ -77,7 +75,6 @@ const OvertimeReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDial
             setProcessingOvertime(true);
 
             const result = await payrollService.processOvertimeReview(payroll.id);
-            console.log('📊 Process Overtime Result:', result);
 
             if (result.status === 'SUCCESS') {
                 showSuccess(result.message);
@@ -192,10 +189,6 @@ const OvertimeReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDial
             return <div className="error-state">Failed to load overtime status</div>;
         }
 
-        console.log('🎯 Rendering decision:', {
-            overtimeFinalized: overtimeStatus.overtimeFinalized,
-            overtimeProcessed: overtimeStatus.overtimeProcessed
-        });
 
         // Finalized state
         if (overtimeStatus.overtimeFinalized) {

@@ -16,8 +16,6 @@ const AssignmentModal = ({
                              showConfirmDialog,
                              hideConfirmDialog
                          }) => {
-    console.log('🟡 AssignmentModal rendered - isOpen:', isOpen, 'selectedWarehouse:', selectedWarehouse);
-
     const { currentUser } = useAuth();
     const [assignedEmployees, setAssignedEmployees] = useState([]);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -145,7 +143,7 @@ const AssignmentModal = ({
 
         } catch (error) {
             console.error("Error applying changes:", error);
-            showSnackbar('error', `Failed to apply changes: ${error.message}`);
+            showSnackbar('error', 'Failed to apply changes. Please try again.');
         } finally {
             setAssignmentLoading(false);
         }

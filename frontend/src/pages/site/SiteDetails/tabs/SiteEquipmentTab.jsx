@@ -129,12 +129,12 @@ const SiteEquipmentTab = ({siteId}) => {
 
             setLoading(false);
         } catch (err) {
-            setError(err.message);
+            setError('Failed to load equipment. Please try again.');
             setEquipmentData([]);
             setLoading(false);
             setSnackbar({
                 show: true,
-                message: err.message,
+                message: 'Failed to load equipment. Please try again.',
                 type: 'error'
             });
         }

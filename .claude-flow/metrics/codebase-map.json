@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-07T15:45:48.155Z",
+  "timestamp": "2026-03-11T06:25:02.089Z",
   "projectRoot": "D:\\RockOps",
   "structure": {
     "hasPackageJson": false,
@@ -7,5 +7,5 @@
     "hasClaudeConfig": true,
     "hasClaudeFlow": true
   },
-  "scannedAt": 1772898348155
+  "scannedAt": 1773210302089
 }

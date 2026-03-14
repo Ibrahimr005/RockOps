@@ -2,11 +2,16 @@ package com.example.backend.services.hr;
 
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;
+import com.example.backend.models.payroll.EmployeePayroll;
+import com.example.backend.models.payroll.PaymentType;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.equipment.EquipmentRepository;
+import com.example.backend.repositories.payroll.EmployeePayrollRepository;
+import com.example.backend.repositories.payroll.PaymentTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,26 +26,37 @@ public class EmployeeService {
     private EquipmentRepository equipmentRepository;
 
     @Autowired
+    private PaymentTypeRepository paymentTypeRepository;
+
+    @Autowired
+    private EmployeePayrollRepository employeePayrollRepository;
+
+    @Autowired
     @Lazy
     private VacationBalanceService vacationBalanceService;
 
+    @Transactional(readOnly = true)
     public List<Employee> getWarehouseWorkers() {
         return employeeRepository.findByJobPositionName("Warehouse Worker");
     }
 
+    @Transactional(readOnly = true)
     public List<Employee> getWarehouseManagers() {
         return employeeRepository.findByJobPositionName("Warehouse Manager");
 }
 
+    @Transactional(readOnly = true)
     public List<Employee> getDrivers() {
         return employeeRepository.findByJobPositionName("Driver");
 
     }
 
+    @Transactional(readOnly = true)
     public List<Employee> getTechnicians() {
         return employeeRepository.findByJobPositionName("Technician");
     }
 
+    @Transactional(readOnly = true)
     public List<Employee> getEmployeesBySiteId(UUID siteId) {
         return employeeRepository.findBySiteId(siteId);
     }
@@ -50,6 +66,7 @@ public class EmployeeService {
      * @param siteId The site ID to filter technicians by
      * @return List of technicians assigned to the specified site
      */
+    @Transactional(readOnly = true)
     public List<Employee> getTechniciansBySite(UUID siteId) {
         if (siteId == null) {
             // If no site ID provided, return all technicians
@@ -63,6 +80,7 @@ public class EmployeeService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<Employee> getEmployees() {
         return employeeRepository.findAll();
     }
@@ -72,6 +90,7 @@ public class EmployeeService {
      * @param id Employee ID
      * @return Employee or null if not found
      */
+    @Transactional(readOnly = true)
     public Employee getEmployeeById(UUID id) {
         return employeeRepository.findById(id).orElse(null);
     }
@@ -103,6 +122,7 @@ public class EmployeeService {
      * @return List of employees with the specified contract type
      * @throws IllegalArgumentException if contractType is invalid
      */
+    @Transactional(readOnly = true)
     public List<Employee> getEmployeesByContractType(String contractType) {
         try {
             // Validate and convert contract type
@@ -132,4 +152,16 @@ public class EmployeeService {
 //        return equipment.isDriverCompatible(driver);
 //    }
 
+    public PaymentType getPaymentTypeById(UUID paymentTypeId) {
+        return paymentTypeRepository.findById(paymentTypeId)
+                .orElseThrow(() -> new RuntimeException("Payment type not found"));
+    }
+
+    public List<EmployeePayroll> findEditablePayrollsByEmployeeId(UUID employeeId) {
+        return employeePayrollRepository.findEditableByEmployeeId(employeeId);
+    }
+
+    public EmployeePayroll saveEmployeePayroll(EmployeePayroll employeePayroll) {
+        return employeePayrollRepository.save(employeePayroll);
+    }
 }

@@ -377,7 +377,6 @@ const EmployeeOnboarding = () => {
                 dtoData.candidateId = candidateId;
             }
 
-            console.log("Employee data being sent:", dtoData);
 
             // Create FormData for multipart/form-data request
             const formDataToSubmit = new FormData();
@@ -390,36 +389,30 @@ const EmployeeOnboarding = () => {
             // Add image files if provided with correct field names
             if (photoFile) {
                 formDataToSubmit.append('photo', photoFile);
-                console.log('Added photo file:', photoFile.name);
             }
 
             if (idFrontFile) {
                 formDataToSubmit.append('idFrontImage', idFrontFile);
-                console.log('Added ID front file:', idFrontFile.name);
             }
 
             if (idBackFile) {
                 formDataToSubmit.append('idBackImage', idBackFile);
-                console.log('Added ID back file:', idBackFile.name);
             }
 
             // Debug FormData contents
             for (let pair of formDataToSubmit.entries()) {
-                console.log(pair[0], pair[1] instanceof Blob ? `Blob: ${pair[1].type}, size: ${pair[1].size}` : pair[1]);
             }
 
             // Call the service with FormData
             const response = await hrEmployeeService.employee.create(formDataToSubmit);
             await candidateService.updateStatus(candidateId, 'HIRED');
 
-            console.log('Employee created successfully:', response.data);
 
             // If this is from a candidate, finalize the hiring process
             if (isFromCandidate && candidateId) {
                 try {
                     // Update candidate status to HIRED
                     await candidateService.updateStatus(candidateId, 'HIRED');
-                    console.log('Candidate status updated to HIRED for candidate ID:', candidateId);
                     showSuccess('Employee created and candidate hiring process completed successfully!');
                 } catch (error) {
                     console.error('Error finalizing candidate hiring:', error);

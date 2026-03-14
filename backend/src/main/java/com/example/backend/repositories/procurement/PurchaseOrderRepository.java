@@ -15,6 +15,8 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, UU
     List<PurchaseOrder> findByStatus(String status);
     List<PurchaseOrder> findByStatusOrderByUpdatedAtDesc(String status);
 
+    Optional<PurchaseOrder> findByOfferId(UUID offerId);
+
     // NEW: Fetch all POs with item details including category
     @Query("SELECT DISTINCT po FROM PurchaseOrder po " +
             "LEFT JOIN FETCH po.purchaseOrderItems poi " +

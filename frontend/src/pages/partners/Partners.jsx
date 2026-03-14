@@ -59,7 +59,7 @@ const Partners = () => {
             setPartners(response.data);
         } catch (err) {
             console.error('Error fetching partners:', err);
-            setError(err.message);
+            setError('Unable to load partners. Please try again.');
             showError(t('partners.fetchError', 'Unable to load partners'));
         } finally {
             setLoading(false);

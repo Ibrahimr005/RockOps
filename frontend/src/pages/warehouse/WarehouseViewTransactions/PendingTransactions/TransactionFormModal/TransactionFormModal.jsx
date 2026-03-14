@@ -188,7 +188,6 @@ const TransactionFormModal = ({
                 return [];
             }
             const data = response.data || response;
-            console.log(`Fetched ${entityType} for site ${siteId}:`, data);
             return Array.isArray(data) ? data : [];
         } catch (error) {
             console.error(`Failed to fetch ${entityType} for site ${siteId}:`, error);

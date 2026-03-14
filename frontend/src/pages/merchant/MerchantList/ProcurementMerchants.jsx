@@ -65,7 +65,7 @@ const ProcurementMerchants = () => {
                 setError(null);
             } catch (error) {
                 console.error('Error fetching merchants:', error);
-                setError(error.message);
+                setError('Failed to load merchants. Please try again.');
             } finally {
                 setLoading(false);
             }
@@ -96,13 +96,10 @@ const ProcurementMerchants = () => {
 
     // Handle row click to navigate to merchant details page
     const handleRowClick = (merchant) => {
-        console.log("Navigating to merchant details:", merchant);
         navigate(`/merchants/${merchant.id}`);
     };
 
     const onEdit = (merchant) => {
-        console.log("Editing merchant:", merchant);
-
         setFormData({
             name: merchant.name,
             merchantTypes: merchant.merchantTypes || [],  // Changed from merchantType
@@ -134,7 +131,6 @@ const ProcurementMerchants = () => {
 
     // Updated onDelete function to show confirmation dialog
     const onDelete = (merchant) => {
-        console.log("Attempting to delete merchant:", merchant);
         setMerchantToDelete(merchant);
         setShowDeleteDialog(true);
     };
@@ -473,7 +469,6 @@ const ProcurementMerchants = () => {
 
     const handleInfoClick = () => {
         // Add info click functionality here if needed
-        console.log("Info button clicked");
     };
 
     // Get merchant stats for IntroCard

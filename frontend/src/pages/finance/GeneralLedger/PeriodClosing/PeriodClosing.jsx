@@ -48,13 +48,11 @@ const PeriodClosing = () => {
     }, []);
 
     const handleTogglePeriod = (periodId, currentlyClosed) => {
-        console.log(`Toggling period ${periodId}, currently closed: ${currentlyClosed}`);
 
         // Find the actual period to get its current status
         const period = accountingPeriods.find(p => p.id === periodId);
         const isCurrentlyClosed = period?.status === 'CLOSED';
 
-        console.log(`Period status: ${period?.status}, isCurrentlyClosed: ${isCurrentlyClosed}`);
 
         setConfirmationModal({
             show: true,
@@ -101,8 +99,6 @@ const PeriodClosing = () => {
     const handleCreatePeriod = async (e) => {
         e.preventDefault();
         try {
-            console.log('=== DEBUGGING CREATE PERIOD ===');
-            console.log('Form data:', newPeriod);
 
             // Validate form data
             if (!newPeriod.name || !newPeriod.startDate || !newPeriod.endDate) {
@@ -114,11 +110,9 @@ const PeriodClosing = () => {
                 throw new Error('End date must be after start date');
             }
 
-            console.log('Sending period data:', newPeriod);
 
             const response = await financeService.accountingPeriods.create(newPeriod);
 
-            console.log('Create response:', response);
 
             // Reset form and close modal
             setNewPeriod({
@@ -157,13 +151,9 @@ const PeriodClosing = () => {
         try {
             setLoading(true);
 
-            console.log('=== DEBUGGING ACCOUNTING PERIODS ===');
 
             const data = await financeService.accountingPeriods.getAll();
 
-            console.log("Fetched periods raw data:", data);
-            console.log("Data type:", typeof data);
-            console.log("Is array?", Array.isArray(data));
 
             // Handle different response structures (same as journal entries)
             let periodsArray = [];
@@ -179,7 +169,6 @@ const PeriodClosing = () => {
                 if (arrayKeys.length > 0) {
                     periodsArray = data[arrayKeys[0]];
                 }
-                console.log('Object keys:', Object.keys(data));
             }
 
             // Normalize the closed field
@@ -188,7 +177,6 @@ const PeriodClosing = () => {
                 closed: period.status === 'CLOSED' || period.status === 'closed'
             }));
 
-            console.log("Final periods array:", normalizedPeriods);
             setAccountingPeriods(normalizedPeriods);
             setError(null);
         } catch (err) {
@@ -230,7 +218,6 @@ const PeriodClosing = () => {
             sortable: true,
             width: '120px',
             render: (row) => {
-                console.log('Rendering status for row:', row.name, 'closed:', row.closed, typeof row.closed);
                 return (
                     <span className={`status-badge ${row.closed ? 'closed' : 'open'}`}>
                     {row.closed ? 'Closed' : 'Open'}

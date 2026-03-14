@@ -63,7 +63,6 @@ const JobPositionDetails = () => {
             setLoading(true);
             setError(null);
             const response = await jobPositionService.getDetails(id);
-            console.log(response.data)
             setPosition(response.data);
         } catch (err) {
             console.error('Error fetching position details:', err);

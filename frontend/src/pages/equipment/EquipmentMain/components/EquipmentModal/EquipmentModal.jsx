@@ -432,8 +432,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         if (!equipmentToEdit) return;
 
         // Set form data from equipment being edited
-        console.log("equipment to edit");
-        console.log(equipmentToEdit);
 
         // Prepare the form data
         // Fix populateFormForEditing
@@ -484,10 +482,8 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         // Fetch fresh presigned URL for equipment image (important for S3/MinIO)
         if (equipmentToEdit.id) {
             try {
-                console.log(`Fetching fresh presigned URL for equipment ${equipmentToEdit.id}`);
                 const photoResponse = await equipmentService.getEquipmentMainPhoto(equipmentToEdit.id);
                 if (photoResponse.data) {
-                    console.log("Fresh presigned URL fetched successfully");
                     setPreviewImage(photoResponse.data);
                 } else if (equipmentToEdit.imageUrl) {
                     // Fallback to existing URL if fresh fetch fails
@@ -497,10 +493,8 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 console.error("Error fetching fresh equipment photo:", error);
                 // Try refresh endpoint as fallback
                 try {
-                    console.log("Retrying with refresh endpoint...");
                     const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(equipmentToEdit.id);
                     if (refreshResponse.data) {
-                        console.log("Fresh presigned URL fetched via refresh");
                         setPreviewImage(refreshResponse.data);
                     }
                 } catch (refreshError) {
@@ -1143,22 +1137,17 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             }
 
             // Debug: Log all FormData entries
-            console.log("=== FormData Contents ===");
             for (let [key, value] of formDataToSend.entries()) {
                 if (value instanceof File) {
-                    console.log(`${key}: [File] ${value.name} (${value.size} bytes, ${value.type})`);
                 } else {
-                    console.log(`${key}: ${value}`);
                 }
             }
-            console.log("=== End FormData Contents ===");
 
             let result;
             if (equipmentToEdit) {
                 // Update existing equipment
                 result = await equipmentService.updateEquipment(equipmentToEdit.id, formDataToSend);
             } else {
-                console.log(formDataToSend);
                 // Create new equipment
                 result = await equipmentService.addEquipment(formDataToSend);
             }

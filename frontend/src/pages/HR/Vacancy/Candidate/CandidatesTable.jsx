@@ -53,7 +53,6 @@ const CandidatesTable = ({ vacancyId }) => {
                 candidateService.getByVacancy(vacancyId),
                 vacancyService.getStatistics(vacancyId)
             ]);
-            console.log("CANDIDATES", candidatesResponse.data)
             setCandidates(candidatesResponse.data || []);
             setVacancyStats(statsResponse.data);
 
@@ -73,10 +72,8 @@ const CandidatesTable = ({ vacancyId }) => {
             setActionLoading(true);
             setError(null);
 
-            console.log('Submitting candidate data:', formData);
 
             const response = await candidateService.create(formData);
-            console.log('Candidate created successfully:', response);
 
             await fetchCandidatesAndStats();
             setShowAddModal(false);
@@ -104,7 +101,6 @@ const CandidatesTable = ({ vacancyId }) => {
             setError(null);
 
             const response = await candidateService.update(selectedCandidate.id, formData);
-            console.log('Candidate updated successfully:', response);
 
             await fetchCandidatesAndStats();
             setShowEditModal(false);
@@ -397,7 +393,6 @@ const CandidatesTable = ({ vacancyId }) => {
             label: 'Hire',
             icon: <FaUserCheck />,
             onClick: (row) => {
-                console.log('Hire clicked:', row);
                 handleHireCandidate(row);
             },
             isDisabled: (row) => !['INTERVIEWED', 'PENDING HIRE', 'PENDING_HIRE'].includes(row.candidateStatus),

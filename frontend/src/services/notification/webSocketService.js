@@ -20,7 +20,6 @@ class WebSocketService {
     connect(token) {
         return new Promise((resolve, reject) => {
             if (this.connected) {
-                console.log('🔌 Already connected to WebSocket');
                 resolve();
                 return;
             }
@@ -28,7 +27,6 @@ class WebSocketService {
             this.token = token;
             const wsUrl = this.getWebSocketURL();
 
-            console.log('🔌 Connecting to WebSocket:', wsUrl);
 
             // Create STOMP client with SockJS
             this.client = new Client({
@@ -86,7 +84,6 @@ class WebSocketService {
 
             // Connection closed
             this.client.onDisconnect = () => {
-                console.log('🔌 WebSocket Disconnected');
                 this.connected = false;
                 this.subscriptions.clear();
 
@@ -111,12 +108,10 @@ class WebSocketService {
             return;
         }
 
-        console.log('📡 Setting up WebSocket subscriptions...');
 
         try {
             // Subscribe to user-specific notifications
             const notificationSub = this.client.subscribe('/user/queue/notifications', (message) => {
-                console.log('📬 Received notification message:', message.body);
                 const notifications = JSON.parse(message.body);
 
                 if (this.notificationCallback) {
@@ -128,7 +123,6 @@ class WebSocketService {
 
             // Subscribe to unread count updates
             const unreadCountSub = this.client.subscribe('/user/queue/unread-count', (message) => {
-                console.log('📊 Received unread count:', message.body);
                 const response = JSON.parse(message.body);
 
                 if (this.unreadCountCallback && response.data !== undefined) {
@@ -138,13 +132,11 @@ class WebSocketService {
 
             // Subscribe to general responses
             const responsesSub = this.client.subscribe('/user/queue/responses', (message) => {
-                console.log('📝 Received response:', message.body);
                 const response = JSON.parse(message.body);
             });
 
             // Subscribe to broadcast notifications (optional)
             const broadcastSub = this.client.subscribe('/topic/notifications', (message) => {
-                console.log('📢 Received broadcast notification:', message.body);
                 const notification = JSON.parse(message.body);
 
                 if (this.notificationCallback) {
@@ -158,7 +150,6 @@ class WebSocketService {
             this.subscriptions.set('responses', responsesSub);
             this.subscriptions.set('broadcast', broadcastSub);
 
-            console.log('✅ WebSocket subscriptions established');
 
             // Request notification history after connecting
             this.requestNotificationHistory();
@@ -178,7 +169,6 @@ class WebSocketService {
                 destination: '/app/getNotifications',
                 body: JSON.stringify({})
             });
-            console.log('📜 Requested notification history');
         } catch (error) {
             console.error('❌ Error requesting notification history:', error);
         }
@@ -195,7 +185,6 @@ class WebSocketService {
                     destination: '/app/markAsRead',
                     body: JSON.stringify({ notificationId })
                 });
-                console.log('✅ Mark as read request sent:', notificationId);
                 resolve();
             } catch (error) {
                 console.error('❌ Error marking as read:', error);
@@ -215,7 +204,6 @@ class WebSocketService {
                     destination: '/app/markAllAsRead',
                     body: JSON.stringify({})
                 });
-                console.log('✅ Mark all as read request sent');
                 resolve();
             } catch (error) {
                 console.error('❌ Error marking all as read:', error);
@@ -226,7 +214,6 @@ class WebSocketService {
 
     disconnect() {
         if (this.client && this.connected) {
-            console.log('🔌 Disconnecting WebSocket...');
 
             // Unsubscribe from all subscriptions
             this.subscriptions.forEach((subscription) => {
@@ -238,7 +225,6 @@ class WebSocketService {
             this.client.deactivate();
             this.connected = false;
 
-            console.log('✅ WebSocket disconnected');
         }
     }
 

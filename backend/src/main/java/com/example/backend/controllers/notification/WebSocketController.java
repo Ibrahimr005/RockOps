@@ -5,6 +5,8 @@ import com.example.backend.models.notification.Notification;
 import com.example.backend.models.user.User;
 import com.example.backend.repositories.notification.NotificationRepository;
 import com.example.backend.services.notification.NotificationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 
 @Controller
 public class WebSocketController {
+
+    private static final Logger log = LoggerFactory.getLogger(WebSocketController.class);
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -82,15 +86,13 @@ public class WebSocketController {
             UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) principal;
             User user = (User) auth.getPrincipal();
 
-            System.out.println("🔍 DEBUG: Marking notification as read");
-            System.out.println("🔍 DEBUG: NotificationId: " + request.getNotificationId());
-            System.out.println("🔍 DEBUG: UserId: " + user.getId());
+            log.debug("Marking notification {} as read for user {}", request.getNotificationId(), user.getId());
 
             // Find the notification
             Optional<Notification> notificationOpt = notificationRepository.findByIdAndUserOrBroadcast(request.getNotificationId(), user);
 
             if (!notificationOpt.isPresent()) {
-                System.out.println("❌ DEBUG: Notification not found");
+                log.debug("Notification not found or access denied");
                 WebSocketResponse response = new WebSocketResponse("ERROR", "Notification not found or access denied");
                 messagingTemplate.convertAndSendToUser(user.getUsername(), "/queue/responses", response);
                 return;
@@ -101,30 +103,21 @@ public class WebSocketController {
 
             if (notification.getUser() != null) {
                 // User-specific notification (GREEN notifications)
-                System.out.println("🔍 DEBUG: User-specific notification");
                 newReadStatus = !notification.isRead();
                 notification.setRead(newReadStatus);
-                System.out.println("🔍 DEBUG: Set read status to: " + newReadStatus);
             } else {
                 // Broadcast notification (BLUE notifications)
-                System.out.println("🔍 DEBUG: Broadcast notification");
-                System.out.println("🔍 DEBUG: Current readByUsers: " + notification.getReadByUsers());
-
                 if (notification.isReadByUser(user.getId())) {
-                    System.out.println("🔍 DEBUG: User has read this, marking as unread");
                     notification.markAsUnreadByUser(user.getId());
                     newReadStatus = false;
                 } else {
-                    System.out.println("🔍 DEBUG: User hasn't read this, marking as read");
                     notification.markAsReadByUser(user.getId());
                     newReadStatus = true;
                 }
-                System.out.println("🔍 DEBUG: New readByUsers: " + notification.getReadByUsers());
             }
 
             // Save the notification
             notificationRepository.save(notification);
-            System.out.println("🔍 DEBUG: Notification saved");
 
             // Send success response
             WebSocketResponse response = new WebSocketResponse("SUCCESS",
@@ -133,11 +126,9 @@ public class WebSocketController {
 
             // Send updated unread count
             sendUnreadCount(user);
-            System.out.println("✅ DEBUG: Success response sent");
 
         } catch (Exception e) {
-            System.err.println("❌ DEBUG: Exception in markAsRead: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Exception in markAsRead", e);
 
             UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) principal;
             User user = (User) auth.getPrincipal();
@@ -241,7 +232,7 @@ public class WebSocketController {
             sendUnreadCount(user);
 
         } catch (Exception e) {
-            System.err.println("Error sending unread notifications: " + e.getMessage());
+            log.error("Error sending unread notifications: {}", e.getMessage());
         }
     }
 
@@ -264,10 +255,10 @@ public class WebSocketController {
             messagingTemplate.convertAndSendToUser(user.getUsername(),
                     "/queue/unread-count", countResponse);
 
-            System.out.println("📊 DEBUG: Sent unread count " + unreadCount + " to user " + user.getUsername());
+            log.debug("Sent unread count {} to user {}", unreadCount, user.getUsername());
 
         } catch (Exception e) {
-            System.err.println("Error sending unread count: " + e.getMessage());
+            log.error("Error sending unread count: {}", e.getMessage());
         }
     }
 
@@ -319,23 +310,16 @@ public class WebSocketController {
 
     public void sendNotificationToUser(User user, NotificationMessage notification) {
         try {
-            System.out.println("🔍 DEBUG: Attempting to send notification to user: " + user.getUsername() + " (ID: " + user.getId() + ")");
-            System.out.println("🔍 DEBUG: User connected? " + isUserConnected(user.getId()));
-            System.out.println("🔍 DEBUG: Active sessions: " + activeSessions.keySet());
-            System.out.println("🔍 DEBUG: Notification: " + notification.getTitle());
+            log.debug("Sending notification '{}' to user {} (connected: {})",
+                    notification.getTitle(), user.getUsername(), isUserConnected(user.getId()));
 
-            // Try sending by USERNAME instead of UUID
-            System.out.println("🔍 DEBUG: Sending to destination: /user/" + user.getUsername() + "/queue/notifications");
-
-            // Send to user-specific queue using USERNAME
             messagingTemplate.convertAndSendToUser(user.getUsername(),
                     "/queue/notifications", notification);
 
-            System.out.println("✅ DEBUG: Notification sent successfully via WebSocket");
+            log.debug("Notification sent successfully to {}", user.getUsername());
 
         } catch (Exception e) {
-            System.err.println("❌ Error sending notification to user: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error sending notification to user {}", user.getUsername(), e);
         }
     }
 
@@ -344,12 +328,10 @@ public class WebSocketController {
      */
     public void broadcastNotification(NotificationMessage notification) {
         try {
-            System.out.println("📢 DEBUG: Broadcasting notification: " + notification.getTitle());
+            log.debug("Broadcasting notification: {}", notification.getTitle());
             messagingTemplate.convertAndSend("/topic/notifications", notification);
-            System.out.println("✅ DEBUG: Broadcast notification sent successfully");
         } catch (Exception e) {
-            System.err.println("❌ Error broadcasting notification: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error broadcasting notification", e);
         }
     }
 
@@ -374,8 +356,7 @@ public class WebSocketController {
      */
     public void registerUserSession(UUID userId, String sessionId) {
         activeSessions.put(userId, sessionId);
-        System.out.println("✅ Registered user session: " + userId + " -> " + sessionId);
-        System.out.println("🔍 Active sessions now: " + activeSessions.size());
+        log.debug("Registered user session: {} -> {} (total: {})", userId, sessionId, activeSessions.size());
     }
 
     /**
@@ -383,11 +364,10 @@ public class WebSocketController {
      */
     public void sendUnreadNotificationsToUser(User user) {
         try {
-            System.out.println("📬 Sending unread notifications to newly connected user: " + user.getUsername());
+            log.debug("Sending unread notifications to newly connected user: {}", user.getUsername());
             sendUnreadNotifications(user);
         } catch (Exception e) {
-            System.err.println("❌ Error sending unread notifications to user: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error sending unread notifications to user {}", user.getUsername(), e);
         }
     }
 }

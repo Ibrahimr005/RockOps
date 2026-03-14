@@ -108,11 +108,9 @@ const WarehouseDetails = () => {
         if (userInfo && userInfo.role) {
           setUserRole(userInfo.role);
         }
-        console.log("role is:" + userRole);
 
         const data = await warehouseService.getById(id);
         setWarehouseData(data);
-        console.log("warehouse:", JSON.stringify(data, null, 2));
 
         await fetchIncomingTransactionsCount();
 
@@ -167,7 +165,6 @@ const WarehouseDetails = () => {
   }, []);
 
   const handleRestockItems = useCallback((itemsToRestock) => {
-    console.log('Restock items requested:', itemsToRestock);
 
     setRestockItems(itemsToRestock);
     setActiveTab("requestOrders");
@@ -232,7 +229,6 @@ const WarehouseDetails = () => {
     if (addFunctions[activeTab]) {
       addFunctions[activeTab]();
     } else {
-      console.log(`Add functionality not yet connected for ${activeTab}`);
     }
   };
 

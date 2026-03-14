@@ -46,7 +46,6 @@ const PositionsList = () => {
             const response = await jobPositionService.getAll();
             const data = response.data;
 
-            console.log(data);
             setPositions(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching positions:', err);

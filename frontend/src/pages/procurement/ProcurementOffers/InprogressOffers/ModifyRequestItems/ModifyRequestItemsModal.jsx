@@ -179,11 +179,6 @@ const ModifyRequestItemsModal = ({
     };
 
     const handleSaveEdit = async (item) => {
-        console.log("=== ATTEMPTING TO SAVE ===");
-        console.log("Item ID being sent:", item.id);
-        console.log("Full item object:", item);
-        console.log("editFormData:", editFormData);
-        console.log("editFormData[item.id]:", editFormData[item.id]);
 
         const updatedData = editFormData[item.id];
 
@@ -196,13 +191,6 @@ const ModifyRequestItemsModal = ({
         try {
             setIsLoading(true);
 
-            console.log("API Call - Offer ID:", offer.id);
-            console.log("API Call - Item ID:", item.id);
-            console.log("API Call - Payload:", {
-                itemTypeId: item.itemTypeId,
-                quantity: quantityNum,
-                comment: item.comment || null
-            });
 
             await offerRequestItemService.updateRequestItem(offer.id, item.id, {
                 itemTypeId: item.itemTypeId,

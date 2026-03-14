@@ -53,6 +53,7 @@ public class LoanService {
     /**
      * Get all loans
      */
+    @Transactional(readOnly = true)
     public List<LoanDTO> getAllLoans() {
         return loanRepository.findAll().stream()
             .map(LoanDTO::fromEntity)
@@ -62,6 +63,7 @@ public class LoanService {
     /**
      * Get loan by ID
      */
+    @Transactional(readOnly = true)
     public LoanDTO getLoanById(UUID id) {
         Loan loan = loanRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + id));
@@ -71,6 +73,7 @@ public class LoanService {
     /**
      * Get loan by loan number
      */
+    @Transactional(readOnly = true)
     public LoanDTO getLoanByNumber(String loanNumber) {
         Loan loan = loanRepository.findByLoanNumber(loanNumber)
             .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + loanNumber));
@@ -80,6 +83,7 @@ public class LoanService {
     /**
      * Get loans by employee
      */
+    @Transactional(readOnly = true)
     public List<LoanDTO> getLoansByEmployee(UUID employeeId) {
         return loanRepository.findByEmployeeId(employeeId).stream()
             .map(LoanDTO::fromEntity)
@@ -89,6 +93,7 @@ public class LoanService {
     /**
      * Get loans by status
      */
+    @Transactional(readOnly = true)
     public List<LoanDTO> getLoansByStatus(Loan.LoanStatus status) {
         return loanRepository.findByStatus(status).stream()
             .map(LoanDTO::fromEntity)
@@ -98,6 +103,7 @@ public class LoanService {
     /**
      * Get active loans
      */
+    @Transactional(readOnly = true)
     public List<LoanDTO> getActiveLoans() {
         return loanRepository.findAllActiveLoans().stream()
             .map(LoanDTO::fromEntity)
@@ -344,6 +350,7 @@ public class LoanService {
     /**
      * Get pending finance requests
      */
+    @Transactional(readOnly = true)
     public List<LoanFinanceRequestDTO> getPendingFinanceRequests() {
         return loanFinanceRequestRepository.findPendingRequests().stream()
             .map(LoanFinanceRequestDTO::fromEntity)
@@ -353,6 +360,7 @@ public class LoanService {
     /**
      * Get all active finance requests for dashboard
      */
+    @Transactional(readOnly = true)
     public List<LoanFinanceRequestDTO> getActiveFinanceRequests() {
         return loanFinanceRequestRepository.findActiveRequestsForDashboard().stream()
             .map(LoanFinanceRequestDTO::fromEntity)
@@ -362,6 +370,7 @@ public class LoanService {
     /**
      * Get finance request by ID
      */
+    @Transactional(readOnly = true)
     public LoanFinanceRequestDTO getFinanceRequestById(UUID id) {
         LoanFinanceRequest request = loanFinanceRequestRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Finance request not found: " + id));
@@ -645,6 +654,7 @@ public class LoanService {
     /**
      * Get Finance dashboard summary
      */
+    @Transactional(readOnly = true)
     public LoanFinanceActionDTO.DashboardSummary getFinanceDashboardSummary() {
         long pendingCount = loanFinanceRequestRepository.countByStatus(LoanFinanceRequest.RequestStatus.PENDING);
         long underReviewCount = loanFinanceRequestRepository.countByStatus(LoanFinanceRequest.RequestStatus.UNDER_REVIEW);

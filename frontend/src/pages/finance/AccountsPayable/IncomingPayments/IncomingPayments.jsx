@@ -26,7 +26,7 @@ const IncomingPayments = () => {
         try {
             setLoading(true);
             const data = await incomingPaymentService.getAll();
-            console.log('📦 Incoming Payments Data:', data);  // ADD THIS LINE
+  // ADD THIS LINE
             setIncomingPayments(data);
             setError(null);
         } catch (err) {

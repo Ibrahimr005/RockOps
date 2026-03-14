@@ -51,7 +51,6 @@ const LeaveReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
     const fetchLeaveStatus = async () => {
         try {
             const status = await payrollService.getLeaveStatus(payroll.id);
-            console.log('📊 Leave Status:', status);
             setLeaveStatus(status);
         } catch (error) {
             console.error('Error fetching leave status:', error);
@@ -62,7 +61,6 @@ const LeaveReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
     const fetchLeaveRequests = async () => {
         try {
             const data = await payrollService.getLeaveRequestsForPayroll(payroll.id);
-            console.log('📊 Leave Requests:', data);
             setLeaveRequests(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching leave requests:', error);
@@ -76,7 +74,6 @@ const LeaveReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
             setProcessingLeave(true);
 
             const result = await payrollService.processLeaveReview(payroll.id);
-            console.log('📊 Process Leave Result:', result);
 
             if (result.status === 'SUCCESS') {
                 showSuccess(result.message);
@@ -191,10 +188,6 @@ const LeaveReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
             return <div className="error-state">Failed to load leave status</div>;
         }
 
-        console.log('🎯 Rendering decision:', {
-            leaveFinalized: leaveStatus.leaveFinalized,
-            leaveProcessed: leaveStatus.leaveProcessed
-        });
 
         // Finalized state
         if (leaveStatus.leaveFinalized) {

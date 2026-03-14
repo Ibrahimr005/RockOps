@@ -72,15 +72,12 @@ public class ItemTypeController {
     @GetMapping("/{itemTypeId}/details")
     public ResponseEntity<ItemTypeDetailsDTO> getItemTypeDetails(@PathVariable UUID itemTypeId) {
         try {
-            System.out.println("📦 Fetching details for item type: " + itemTypeId);
+            // Fetching item type details
             ItemTypeDetailsDTO details = itemTypeService.getItemTypeDetails(itemTypeId);
             return ResponseEntity.ok(details);
         } catch (IllegalArgumentException e) {
-            System.err.println("❌ Item type not found: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
-            System.err.println("❌ Error fetching item type details: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

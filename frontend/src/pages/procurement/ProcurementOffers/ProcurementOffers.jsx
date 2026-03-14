@@ -58,7 +58,6 @@ const ProcurementOffers = () => {
     // Helper function for authenticated fetch (keep for backward compatibility with child components)
     const fetchWithAuth = async (url, options = {}) => {
         const token = localStorage.getItem('token');
-        console.log("token:" + token);
 
         if (!token) {
             throw new Error('Authentication token not found');
@@ -108,7 +107,6 @@ const ProcurementOffers = () => {
 
     useEffect(() => {
         if (location.state?.newOffer) {
-            console.log('📦 RECEIVED NEW OFFER FROM NAVIGATION:', location.state.newOffer);
             setPendingNewOffer(location.state.newOffer);
             setActiveTab(location.state.activeTab || 'unstarted');
 
@@ -150,21 +148,17 @@ const ProcurementOffers = () => {
                     offersData = [];
                 }
 
-                console.log(`📊 Fetched ${offersData.length} offers for ${activeTab} tab`);
                 setOffers(offersData);
 
                 // Set active offer based on context
                 if (offersData.length > 0) {
                     // If we have a pending submitted offer and we're on the submitted tab, select it
                     if (pendingSubmittedOffer && activeTab === 'submitted') {
-                        console.log('🎯 Looking for pending submitted offer:', pendingSubmittedOffer.id);
                         const submittedOffer = offersData.find(offer => offer.id === pendingSubmittedOffer.id);
                         if (submittedOffer) {
-                            console.log('✅ Found submitted offer, setting as active');
                             setActiveOffer(submittedOffer);
                             setPendingSubmittedOffer(null);
                         } else {
-                            console.log('⚠️ Submitted offer not found in data, selecting first offer');
                             setActiveOffer(offersData[0]);
                         }
                     }
@@ -282,7 +276,6 @@ const ProcurementOffers = () => {
 
             // If this is a submission (INPROGRESS -> SUBMITTED), redirect to submitted tab
             if (newStatus === 'SUBMITTED' && offerData) {
-                console.log('📤 Offer submitted, switching to submitted tab with offer:', offerData);
 
                 // Store the submitted offer for selection after tab switch
                 setPendingSubmittedOffer({
@@ -405,7 +398,6 @@ const ProcurementOffers = () => {
 
     // Handle offer validated (approved/declined) callback
     const handleOfferValidated = (validatedOffer, action) => {
-        console.log(`Offer ${action}:`, validatedOffer);
 
         // Store the validated offer for selection after tab switch
         setPendingValidatedOffer(validatedOffer);
@@ -416,7 +408,6 @@ const ProcurementOffers = () => {
 
     // NEW: Handle offer sent to finance callback
     const handleOfferSentToFinance = (financeOffer) => {
-        console.log('Offer sent to finance:', financeOffer);
 
         // Store the finance offer for selection after tab switch
         setPendingFinanceOffer(financeOffer);

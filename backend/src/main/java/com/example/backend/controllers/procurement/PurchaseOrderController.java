@@ -216,20 +216,19 @@ public class PurchaseOrderController {
             return ResponseEntity.ok(response);
 
         } catch (ClassCastException e) {
-            System.err.println("Invalid request format: " + e.getMessage());
+            // Invalid request format
             return ResponseEntity.badRequest().body(Map.of(
                     "message", "Invalid request format",
                     "success", false
             ));
         } catch (IllegalArgumentException e) {
-            System.err.println("Invalid UUID format: " + e.getMessage());
+            // Invalid UUID format
             return ResponseEntity.badRequest().body(Map.of(
                     "message", "Invalid UUID format: " + e.getMessage(),
                     "success", false
             ));
         } catch (Exception e) {
-            System.err.println("Error finalizing offer " + offerId + ": " + e.getMessage());
-            e.printStackTrace();
+            // Error finalizing offer
             return ResponseEntity.internalServerError().body(Map.of(
                     "message", "Unexpected error: " + e.getMessage(),
                     "success", false
@@ -284,13 +283,13 @@ public class PurchaseOrderController {
 //                    "success", false
 //            ));
 //        } catch (ClassCastException e) {
-//            System.err.println("Invalid request format: " + e.getMessage());
+//            // Invalid request format
 //            return ResponseEntity.badRequest().body(Map.of(
 //                    "message", "Invalid request format",
 //                    "success", false
 //            ));
 //        } catch (IllegalArgumentException e) {
-//            System.err.println("Invalid UUID format: " + e.getMessage());
+//            // Invalid UUID format
 //            return ResponseEntity.badRequest().body(Map.of(
 //                    "message", "Invalid UUID format: " + e.getMessage(),
 //                    "success", false
@@ -316,8 +315,7 @@ public class PurchaseOrderController {
             DeliverySessionDTO response = deliveryProcessingService.processDelivery(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.err.println("Error processing delivery: " + e.getMessage());
-            e.printStackTrace();
+            // Error processing delivery
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "success", false,
                     "message", e.getMessage()
@@ -338,8 +336,7 @@ public class PurchaseOrderController {
                     "message", "Issues resolved successfully"
             ));
         } catch (Exception e) {
-            System.err.println("Error resolving issues: " + e.getMessage());
-            e.printStackTrace();
+            // Error resolving issues
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "success", false,
                     "message", "Error resolving issues: " + e.getMessage()
@@ -384,8 +381,7 @@ public class PurchaseOrderController {
                     "count", created.size()
             ));
         } catch (Exception e) {
-            System.err.println("Error receiving equipment: " + e.getMessage());
-            e.printStackTrace();
+            // Error receiving equipment
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "success", false,
                     "message", "Error receiving equipment: " + e.getMessage()

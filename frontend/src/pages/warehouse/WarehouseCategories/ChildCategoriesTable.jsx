@@ -28,7 +28,7 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                 setChildCategories(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Error fetching child categories:", error);
-                setError(error.message);
+                setError('Failed to load child categories. Please try again.');
                 setChildCategories([]);
             } finally {
                 setLoading(false);

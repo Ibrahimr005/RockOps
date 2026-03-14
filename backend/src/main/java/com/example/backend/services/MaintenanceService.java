@@ -265,6 +265,7 @@ public class MaintenanceService {
         }
     }
 
+    @Transactional(readOnly = true)
     public MaintenanceRecordDto getMaintenanceRecord(UUID id) {
         MaintenanceRecord record = maintenanceRecordRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
@@ -272,24 +273,28 @@ public class MaintenanceService {
         return convertToDto(record);
     }
 
+    @Transactional(readOnly = true)
     public List<MaintenanceRecordDto> getAllMaintenanceRecords() {
         return maintenanceRecordRepository.findAll().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<MaintenanceRecordDto> getMaintenanceRecordsByEquipment(UUID equipmentId) {
         return maintenanceRecordRepository.findByEquipmentIdOrderByCreationDateDesc(equipmentId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<MaintenanceRecordDto> getActiveMaintenanceRecords() {
         return maintenanceRecordRepository.findByStatus(MaintenanceStatus.ACTIVE).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<MaintenanceRecordDto> getOverdueMaintenanceRecords() {
         return maintenanceRecordRepository.findOverdueRecords(LocalDateTime.now()).stream()
                 .map(this::convertToDto)
@@ -593,6 +598,7 @@ public class MaintenanceService {
         // If there are still active records, keep equipment status as IN_MAINTENANCE
     }
 
+    @Transactional(readOnly = true)
     public List<User> getMaintenanceTeamUsers() {
         List<Role> maintenanceRoles = Arrays.asList(
                 Role.ADMIN,
@@ -830,6 +836,7 @@ public class MaintenanceService {
         return convertToDto(savedStep);
     }
 
+    @Transactional(readOnly = true)
     public MaintenanceStepDto getMaintenanceStep(UUID id) {
         MaintenanceStep step = maintenanceStepRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + id));
@@ -837,6 +844,7 @@ public class MaintenanceService {
         return convertToDto(step);
     }
 
+    @Transactional(readOnly = true)
     public List<MaintenanceStepDto> getMaintenanceSteps(UUID maintenanceRecordId) {
         return maintenanceStepRepository.findByMaintenanceRecordIdOrderByStartDateAsc(maintenanceRecordId).stream()
                 .map(this::convertToDto)
@@ -1398,6 +1406,7 @@ public class MaintenanceService {
         return convertToDto(savedLog);
     }
 
+    @Transactional(readOnly = true)
     public List<ContactLogDto> getContactLogs(UUID maintenanceRecordId) {
         return contactLogRepository.findByMaintenanceRecordIdOrderByContactDateDesc(maintenanceRecordId)
                 .stream()
@@ -1407,6 +1416,7 @@ public class MaintenanceService {
 
     // Dashboard and Analytics
 
+    @Transactional(readOnly = true)
     public MaintenanceDashboardDto getDashboardData() {
         long totalRecords = maintenanceRecordRepository.count();
         long activeRecords = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE);

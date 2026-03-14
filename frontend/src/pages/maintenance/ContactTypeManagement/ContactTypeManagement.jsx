@@ -360,7 +360,7 @@ const ContactTypeManagement = () => {
                     showExportButton={true}
                     exportButtonText="Export Contact Types"
                     exportFileName="contact-types"
-                    onExportStart={() => console.log('Export started')}
+                    onExportStart={() => {}}
                     onExportComplete={() => showSuccess('Contact types exported successfully')}
                     onExportError={(error) => showError('Failed to export contact types')}
                     emptyMessage="No contact types found. Create your first contact type!"

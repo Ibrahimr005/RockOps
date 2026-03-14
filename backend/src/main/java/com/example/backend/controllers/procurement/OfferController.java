@@ -2,12 +2,11 @@ package com.example.backend.controllers.procurement;
 
 import com.example.backend.dto.procurement.*;
 import com.example.backend.dto.procurement.PurchaseOrder.PurchaseOrderDTO;
-import com.example.backend.mappers.procurement.OfferMapper;
 import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
-import com.example.backend.models.procurement.Offer.Offer;
-import com.example.backend.repositories.procurement.OfferRepository;
 import com.example.backend.services.procurement.OfferService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,13 +23,9 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/offers")
 public class OfferController {
 
+    private static final Logger log = LoggerFactory.getLogger(OfferController.class);
+
     private final OfferService offerService;
-
-    @Autowired
-    private OfferRepository offerRepository;
-
-    @Autowired
-    private OfferMapper offerMapper;
 
     @Autowired
     public OfferController(OfferService offerService) {
@@ -54,31 +49,14 @@ public class OfferController {
     @PostMapping("/{offerId}/items")
     public ResponseEntity<?> addOfferItems(@PathVariable UUID offerId, @RequestBody List<OfferItemDTO> offerItemDTOs, HttpServletRequest request) {
         try {
-            System.out.println("=== CONTROLLER RECEIVED ===");
-            System.out.println("Offer ID: " + offerId);
-            System.out.println("Number of DTOs: " + offerItemDTOs.size());
-
-            // ADD DETAILED LOGGING FOR EACH DTO
-            for (int i = 0; i < offerItemDTOs.size(); i++) {
-                OfferItemDTO dto = offerItemDTOs.get(i);
-                System.out.println("--- DTO #" + i + " ---");
-                System.out.println("itemTypeId: " + dto.getItemTypeId());
-                System.out.println("merchantId: " + dto.getMerchantId());
-                System.out.println("quantity: " + dto.getQuantity());
-                System.out.println("unitPrice: " + dto.getUnitPrice());
-                System.out.println("currency: " + dto.getCurrency());
-            }
-            System.out.println("========================");
+            log.debug("Adding {} items to offer {}", offerItemDTOs.size(), offerId);
 
             List<OfferItemDTO> savedItems = offerService.addOfferItems(offerId, offerItemDTOs);
 
-            System.out.println("=== CONTROLLER SUCCESS ===");
+            log.debug("Successfully added items to offer {}", offerId);
             return ResponseEntity.ok(savedItems);
         } catch (Exception e) {
-            System.err.println("=== CONTROLLER ERROR ===");
-            System.err.println("Error message: " + e.getMessage());
-            System.err.println("Error class: " + e.getClass().getSimpleName());
-            e.printStackTrace();
+            log.error("Error adding items to offer {}: {}", offerId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Server Error", "message", e.getMessage()));
         }
@@ -501,16 +479,8 @@ public class OfferController {
             @RequestParam String status) {
         try {
             OfferFinanceValidationStatus validationStatus = OfferFinanceValidationStatus.valueOf(status);
-            Offer offer = offerRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Offer not found"));
-
-            offer.setFinanceValidationStatus(validationStatus);
-            offer.setFinanceReviewedAt(null); // Will be set when Finance reviews
-            offer.setFinanceReviewedByUserId(null);
-
-            Offer savedOffer = offerRepository.save(offer);
-
-            return ResponseEntity.ok(offerMapper.toDTO(savedOffer));
+            OfferDTO updatedOffer = offerService.updateFinanceValidationStatus(id, validationStatus);
+            return ResponseEntity.ok(updatedOffer);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Invalid status: " + status);
         } catch (Exception e) {

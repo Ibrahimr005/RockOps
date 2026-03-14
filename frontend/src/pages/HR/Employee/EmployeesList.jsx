@@ -46,7 +46,6 @@ const EmployeesList = () => {
 
             // DEBUG: Log the first employee to see what status values we're getting
             if (data && data.length > 0) {
-                console.log('First employee data:', data[0]);
 
             }
 

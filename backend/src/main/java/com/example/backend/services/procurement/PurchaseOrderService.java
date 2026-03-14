@@ -24,6 +24,7 @@ import com.example.backend.repositories.warehouse.WarehouseRepository;
 import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import com.example.backend.services.warehouse.ItemTypeService;
 import jakarta.persistence.EntityManager;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class PurchaseOrderService {
 
@@ -310,6 +312,7 @@ public class PurchaseOrderService {
         return datePart + "-" + randomPart;
     }
 
+    @Transactional(readOnly = true)
     public List<Offer> getOffersPendingFinanceReview() {
         return offerRepository.findByStatus("ACCEPTED")
                 .stream()
@@ -321,22 +324,21 @@ public class PurchaseOrderService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public PurchaseOrder getPurchaseOrderByOffer(UUID offerId) {
-        Offer offer = offerRepository.findById(offerId)
+        // Verify offer exists
+        offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
-        List<PurchaseOrder> allPOs = purchaseOrderRepository.findAll();
-        Optional<PurchaseOrder> matchingPO = allPOs.stream()
-                .filter(po -> po.getOffer() != null && po.getOffer().getId().equals(offer.getId()))
-                .findFirst();
-
-        return matchingPO.orElse(null);
+        return purchaseOrderRepository.findByOfferId(offerId).orElse(null);
     }
 
+    @Transactional(readOnly = true)
     public List<PurchaseOrder> getAllPurchaseOrders() {
         return purchaseOrderRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public PurchaseOrder getPurchaseOrderById(UUID id) {
         return purchaseOrderRepository.findByIdWithDetails(id) // CHANGED
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
@@ -360,7 +362,7 @@ public class PurchaseOrderService {
 
         // 🔥 NEW: Update ItemType base prices when PO is marked as COMPLETED
         if ("COMPLETED".equals(status) && !"COMPLETED".equals(oldStatus)) {
-            System.out.println("🎯 PO status changed to COMPLETED, updating base prices...");
+            log.info("PO status changed to COMPLETED, updating base prices...");
 
             // Get all unique item types in this PO
             Set<UUID> itemTypeIds = savedPO.getPurchaseOrderItems().stream()
@@ -372,7 +374,7 @@ public class PurchaseOrderService {
                 try {
                     itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, username);
                 } catch (Exception e) {
-                    System.err.println("⚠️ Failed to update base price for item type: " + e.getMessage());
+                    log.warn("Failed to update base price for item type: {}", e.getMessage());
                     // Don't throw - continue with other items
                 }
             }
@@ -516,40 +518,20 @@ public class PurchaseOrderService {
     }
 
     private PurchaseOrderDTO convertToDTO(PurchaseOrder po) {
-        // DEBUG LOGGING - safer version
-        System.out.println("=== Converting PO to DTO ===");
-        System.out.println("PO ID: " + po.getId());
-        System.out.flush();
-
         RequestOrder requestOrder = null;
         Offer offer = null;
 
         try {
             requestOrder = po.getRequestOrder();
-            System.out.println("RequestOrder is null? " + (requestOrder == null));
-            if (requestOrder != null) {
-                System.out.println("RequestOrder ID: " + requestOrder.getId());
-                System.out.println("RequestOrder Title: " + requestOrder.getTitle());
-            }
         } catch (Exception e) {
-            System.out.println("Error accessing RequestOrder: " + e.getMessage());
-            e.printStackTrace();
+            log.warn("Error accessing RequestOrder for PO {}: {}", po.getId(), e.getMessage());
         }
-        System.out.flush();
 
         try {
             offer = po.getOffer();
-            System.out.println("Offer is null? " + (offer == null));
-            if (offer != null) {
-                System.out.println("Offer ID: " + offer.getId());
-                System.out.println("Offer Title: " + offer.getTitle());
-            }
         } catch (Exception e) {
-            System.out.println("Error accessing Offer: " + e.getMessage());
-            e.printStackTrace();
+            log.warn("Error accessing Offer for PO {}: {}", po.getId(), e.getMessage());
         }
-        System.out.flush();
-        System.out.println("============================");
 
         PurchaseOrderDTO dto = new PurchaseOrderDTO();
         dto.setId(po.getId());
@@ -699,6 +681,7 @@ public class PurchaseOrderService {
         return dto;
     }
 
+    @Transactional(readOnly = true)
     public List<PurchaseOrderDTO> getAllPurchaseOrderDTOs() {
         List<PurchaseOrder> purchaseOrders = purchaseOrderRepository.findAllWithDetails(); // CHANGED
         return purchaseOrders.stream()
@@ -718,9 +701,6 @@ public class PurchaseOrderService {
         dto.setPaymentStatus(po.getPaymentStatus());
         dto.setPaymentRequestId(po.getPaymentRequestId());
         dto.setExpectedDeliveryDate(po.getExpectedDeliveryDate());
-
-        System.out.println("Payment Status set in DTO: " + dto.getPaymentStatus());
-        System.out.println("========================");
 
         if (po.getRequestOrder() != null) {
             dto.setRequestOrderId(po.getRequestOrder().getId());
@@ -875,7 +855,7 @@ public class PurchaseOrderService {
         // Update ItemType base prices ONLY when FULLY COMPLETED (items + payment)
         // Note: We only update prices if payment was successful (PAID), not if it failed/rejected
         if ("COMPLETED".equals(po.getStatus()) && !"COMPLETED".equals(oldStatus) && isFullyPaid) {
-            System.out.println("🎯 PO fully completed (delivery + payment), updating base prices...");
+            log.info("PO fully completed (delivery + payment), updating base prices...");
 
             try {
                 Set<UUID> itemTypeIds = po.getPurchaseOrderItems().stream()
@@ -887,11 +867,11 @@ public class PurchaseOrderService {
                     try {
                         itemTypeService.updateItemTypeBasePriceFromCompletedPOs(itemTypeId, "SYSTEM");
                     } catch (Exception e) {
-                        System.err.println("⚠️ Failed to update base price for item type: " + e.getMessage());
+                        log.warn("Failed to update base price for item type: {}", e.getMessage());
                     }
                 }
             } catch (Exception e) {
-                System.err.println("⚠️ Failed to collect item types: " + e.getMessage());
+                log.warn("Failed to collect item types: {}", e.getMessage());
             }
         }
 

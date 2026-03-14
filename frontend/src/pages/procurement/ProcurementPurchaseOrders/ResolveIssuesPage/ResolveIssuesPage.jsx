@@ -147,7 +147,6 @@ const ResolveIssuesPage = () => {
                     resolutionNotes: resolution.resolutionNotes
                 }));
 
-            console.log('Submitting resolutions:', resolutionsArray);
 
             // Call the API
             const response = await purchaseOrderService.resolveIssues(id, resolutionsArray);

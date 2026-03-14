@@ -48,16 +48,13 @@ const AssetManagement = () => {
         try {
             setLoading(true);
 
-            console.log('=== FETCHING ASSETS ===');
 
             const response = await financeService.fixedAssets.getAll();
 
-            console.log('Raw assets response:', response);
 
             // Extract data from Axios response
             const assetsData = response.data || response;
 
-            console.log('Extracted assets data:', assetsData);
 
             // Ensure we have an array
             const assetsArray = Array.isArray(assetsData) ? assetsData : [];
@@ -85,7 +82,6 @@ const AssetManagement = () => {
                 })
             );
 
-            console.log('Assets with book values:', assetsWithBookValue);
 
             setAssets(assetsWithBookValue);
         } catch (error) {
@@ -98,7 +94,6 @@ const AssetManagement = () => {
 
     const fetchAssetDetails = async (assetId) => {
         try {
-            console.log('=== FETCHING ASSET DETAILS ===', assetId);
 
             const [assetResponse, monthlyDepResponse, accumulatedDepResponse] = await Promise.all([
                 financeService.fixedAssets.getById(assetId),
@@ -106,22 +101,12 @@ const AssetManagement = () => {
                 financeService.fixedAssets.getAccumulatedDepreciation(assetId)
             ]);
 
-            console.log('Raw asset detail responses:', {
-                assetResponse,
-                monthlyDepResponse,
-                accumulatedDepResponse
-            });
 
             // Extract data from responses
             const assetData = assetResponse.data || assetResponse;
             const monthlyDep = monthlyDepResponse.data || monthlyDepResponse || 0;
             const accumulatedDep = accumulatedDepResponse.data || accumulatedDepResponse || 0;
 
-            console.log('Extracted asset details:', {
-                assetData,
-                monthlyDep,
-                accumulatedDep
-            });
 
             return {
                 ...assetData,
@@ -209,8 +194,6 @@ const AssetManagement = () => {
                 status: formData.status
             };
 
-            console.log('=== SAVING ASSET ===');
-            console.log('Request data:', requestData);
 
             let response;
             if (selectedAsset) {
@@ -221,7 +204,6 @@ const AssetManagement = () => {
                 response = await financeService.fixedAssets.create(requestData);
             }
 
-            console.log('Save response:', response);
 
             // Extract saved asset from response
             const savedAsset = response.data || response;
@@ -253,7 +235,6 @@ const AssetManagement = () => {
         }
 
         try {
-            console.log('=== DELETING ASSET ===', asset.id);
 
             await financeService.fixedAssets.delete(asset.id);
 
@@ -267,20 +248,17 @@ const AssetManagement = () => {
 
     const handleCalculateDepreciation = async (asset) => {
         try {
-            console.log('=== CALCULATING DEPRECIATION ===', asset.id);
 
             const [monthlyResponse, accumulatedResponse] = await Promise.all([
                 financeService.fixedAssets.getMonthlyDepreciation(asset.id),
                 financeService.fixedAssets.getAccumulatedDepreciation(asset.id)
             ]);
 
-            console.log('Depreciation responses:', { monthlyResponse, accumulatedResponse });
 
             // Extract data from responses
             const monthlyDep = monthlyResponse.data || monthlyResponse || 0;
             const accumulatedDep = accumulatedResponse.data || accumulatedResponse || 0;
 
-            console.log('Calculated depreciation:', { monthlyDep, accumulatedDep });
 
             showSuccess(
                 `Depreciation calculated for ${asset.name}:\n` +

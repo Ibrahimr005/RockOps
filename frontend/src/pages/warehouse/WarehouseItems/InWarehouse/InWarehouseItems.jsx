@@ -523,7 +523,7 @@ const InWarehouseItems = ({
                     'quantity': 'Current Quantity',
                     'itemType.measuringUnit': 'Unit of Measure'
                 }}
-                onExportStart={() => console.log('Starting export...')}
+                onExportStart={() => {}}
                 onExportComplete={(info) => showSnackbar(`Successfully exported ${info.rowCount} items to ${info.filename}`, "success")}
                 onExportError={(error) => {
                     showSnackbar("Failed to export items", "error");

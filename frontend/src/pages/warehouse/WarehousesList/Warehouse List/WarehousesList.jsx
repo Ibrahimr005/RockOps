@@ -312,14 +312,8 @@ const WarehousesList = () => {
 
     const fetchAndFilterWarehousesForEmployee = async (allWarehouses) => {
         try {
-            console.log("Filtering warehouses for employee:", currentUser.username);
-            console.log("Total warehouses available:", allWarehouses.length);
-
             const assignments = await warehouseEmployeeService.getAssignmentsByUsername(currentUser.username);
-            console.log("Found assignments:", assignments);
-
             if (!Array.isArray(assignments) || assignments.length === 0) {
-                console.log("No assignments array or empty assignments");
                 setWarehouses([]);
                 return;
             }
@@ -328,15 +322,11 @@ const WarehousesList = () => {
                 .map(assignment => assignment.warehouse?.id)
                 .filter(Boolean);
 
-            console.log("Assigned warehouse IDs:", assignedWarehouseIds);
-
             const assignedWarehouses = allWarehouses.filter(warehouse =>
                 assignedWarehouseIds.includes(warehouse.id)
             );
 
             setWarehouses(assignedWarehouses);
-            console.log(`Warehouse employee can see ${assignedWarehouses.length} out of ${allWarehouses.length} warehouses`);
-            console.log("Visible warehouses:", assignedWarehouses.map(w => w.name));
 
         } catch (error) {
             console.error("Error filtering warehouses for employee:", error);
@@ -348,18 +338,12 @@ const WarehousesList = () => {
         try {
             setLoading(true);
 
-            console.log("Fetching warehouses for user role:", currentUser?.role);
-
             const respo = await warehouseService.getAll();
-            console.log("Fetched warehouse data:", JSON.stringify(respo, null, 2));
 
             if (currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
-                console.log("User is WAREHOUSE_EMPLOYEE, filtering warehouses");
                 await fetchAndFilterWarehousesForEmployee(respo);
             } else {
-                console.log("User is not WAREHOUSE_EMPLOYEE, showing all warehouses");
                 setWarehouses(respo);
-                console.log("Fetched all warehouses for role:", currentUser?.role);
             }
 
             setError(null);
@@ -375,11 +359,10 @@ const WarehousesList = () => {
         try {
             const data = await warehouseEmployeeService.getWarehouseEmployees();
             setWarehouseEmployees(data);
-            console.log("Successfully fetched warehouse employees:", data.length);
         } catch (error) {
             console.error("Error fetching warehouse employees:", error);
             setWarehouseEmployees([]);
-            showSnackbar('error', `Failed to load warehouse employees: ${error.message}`);
+            showSnackbar('error', 'Failed to load warehouse employees. Please try again.');
         }
     };
 
@@ -396,7 +379,6 @@ const WarehousesList = () => {
     }, [showAssignmentModal]);
 
     const handleOpenAssignmentModal = (warehouse) => {
-        console.log('🔵 Opening assignment modal for:', warehouse.name);
         setSelectedWarehouse(warehouse);
         setShowAssignmentModal(true);
         fetchWarehouseEmployees();
@@ -632,7 +614,6 @@ const WarehousesList = () => {
             </div>
 
             {/* Assignment Modal */}
-            {console.log('🟢 Rendering, showAssignmentModal:', showAssignmentModal, 'selectedWarehouse:', selectedWarehouse)}
             <AssignmentModal
                 isOpen={showAssignmentModal}
                 onClose={handleCloseAssignmentModal}

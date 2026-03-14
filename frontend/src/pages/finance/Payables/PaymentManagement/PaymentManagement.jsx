@@ -69,22 +69,17 @@ const PaymentManagement = () => {
         try {
             setLoading(true);
 
-            console.log('=== FETCHING PAYMENTS ===');
 
             const response = await financeService.payments.getAll(0, 100); // page=0, size=100
 
-            console.log('Raw payments response:', response);
 
             // Extract data from Axios response
             const data = response.data || response;
 
-            console.log('Extracted payments data:', data);
 
             // Handle paginated response
             const paymentList = data.content || data || [];
 
-            console.log('Final payments list:', paymentList);
-            console.log('Payments count:', paymentList.length);
 
             setPayments(paymentList);
         } catch (error) {
@@ -98,16 +93,13 @@ const PaymentManagement = () => {
 
     const fetchUnpaidInvoices = async () => {
         try {
-            console.log('=== FETCHING UNPAID INVOICES ===');
 
             const response = await financeService.invoices.getUnpaid();
 
-            console.log('Raw unpaid invoices response:', response);
 
             // Extract data from Axios response
             const data = response.data || response;
 
-            console.log('Extracted unpaid invoices data:', data);
 
             setUnpaidInvoices(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -124,17 +116,13 @@ const PaymentManagement = () => {
         }
 
         try {
-            console.log('=== VALIDATING PAYMENT ===');
-            console.log('Invoice ID:', invoiceId, 'Amount:', amount);
 
             const response = await financeService.payments.validate(invoiceId, amount);
 
-            console.log('Raw validation response:', response);
 
             // Extract data from Axios response
             const result = response.data || response;
 
-            console.log('Validation result:', result);
 
             setValidationResult(result);
         } catch (error) {
@@ -163,7 +151,6 @@ const PaymentManagement = () => {
                 createdBy: currentUser.username || currentUser.name || currentUser.email
             };
 
-            console.log('Creating payment with data:', paymentData);
 
             await financeService.payments.create(paymentData);
 

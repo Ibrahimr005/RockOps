@@ -9,7 +9,6 @@ import { merchantService } from '../../../services/merchant/merchantService';
 import contactTypeService from '../../../services/contactTypeService';
 
 const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
-    console.log('ContactModal rendered:', { isOpen, editingContact });
     const [isFormDirty, setIsFormDirty] = useState(false);
     const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [formData, setFormData] = useState(() => {
@@ -116,7 +115,6 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
     const loadMerchants = async () => {
         try {
             setLoadingMerchants(true);
-            console.log('Loading merchants...');
 
             // Check if merchantService is available
             if (!merchantService || !merchantService.getAll) {
@@ -126,12 +124,10 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
             }
 
             const response = await merchantService.getAll();
-            console.log('Merchant service response:', response);
 
             const merchantsData = Array.isArray(response?.data) ? response.data :
                 Array.isArray(response) ? response : [];
 
-            console.log('Processed merchants data:', merchantsData);
             setMerchants(merchantsData);
         } catch (error) {
             console.error('Error loading merchants:', error);
@@ -146,13 +142,10 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
     const loadContactTypes = async () => {
         try {
             setLoadingContactTypes(true);
-            console.log('Loading contact types...');
 
             const response = await contactTypeService.getActiveContactTypes();
-            console.log('Contact types response:', response);
 
             const contactTypesData = Array.isArray(response) ? response : [];
-            console.log('Processed contact types data:', contactTypesData);
             setContactTypes(contactTypesData);
         } catch (error) {
             console.error('Error loading contact types:', error);

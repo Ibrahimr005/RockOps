@@ -226,7 +226,6 @@ const AttendancePage = () => {
                 });
             });
 
-            console.log('Saving attendance updates grouped by date:', recordsByDate);
 
             let totalSaved = 0;
             for (const [date, attendanceRecords] of recordsByDate) {
@@ -236,7 +235,6 @@ const AttendancePage = () => {
                     attendanceRecords: attendanceRecords
                 };
 
-                console.log('Sending bulk request for date:', date, bulkData);
 
                 await attendanceService.bulkSaveAttendance(bulkData);
                 totalSaved += attendanceRecords.length;

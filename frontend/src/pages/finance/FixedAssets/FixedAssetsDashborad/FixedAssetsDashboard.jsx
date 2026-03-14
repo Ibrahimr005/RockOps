@@ -25,7 +25,6 @@ const FixedAssetsDashboard = () => {
         try {
             setLoading(true);
 
-            console.log('=== FETCHING FIXED ASSETS DASHBOARD DATA ===');
 
             // Fetch all assets and disposals using financeService
             const [assetsResponse, disposalsResponse] = await Promise.all([
@@ -33,13 +32,11 @@ const FixedAssetsDashboard = () => {
                 financeService.fixedAssets.getAllDisposals()
             ]);
 
-            console.log('Raw responses:', { assetsResponse, disposalsResponse });
 
             // Extract data from Axios responses
             const assets = assetsResponse.data || assetsResponse;
             const disposals = disposalsResponse.data || disposalsResponse;
 
-            console.log('Extracted data:', { assets, disposals });
 
             // Ensure we have arrays
             const assetsArray = Array.isArray(assets) ? assets : [];
@@ -50,7 +47,6 @@ const FixedAssetsDashboard = () => {
             const activeAssets = assetsArray.filter(asset => asset.status === 'ACTIVE').length;
             const disposedAssets = disposalsArray.length;
 
-            console.log('Basic metrics:', { totalAssets, activeAssets, disposedAssets });
 
             // Calculate total value (sum of current book values)
             let totalValue = 0;
@@ -82,11 +78,6 @@ const FixedAssetsDashboard = () => {
                 }
             }
 
-            console.log('Calculated totals:', {
-                totalValue,
-                totalDepreciation,
-                monthlyDepreciation
-            });
 
             setDashboardData({
                 totalAssets,

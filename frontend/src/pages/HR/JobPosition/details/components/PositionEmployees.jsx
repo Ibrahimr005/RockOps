@@ -28,7 +28,6 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
             const response = await jobPositionService.getEmployees(positionId);
             const data = response.data;
 
-            console.log(data);
             const employeeList = Array.isArray(data) ? data : [];
             setEmployees(employeeList);
 
@@ -64,7 +63,6 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
     };
 
     const handleAssignEmployee = () => {
-        console.log('Assign employee clicked');
         // TODO: Open assign employee modal or navigate to assign page
     };
 

@@ -19,9 +19,7 @@ const ViewEquipmentData = () => {
     useEffect(() => {
         const fetchEquipmentData = async () => {
             try {
-                console.log("Fetching equipment with ID:", params.EquipmentID);
                 const response = await equipmentService.getEquipmentById(params.EquipmentID);
-                console.log("Fetched Equipment Data:", response.data);
                 setEquipmentData(response.data);
                 setLoading(false);
             } catch (error) {
@@ -34,25 +32,20 @@ const ViewEquipmentData = () => {
         const fetchEquipmentPhoto = async () => {
             try {
                 // Fetch photo from storage service (MinIO/AWS S3)
-                console.log("Fetching equipment photo for ID:", params.EquipmentID);
                 const response = await equipmentService.getEquipmentMainPhoto(params.EquipmentID);
                 if (response.data) {
-                    console.log("Successfully fetched equipment photo:", response.data);
                     setPreviewImage(response.data);
                 }
             } catch (error) {
                 console.error("Error fetching equipment photo:", error);
                 // If direct fetch fails, try refresh to get new presigned URL (important for AWS S3)
                 try {
-                    console.log("Retrying with refresh...");
                     const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
                     if (refreshResponse.data) {
-                        console.log("Successfully refreshed equipment photo:", refreshResponse.data);
                         setPreviewImage(refreshResponse.data);
                     }
                 } catch (refreshError) {
                     console.error("Error refreshing equipment photo:", refreshError);
-                    console.log("Will fall back to equipment.imageUrl if available");
                 }
             }
         };

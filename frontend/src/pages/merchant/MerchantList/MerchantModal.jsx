@@ -75,8 +75,6 @@ const MerchantModal = ({
     // Validate form
     // Validate form
     const validateForm = () => {
-        console.log('Validating formData:', formData);
-        console.log('merchantTypes:', formData.merchantTypes);
         const newErrors = {};
 
         // Required fields

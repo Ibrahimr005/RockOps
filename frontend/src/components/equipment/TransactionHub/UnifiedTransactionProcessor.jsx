@@ -482,7 +482,6 @@ const UnifiedTransactionProcessor = ({
                     receivedQuantities={receivedQuantities}
                     itemsNotReceived={itemsNotReceived}
                     onResolve={(resolutionData) => {
-                        console.log('Discrepancy resolved:', resolutionData);
                     }}
                 />
             </div>

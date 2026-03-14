@@ -27,15 +27,6 @@ const PurchaseOrders = () => {
             setLoading(true);
             const data = await purchaseOrderService.getAll();
 
-            console.log('=== ALL PURCHASE ORDERS FROM API ===');
-            console.log('Full data:', data);
-            console.log('Purchase Order Details:', data.map(po => ({
-                poNumber: po.poNumber,
-                status: po.status,
-                paymentStatus: po.paymentStatus,
-                totalAmount: po.totalAmount,
-                currency: po.currency
-            })));
 
             setAllPurchaseOrders(data);
         } catch (err) {
@@ -60,7 +51,6 @@ const PurchaseOrders = () => {
             order.status !== 'PARTIAL_DISPUTED'
         );
 
-        console.log('=== PENDING ORDERS ===', pending.map(o => ({ poNumber: o.poNumber, status: o.status })));
         return pending;
     };
 
@@ -70,7 +60,6 @@ const PurchaseOrders = () => {
             order.status === 'PARTIAL_DISPUTED'
         );
 
-        console.log('=== DISPUTED ORDERS ===', disputed.map(o => ({ poNumber: o.poNumber, status: o.status })));
         return disputed;
     };
 

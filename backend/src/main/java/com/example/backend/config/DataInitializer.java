@@ -57,12 +57,13 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
     public void run(String... args) {
         // Check if admin user exists
         if (!userRepository.existsByUsername("admin")) {
-            // Create admin user
+            // Create admin user - password sourced from environment variable
+            String adminPassword = System.getenv().getOrDefault("ADMIN_INITIAL_PASSWORD", "admin123");
             RegisterRequest adminRequest = RegisterRequest.builder()
                     .firstName("Admin")
                     .lastName("User")
                     .username("admin")
-                    .password("admin123") // You should change this password after first login
+                    .password(adminPassword)
                     .role(Role.ADMIN)
                     .build();
 

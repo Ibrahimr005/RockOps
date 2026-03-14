@@ -57,6 +57,9 @@ public interface MaintenanceRecordRepository extends JpaRepository<MaintenanceRe
     
     // Count records by status
     long countByStatus(MaintenanceStatus status);
+
+    @Query("SELECT m.status, COUNT(m) FROM MaintenanceRecord m GROUP BY m.status")
+    List<Object[]> countGroupByStatus();
     
     // Count records by equipment
     long countByEquipmentId(UUID equipmentId);

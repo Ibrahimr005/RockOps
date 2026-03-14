@@ -44,7 +44,6 @@ const VacancyList = () => {
             const response = await vacancyService.getAll();
 
             if (response && response.data) {
-                console.log(response.data)
                 const vacancyData = Array.isArray(response.data) ? response.data : [];
                 setVacancies(vacancyData);
             } else {
@@ -83,10 +82,8 @@ const VacancyList = () => {
     }, [fetchVacancies, fetchJobPositions]);
 
     const handleAddVacancy = useCallback(async (vacancyData) => {
-        console.log("Submitting vacancy with data:", vacancyData);
         try {
             const response = await vacancyService.create(vacancyData);
-            console.log("Created vacancy response:", response);
 
             if (response && response.data) {
                 // Verify the response contains the expected data
@@ -111,10 +108,8 @@ const VacancyList = () => {
     }, [fetchVacancies, showSuccess, showError]);
 
     const handleEditVacancy = useCallback(async (id, updatedData) => {
-        console.log("Updating vacancy with ID:", id, "Data:", updatedData);
         try {
             const response = await vacancyService.update(id, updatedData);
-            console.log("Update response:", response);
 
             if (response && response.data) {
                 showSuccess('Vacancy updated successfully');
@@ -153,13 +148,11 @@ const VacancyList = () => {
     }, [fetchVacancies, showSuccess, showError]);
 
     const handleEditClick = useCallback((vacancy) => {
-        console.log("Edit vacancy clicked:", vacancy);
         setSelectedVacancy(vacancy);
         setShowEditModal(true);
     }, []);
 
     const handleRowClick = useCallback((row) => {
-        console.log('Navigating to vacancy details:', row.id);
         navigate(`/hr/vacancies/${row.id}`);
     }, [navigate]);
 

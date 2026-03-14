@@ -8,7 +8,6 @@ import com.example.backend.dto.hr.promotions.PromotionSummaryDTO;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.hr.PromotionRequest;
-import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.services.hr.JobPositionService;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -31,9 +30,6 @@ public class JobPositionController {
 
     @Autowired
     private JobPositionService jobPositionService;
-
-    @Autowired
-    private JobPositionRepository jobPositionRepository;
 
     /**
      * Create a standardized error response with detailed information
@@ -647,7 +643,7 @@ public class JobPositionController {
     @GetMapping("/hierarchy")
     public ResponseEntity<?> getJobPositionHierarchy() {
         try {
-            List<JobPosition> rootPositions = jobPositionRepository.findByParentJobPositionIsNull();
+            List<JobPosition> rootPositions = jobPositionService.getRootPositions();
             return ResponseEntity.ok(convertToDTOList(rootPositions));
         } catch (Exception e) {
             logger.error("💥 Error fetching position hierarchy", e);
@@ -666,7 +662,7 @@ public class JobPositionController {
     @GetMapping("/{id}/children")
     public ResponseEntity<?> getChildPositions(@PathVariable UUID id) {
         try {
-            List<JobPosition> childPositions = jobPositionRepository.findByParentJobPositionId(id);
+            List<JobPosition> childPositions = jobPositionService.getChildPositions(id);
             return ResponseEntity.ok(convertToDTOList(childPositions));
         } catch (Exception e) {
             logger.error("💥 Error fetching child positions for {}", id, e);

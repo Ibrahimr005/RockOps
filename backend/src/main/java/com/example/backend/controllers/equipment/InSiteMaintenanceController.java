@@ -94,7 +94,7 @@ public class InSiteMaintenanceController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            System.out.println("Received maintenance data: " + maintenanceData);
+            // Maintenance data received
 
             UUID technicianId = UUID.fromString((String) maintenanceData.get("technicianId"));
             LocalDateTime maintenanceDate = LocalDateTime.parse((String) maintenanceData.get("maintenanceDate"));

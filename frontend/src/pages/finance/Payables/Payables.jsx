@@ -33,7 +33,6 @@ const Payables = () => {
         try {
             setLoading(true);
 
-            console.log('=== FETCHING PAYABLES STATS ===');
 
             // Use financeService instead of manual fetch calls
             const [
@@ -48,12 +47,6 @@ const Payables = () => {
                 financeService.invoices.getByStatus('PENDING')
             ]);
 
-            console.log('Stats data received:', {
-                outstanding,
-                overdue,
-                recentPayments,
-                pendingInvoices
-            });
 
 // Extract data from Axios responses
             const outstandingData = outstanding.data || outstanding;
@@ -61,11 +54,6 @@ const Payables = () => {
             const paymentsData = recentPayments.data || recentPayments;
             const pendingData = pendingInvoices.data || pendingInvoices;
 
-            console.log('=== EXTRACTED DATA ===');
-            console.log('Outstanding data:', outstandingData);
-            console.log('Overdue data:', overdueData);
-            console.log('Payments data:', paymentsData);
-            console.log('Pending data:', pendingData);
 
 // Extract arrays safely
             const overdueArray = Array.isArray(overdueData) ? overdueData : [];
@@ -81,11 +69,6 @@ const Payables = () => {
                 paymentsArray = paymentsData.data;
             }
 
-            console.log('Final extracted data:', {
-                overdueArray: overdueArray.length,
-                pendingArray: pendingArray.length,
-                paymentsArray: paymentsArray.length
-            });
 
 // Calculate monthly payments (current month)
             const currentMonth = new Date().getMonth();

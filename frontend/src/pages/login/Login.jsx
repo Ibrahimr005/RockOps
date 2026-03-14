@@ -25,19 +25,16 @@ const Login = () => {
 
             // Login returns the complete response with token, role, etc.
             const userData = await login(normalizedUsername, password);
-            console.log('[LoginPage] Login successful:', userData);
 
             // Navigate based on role from the response
             if (userData.role === 'ADMIN') {
-                console.log('[LoginPage] Redirecting to admin page');
                 navigate('/admin');
             } else {
-                console.log('[LoginPage] Redirecting to dashboard');
                 navigate('/dashboard');
             }
         } catch (error) {
-            setError(error.message || 'Failed to login. Please check your credentials.');
-            console.error('[LoginPage] Login error:', error);
+            setError('Failed to login. Please check your credentials.');
+            console.error('Login error:', error);
         } finally {
             setIsLoading(false);
         }

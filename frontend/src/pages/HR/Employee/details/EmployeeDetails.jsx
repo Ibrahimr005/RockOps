@@ -211,7 +211,7 @@ const EmployeeDetails = () => {
             {
                 text: 'Export Report',
                 icon: <FaFileDownload/>,
-                onClick: () => console.log('Export report'),
+                onClick: () => {},
                 className: 'secondary'
             }
         ];

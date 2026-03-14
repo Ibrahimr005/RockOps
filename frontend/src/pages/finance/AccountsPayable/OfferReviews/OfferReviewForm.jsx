@@ -52,13 +52,11 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
                 setFetchingOffer(true);
                 const response = await offerService.getById(offer.offerId);
                 const offerData = response.data || response;
-                console.log('Full Offer Data:', offerData);
 
                 if (offerData.requestOrder?.requesterId && offerData.requestOrder?.partyType === 'WAREHOUSE') {
                     try {
                         const warehouseResponse = await warehouseService.getById(offerData.requestOrder.requesterId);
                         const warehouseData = warehouseResponse.data || warehouseResponse;
-                        console.log('Warehouse Data:', warehouseData);
                         offerData.warehouseDetails = warehouseData;
                     } catch (err) {
                         console.error('Error fetching warehouse details:', err);
@@ -168,7 +166,6 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
                 }))
             };
 
-            console.log('Submitting item-level review:', requestData);
 
             // Call the new reviewItems endpoint
             await financeService.accountsPayable.offerReviews.reviewItems(requestData);

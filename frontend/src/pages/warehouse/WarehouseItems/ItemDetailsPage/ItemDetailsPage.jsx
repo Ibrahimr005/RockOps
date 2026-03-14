@@ -109,13 +109,6 @@ const ItemDetailsPage = ({ showSnackbar }) => {
 
     useEffect(() => {
         if (itemDetails) {
-            console.log("=== ITEM DETAILS DEBUG ===");
-            console.log("Full itemDetails object:", itemDetails);
-            console.log("itemCategoryName:", itemDetails.itemCategoryName);
-            console.log("itemCategory:", itemDetails.itemCategory);
-            console.log("parentCategory:", itemDetails.parentCategory);
-            console.log("All keys:", Object.keys(itemDetails));
-            console.log("========================");
         }
     }, [itemDetails]);
 

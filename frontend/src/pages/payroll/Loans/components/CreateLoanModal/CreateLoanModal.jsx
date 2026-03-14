@@ -193,7 +193,6 @@ const CreateLoanModal = ({ employees, onClose, onLoanCreated }) => {
                 notes: formData.notes || ''
             };
 
-            console.log('Creating loan with data:', loanData);
 
             const response = await loanService.createLoan(loanData);
 

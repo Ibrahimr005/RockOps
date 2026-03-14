@@ -82,7 +82,6 @@ const Notifications = () => {
 
     const fetchNotifications = async () => {
         if (!currentUser || !token) {
-            console.log('⚠️ Cannot fetch notifications: Missing auth data');
             return;
         }
 
@@ -121,7 +120,6 @@ const Notifications = () => {
     };
 
     const handleNewNotifications = (newNotifications) => {
-        console.log('📬 Handling new notifications:', newNotifications);
 
         if (Array.isArray(newNotifications) && newNotifications.length > 0) {
             setNotifications(prevNotifications => {

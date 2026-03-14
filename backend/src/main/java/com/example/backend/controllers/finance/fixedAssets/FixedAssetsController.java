@@ -147,7 +147,7 @@ public class FixedAssetsController {
             objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 
             AssetDisposalRequestDTO requestDTO = objectMapper.readValue(disposalDataJson, AssetDisposalRequestDTO.class);
-            System.out.println("Received Disposal JSON: " + disposalDataJson);
+            // Disposal data received
 
             // Upload document if provided
             if (document != null && !document.isEmpty()) {

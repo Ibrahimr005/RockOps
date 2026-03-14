@@ -47,6 +47,12 @@ public class ItemService {
     @Autowired
     private ItemPriceApprovalRepository itemPriceApprovalRepository;
 
+    @Transactional(readOnly = true)
+    public Item getItemById(UUID itemId) {
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found with id: " + itemId));
+    }
+
     public Item createItem(UUID itemTypeId, UUID warehouseId, int initialQuantity, String username, LocalDateTime createdAt) {
         System.out.println("Service: Creating item with ItemTypeId: " + itemTypeId +
                 ", WarehouseId: " + warehouseId +
@@ -146,6 +152,7 @@ public class ItemService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<Item> getItemsByWarehouse(UUID warehouseId) {
         System.out.println("🔍 ItemService: Getting items for warehouse: " + warehouseId);
 
@@ -394,15 +401,18 @@ public class ItemService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<ItemResolution> getItemResolutionHistory(UUID itemId) {
         return itemResolutionRepository.findByItemId(itemId);
     }
 
+    @Transactional(readOnly = true)
     public List<ItemResolution> getItemResolutionsByUser(String username) {
         return itemResolutionRepository.findByResolvedBy(username);
     }
 
     // Method to get ACTIVE (unresolved) items with discrepancies
+    @Transactional(readOnly = true)
     public List<Item> getDiscrepancyItems(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
@@ -414,6 +424,7 @@ public class ItemService {
     }
 
     // Method to get resolved items for history tab
+    @Transactional(readOnly = true)
     public List<Item> getResolvedItems(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
@@ -433,6 +444,7 @@ public class ItemService {
     /**
      * Get all items of a specific type and status in a warehouse
      */
+    @Transactional(readOnly = true)
     public List<Item> getItemsByTypeAndStatus(UUID warehouseId, UUID itemTypeId, ItemStatus status) {
         return itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatus(itemTypeId, warehouseId, status);
     }
@@ -440,6 +452,7 @@ public class ItemService {
     /**
      * Check if there are existing items of the same type with IN_WAREHOUSE status
      */
+    @Transactional(readOnly = true)
     public boolean hasExistingWarehouseItems(UUID warehouseId, UUID itemTypeId) {
         List<Item> existingItems = itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatus(
                 itemTypeId, warehouseId, ItemStatus.IN_WAREHOUSE);
@@ -449,6 +462,7 @@ public class ItemService {
     /**
      * Get the total quantity of a specific item type in warehouse (all statuses)
      */
+    @Transactional(readOnly = true)
     public int getTotalQuantityByType(UUID warehouseId, UUID itemTypeId) {
         List<Item> allItems = itemRepository.findAllByItemTypeIdAndWarehouseId(itemTypeId, warehouseId);
         return allItems.stream().mapToInt(Item::getQuantity).sum();
@@ -457,6 +471,7 @@ public class ItemService {
     /**
      * Get the available quantity of a specific item type in warehouse (IN_WAREHOUSE status only)
      */
+    @Transactional(readOnly = true)
     public int getAvailableQuantityByType(UUID warehouseId, UUID itemTypeId) {
         List<Item> availableItems = itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatus(
                 itemTypeId, warehouseId, ItemStatus.IN_WAREHOUSE);
@@ -492,6 +507,7 @@ public class ItemService {
         System.out.println("✅ Merged " + duplicateItems.size() + " duplicate items. Total quantity: " + totalQuantity);
     }
 
+    @Transactional(readOnly = true)
     public List<ItemResolution> getResolutionHistoryByWarehouse(UUID warehouseId) {
         try {
             // First approach - using the warehouse object
@@ -507,6 +523,7 @@ public class ItemService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<Item> getItemTransactionDetails(UUID warehouseId, UUID itemTypeId) {
         // Get all items of this type in the warehouse with their transaction details
         List<Item> items = itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatusWithTransactionDetails(
@@ -643,6 +660,7 @@ public class ItemService {
     /**
      * Get all item history for a warehouse (all sources: transactions, manual entries, purchase orders, etc.)
      */
+    @Transactional(readOnly = true)
     public List<Item> getWarehouseItemHistory(UUID warehouseId) {
         System.out.println("📜 Fetching all item history for warehouse: " + warehouseId);
 

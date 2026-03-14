@@ -5,11 +5,12 @@ import com.example.backend.dto.item.ItemResolutionDTO;
 import com.example.backend.models.warehouse.Item;
 import com.example.backend.models.warehouse.ItemResolution;
 import com.example.backend.models.warehouse.ItemStatus;
-import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.services.warehouse.ItemCategoryService;
 import com.example.backend.services.warehouse.ItemService;
 import com.example.backend.services.warehouse.WarehouseService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/items")
 public class ItemController {
 
+    private static final Logger log = LoggerFactory.getLogger(ItemController.class);
+
     @Autowired
     private ItemService itemService;
 
@@ -35,47 +38,25 @@ public class ItemController {
     @Autowired
     private ItemCategoryService itemCategoryService;
 
-    @Autowired
-    private ItemRepository itemRepository;
-
     // Existing endpoints
     @GetMapping("/warehouse/{warehouseId}")
     public ResponseEntity<List<Item>> getItemsByWarehouse(@PathVariable UUID warehouseId) {
-        System.out.println("🔍 === DEBUGGING WAREHOUSE ITEMS REQUEST ===");
-        System.out.println("Received request for warehouse ID: " + warehouseId);
-
         try {
-            // Check if warehouse ID is valid
             if (warehouseId == null) {
-                System.err.println("❌ Warehouse ID is null");
                 return ResponseEntity.badRequest().build();
             }
 
-            System.out.println("📞 Calling itemService.getItemsByWarehouse...");
             List<Item> items = itemService.getItemsByWarehouse(warehouseId);
-
-            System.out.println("✅ Successfully fetched items from service");
-            System.out.println("📊 Number of items: " + (items != null ? items.size() : "null"));
-
-            if (items != null && items.size() > 0) {
-                System.out.println("📋 Sample item: " + items.get(0).getId());
-                System.out.println("📋 Sample item status: " + items.get(0).getItemStatus());
-            }
+            log.debug("Fetched {} items for warehouse {}", items != null ? items.size() : 0, warehouseId);
 
             return ResponseEntity.ok(items);
 
         } catch (IllegalArgumentException e) {
-            System.err.println("❌ IllegalArgumentException: " + e.getMessage());
-            e.printStackTrace();
+            log.warn("Invalid argument fetching items for warehouse {}: {}", warehouseId, e.getMessage());
             return ResponseEntity.badRequest().build();
 
         } catch (Exception e) {
-            System.err.println("💥 Unexpected error occurred");
-            System.err.println("Error class: " + e.getClass().getSimpleName());
-            System.err.println("Error message: " + e.getMessage());
-            System.err.println("Stack trace:");
-            e.printStackTrace();
-
+            log.error("Error fetching items for warehouse {}", warehouseId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -83,7 +64,7 @@ public class ItemController {
     @PostMapping()
     public ResponseEntity<?> createItem(@RequestBody Map<String, Object> request) {
         try {
-            System.out.println("🔍 Received request payload: " + request);
+            log.debug("Received create item request: {}", request);
 
             // Validate required fields
             if (!request.containsKey("itemTypeId") || request.get("itemTypeId") == null) {
@@ -125,30 +106,25 @@ public class ItemController {
                 createdAt = LocalDateTime.now();
             }
 
-            System.out.println("✅ Parsed values - ItemTypeId: " + itemTypeId +
-                    ", WarehouseId: " + warehouseId +
-                    ", Quantity: " + initialQuantity +
-                    ", Username: " + username +
-                    ", CreatedAt: " + createdAt);
+            log.debug("Parsed values - ItemTypeId: {}, WarehouseId: {}, Quantity: {}, Username: {}, CreatedAt: {}",
+                    itemTypeId, warehouseId, initialQuantity, username, createdAt);
 
             Item newItem = itemService.createItem(itemTypeId, warehouseId, initialQuantity, username, createdAt);
-            System.out.println("✅ Item created successfully in controller");
+            log.debug("Item created successfully");
             return ResponseEntity.ok(newItem);
 
         } catch (IllegalArgumentException e) {
-            System.err.println("❌ Validation error: " + e.getMessage());
+            log.warn("Validation error creating item: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", "Validation Error", "message", e.getMessage()));
 
         } catch (RuntimeException e) {
-            System.err.println("❌ Runtime error in controller: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Runtime error creating item: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Server Error", "message", e.getMessage()));
 
         } catch (Exception e) {
-            System.err.println("❌ Unexpected error in controller: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Unexpected error creating item: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Server Error", "message", "An unexpected error occurred: " + e.getMessage()));
         }
@@ -171,17 +147,16 @@ public class ItemController {
     @PostMapping("/resolve-discrepancy")
     public ResponseEntity<?> resolveDiscrepancy(@RequestBody ItemResolutionDTO request) {
         try {
-            System.out.println("🔥 Resolution endpoint called for item: " + request.getItemId());
+            log.debug("Resolution endpoint called for item: {}", request.getItemId());
             ItemResolution resolution = itemService.resolveDiscrepancy(request);
-            System.out.println("✅ Resolution successful: " + resolution.getId());
+            log.debug("Resolution successful: {}", resolution.getId());
             return ResponseEntity.ok(resolution);
         } catch (IllegalArgumentException e) {
-            System.out.println("❌ Bad request: " + e.getMessage());
+            log.warn("Bad request for resolution: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            System.out.println("💥 Server error: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Server error during resolution", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "An unexpected error occurred: " + e.getMessage()));
         }
@@ -311,8 +286,7 @@ public class ItemController {
     @GetMapping("/{itemId}/can-resolve")
     public ResponseEntity<Map<String, Object>> canResolveItem(@PathVariable UUID itemId) {
         try {
-            Item item = itemRepository.findById(itemId)
-                    .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+            Item item = itemService.getItemById(itemId);
 
             boolean canResolve = !item.isResolved() &&
                     (item.getItemStatus() == ItemStatus.MISSING ||
@@ -386,21 +360,16 @@ public class ItemController {
     @GetMapping("/resolution-history/warehouse/{warehouseId}")
     public ResponseEntity<List<ItemResolution>> getResolutionHistoryByWarehouse(@PathVariable UUID warehouseId) {
         try {
-            System.out.println("🔍 Fetching resolution history for warehouse: " + warehouseId);
-
             List<ItemResolution> resolutionHistory = itemService.getResolutionHistoryByWarehouse(warehouseId);
-
-            System.out.println("✅ Found " + resolutionHistory.size() + " resolution records");
-
+            log.debug("Found {} resolution records for warehouse {}", resolutionHistory.size(), warehouseId);
             return ResponseEntity.ok(resolutionHistory);
 
         } catch (IllegalArgumentException e) {
-            System.out.println("❌ Warehouse not found: " + e.getMessage());
+            log.warn("Warehouse not found: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 
         } catch (Exception e) {
-            System.out.println("💥 Error fetching resolution history: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error fetching resolution history for warehouse {}", warehouseId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

@@ -18,4 +18,9 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, UUID> {
     @Query("SELECT w FROM Warehouse w WHERE w.id = :id")
     Optional<Warehouse> findByIdWithoutCollections(@Param("id") UUID id);
 
+    @Query("SELECT DISTINCT w FROM Warehouse w LEFT JOIN FETCH w.site LEFT JOIN FETCH w.employees e LEFT JOIN FETCH e.jobPosition")
+    List<Warehouse> findAllWithSiteAndEmployees();
+
+    @Query("SELECT w FROM Warehouse w LEFT JOIN FETCH w.site LEFT JOIN FETCH w.employees e LEFT JOIN FETCH e.jobPosition WHERE w.id = :id")
+    Optional<Warehouse> findByIdWithSiteAndEmployees(@Param("id") UUID id);
 }

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -832,6 +833,19 @@ public class TransactionService {
     public Transaction getTransactionById(UUID transactionId) {
         return transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + transactionId));
+    }
+
+    public Optional<Transaction> findByBatchNumber(int batchNumber) {
+        return transactionRepository.findByBatchNumber(batchNumber);
+    }
+
+    public Transaction saveTransaction(Transaction transaction) {
+        return transactionRepository.save(transaction);
+    }
+
+    public ItemType getItemTypeById(UUID itemTypeId) {
+        return itemTypeRepository.findById(itemTypeId)
+                .orElseThrow(() -> new IllegalArgumentException("Item type not found: " + itemTypeId));
     }
 
     public List<Transaction> getTransactionsForEquipmentByPurpose(UUID equipmentId, TransactionPurpose purpose) {

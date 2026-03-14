@@ -454,7 +454,7 @@ const ProcurementRequestOrderDetails = () => {
                             <h2>Purchase Order Details</h2>
                             <button
                                 className="view-po-button"
-                                onClick={() => navigate(`/procurement/purchase-orders/${requestOrder.purchaseOrder.id}`)}
+                                onClick={() => navigate(`/procurement/purchase-orders/details/${requestOrder.purchaseOrder.id}`)}
                             >
                                 View Complete PO
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

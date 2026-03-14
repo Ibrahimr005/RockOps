@@ -29,8 +29,6 @@ const PurchaseOrderReturnDetailsPage = () => {
 
         try {
             const data = await poReturnService.getById(id);
-            console.log('📦 PO Return Details Data:', data);
-            console.log('📦 Return Items:', data.returnItems);
             setPoReturn(data);
         } catch (err) {
             console.error('Error fetching PO return:', err);

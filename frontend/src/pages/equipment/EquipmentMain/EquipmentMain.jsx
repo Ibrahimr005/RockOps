@@ -104,7 +104,6 @@ const EquipmentMain = () => {
     // Function to refresh presigned URL for equipment image
     const handleImageRefresh = async (equipmentId) => {
         try {
-            console.log(`Refreshing presigned URL for equipment ${equipmentId}`);
             const response = await equipmentService.refreshEquipmentMainPhoto(equipmentId);
             return response.data;
         } catch (error) {
@@ -120,10 +119,6 @@ const EquipmentMain = () => {
             const response = await equipmentService.getAllEquipment();
 
             if (Array.isArray(response.data)) {
-                // Add this console.log
-                console.log("First equipment object:", response.data[0]);
-                console.log("Full equipment structure:", JSON.stringify(response.data[0], null, 2));
-
                 setEquipmentData(response.data);
                 setFilteredEquipment(response.data);
             } else {
@@ -132,7 +127,7 @@ const EquipmentMain = () => {
             }
         } catch (error) {
             console.error("Error fetching equipment data:", error);
-            setError(error.message || "Failed to load equipment data");
+            setError("Failed to load equipment data. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -159,7 +154,6 @@ const EquipmentMain = () => {
         filteredEquipment.forEach((data, index) => {
             if (equipmentCardsRefs.current[index]) {
                 // Extract data directly from the DTO
-                console.log();
                 // Use only the equipment name for display
                 const displayName = data.name || 'Unknown Equipment';
                 const siteName = data.siteName ? data.siteName : 'No Site Assigned';

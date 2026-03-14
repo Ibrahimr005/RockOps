@@ -144,11 +144,6 @@ const ProcurementSolutionModal = ({
         e.preventDefault();
 
         // ADD THESE DEBUG LOGS
-        console.log("=== FRONTEND SUBMIT DEBUG ===");
-        console.log("Full requestItem:", requestItem);
-        console.log("requestItem.itemTypeId:", requestItem.itemTypeId);
-        console.log("requestItem.itemType:", requestItem.itemType);
-        console.log("formData:", formData);
 
         const submissionData = {
             itemTypeId: requestItem.itemTypeId,
@@ -163,8 +158,6 @@ const ProcurementSolutionModal = ({
             comment: mode === 'edit' ? formData.comment : undefined
         };
 
-        console.log("Submission data being sent:", submissionData);
-        console.log("=========================");
 
         onSave(submissionData);
     };
@@ -186,8 +179,6 @@ const ProcurementSolutionModal = ({
 
     if (!isVisible || !requestItem) return null;
 
-    console.log("=== REQUEST ITEM DEBUG ===");
-    console.log("Full requestItem object:", requestItem);
 
     return (
         <>

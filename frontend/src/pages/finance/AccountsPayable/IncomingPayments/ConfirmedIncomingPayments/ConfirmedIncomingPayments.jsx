@@ -102,7 +102,7 @@ const ConfirmedIncomingPayments = ({ payments, loading, onDataChange, onSuccess,
         {
             label: 'View Details',
             icon: <FiEye />,
-            onClick: (row) => console.log('View details:', row),
+            onClick: (row) => {},
             className: 'view'
         }
     ];

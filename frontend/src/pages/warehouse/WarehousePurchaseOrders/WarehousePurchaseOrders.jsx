@@ -56,8 +56,6 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
                 order.requestOrder?.requesterId === warehouseId
 
             );
-            console.log('All poooooooososooss:', JSON.stringify(allPOs, null, 2));
-
             setAllOrders(warehouseOrders);
         } catch (error) {
             console.error('Error fetching purchase orders:', error);
@@ -85,14 +83,6 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
     const completedOrders = allOrders.filter(order =>
         order.status === 'COMPLETED'
     );
-
-    console.log('=== WAREHOUSE PURCHASE ORDERS ===');
-    console.log('All Orders:', JSON.stringify(allOrders, null, 2));
-    console.log('Awaiting Orders (PENDING + DISPUTED):', JSON.stringify(awaitingOrders, null, 2));
-    console.log('Disputed Orders (DISPUTED only):', JSON.stringify(disputedOrders, null, 2));
-    console.log('Completed Orders:', JSON.stringify(completedOrders, null, 2));
-    console.log('================================');
-
 
     useEffect(() => {
         if (onAddButtonClick && pendingOrdersRef.current) {

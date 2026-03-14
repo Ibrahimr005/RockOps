@@ -186,12 +186,9 @@ const InProgressOffers = ({
                 status: 'SUBMITTED'
             };
 
-            console.log("🚀 Submitting offer:", offer.id);
-            console.log("🚀 Submitted offer data:", submittedOffer);
 
             if (handleOfferStatusChange) {
                 await handleOfferStatusChange(offer.id, 'SUBMITTED', submittedOffer);
-                console.log("✅ handleOfferStatusChange completed");
             }
 
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
@@ -548,13 +545,11 @@ const InProgressOffers = ({
 
     // Helper function to show snackbar
     const showSnackbar = (type, message) => {
-        console.log("🔔 showSnackbar called with:", type, message);
         setSnackbar({
             show: true,
             type,
             message
         });
-        console.log("🔔 Snackbar state updated");
     };
 
     // Helper function to hide snackbar
@@ -612,14 +607,8 @@ const InProgressOffers = ({
 
     useEffect(() => {
         if (activeOffer && activeOffer.offerItems) {
-            console.log("=== ACTIVE OFFER DEBUG ===");
-            console.log("Active Offer:", activeOffer);
-            console.log("Offer Items:", activeOffer.offerItems);
-            console.log("First offer item:", activeOffer.offerItems[0]);
             if (activeOffer.offerItems[0]) {
-                console.log("Delivery days:", activeOffer.offerItems[0].estimatedDeliveryDays);
             }
-            console.log("========================");
         }
     }, [activeOffer]);
 

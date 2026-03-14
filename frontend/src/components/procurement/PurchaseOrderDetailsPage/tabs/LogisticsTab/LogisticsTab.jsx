@@ -21,11 +21,9 @@ const LogisticsTab = ({ purchaseOrder, onError }) => {
         try {
             // Fetch PO logistics
             const poLogisticsData = await logisticsService.getByPurchaseOrder(purchaseOrder.id);
-            console.log('📦 PO LOGISTICS:', poLogisticsData);
 
             // Fetch Return logistics for this PO
             const returnLogisticsData = await logisticsService.getReturnLogisticsByPurchaseOrder(purchaseOrder.id);
-            console.log('📦 RETURN LOGISTICS:', returnLogisticsData);
 
             setLogistics(poLogisticsData);
             setReturnLogistics(returnLogisticsData);

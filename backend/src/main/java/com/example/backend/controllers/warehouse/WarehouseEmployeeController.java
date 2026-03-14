@@ -38,7 +38,7 @@ public class WarehouseEmployeeController {
     @GetMapping("/warehouse-employees")
     public ResponseEntity<?> getAllWarehouseEmployees() {
         try {
-            System.out.println("Fetching all warehouse employees...");
+            // Fetching warehouse employees
             List<User> employees = warehouseEmployeeService.getAllWarehouseEmployees();
 
             // Create simple response to avoid circular reference issues
@@ -54,11 +54,11 @@ public class WarehouseEmployeeController {
                     })
                     .collect(Collectors.toList());
 
-            System.out.println("Successfully fetched " + response.size() + " warehouse employees");
+            // Successfully fetched warehouse employees
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("Error fetching warehouse employees: " + e.getMessage());
+            // Error fetching warehouse employees
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to fetch warehouse employees: " + e.getMessage()));
@@ -99,7 +99,7 @@ public class WarehouseEmployeeController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            System.err.println("Error assigning employee to warehouse: " + e.getMessage());
+            // Error assigning employee to warehouse
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "An unexpected error occurred"));
         }
@@ -131,7 +131,7 @@ public class WarehouseEmployeeController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            System.err.println("Error unassigning employee from warehouse: " + e.getMessage());
+            // Error unassigning employee from warehouse
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "An unexpected error occurred"));
         }
@@ -148,7 +148,7 @@ public class WarehouseEmployeeController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         } catch (Exception e) {
-            System.err.println("Error fetching warehouses for employee: " + e.getMessage());
+            // Error fetching warehouses for employee
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -166,7 +166,7 @@ public class WarehouseEmployeeController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } catch (Exception e) {
-            System.err.println("Error fetching assignment details: " + e.getMessage());
+            // Error fetching assignment details
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -180,7 +180,7 @@ public class WarehouseEmployeeController {
             List<WarehouseEmployee> assignments = warehouseEmployeeService.getEmployeeAssignments(employeeId);
             return ResponseEntity.ok(assignments);
         } catch (Exception e) {
-            System.err.println("Error fetching employee assignments: " + e.getMessage());
+            // Error fetching employee assignments
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -196,7 +196,7 @@ public class WarehouseEmployeeController {
             boolean hasAccess = warehouseEmployeeService.hasWarehouseAccess(employeeId, warehouseId);
             return ResponseEntity.ok(Map.of("hasAccess", hasAccess));
         } catch (Exception e) {
-            System.err.println("Error checking warehouse access: " + e.getMessage());
+            // Error checking warehouse access
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
@@ -207,7 +207,7 @@ public class WarehouseEmployeeController {
     @GetMapping("/by-username/{username}/assignments")
     public ResponseEntity<?> getEmployeeAssignmentsByUsername(@PathVariable String username) {
         try {
-            System.out.println("Getting assignments for username: " + username);
+            // Getting assignments for username
 
             // Find user by username
             User user = userRepository.findByUsername(username)
@@ -215,7 +215,7 @@ public class WarehouseEmployeeController {
 
             // Verify user is a warehouse employee
             if (user.getRole() != Role.WAREHOUSE_EMPLOYEE) {
-                System.out.println("User " + username + " is not a warehouse employee");
+                // User is not a warehouse employee
                 return ResponseEntity.ok(new ArrayList<>()); // Return empty list
             }
 
@@ -252,11 +252,11 @@ public class WarehouseEmployeeController {
                     })
                     .collect(Collectors.toList());
 
-            System.out.println("Found " + assignmentDTOs.size() + " assignments for user " + username);
+            // Found assignments for user
             return ResponseEntity.ok(assignmentDTOs);
 
         } catch (Exception e) {
-            System.err.println("Error getting assignments for username " + username + ": " + e.getMessage());
+            // Error getting assignments for username
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to get user assignments: " + e.getMessage()));

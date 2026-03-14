@@ -38,7 +38,6 @@ const PurchaseOrderDetailsPage = () => {
         if (userInfo && userInfo.role) {
             setUserRole(userInfo.role);
         }
-        console.log("role is:" + userRole);
     }, []);
 
     // Add this useEffect to handle the initial tab from navigation state
@@ -59,12 +58,6 @@ const PurchaseOrderDetailsPage = () => {
         try {
             // Fetch PO with full delivery history (includes issues)
             const poData = await purchaseOrderService.getWithDeliveries(id);
-
-            console.log('📦 FULL PO DATA:', poData);
-            console.log('📦 PO Number:', poData.poNumber);
-            console.log('📦 PO Request Order:', poData.requestOrder);
-            console.log('📦 PO Title:', poData.requestOrder?.title);
-            console.log('📦 Full PO Structure:', JSON.stringify(poData, null, 2));
 
             setPurchaseOrder(poData);
 

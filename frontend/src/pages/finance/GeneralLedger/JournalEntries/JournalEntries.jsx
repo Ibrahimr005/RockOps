@@ -65,9 +65,6 @@ const JournalEntries = () => {
         try {
             setLoading(true);
 
-            console.log('=== DEBUGGING JOURNAL ENTRIES ===');
-            console.log('Status filter:', statusFilter);
-            console.log('Date filter:', dateFilter);
 
             const params = {
                 status: statusFilter !== 'ALL' ? statusFilter : undefined,
@@ -75,13 +72,9 @@ const JournalEntries = () => {
                 endDate: dateFilter.endDate || undefined
             };
 
-            console.log('Params being sent:', params);
 
             const data = await financeService.journalEntries.getAll(params);
 
-            console.log('Raw data received:', data);
-            console.log('Data type:', typeof data);
-            console.log('Is array?', Array.isArray(data));
 
             // Handle different response structures
             let entriesArray = [];
@@ -101,12 +94,8 @@ const JournalEntries = () => {
                 if (arrayKeys.length > 0) {
                     entriesArray = data[arrayKeys[0]]; // Use the first array found
                 }
-                console.log('Object keys:', Object.keys(data));
-                console.log('Found array keys:', arrayKeys);
             }
 
-            console.log('Final entries array:', entriesArray);
-            console.log('Final array length:', entriesArray.length);
 
             setJournalEntries(entriesArray);
             setError(null);
@@ -245,10 +234,6 @@ const JournalEntries = () => {
 
     const handleApproveEntry = async (id) => {
         try {
-            console.log('=== DEBUGGING APPROVAL ===');
-            console.log('Attempting to approve entry with ID:', id);
-            console.log('Current user object:', currentUser);
-            console.log('Current user username:', currentUser?.username);
 
             // First, check if the entry exists and get its current state
             const response = await financeService.journalEntries.getById(id);
@@ -256,38 +241,28 @@ const JournalEntries = () => {
             // Extract the actual data from the response
             const entryDetails = response.data || response;
 
-            console.log('Full response:', response);
-            console.log('Entry details:', entryDetails);
-            console.log('Entry createdBy:', entryDetails.createdBy);
-            console.log('Entry createdBy type:', typeof entryDetails.createdBy);
 
             // Log the comparison with the correct field
-            console.log('Comparison results:');
-            console.log('entryDetails.createdBy === currentUser?.username:', entryDetails.createdBy === currentUser?.username);
 
             // Check if current user is trying to approve their own entry
             // Only compare with username since that's what we have
             if (entryDetails.createdBy === currentUser?.username) {
-                console.log('BLOCKED: User trying to approve own entry');
                 showError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
                 return;
             }
 
             // Check entry status
             if (entryDetails.status !== 'PENDING') {
-                console.log('BLOCKED: Entry status is not PENDING, current status:', entryDetails.status);
                 showError(`Cannot approve entry. Current status: ${entryDetails.status}`);
                 return;
             }
 
-            console.log('PROCEEDING: All checks passed, attempting approval...');
 
             // Proceed with approval
             await financeService.journalEntries.approve(id, {
                 comments: "Approved by finance manager"
             });
 
-            console.log('SUCCESS: Entry approved successfully');
 
             // Refresh entries and close modal
             await fetchJournalEntries();
@@ -307,7 +282,6 @@ const JournalEntries = () => {
         }
 
         try {
-            console.log('Rejecting entry with ID:', id, 'Reason:', reason);
 
             await financeService.journalEntries.reject(id, {
                 reason: reason.trim()

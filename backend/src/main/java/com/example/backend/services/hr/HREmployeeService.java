@@ -45,45 +45,45 @@ public class HREmployeeService {
 
     /**
      * Calculate and retrieve salary statistics
+     * Note: monthlySalary is a computed Java property (not a DB column), so we must load employees and compute in Java
      */
+    @Transactional(readOnly = true)
     public SalaryStatisticsDTO getSalaryStatistics() {
         try {
             List<Employee> employees = employeeRepository.findAll();
 
             BigDecimal totalSalary = BigDecimal.ZERO;
-            BigDecimal minSalary = BigDecimal.valueOf(Double.MAX_VALUE);
-            BigDecimal maxSalary = BigDecimal.ZERO;
-            Map<String, BigDecimal> departmentSalaries = new HashMap<>();
-            Map<String, Integer> departmentCounts = new HashMap<>();
+            BigDecimal minSalary = null;
+            BigDecimal maxSalary = null;
+            Map<String, List<BigDecimal>> departmentSalaries = new HashMap<>();
 
-            for (Employee employee : employees) {
-                BigDecimal monthlySalary = employee.getMonthlySalary();
-                totalSalary = totalSalary.add(monthlySalary);
+            for (Employee emp : employees) {
+                BigDecimal salary = emp.getMonthlySalary();
+                if (salary == null) salary = BigDecimal.ZERO;
 
-                if (monthlySalary.compareTo(minSalary) < 0) {
-                    minSalary = monthlySalary;
-                }
-                if (monthlySalary.compareTo(maxSalary) > 0) {
-                    maxSalary = monthlySalary;
-                }
+                totalSalary = totalSalary.add(salary);
+                if (minSalary == null || salary.compareTo(minSalary) < 0) minSalary = salary;
+                if (maxSalary == null || salary.compareTo(maxSalary) > 0) maxSalary = salary;
 
-                if (employee.getJobPosition() != null && employee.getJobPosition().getDepartment() != null) {
-                    String deptName = employee.getJobPosition().getDepartment().getName();
-                    departmentSalaries.merge(deptName, monthlySalary, BigDecimal::add);
-                    departmentCounts.merge(deptName, 1, Integer::sum);
+                if (emp.getJobPosition() != null && emp.getJobPosition().getDepartment() != null) {
+                    String deptName = emp.getJobPosition().getDepartment().getName();
+                    departmentSalaries.computeIfAbsent(deptName, k -> new ArrayList<>()).add(salary);
                 }
             }
 
+            if (minSalary == null) minSalary = BigDecimal.ZERO;
+            if (maxSalary == null) maxSalary = BigDecimal.ZERO;
+
             int employeeCount = employees.size();
-            BigDecimal avgSalary = employeeCount > 0 ?
-                    totalSalary.divide(BigDecimal.valueOf(employeeCount), 2, RoundingMode.HALF_UP) :
-                    BigDecimal.ZERO;
+            BigDecimal avgSalary = employeeCount > 0
+                    ? totalSalary.divide(BigDecimal.valueOf(employeeCount), 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
 
             Map<String, BigDecimal> departmentAverages = new HashMap<>();
-            departmentSalaries.forEach((dept, total) -> {
-                int count = departmentCounts.get(dept);
-                departmentAverages.put(dept,
-                        total.divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP));
+            departmentSalaries.forEach((dept, salaries) -> {
+                BigDecimal sum = salaries.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal avg = sum.divide(BigDecimal.valueOf(salaries.size()), 2, RoundingMode.HALF_UP);
+                departmentAverages.put(dept, avg);
             });
 
             return SalaryStatisticsDTO.builder()
@@ -111,21 +111,22 @@ public class HREmployeeService {
     }
 
     /**
-     * Get employee distribution by site
+     * Get employee distribution by department using SQL GROUP BY
      */
+    @Transactional(readOnly = true)
     public List<EmployeeDistributionDTO> getEmployeeDistribution() {
         try {
-            List<Employee> employees = employeeRepository.findAll();
+            // Use GROUP BY query instead of loading all employees into memory
+            List<Object[]> rows = employeeRepository.findEmployeeCountByDepartmentAndContractType();
             Map<String, Map<String, Integer>> distribution = new HashMap<>();
 
-            for (Employee employee : employees) {
-                if (employee.getJobPosition() != null && employee.getJobPosition().getDepartment() != null) {
-                    String deptName = employee.getJobPosition().getDepartment().getName();
-                    String contractType = employee.getJobPosition().getContractType().name();
+            for (Object[] row : rows) {
+                String deptName = (String) row[0];
+                String contractType = row[1].toString(); // enum .toString()
+                int count = ((Number) row[2]).intValue();
 
-                    distribution.computeIfAbsent(deptName, k -> new HashMap<>())
-                            .merge(contractType, 1, Integer::sum);
-                }
+                distribution.computeIfAbsent(deptName, k -> new HashMap<>())
+                        .put(contractType, count);
             }
 
             List<EmployeeDistributionDTO> result = new ArrayList<>();
@@ -468,6 +469,7 @@ public class HREmployeeService {
     /**
      * Get employee by ID
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> getEmployeeById(UUID id) {
         try {
             Employee employee = employeeRepository.findByIdWithDetails(id)

@@ -69,7 +69,6 @@ export const NotificationProvider = ({ children }) => {
             // Fetch initial unread count after connection
             fetchUnreadCount();
 
-            console.log('✅ NotificationProvider: WebSocket connected');
         } catch (error) {
             console.error('❌ NotificationProvider: Failed to connect WebSocket:', error);
         }

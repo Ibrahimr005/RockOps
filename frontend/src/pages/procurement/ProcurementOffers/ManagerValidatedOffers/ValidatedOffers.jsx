@@ -118,19 +118,14 @@ const ValidatedOffers = ({
     const handleSubmitFinanceReview = async () => {
         try {
             setIsProcessingFinance(true);
-            console.log('🔄 Starting finance review for offer:', activeOffer.id);
-            console.log('📋 Finance decisions:', financeDecisions);
-            console.log('📝 Rejection reasons:', rejectionReasons);
 
             // Update each offer item's finance status
             let itemUpdateResults = [];
             for (const [itemId, decision] of Object.entries(financeDecisions)) {
                 const rejectionReason = decision === 'REJECTED' ? rejectionReasons[itemId] : null;
-                console.log(`🔄 Updating item ${itemId} to ${decision}`, rejectionReason ? `with reason: ${rejectionReason}` : '');
 
                 try {
                     const itemResult = await offerService.updateItemFinanceStatus(itemId, decision, rejectionReason);
-                    console.log(`✅ Item ${itemId} update SUCCESS:`, itemResult);
                     itemUpdateResults.push({ itemId, success: true, result: itemResult });
                 } catch (itemError) {
                     console.error(`❌ Item ${itemId} update FAILED:`, itemError);
@@ -141,37 +136,28 @@ const ValidatedOffers = ({
                 }
             }
 
-            console.log('📊 Item update results summary:', itemUpdateResults);
 
             // Calculate and update overall offer status
             const overallStatus = calculateOverallFinanceStatus();
-            console.log('🎯 Calculated overall status:', overallStatus);
-            console.log('🆔 Offer ID:', activeOffer.id);
 
             try {
                 // FIX 1: Try the same method signature as SubmittedOffers (with null as third parameter)
-                console.log('🔄 Method 1: Using same signature as SubmittedOffers with null rejection reason...');
                 const offerResult = await offerService.updateStatus(activeOffer.id, overallStatus, null);
-                console.log('✅ Method 1 SUCCESS:', offerResult);
 
             } catch (method1Error) {
                 console.error('❌ Method 1 FAILED:', method1Error);
 
                 try {
                     // FIX 2: Try without the third parameter (original way)
-                    console.log('🔄 Method 2: Using original method without rejection reason...');
                     const offerResult = await offerService.updateStatus(activeOffer.id, overallStatus);
-                    console.log('✅ Method 2 SUCCESS:', offerResult);
 
                 } catch (method2Error) {
                     console.error('❌ Method 2 FAILED:', method2Error);
 
                     try {
                         // FIX 3: Check if there's a specific method for finance status updates
-                        console.log('🔄 Method 3: Checking for updateFinanceStatus method...');
                         if (typeof offerService.updateFinanceStatus === 'function') {
                             const offerResult = await offerService.updateFinanceStatus(activeOffer.id, overallStatus);
-                            console.log('✅ Method 3 SUCCESS:', offerResult);
                         } else {
                             throw new Error('updateFinanceStatus method not available');
                         }
@@ -181,9 +167,7 @@ const ValidatedOffers = ({
 
                         try {
                             // FIX 4: Try with an empty string as rejection reason
-                            console.log('🔄 Method 4: Using empty string as rejection reason...');
                             const offerResult = await offerService.updateStatus(activeOffer.id, overallStatus, '');
-                            console.log('✅ Method 4 SUCCESS:', offerResult);
 
                         } catch (method4Error) {
                             console.error('❌ Method 4 FAILED:', method4Error);
@@ -219,7 +203,6 @@ const ValidatedOffers = ({
 
             // Remove from current list since it's moved to finance tab
             if (onDeleteOffer) {
-                console.log('🗑️ Removing offer from current tab');
                 onDeleteOffer(activeOffer.id);
             }
 
@@ -236,7 +219,6 @@ const ValidatedOffers = ({
             setShowNotification(true);
         } finally {
             setIsProcessingFinance(false);
-            console.log('🏁 Finance review process completed');
         }
     };
 
@@ -256,15 +238,9 @@ const ValidatedOffers = ({
 
     // Quick debugging function to add to your component:
     const debugOfferService = () => {
-        console.log('🔍 Debugging offerService:');
-        console.log('Methods available:', Object.getOwnPropertyNames(offerService));
-        console.log('updateStatus method:', offerService.updateStatus);
-        console.log('updateStatus toString:', offerService.updateStatus.toString());
 
         // If updateFinanceStatus exists
         if (offerService.updateFinanceStatus) {
-            console.log('updateFinanceStatus method:', offerService.updateFinanceStatus);
-            console.log('updateFinanceStatus toString:', offerService.updateFinanceStatus.toString());
         }
     };
     // Show delete confirmation dialog

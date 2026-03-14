@@ -7,6 +7,7 @@ import com.example.backend.models.user.User;
 import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -99,10 +100,10 @@ public class NotificationController {
      * Send notification to specific user (Admin only)
      * POST /api/notifications/send
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/send")
     public ResponseEntity<Map<String, Object>> sendNotification(@RequestBody SendNotificationRequest request) {
         try {
-            // For testing - you might want to add admin role check here
             User targetUser = new User();
             targetUser.setId(request.getUserId());
 
@@ -157,6 +158,7 @@ public class NotificationController {
      * Broadcast notification to all users (Admin only)
      * POST /api/notifications/broadcast
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/broadcast")
     public ResponseEntity<Map<String, Object>> broadcastNotification(@RequestBody BroadcastNotificationRequest request) {
         try {

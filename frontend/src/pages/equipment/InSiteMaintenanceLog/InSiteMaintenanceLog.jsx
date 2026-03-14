@@ -67,7 +67,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, s
             setLoading(false);
         } catch (err) {
             console.error('Error fetching maintenance records:', err);
-            setError(err.message);
+            setError('Failed to load maintenance records. Please try again.');
             setLoading(false);
             showError('Failed to load maintenance records. Please try again.');
         }
@@ -155,7 +155,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, s
 
     const handleRowClick = (row) => {
         // Handle row click logic here
-        console.log('Row clicked:', row);
         showInfo(`Selected maintenance record: ${row.maintenanceType} by ${row.technicianName}`);
     };
 

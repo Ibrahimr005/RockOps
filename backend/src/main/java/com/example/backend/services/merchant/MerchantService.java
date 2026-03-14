@@ -12,7 +12,9 @@ import com.example.backend.repositories.procurement.PurchaseOrderItemRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.repositories.warehouse.ItemCategoryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.example.backend.dto.merchant.MerchantPerformanceDTO;
 import java.time.LocalDate;
 import java.util.Map;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MerchantService {
@@ -33,35 +36,10 @@ public class MerchantService {
     private final DeliveryItemReceiptRepository deliveryItemReceiptRepository;  // ADD THIS
 
 
+    @Transactional(readOnly = true)
     public List<Merchant> getAllMerchants() {
         try {
-            List<Merchant> merchants = merchantRepository.findAll();
-            merchants.forEach(m -> {
-                System.out.println("Merchant ID: " + m.getId());
-                System.out.println("Name: " + m.getName());
-                System.out.println("Contact Email: " + m.getContactEmail());
-                System.out.println("Contact Phone: " + m.getContactPhone());
-                System.out.println("Address: " + m.getAddress());
-                System.out.println("Merchant Types: " + m.getMerchantTypes());
-                System.out.println("Notes: " + m.getNotes());
-
-                // Changed: Handle multiple sites instead of single site
-                if (m.getSites() != null && !m.getSites().isEmpty()) {
-                    System.out.println("Sites (" + m.getSites().size() + "):");
-                    m.getSites().forEach(site -> {
-                        System.out.println("\t- " + site.getName());
-                    });
-                } else {
-                    System.out.println("Sites: None");
-                }
-
-                System.out.println("Item Categories: " + m.getItemCategories().size());
-                m.getItemCategories().forEach(itemCategory -> {
-                    System.out.println("\t- " + itemCategory.getName());
-                });
-                System.out.println("Contacts: " + (m.getContacts() != null ? m.getContacts().size() : 0));
-            });
-            return merchants;
+            return merchantRepository.findAll();
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch merchants: " + e.getMessage(), e);
         }
@@ -69,21 +47,16 @@ public class MerchantService {
 
 
 
+    @Transactional(readOnly = true)
     public Merchant getMerchantById(UUID id) {
         return merchantRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Merchant not found with id: " + id));
     }
 
+    @Transactional(readOnly = true)
     public List<DeliveryItemReceipt> getMerchantTransactions(UUID merchantId) {
-        // Get all purchase order items for this merchant
-        List<PurchaseOrderItem> merchantItems = purchaseOrderItemRepository.findByMerchantId(merchantId);
-
-        // Get all delivery receipts for those items
-        List<DeliveryItemReceipt> allReceipts = new ArrayList<>();
-        for (PurchaseOrderItem item : merchantItems) {
-            List<DeliveryItemReceipt> receipts = deliveryItemReceiptRepository.findByPurchaseOrderItemId(item.getId());
-            allReceipts.addAll(receipts);
-        }
+        // Single query to get all delivery receipts for this merchant's items
+        List<DeliveryItemReceipt> allReceipts = deliveryItemReceiptRepository.findByPurchaseOrderItemMerchantId(merchantId);
 
         // Sort by date descending (most recent first)
         allReceipts.sort((a, b) -> b.getDeliverySession().getProcessedAt().compareTo(a.getDeliverySession().getProcessedAt()));
@@ -91,6 +64,7 @@ public class MerchantService {
         return allReceipts;
     }
 
+    @Transactional(readOnly = true)
     public List<MerchantTransactionDTO> getMerchantTransactionDTOs(UUID merchantId) {
         List<DeliveryItemReceipt> receipts = getMerchantTransactions(merchantId);
 
@@ -125,6 +99,7 @@ public class MerchantService {
         }).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public MerchantPerformanceDTO getMerchantPerformance(UUID merchantId) {
         List<DeliveryItemReceipt> receipts = getMerchantTransactions(merchantId);
 
@@ -430,6 +405,7 @@ public class MerchantService {
         return consistencyScore;
     }
 
+    @Transactional(readOnly = true)
     public List<Merchant> getMerchantsByType(String merchantType) {
         try {
             if (merchantType == null || merchantType.trim().isEmpty()) {
@@ -437,11 +413,7 @@ public class MerchantService {
             }
 
             MerchantType type = MerchantType.valueOf(merchantType.toUpperCase());
-            List<Merchant> allMerchants = merchantRepository.findAll();
-
-            return allMerchants.stream()
-                    .filter(m -> m.getMerchantTypes() != null && m.getMerchantTypes().contains(type))
-                    .collect(Collectors.toList());
+            return merchantRepository.findByMerchantType(type);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid merchant type: " + merchantType);
         } catch (Exception e) {

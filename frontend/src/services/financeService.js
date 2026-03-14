@@ -913,7 +913,6 @@ export const financeService = {
                 return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.REVIEW, reviewData);
             },
             reviewItems: (reviewData) => {
-                console.log('📤 Calling reviewItems API with data:', reviewData);
                 return apiClient.post(
                     FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.REVIEW_ITEMS,
                     reviewData
@@ -948,10 +947,6 @@ export const financeService = {
             },
 
             createFromPurchaseOrder: (purchaseOrderId, offerId, username) => {
-                console.log('🔵 financeService: Creating payment request');
-                console.log('🔵 PO ID:', purchaseOrderId);
-                console.log('🔵 Offer ID:', offerId);
-                console.log('🔵 Username:', username);
 
                 return apiClient.post(
                     FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.CREATE_FROM_PO(purchaseOrderId, offerId),
@@ -1013,9 +1008,7 @@ export const financeService = {
     refunds: {
         getAllRefunds: async () => {
             try {
-                console.log('Fetching all refund requests');
                 const response = await apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.BASE);
-                console.log('Refunds response:', response);
                 return response.data || response;
             } catch (error) {
                 console.error('Error fetching refunds:', error);
@@ -1025,11 +1018,9 @@ export const financeService = {
 
         getRefundsByStatus: async (status) => {
             try {
-                console.log(`Fetching refunds with status: ${status}`);
                 const response = await apiClient.get(
                     FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.BY_STATUS(status)
                 );
-                console.log('Refunds by status response:', response);
                 return response.data || response;
             } catch (error) {
                 console.error(`Error fetching refunds with status ${status}:`, error);
@@ -1039,11 +1030,9 @@ export const financeService = {
 
         getRefundById: async (id) => {
             try {
-                console.log(`Fetching refund: ${id}`);
                 const response = await apiClient.get(
                     FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.BY_ID(id)
                 );
-                console.log('Refund details response:', response);
                 return response.data || response;
             } catch (error) {
                 console.error(`Error fetching refund ${id}:`, error);
@@ -1053,12 +1042,10 @@ export const financeService = {
 
         confirmRefund: async (id, confirmData) => {
             try {
-                console.log(`Confirming refund: ${id}`, confirmData);
                 const response = await apiClient.post(
                     FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.REFUNDS.CONFIRM(id),
                     confirmData
                 );
-                console.log('Confirm refund response:', response);
                 return response.data || response;
             } catch (error) {
                 console.error(`Error confirming refund ${id}:`, error);

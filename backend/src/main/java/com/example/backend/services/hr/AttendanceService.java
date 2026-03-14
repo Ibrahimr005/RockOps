@@ -49,15 +49,25 @@ public class AttendanceService {
 
             List<EmployeeMonthlyAttendanceDTO> monthlySheets = new ArrayList<>();
 
-            for (Employee employee : employees) {
-                // Get existing attendance records for the month
-                List<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndDateRange(
-                        employee.getId(), startDate, endDate
-                );
+            // Bulk fetch ALL attendance for ALL employees in one query (instead of 1 query per employee)
+            List<UUID> employeeIds = employees.stream().map(Employee::getId).collect(Collectors.toList());
+            List<Attendance> allAttendance = attendanceRepository.findByEmployeeIdInAndDateBetween(
+                    employeeIds, startDate, endDate
+            );
 
-                // Create attendance map for quick lookup
-                Map<LocalDate, Attendance> attendanceMap = existingAttendance.stream()
-                        .collect(Collectors.toMap(Attendance::getDate, a -> a));
+            // Group by employee ID for quick lookup
+            Map<UUID, Map<LocalDate, Attendance>> attendanceByEmployee = allAttendance.stream()
+                    .collect(Collectors.groupingBy(
+                            a -> a.getEmployee().getId(),
+                            Collectors.toMap(Attendance::getDate, a -> a, (a1, a2) -> a1)
+                    ));
+
+            // Collect all new records for batch save
+            List<Attendance> newRecords = new ArrayList<>();
+
+            for (Employee employee : employees) {
+                Map<LocalDate, Attendance> attendanceMap = attendanceByEmployee.getOrDefault(
+                        employee.getId(), new HashMap<>());
 
                 // Generate or update attendance for each day
                 List<DailyAttendanceDTO> dailyAttendance = new ArrayList<>();
@@ -69,9 +79,7 @@ public class AttendanceService {
                     if (attendance == null && employee.getJobPosition() != null) {
                         // Create new attendance record based on contract type
                         attendance = createDefaultAttendance(employee, currentDate);
-                        attendance = attendanceRepository.save(attendance);
-                        // Send notification to HR users about sheet generation
-
+                        newRecords.add(attendance);
                     }
 
                     if (attendance != null) {
@@ -84,6 +92,11 @@ public class AttendanceService {
                 // Create monthly DTO
                 EmployeeMonthlyAttendanceDTO monthlyDTO = buildMonthlyAttendanceDTO(employee, dailyAttendance, yearMonth);
                 monthlySheets.add(monthlyDTO);
+            }
+
+            // Batch save all new attendance records at once (instead of 1 save per record)
+            if (!newRecords.isEmpty()) {
+                attendanceRepository.saveAll(newRecords);
             }
 
 
@@ -640,6 +653,7 @@ public class AttendanceService {
     /**
      * Get employee attendance history
      */
+    @Transactional(readOnly = true)
     public List<Attendance> getEmployeeAttendanceHistory(UUID employeeId, LocalDate startDate, LocalDate endDate) {
         log.info("Fetching attendance history for employee: {} from {} to {}", employeeId, startDate, endDate);
         return attendanceRepository.findByEmployeeIdAndDateRange(employeeId, startDate, endDate);
@@ -718,6 +732,7 @@ public class AttendanceService {
     /**
      * Get employee monthly attendance
      */
+    @Transactional(readOnly = true)
     public List<AttendanceResponseDTO> getEmployeeMonthlyAttendance(UUID employeeId, int year, int month) {
         YearMonth yearMonth = YearMonth.of(year, month);
         LocalDate startDate = yearMonth.atDay(1);
@@ -791,6 +806,7 @@ public class AttendanceService {
     /**
      * Get monthly attendance for employees without site assignment
      */
+    @Transactional
     public List<EmployeeMonthlyAttendanceDTO> getMonthlyAttendanceForUnassignedEmployees(int year, int month) {
         log.info("Fetching monthly attendance for unassigned employees for {}/{}", month, year);
 
@@ -808,15 +824,25 @@ public class AttendanceService {
 
             List<EmployeeMonthlyAttendanceDTO> monthlySheets = new ArrayList<>();
 
-            for (Employee employee : unassignedEmployees) {
-                // Get existing attendance records for the month
-                List<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndDateRange(
-                        employee.getId(), startDate, endDate
-                );
+            // Bulk fetch ALL attendance for ALL employees in one query (N+1 fix)
+            List<UUID> employeeIds = unassignedEmployees.stream().map(Employee::getId).collect(Collectors.toList());
+            List<Attendance> allAttendance = attendanceRepository.findByEmployeeIdInAndDateBetween(
+                    employeeIds, startDate, endDate
+            );
 
-                // Create attendance map for quick lookup
-                Map<LocalDate, Attendance> attendanceMap = existingAttendance.stream()
-                        .collect(Collectors.toMap(Attendance::getDate, a -> a));
+            // Group by employee ID for quick lookup
+            Map<UUID, Map<LocalDate, Attendance>> attendanceByEmployee = allAttendance.stream()
+                    .collect(Collectors.groupingBy(
+                            a -> a.getEmployee().getId(),
+                            Collectors.toMap(Attendance::getDate, a -> a, (a1, a2) -> a1)
+                    ));
+
+            // Collect all new records for batch save
+            List<Attendance> newRecords = new ArrayList<>();
+
+            for (Employee employee : unassignedEmployees) {
+                Map<LocalDate, Attendance> attendanceMap = attendanceByEmployee.getOrDefault(
+                        employee.getId(), new HashMap<>());
 
                 // Generate or update attendance for each day
                 List<DailyAttendanceDTO> dailyAttendance = new ArrayList<>();
@@ -828,7 +854,7 @@ public class AttendanceService {
                     if (attendance == null && employee.getJobPosition() != null) {
                         // Create new attendance record based on contract type
                         attendance = createDefaultAttendance(employee, currentDate);
-                        attendance = attendanceRepository.save(attendance);
+                        newRecords.add(attendance);
                     }
 
                     if (attendance != null) {
@@ -841,6 +867,11 @@ public class AttendanceService {
                 // Create monthly DTO
                 EmployeeMonthlyAttendanceDTO monthlyDTO = buildMonthlyAttendanceDTO(employee, dailyAttendance, yearMonth);
                 monthlySheets.add(monthlyDTO);
+            }
+
+            // Batch save all new attendance records at once (instead of 1 save per record)
+            if (!newRecords.isEmpty()) {
+                attendanceRepository.saveAll(newRecords);
             }
 
             log.info("Generated monthly attendance for {} unassigned employees", monthlySheets.size());
@@ -866,6 +897,7 @@ public class AttendanceService {
      * Get monthly attendance for all employees (regardless of site)
      * Future enhancement
      */
+    @Transactional
     public List<EmployeeMonthlyAttendanceDTO> getAllEmployeesMonthlyAttendance(int year, int month) {
         log.info("Fetching monthly attendance for all employees for {}/{}", month, year);
 
@@ -883,15 +915,25 @@ public class AttendanceService {
 
             List<EmployeeMonthlyAttendanceDTO> monthlySheets = new ArrayList<>();
 
-            for (Employee employee : allEmployees) {
-                // Get existing attendance records for the month
-                List<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndDateRange(
-                        employee.getId(), startDate, endDate
-                );
+            // Bulk fetch ALL attendance for ALL employees in one query (N+1 fix)
+            List<UUID> employeeIds = allEmployees.stream().map(Employee::getId).collect(Collectors.toList());
+            List<Attendance> allAttendance = attendanceRepository.findByEmployeeIdInAndDateBetween(
+                    employeeIds, startDate, endDate
+            );
 
-                // Create attendance map for quick lookup
-                Map<LocalDate, Attendance> attendanceMap = existingAttendance.stream()
-                        .collect(Collectors.toMap(Attendance::getDate, a -> a));
+            // Group by employee ID for quick lookup
+            Map<UUID, Map<LocalDate, Attendance>> attendanceByEmployee = allAttendance.stream()
+                    .collect(Collectors.groupingBy(
+                            a -> a.getEmployee().getId(),
+                            Collectors.toMap(Attendance::getDate, a -> a, (a1, a2) -> a1)
+                    ));
+
+            // Collect all new records for batch save
+            List<Attendance> newRecords = new ArrayList<>();
+
+            for (Employee employee : allEmployees) {
+                Map<LocalDate, Attendance> attendanceMap = attendanceByEmployee.getOrDefault(
+                        employee.getId(), new HashMap<>());
 
                 // Generate or update attendance for each day
                 List<DailyAttendanceDTO> dailyAttendance = new ArrayList<>();
@@ -903,7 +945,7 @@ public class AttendanceService {
                     if (attendance == null && employee.getJobPosition() != null) {
                         // Create new attendance record based on contract type
                         attendance = createDefaultAttendance(employee, currentDate);
-                        attendance = attendanceRepository.save(attendance);
+                        newRecords.add(attendance);
                     }
 
                     if (attendance != null) {
@@ -916,6 +958,11 @@ public class AttendanceService {
                 // Create monthly DTO
                 EmployeeMonthlyAttendanceDTO monthlyDTO = buildMonthlyAttendanceDTO(employee, dailyAttendance, yearMonth);
                 monthlySheets.add(monthlyDTO);
+            }
+
+            // Batch save all new attendance records at once (instead of 1 save per record)
+            if (!newRecords.isEmpty()) {
+                attendanceRepository.saveAll(newRecords);
             }
 
             log.info("Generated monthly attendance for {} employees", monthlySheets.size());

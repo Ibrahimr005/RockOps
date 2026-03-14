@@ -251,7 +251,6 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 totalCost: formData.estimatedCost ? parseFloat(formData.estimatedCost.toString().replace(/,/g, '')) : 0,
                 estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost.toString().replace(/,/g, '')) : 0
             };
-            console.log('Submitting maintenance record:', submitData);
             onSubmit(submitData);
         }
     };

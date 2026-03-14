@@ -451,6 +451,7 @@ public class NotificationService {
     /**
      * Get all notifications for a user (including broadcasts)
      */
+    @Transactional(readOnly = true)
     public List<NotificationMessage> getNotificationsForUser(User user) {
         System.out.println("🔍 DEBUG: Getting notifications for user: " + user.getId());
 
@@ -485,6 +486,7 @@ public class NotificationService {
     /**
      * Get unread notifications for a user
      */
+    @Transactional(readOnly = true)
     public List<NotificationMessage> getUnreadNotificationsForUser(User user) {
         List<Notification> notifications = notificationRepository.findByUserAndReadFalseOrderByCreatedAtDesc(user);
         return notifications.stream()
@@ -495,6 +497,7 @@ public class NotificationService {
     /**
      * Get unread notification count for a user (including broadcasts)
      */
+    @Transactional(readOnly = true)
     public long getUnreadCountForUser(User user) {
         // Count user-specific unread notifications
         long userUnread = notificationRepository.countByUserAndReadFalse(user);
@@ -512,6 +515,7 @@ public class NotificationService {
     /**
      * Get broadcast notifications (notifications for all users)
      */
+    @Transactional(readOnly = true)
     public List<NotificationMessage> getBroadcastNotifications() {
         List<Notification> notifications = notificationRepository.findByUserIsNullOrderByCreatedAtDesc();
         return notifications.stream()
@@ -539,6 +543,7 @@ public class NotificationService {
     /**
      * Get notification by ID (with user validation)
      */
+    @Transactional(readOnly = true)
     public Optional<Notification> getNotificationById(UUID notificationId, User user) {
         Optional<Notification> notification = notificationRepository.findById(notificationId);
 

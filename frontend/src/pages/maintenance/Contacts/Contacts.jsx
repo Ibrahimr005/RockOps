@@ -53,7 +53,6 @@ const Contacts = () => {
                 response = await contactService.getContactsWithFilters(filters);
             }
 
-            console.log('API Response:', response);
 
             const contactsData = Array.isArray(response?.data?.content) ? response.data.content :
                 Array.isArray(response?.data) ? response.data :
@@ -66,7 +65,6 @@ const Contacts = () => {
                 statusText: contact.isActive ? 'Active' : 'Inactive'
             }));
 
-            console.log('Processed contacts data:', transformedContacts);
             setContacts(transformedContacts);
         } catch (error) {
             console.error('Error loading contacts:', error);

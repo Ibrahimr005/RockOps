@@ -28,7 +28,6 @@ const InventoryValuation = () => {
             // ✅ CHANGED: Use new endpoint with expenses data
             const response = await inventoryValuationService.getAllSiteValuations();
             const data = response.data || response;
-            console.log('Sites with expenses data:', data);
             const siteList = Array.isArray(data) ? data : [];
             setSites(siteList);
             setSelectedSiteIds(siteList.map(site => site.siteId));

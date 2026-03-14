@@ -116,7 +116,6 @@ const MaintenanceRecords = () => {
             try {
                 const directPurchaseResponse = await directPurchaseService.getAllTickets();
                 directPurchaseTickets = directPurchaseResponse.data || [];
-                console.log(directPurchaseTickets);
             } catch (directPurchaseError) {
                 console.error('Error loading direct purchase tickets:', directPurchaseError);
                 hasError = true;

@@ -141,8 +141,6 @@ const LeaveRequestModal = ({
 
             try {
                 const response = await vacationBalanceService.getVacationBalance(selectedEmployee.id);
-                console.log(response)
-                console.log(response.data)
                 const data = response.data?.data || response.data;
                 setVacationBalance(data);
             } catch (error) {

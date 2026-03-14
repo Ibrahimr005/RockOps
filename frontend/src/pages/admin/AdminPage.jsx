@@ -29,17 +29,6 @@ const AdminPage = () => {
         try {
             const response = await adminService.getUsers();
 
-            // DEBUG: Log the entire response
-            console.log('Full API Response:', response);
-            console.log('Response Data:', response.data);
-            console.log('Data Type:', typeof response.data);
-            console.log('Is Array:', Array.isArray(response.data));
-
-            if (response.data && Array.isArray(response.data)) {
-                console.log('First User:', response.data[0]);
-                console.log('User Count:', response.data.length);
-            }
-
             setUsers(response.data);
         } catch (err) {
             console.error('Error fetching users:', err);

@@ -71,7 +71,6 @@ const DepartmentsList = () => {
         setIsDeleting(true);
 
         try {
-            console.log('Deleting department with id:', deleteConfirmId);
             await departmentService.delete(deleteConfirmId);
 
             await fetchDepartments(); // Refresh the list

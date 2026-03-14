@@ -1,6 +1,5 @@
 // MaintenanceTransactionModal.jsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import './MaintenanceTransactionModal.scss';
 import { siteService } from '../../../services/siteService';
 import { itemTypeService } from '../../../services/itemTypeService';
@@ -33,11 +32,6 @@ const MaintenanceTransactionModal = ({
         senderId: '',
         description: '',
         items: [{ itemTypeId: '', quantity: 1 }]
-    });
-
-    const token = localStorage.getItem('token');
-    const axiosInstance = axios.create({
-        headers: { Authorization: `Bearer ${token}` }
     });
 
     // Dirty state tracking
@@ -297,7 +291,6 @@ const MaintenanceTransactionModal = ({
                 );
             }
 
-            console.log("Transaction created/linked successfully:", transactionResponse.data);
             onTransactionAdded(transactionResponse.data);
             onClose();
         } catch (error) {

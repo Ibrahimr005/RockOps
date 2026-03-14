@@ -179,7 +179,6 @@ const SiteEmployeesTab = ({ siteId }) => {
     const handleOpenModal = async () => {
         try {
             const response = await siteService.getUnassignedEmployees();
-            console.log('Unassigned employees response:', response);
             
             const data = response?.data || [];
             const unassignedEmployees = Array.isArray(data) ? data.map(emp => ({
@@ -191,7 +190,6 @@ const SiteEmployeesTab = ({ siteId }) => {
                 jobPositionType: emp.jobPosition?.type || emp.jobPositionType || 'Not Specified'
             })) : [];
 
-            console.log('Transformed unassigned employees:', unassignedEmployees);
             setAvailableEmployees(unassignedEmployees);
             setShowModal(true);
 

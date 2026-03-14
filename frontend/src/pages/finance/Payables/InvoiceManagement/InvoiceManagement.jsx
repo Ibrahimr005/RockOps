@@ -60,16 +60,13 @@ const InvoiceManagement = () => {
         try {
             setLoading(true);
 
-            console.log('=== FETCHING INVOICES ===');
 
             const response = await financeService.invoices.getAll(0, 100); // page=0, size=100 to get more invoices
 
-            console.log('Raw invoices response:', response);
 
             // Extract data from Axios response
             const data = response.data || response;
 
-            console.log('Extracted invoices data:', data);
 
             // Handle both paginated and non-paginated responses
             let invoiceList = [];
@@ -81,15 +78,12 @@ const InvoiceManagement = () => {
                 invoiceList = data.data;
             }
 
-            console.log('Final invoices list:', invoiceList);
-            console.log('Invoices count:', invoiceList.length);
 
             setInvoices(invoiceList);
 
             if (invoiceList.length === 0) {
                 showSuccess('No invoices found. You can create your first invoice using the "Create Invoice" button.');
             } else {
-                console.log('Sample invoice:', invoiceList[0]);
             }
         } catch (error) {
             console.error('Error fetching invoices:', error);
@@ -114,7 +108,6 @@ const InvoiceManagement = () => {
                 createdBy: currentUser.username || currentUser.name || currentUser.email
             };
 
-            console.log('Creating invoice with data:', invoiceData);
 
             await financeService.invoices.create(invoiceData);
 
@@ -142,7 +135,6 @@ const InvoiceManagement = () => {
                 updatedBy: currentUser.username || currentUser.name || currentUser.email
             };
 
-            console.log('Updating invoice with data:', invoiceData);
 
             await financeService.invoices.update(selectedInvoice.id, invoiceData);
 
@@ -160,7 +152,6 @@ const InvoiceManagement = () => {
     const handleDeleteInvoice = async (invoice) => {
         if (window.confirm(`Are you sure you want to delete invoice ${invoice.invoiceNumber}?`)) {
             try {
-                console.log('Deleting invoice:', invoice.id);
 
                 await financeService.invoices.delete(invoice.id);
 

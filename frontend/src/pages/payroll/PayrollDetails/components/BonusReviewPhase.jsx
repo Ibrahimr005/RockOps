@@ -52,7 +52,6 @@ const BonusReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
     const fetchBonusStatus = async () => {
         try {
             const status = await payrollService.getBonusStatus(payroll.id);
-            console.log('Bonus Status:', status);
             setBonusStatus(status);
         } catch (error) {
             console.error('Error fetching bonus status:', error);
@@ -63,7 +62,6 @@ const BonusReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
     const fetchBonusSummaries = async () => {
         try {
             const data = await payrollService.getBonusSummaries(payroll.id);
-            console.log('Bonus Summaries:', data);
             setBonusSummaries(data);
         } catch (error) {
             console.error('Error fetching bonus summaries:', error);
@@ -77,7 +75,6 @@ const BonusReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDialog 
             setProcessingBonus(true);
 
             const result = await payrollService.processBonusReview(payroll.id);
-            console.log('Process Bonus Result:', result);
 
             showSuccess(result.message || 'Bonus review processed successfully');
 

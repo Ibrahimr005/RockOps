@@ -37,20 +37,13 @@ const RequestOrderDetailsPage = () => {
             setRequestOrder(data);
         } catch (err) {
             console.error('Error fetching request order:', err);
-            console.error('Full error:', JSON.stringify(err.response?.data, null, 2));
 
             if (err.response) {
-                console.error('Error response data:', err.response.data);
-                console.error('Error response status:', err.response.status);
-                console.error('Error response headers:', err.response.headers);
-
-                setError(`Failed to load request order: ${err.response.data?.message || err.response.statusText || 'Server error'}`);
+                setError('Failed to load request order. Please try again.');
             } else if (err.request) {
-                console.error('Error request:', err.request);
                 setError('No response received from server. Please check your connection.');
             } else {
-                console.error('Error message:', err.message);
-                setError(`Error: ${err.message}`);
+                setError('An unexpected error occurred. Please try again.');
             }
         } finally {
             setIsLoading(false);
@@ -111,7 +104,6 @@ const RequestOrderDetailsPage = () => {
             item.itemCategoryName ||
             null;
 
-        console.log('Resolved category:', category);
         return category;
     };
 

@@ -14,13 +14,6 @@ const AwaitingPaymentPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, on
     const purchaseOrders = propsPurchaseOrders || [];  // ← DEFINE FIRST
 
     // THEN ADD LOGGING AFTER
-    console.log('=== AWAITING PAYMENT COMPONENT ===');
-    console.log('Total POs received:', purchaseOrders.length);
-    console.log('Payment Status Check:', purchaseOrders.map(po => ({
-        poNumber: po.poNumber,
-        paymentStatus: po.paymentStatus,
-        hasPaymentStatus: po.paymentStatus !== null && po.paymentStatus !== undefined
-    })));
 
 
 

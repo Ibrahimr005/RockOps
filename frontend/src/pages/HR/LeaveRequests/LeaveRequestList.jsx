@@ -30,7 +30,6 @@ const LeaveRequestList = () => {
         setError(null);
         try {
             const response = await leaveRequestService.getLeaveRequests();
-            console.log('Fetched leave requests:', response.data);
 
             // Handle paginated response structure
             const responseData = response.data;
@@ -110,7 +109,6 @@ const LeaveRequestList = () => {
 
         setIsProcessing(true);
         try {
-            console.log('Approving request with id:', approveConfirmId);
             await leaveRequestService.approveLeaveRequest(approveConfirmId, {});
             await fetchLeaveRequests();
             setApproveConfirmId(null);
@@ -135,7 +133,6 @@ const LeaveRequestList = () => {
 
         setIsProcessing(true);
         try {
-            console.log('Rejecting request with id:', rejectConfirmId);
             // FIX: Backend expects 'comments' not 'reason'
             await leaveRequestService.rejectLeaveRequest(rejectConfirmId, { comments: rejectionReason });
             await fetchLeaveRequests();

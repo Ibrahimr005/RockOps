@@ -37,6 +37,7 @@ public class DepartmentService {
     /**
      * Get all departments as Map objects
      */
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllDepartmentsAsMap() {
         try {
             logger.info("Fetching departments from repository...");
@@ -65,6 +66,7 @@ public class DepartmentService {
     /**
      * Get department by ID as Map
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> getDepartmentByIdAsMap(UUID id) {
         try {
             logger.info("Fetching department by id: {}", id);
@@ -429,6 +431,7 @@ public class DepartmentService {
     }
 
     // Keep original methods for backward compatibility
+    @Transactional(readOnly = true)
     public List<Department> getAllDepartments() {
         try {
             logger.info("Fetching departments from repository...");
@@ -450,6 +453,7 @@ public class DepartmentService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Optional<Department> getDepartmentById(UUID id) {
         try {
             logger.info("Fetching department by id: {}", id);
@@ -604,6 +608,7 @@ public class DepartmentService {
 
 
 
+    @Transactional(readOnly = true)
     public long getTotalCount() {
         try {
             return departmentRepository.count();

@@ -126,7 +126,6 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
             const employeePosition = jobPositions.find(pos => pos.id === employee.jobPositionId);
             const employeeDepartment = employeePosition ? employeePosition.department : '';
 
-            console.log('Employee data received in EditEmployeeModal:', employee);
 
             setFormData({
                 firstName: employee.firstName || '',

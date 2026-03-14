@@ -203,12 +203,10 @@ const SitePartnersTab = ({siteId}) => {
                 return;
             }
 
-            console.log(`Assigning partner ${partnerId} with ${numericPercentage}% to site ${siteId}`);
 
             // Call the API using siteService
             const response = await siteService.assignPartner(siteId, partnerId, numericPercentage);
 
-            console.log("Assignment successful:", response);
 
             // Reset state and refresh
             setShowModal(false);

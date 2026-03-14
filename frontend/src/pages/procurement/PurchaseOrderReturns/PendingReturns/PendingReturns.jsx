@@ -15,7 +15,6 @@ const PendingReturns = ({ returns, loading, onDataChange, onSuccess, onError }) 
 
     const handleViewItems = (row, e) => {
         e.stopPropagation();
-        console.log('View items for return:', row);
     };
 
     const handleAddReturn = () => {

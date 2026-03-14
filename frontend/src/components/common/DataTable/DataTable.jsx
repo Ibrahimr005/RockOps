@@ -419,11 +419,6 @@ const DataTable = ({
                 const rowData = exportableColumns.map(column => {
                     const exportValue = getExportValue(item, column.accessor, column);
 
-                    // Debug logging for problematic values
-                    if (typeof exportValue === 'string' && exportValue.includes('A')) {
-                        console.log(`Export value for ${column.accessor}:`, exportValue, 'Original:', item[column.accessor]);
-                    }
-
                     return exportValue;
                 });
 

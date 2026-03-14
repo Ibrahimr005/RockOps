@@ -116,66 +116,27 @@ const BatchValidationWorkflow = ({
 
         setIsLoadingItems(true);
         try {
-            console.log('🔍 Frontend: Starting to fetch warehouse items for warehouse ID:', warehouseId);
-            
             // Validate warehouse exists
             const warehouseResponse = await warehouseService.getById(warehouseId);
-            console.log('🏢 Frontend: Warehouse validation response:', warehouseResponse);
-            
+
             // Fetch items
-            console.log('📞 Frontend: Calling itemService.getItemsByWarehouse...');
             const response = await itemService.getItemsByWarehouse(warehouseId);
-            console.log('📦 Frontend: Full API response:', response);
-            console.log('📦 Frontend: Response status:', response.status);
-            console.log('📦 Frontend: Response headers:', response.headers);
-            
-            // FIXED: itemService.getItemsByWarehouse now returns response.data directly
-            // So we don't need to extract response.data again - the response IS the data array
+
+            // itemService.getItemsByWarehouse returns response.data directly
             const items = Array.isArray(response) ? response : [];
-            console.log('📋 Frontend: Extracted items array:', items);
-            console.log('📋 Frontend: Number of items received:', items.length);
-            
-            if (items.length > 0) {
-                console.log('📄 Frontend: First item details:', JSON.stringify(items[0], null, 2));
-                items.forEach((item, index) => {
-                    console.log(`📌 Frontend: Item ${index + 1}:`, {
-                        id: item.id,
-                        quantity: item.quantity,
-                        itemStatus: item.itemStatus,
-                        itemType: item.itemType ? {
-                            id: item.itemType.id,
-                            name: item.itemType.name,
-                            measuringUnit: item.itemType.measuringUnit
-                        } : null
-                    });
-                });
-            }
-            
+
             setWarehouseItems(items);
 
             // Extract unique item types with available quantities
-            console.log('🔍 Frontend: Starting to process items for dropdown...');
             const itemTypesMap = new Map();
-            items.forEach((item, index) => {
-                console.log(`🔎 Frontend: Processing item ${index + 1}:`, {
-                    hasItemType: !!item.itemType,
-                    quantity: item.quantity,
-                    quantityGreaterThanZero: item.quantity > 0,
-                    itemStatus: item.itemStatus,
-                    statusIsInWarehouse: item.itemStatus === 'IN_WAREHOUSE',
-                    passesConditions: !!(item.itemType && item.quantity > 0 && item.itemStatus === 'IN_WAREHOUSE')
-                });
-                
+            items.forEach((item) => {
                 if (item.itemType && item.quantity > 0 && item.itemStatus === 'IN_WAREHOUSE') {
-                    console.log(`✅ Frontend: Item ${index + 1} passes all conditions, adding to map`);
                     const existingItem = itemTypesMap.get(item.itemType.id);
                     if (existingItem) {
                         // If item type already exists, add to the quantity
-                        console.log(`📈 Frontend: Adding to existing item type ${item.itemType.name}, old quantity: ${existingItem.availableQuantity}, adding: ${item.quantity}`);
                         existingItem.availableQuantity += item.quantity;
                     } else {
                         // New item type
-                        console.log(`🆕 Frontend: Creating new item type entry for ${item.itemType.name} with quantity: ${item.quantity}`);
                         itemTypesMap.set(item.itemType.id, {
                             id: item.itemType.id,
                             name: item.itemType.name,
@@ -184,21 +145,13 @@ const BatchValidationWorkflow = ({
                             category: item.itemType.category
                         });
                     }
-                } else {
-                    console.log(`❌ Frontend: Item ${index + 1} does not pass conditions, skipping`);
-                    if (!item.itemType) console.log('   - Missing itemType');
-                    if (!(item.quantity > 0)) console.log(`   - Quantity not > 0: ${item.quantity}`);
-                    if (item.itemStatus !== 'IN_WAREHOUSE') console.log(`   - Status not IN_WAREHOUSE: ${item.itemStatus}`);
                 }
             });
 
             const availableTypes = Array.from(itemTypesMap.values());
-            console.log('✅ Frontend: Processed available item types:', availableTypes.length);
-            console.log('📊 Frontend: Available items:', availableTypes);
             setAvailableItemTypes(availableTypes);
 
             if (availableTypes.length === 0) {
-                console.log('⚠️ Frontend: No available items found for warehouse');
                 showWarning('This warehouse has no available items for transaction.');
             }
         } catch (error) {

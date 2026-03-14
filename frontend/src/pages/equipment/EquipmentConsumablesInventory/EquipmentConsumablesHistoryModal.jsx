@@ -130,18 +130,13 @@ const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, 
 
     // Get resolution message for display
     const getResolutionMessage = (relevantItem) => {
-        console.log("🔍 [HISTORY-MODAL] getResolutionMessage called with item:", relevantItem);
-        console.log("🔍 [HISTORY-MODAL] Item isResolved:", relevantItem?.isResolved, "fullyResolved:", relevantItem?.fullyResolved);
-        console.log("🔍 [HISTORY-MODAL] Item resolutionType:", relevantItem?.resolutionType);
         
         if (!relevantItem || (!relevantItem.isResolved && relevantItem.isResolved !== true)) {
-            console.log("🔍 [HISTORY-MODAL] No resolution message - item not resolved (isResolved:", relevantItem?.isResolved, ")");
             return null;
         }
         
         // Don't show resolution message for failed resolutions
         if (!relevantItem.fullyResolved) {
-            console.log("🔍 [HISTORY-MODAL] No resolution message - resolution not fully completed");
             return null;
         }
         
@@ -193,15 +188,11 @@ const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, 
 
     // Get discrepancy message for unresolved items
     const getDiscrepancyMessage = (relevantItem, transaction) => {
-        console.log("🔍 [HISTORY-MODAL] getDiscrepancyMessage called with item:", relevantItem);
-        console.log("🔍 [HISTORY-MODAL] Transaction:", transaction.id, "batch:", transaction.batchNumber);
-        console.log("🔍 [HISTORY-MODAL] Item status:", relevantItem?.status, "isResolved:", relevantItem?.isResolved, "fullyResolved:", relevantItem?.fullyResolved);
         
         if (!relevantItem) return null;
         
         // If resolved, don't show discrepancy message
         if ((relevantItem.isResolved === true) && (relevantItem.fullyResolved === true)) {
-            console.log("🔍 [HISTORY-MODAL] No discrepancy message - item is resolved");
             return null;
         }
         

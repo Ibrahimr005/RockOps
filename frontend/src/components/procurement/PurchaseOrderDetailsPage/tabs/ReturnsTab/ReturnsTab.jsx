@@ -18,22 +18,11 @@ const ReturnsTab = ({ purchaseOrder, onError }) => {
     const fetchReturns = async () => {
         setIsLoading(true);
         try {
-            console.log('📦 Fetching returns for PO ID:', purchaseOrder.id);
-
             // Get all returns
             const allReturns = await poReturnService.getAll();
-            console.log('📦 ALL RETURNS RESPONSE:', allReturns);
-            console.log('📦 Total returns fetched:', allReturns.length);
-            console.log('📦 First return structure:', allReturns[0]);
 
             // Filter by this PO
             const poReturns = allReturns.filter(ret => ret.purchaseOrderId === purchaseOrder.id);
-            console.log('📦 FILTERED PO RETURNS:', poReturns);
-            console.log('📦 Returns for this PO:', poReturns.length);
-
-            if (poReturns.length > 0) {
-                console.log('📦 First PO Return details:', JSON.stringify(poReturns[0], null, 2));
-            }
 
             setReturns(poReturns);
         } catch (error) {

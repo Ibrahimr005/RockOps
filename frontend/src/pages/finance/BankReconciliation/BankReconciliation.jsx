@@ -35,7 +35,6 @@ const BankReconciliation = () => {
         try {
             setLoading(true);
 
-            console.log('=== FETCHING BANK RECONCILIATION STATS ===');
 
             // Use financeService for bank reconciliation stats
             const [
@@ -50,12 +49,6 @@ const BankReconciliation = () => {
                 financeService.bankReconciliation.internalTransactions.getUnreconciled()
             ]);
 
-            console.log('Bank Reconciliation stats data received:', {
-                allAccounts,
-                unconfirmedMatches,
-                openDiscrepancies,
-                unreconciledTransactions
-            });
 
             // Extract data from Axios responses
             const accountsData = allAccounts.data || allAccounts;
@@ -63,11 +56,6 @@ const BankReconciliation = () => {
             const discrepanciesData = openDiscrepancies.data || openDiscrepancies;
             const unreconciledData = unreconciledTransactions.data || unreconciledTransactions;
 
-            console.log('=== EXTRACTED DATA ===');
-            console.log('Accounts data:', accountsData);
-            console.log('Matches data:', matchesData);
-            console.log('Discrepancies data:', discrepanciesData);
-            console.log('Unreconciled data:', unreconciledData);
 
             // Extract arrays safely
             const accountsArray = Array.isArray(accountsData) ? accountsData : [];
@@ -75,12 +63,6 @@ const BankReconciliation = () => {
             const discrepanciesArray = Array.isArray(discrepanciesData) ? discrepanciesData : [];
             const unreconciledArray = Array.isArray(unreconciledData) ? unreconciledData : [];
 
-            console.log('Final extracted data:', {
-                accountsArray: accountsArray.length,
-                matchesArray: matchesArray.length,
-                discrepanciesArray: discrepanciesArray.length,
-                unreconciledArray: unreconciledArray.length
-            });
 
             // Calculate total account balance
             const totalBalance = accountsArray.reduce((sum, account) => {

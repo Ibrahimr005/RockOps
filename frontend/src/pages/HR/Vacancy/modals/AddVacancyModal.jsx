@@ -141,21 +141,15 @@ const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
 // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Form submission started');
-        console.log('Current formData:', formData);
 
         if (validateForm()) {
             setIsSubmitting(true);
-            console.log('Form validation passed, preparing request data...');
 
             // Log the exact data being sent
             const requestData = { ...formData };
-            console.log('Request data being sent:', JSON.stringify(requestData, null, 2));
 
             try {
-                console.log('Calling onSave with data:', requestData);
                 const response = await onSave(requestData);
-                console.log('Response received:', response);
             } catch (error) {
                 console.error('Error saving vacancy:', error);
                 console.error('Error details:', error.response?.data || error.message);
@@ -163,7 +157,6 @@ const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
                 setIsSubmitting(false);
             }
         } else {
-            console.log('Form validation failed. Errors:', errors);
         }
     };
 

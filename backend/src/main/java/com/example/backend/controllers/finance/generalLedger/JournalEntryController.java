@@ -61,7 +61,7 @@ public class JournalEntryController {
 // Add this line to ensure proper boolean handling
             objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
             JournalEntryRequestDTO requestDTO = objectMapper.readValue(journalEntryDataJson, JournalEntryRequestDTO.class);
-            System.out.println("Received JSON: " + journalEntryDataJson);
+            // Journal entry data received
 
             // Upload document if provided
             if (document != null && !document.isEmpty()) {
@@ -195,11 +195,11 @@ public class JournalEntryController {
             objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 
             JournalEntryRequestDTO requestDTO = objectMapper.readValue(requestJson, JournalEntryRequestDTO.class);
-            System.out.println("Update request JSON: " + requestJson);
+            // Update request received
 
             // Log line details for debugging
             for (JournalEntryLineDTO line : requestDTO.getEntryLines()) {
-                System.out.println("Line: amount=" + line.getAmount() + ", isDebit=" + line.isDebit());
+                // Line processing
             }
 
             JournalEntryResponseDTO response = journalEntryService.updateJournalEntry(id, requestDTO);
