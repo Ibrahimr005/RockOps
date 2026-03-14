@@ -57,25 +57,14 @@ public class SiteController
 
     @GetMapping("/{siteId}/employees")
     public ResponseEntity<?> getSiteEmployees(@PathVariable UUID siteId) {
-        Site site = siteService.getSiteById(siteId);
-        if (site == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList()); // ✅ Always return JSON
-        }
-
         List<Employee> employeeList = siteService.getSiteEmployees(siteId);
-        return ResponseEntity.ok(employeeList != null ? employeeList : Collections.emptyList()); // ✅ Ensure JSON format
+        return ResponseEntity.ok(employeeList);
     }
 
     @GetMapping("/{siteId}/warehouses")
     public ResponseEntity<?> getSiteWarehouses(@PathVariable UUID siteId) {
-        Site site = siteService.getSiteById(siteId);
-        if (site == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
-        }
-
         List<Warehouse> warehouses = siteService.getSiteWarehouses(siteId);
 
-        // Return only the fields we need for the frontend
         List<Map<String, Object>> simplifiedWarehouses = warehouses.stream()
                 .map(warehouse -> {
                     Map<String, Object> warehouseData = new HashMap<>();
@@ -91,24 +80,14 @@ public class SiteController
 
     @GetMapping("/{siteId}/merchants")
     public ResponseEntity<?> getSiteMerchants(@PathVariable UUID siteId) {
-        Site site = siteService.getSiteById(siteId);
-        if (site == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList()); // ✅ Always return JSON
-        }
-
         List<Merchant> merchantList = siteService.getSiteMerchants(siteId);
-        return ResponseEntity.ok(merchantList != null ? merchantList : Collections.emptyList()); // ✅ Ensure JSON format
+        return ResponseEntity.ok(merchantList);
     }
 
     @GetMapping("/{siteId}/fixedassets")
     public ResponseEntity<?> getSiteFixedAssets(@PathVariable UUID siteId) {
-        Site site = siteService.getSiteById(siteId);
-        if (site == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList()); // ✅ Always return JSON
-        }
-
         List<FixedAssets> fixedAssetsList = siteService.getSiteFixedAssets(siteId);
-        return ResponseEntity.ok(fixedAssetsList != null ? fixedAssetsList : Collections.emptyList()); // ✅ Ensure JSON format
+        return ResponseEntity.ok(fixedAssetsList);
     }
 
     @GetMapping("/unassigned-fixedassets")

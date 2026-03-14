@@ -18,6 +18,9 @@ public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
 
     Optional<Merchant> findTopByOrderByMerchantIdDesc();
 
+    @Query("SELECT m FROM Merchant m JOIN m.sites s WHERE s.id = :siteId")
+    List<Merchant> findBySiteId(@Param("siteId") UUID siteId);
+
     @Query("SELECT m FROM Merchant m JOIN m.merchantTypes mt WHERE mt = :type")
     List<Merchant> findByMerchantType(@Param("type") MerchantType type);
 }

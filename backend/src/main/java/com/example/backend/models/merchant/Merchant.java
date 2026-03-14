@@ -4,6 +4,8 @@ import com.example.backend.models.equipment.Document;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.warehouse.ItemCategory;
 import com.example.backend.models.contact.Contact;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -70,7 +72,7 @@ public class Merchant {
             joinColumns = @JoinColumn(name = "merchant_id"),
             inverseJoinColumns = @JoinColumn(name = "site_id")
     )
-    @JsonManagedReference
+    @JsonIgnoreProperties({"merchants", "equipment", "employees", "warehouses", "fixedAssets", "sitePartners"})
     @Builder.Default
     private List<Site> sites = new ArrayList<>();
 
@@ -80,5 +82,6 @@ public class Merchant {
     private List<Contact> contacts = new ArrayList<>();
 
     @OneToMany(mappedBy = "entityId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Document> documents = new ArrayList<>();
 }
