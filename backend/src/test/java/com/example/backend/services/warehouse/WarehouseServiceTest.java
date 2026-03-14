@@ -36,6 +36,7 @@ public class WarehouseServiceTest {
     @Mock
     private NotificationService notificationService;
 
+
     @InjectMocks
     private WarehouseService warehouseService;
 
