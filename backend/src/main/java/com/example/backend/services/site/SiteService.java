@@ -49,8 +49,9 @@ public class SiteService
     {
         Site site = siteRepository.findById(id).orElse(null);
         if (site != null) {
-            Object[] counts = siteRepository.findSiteCountsById(id);
-            if (counts != null) {
+            List<Object[]> result = siteRepository.findSiteCountsById(id);
+            if (result != null && !result.isEmpty()) {
+                Object[] counts = result.get(0);
                 site.setEquipmentCount(((Number) counts[0]).intValue());
                 site.setEmployeeCount(((Number) counts[1]).intValue());
                 site.setWarehouseCount(((Number) counts[2]).intValue());

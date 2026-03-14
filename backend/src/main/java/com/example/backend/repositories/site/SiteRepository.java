@@ -21,9 +21,10 @@ public interface SiteRepository extends JpaRepository<Site, UUID> {
     List<Object[]> findAllSiteCounts();
 
     @Query("SELECT " +
-           "(SELECT COUNT(e) FROM Equipment e WHERE e.site.id = :siteId), " +
-           "(SELECT COUNT(emp) FROM Employee emp WHERE emp.site.id = :siteId), " +
-           "(SELECT COUNT(w) FROM Warehouse w WHERE w.site.id = :siteId), " +
-           "(SELECT COUNT(m) FROM Merchant m JOIN m.sites ms WHERE ms.id = :siteId) ")
-    Object[] findSiteCountsById(@Param("siteId") UUID siteId);
+           "(SELECT COUNT(e) FROM Equipment e WHERE e.site = s), " +
+           "(SELECT COUNT(emp) FROM Employee emp WHERE emp.site = s), " +
+           "(SELECT COUNT(w) FROM Warehouse w WHERE w.site = s), " +
+           "(SELECT COUNT(m) FROM Merchant m JOIN m.sites ms WHERE ms = s) " +
+           "FROM Site s WHERE s.id = :siteId")
+    List<Object[]> findSiteCountsById(@Param("siteId") UUID siteId);
 }
