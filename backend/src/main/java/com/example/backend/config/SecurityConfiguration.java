@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.Arrays;
@@ -24,6 +25,7 @@ public class SecurityConfiguration {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
+    private final CacheHeaderFilter cacheHeaderFilter;
 
     @Value("${cors.allowed.origins:http://localhost:5173}")
     private String corsAllowedOrigins;
@@ -58,6 +60,7 @@ public class SecurityConfiguration {
                     configuration.setMaxAge(3600L);
                     return configuration;
                 }))
+                .headers(headers -> headers.cacheControl(cache -> cache.disable()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/").permitAll()  // ADD THIS - Allow health check
@@ -71,7 +74,8 @@ public class SecurityConfiguration {
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(cacheHeaderFilter, HeaderWriterFilter.class);
         return http.build();
     }
 }

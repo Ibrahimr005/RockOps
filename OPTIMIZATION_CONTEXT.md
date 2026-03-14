@@ -5,6 +5,90 @@
 
 ---
 
+## Phase 2 Changes (2026-03-14, second session)
+
+### Backend: Fixed Cache-Control Headers
+**Problem:** Phase 1's `CacheControlInterceptor` was overwritten by Spring Security's `HeaderWriterFilter`.
+**Fix:**
+- Created `CacheHeaderFilter.java` (extends `OncePerRequestFilter`) — sets Cache-Control BEFORE filterChain.doFilter()
+- Modified `SecurityConfiguration.java` — added `.headers(headers -> headers.cacheControl(cache -> cache.disable()))` and registered CacheHeaderFilter after HeaderWriterFilter
+- Reference data endpoints now return `Cache-Control: private, max-age=300`
+- Dashboard endpoints return `Cache-Control: private, max-age=60`
+- All other endpoints return `no-cache, no-store, max-age=0, must-revalidate`
+
+### Frontend: 4 New Query Hooks Created
+- `useOffers(status)` — with variants `useOffersByMultipleStatuses()` and `useCompletedFinanceOffers()`
+- `useItemTypes()` — cached item type fetching
+- `useWarehouses()` — cached warehouse fetching
+- `useDepartments()` — cached department fetching
+
+### Frontend: 21 Components Migrated to Shared Hooks
+
+**useSites() (5 components):**
+- `AllSites.jsx` — main sites list
+- `EmployeesList.jsx` — sites dropdown filter
+- `AttendancePage.jsx` — sites filter
+- `ProcurementMerchants.jsx` — sites filter
+- `WarehousesList.jsx` — sites filter
+
+**useEmployees() (6 components):**
+- `EmployeesList.jsx` — main employee list (also uses useSites)
+- `LoanManagement.jsx` — employee dropdown
+- `DeductionManagement.jsx` — employee dropdown
+- `BonusManagement.jsx` — employee filter
+- `CreateSalaryIncreaseModal.jsx` — employee selector
+- `CreateDemotionModal.jsx` — employee selector
+- `EditPositionForm.jsx` — employee list
+
+**useOffers() (1 parent component — eliminates 16 duplicate calls):**
+- `ProcurementOffers.jsx` — migrated from manual fetch to 3 hook variants
+
+**useMerchants() (1 component):**
+- `ContactModal.jsx` — merchant dropdown
+
+**useEquipmentTypes() (1 component):**
+- `EquipmentItemForm.jsx` — equipment type selector
+
+**usePartners() (1 component):**
+- `Partners.jsx` — main partners list
+
+**useDepartments() (3 components):**
+- `DepartmentsList.jsx` — main departments list
+- `AddPositionForm.jsx` — department dropdown
+- `EditPositionForm.jsx` — department dropdown
+
+**useJobPositions() (4 components):**
+- `CreateDemotionModal.jsx` — position selector
+- `CreateSalaryIncreaseModal.jsx` — position selector
+- `AddPositionForm.jsx` — parent position selector
+- `EditPositionForm.jsx` — parent position selector
+
+**useItemCategories() (5 components):**
+- `ParentCategoriesTable.jsx` — parent category list
+- `ChildCategoriesTable.jsx` — parent dropdown
+- `ItemTypeModal.jsx` — category selector
+- `AddItemModal.jsx` — category + type selectors
+- `WarehouseViewItemsCategoriesTable.jsx` — all categories view
+
+**useItemTypes() (2 components):**
+- `WarehouseViewItemTypesTable.jsx` — item type list
+- `AddItemModal.jsx` — item type selector
+
+### Components Skipped (too complex, 500+ lines)
+EquipmentModal, MaintenanceStepModal, RequestOrderModal, CreateLogisticsModal, EmployeeOnboarding, InProgressOffers, InWarehouseItems, TransactionFormModal, and several others. These need individual analysis.
+
+### Estimated Impact
+- Offers: 16 calls → ~3 (per-status cached)
+- Sites: 6 calls → 1
+- Employees: 5 calls → 1
+- Merchants: 4 calls → 1
+- Job Positions: 4 calls → 1
+- Item Types: 4 calls → 1
+- Item Categories: 3 calls → 1
+- **Total estimated reduction: ~45 duplicate calls eliminated**
+
+---
+
 ## Changes Made
 
 ### 1. Backend: Caffeine In-Process Caching

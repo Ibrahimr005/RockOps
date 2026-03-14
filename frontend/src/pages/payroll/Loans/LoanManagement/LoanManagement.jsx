@@ -26,8 +26,8 @@ import DataTable from '../../../../components/common/DataTable/DataTable';
 import CreateLoanModal from '../components/CreateLoanModal/CreateLoanModal';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { loanService, LOAN_STATUS, LOAN_STATUS_CONFIG } from '../../../../services/payroll/loanService';
-import { employeeService } from '../../../../services/hr/employeeService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import { useEmployees } from '../../../../hooks/queries';
 import './LoanManagement.scss';
 import PageHeader from "../../../../components/common/PageHeader/index.js";
 import StatisticsCards from '../../../../components/common/StatisticsCards/StatisticsCards.jsx';
@@ -40,7 +40,7 @@ const LoanManagement = () => {
     // STATE
     // ========================================
     const [loans, setLoans] = useState([]);
-    const [employees, setEmployees] = useState([]);
+    const { data: employees = [] } = useEmployees();
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [processingId, setProcessingId] = useState(null);
@@ -62,12 +62,7 @@ const LoanManagement = () => {
         try {
             setLoading(true);
 
-            const [employeesRes, loansRes] = await Promise.all([
-                employeeService.getAll(),
-                loanService.getAllLoans()
-            ]);
-
-            setEmployees(employeesRes.data || []);
+            const loansRes = await loanService.getAllLoans();
             setLoans(loansRes.data || []);
         } catch (error) {
             console.error('Error loading data:', error);

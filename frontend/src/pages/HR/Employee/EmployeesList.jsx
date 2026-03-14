@@ -8,15 +8,14 @@ import EmployeeAvatar from '../../../components/common/EmployeeAvatar';
 import AddEmployeeModal from './modals/AddEmployeeModal.jsx';
 import EditEmployeeModal from './modals/EditEmployeeModal.jsx';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
-import { employeeService } from '../../../services/hr/employeeService.js';
 import { hrEmployeeService } from '../../../services/hr/hrEmployeeService.js';
-import { departmentService } from '../../../services/hr/departmentService.js';
 import { jobPositionService } from '../../../services/hr/jobPositionService.js';
-import { siteService } from '../../../services/siteService.js';
+import { useSites, useEmployees } from '../../../hooks/queries';
 
 const EmployeesList = () => {
     const { showSuccess, showError } = useSnackbar();
-    const [employees, setEmployees] = useState([]);
+    const { data: employees = [], isLoading: employeesLoading, isError: employeesError, refetch: refetchEmployees } = useEmployees();
+    const { data: sites = [] } = useSites();
     const [filteredEmployees, setFilteredEmployees] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('');
@@ -26,7 +25,7 @@ const EmployeesList = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(null);
 
@@ -34,47 +33,23 @@ const EmployeesList = () => {
     // Fetch departments and positions for dropdowns
     const [departments, setDepartments] = useState([]);
     const [positions, setPositions] = useState([]);
-    const [sites, setSites] = useState([]);
     const [jobPositions, setJobPositions] = useState([]);
 
-    // Fetch employees data from the API
-    const fetchEmployees = async () => {
-        try {
-            setLoading(true);
-            const response = await employeeService.getAll();
-            const data = response.data;
-
-            // DEBUG: Log the first employee to see what status values we're getting
-            if (data && data.length > 0) {
-
-            }
-
-            setEmployees(data);
-            setFilteredEmployees(data);
-            setLoading(false);
-
-            // Extract unique departments and positions for filters
-            const depts = [...new Set(data.map(emp => {
-                // Handle department as object or string
+    // Derive departments and positions from employees data
+    useEffect(() => {
+        if (employees.length > 0) {
+            const depts = [...new Set(employees.map(emp => {
                 if (emp.jobPositionDepartment && typeof emp.jobPositionDepartment === 'object') {
                     return emp.jobPositionDepartment.name;
                 }
                 return emp.jobPositionDepartment;
             }).filter(Boolean))];
 
-            // Extract unique job positions from jobPositionName
-            const pos = [...new Set(data.map(emp => emp.jobPositionName).filter(Boolean))];
+            const pos = [...new Set(employees.map(emp => emp.jobPositionName).filter(Boolean))];
             setDepartments(depts);
             setPositions(pos);
-
-        } catch (error) {
-            console.error('Error fetching employees:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to load employees';
-            setError(errorMessage);
-            showError('Failed to load employees. Please try again.');
-            setLoading(false);
         }
-    };
+    }, [employees]);
 
 
     // Get status badge styling - IMPROVED
@@ -239,22 +214,9 @@ const EmployeesList = () => {
         }
     };
 
-    // Fetch sites for the dropdown
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            setSites(response.data);
-        } catch (error) {
-            console.error('Error fetching sites:', error);
-            showError('Failed to load sites');
-        }
-    };
-
-    // Fetch data on component mount
+    // Fetch job positions on component mount
     useEffect(() => {
-        fetchEmployees();
         fetchJobPositions();
-        fetchSites();
     }, []);
 
     // Apply filters to employees
@@ -321,7 +283,7 @@ const EmployeesList = () => {
             showSuccess('Employee added successfully!');
 
             // Refresh the list and close modal
-            await fetchEmployees();
+            await refetchEmployees();
             setShowAddModal(false);
 
             // Show success message
@@ -366,7 +328,7 @@ const EmployeesList = () => {
             showSuccess('Employee updated successfully!');
 
             // Refresh the list and close modal
-            await fetchEmployees();
+            await refetchEmployees();
             setShowEditModal(false);
             setSelectedEmployee(null);
             // Show success message
@@ -395,7 +357,7 @@ const EmployeesList = () => {
             showSuccess('Employee deleted successfully!');
 
             // Refresh the employee list
-            await fetchEmployees();
+            await refetchEmployees();
 
         } catch (error) {
             console.error('Error deleting employee:', error);
@@ -466,11 +428,11 @@ const EmployeesList = () => {
     ];
 
     // If there's an error fetching data and not loading
-    if (error && !loading) {
+    if (employeesError && !employeesLoading) {
         return (
             <div className="error-container">
-                <p>Error: {error}</p>
-                <Button variant="primary" onClick={fetchEmployees}>Try Again</Button>
+                <p>Error: Failed to load employees</p>
+                <Button variant="primary" onClick={refetchEmployees}>Try Again</Button>
             </div>
         );
     }
@@ -486,7 +448,7 @@ const EmployeesList = () => {
             <DataTable
                 data={filteredEmployees}
                 columns={columns}
-                loading={loading}
+                loading={employeesLoading}
                 tableTitle=""
                 showSearch={true}
                 showFilters={true}

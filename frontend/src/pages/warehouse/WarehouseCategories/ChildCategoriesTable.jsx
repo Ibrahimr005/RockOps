@@ -3,6 +3,7 @@ import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import { Button, CloseButton } from '../../../components/common/Button';
 import "./WarehouseViewItemCategories.scss";
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
+import { useItemCategories } from '../../../hooks/queries';
 
 const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
     const [childCategories, setChildCategories] = useState([]);
@@ -16,7 +17,7 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
     const [newCategoryDescription, setNewCategoryDescription] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedParentCategory, setSelectedParentCategory] = useState(null);
-    const [validParentCategories, setValidParentCategories] = useState([]);
+    const { data: validParentCategories = [] } = useItemCategories();
     const modalRef = useRef(null);
 
     useEffect(() => {
@@ -54,20 +55,6 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
         };
     }, [isModalOpen]);
 
-
-    // Fetch parent categories for dropdown
-    useEffect(() => {
-        const fetchParentCategories = async () => {
-            try {
-                const data = await itemCategoryService.getParents();
-                setValidParentCategories(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error("Error fetching parent categories:", error);
-            }
-        };
-
-        fetchParentCategories();
-    }, []);
 
     // Modal functions
     const openModal = (category = null) => {

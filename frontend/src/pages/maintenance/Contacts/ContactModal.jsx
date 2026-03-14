@@ -5,7 +5,7 @@ import ConfirmationDialog from '../../../components/common/ConfirmationDialog/Co
 import '../../../styles/modal-styles.scss';
 import '../../../styles/cancel-modal-button.scss';
 import './ContactModal.scss';
-import { merchantService } from '../../../services/merchant/merchantService';
+import { useMerchants } from '../../../hooks/queries';
 import contactTypeService from '../../../services/contactTypeService';
 
 const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
@@ -38,8 +38,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
     });
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [merchants, setMerchants] = useState([]);
-    const [loadingMerchants, setLoadingMerchants] = useState(false);
+    const { data: merchants = [], isLoading: loadingMerchants } = useMerchants();
     const [contactTypes, setContactTypes] = useState([]);
     const [loadingContactTypes, setLoadingContactTypes] = useState(false);
 
@@ -86,17 +85,14 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
         setErrors({});
     }, [editingContact, isOpen]);
 
-    // Load merchants and contact types when modal opens
+    // Load contact types when modal opens
     useEffect(() => {
         if (isOpen) {
             // Prevent background scroll when modal is open
             document.body.style.overflow = 'hidden';
 
-            // Load merchants and contact types asynchronously without blocking modal
+            // Load contact types asynchronously without blocking modal
             setTimeout(() => {
-                loadMerchants().catch(error => {
-                    console.error('Failed to load merchants, but modal will still work:', error);
-                });
                 loadContactTypes().catch(error => {
                     console.error('Failed to load contact types, but modal will still work:', error);
                 });
@@ -111,33 +107,6 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
             document.body.style.overflow = 'unset';
         };
     }, [isOpen]);
-
-    const loadMerchants = async () => {
-        try {
-            setLoadingMerchants(true);
-
-            // Check if merchantService is available
-            if (!merchantService || !merchantService.getAll) {
-                console.warn('Merchant service not available');
-                setMerchants([]);
-                return;
-            }
-
-            const response = await merchantService.getAll();
-
-            const merchantsData = Array.isArray(response?.data) ? response.data :
-                Array.isArray(response) ? response : [];
-
-            setMerchants(merchantsData);
-        } catch (error) {
-            console.error('Error loading merchants:', error);
-            console.error('Error details:', error.response?.data || error.message);
-            // Don't break the modal if merchants fail to load
-            setMerchants([]);
-        } finally {
-            setLoadingMerchants(false);
-        }
-    };
 
     const loadContactTypes = async () => {
         try {

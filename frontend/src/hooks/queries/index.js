@@ -6,3 +6,7 @@ export { useMerchants } from './useMerchants';
 export { useEquipmentTypes } from './useEquipmentTypes';
 export { usePartners } from './usePartners';
 export { useAdminUsers } from './useAdminUsers';
+export { useOffers, useOffersByMultipleStatuses, useCompletedFinanceOffers } from './useOffers';
+export { useItemTypes } from './useItemTypes';
+export { useWarehouses } from './useWarehouses';
+export { useDepartments } from './useDepartments';

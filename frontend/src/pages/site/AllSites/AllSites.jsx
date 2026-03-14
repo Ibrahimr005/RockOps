@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { FaBuilding, FaPlus, FaChevronDown } from 'react-icons/fa';
 import { siteService } from "../../../services/siteService.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
+import { useSites } from "../../../hooks/queries";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
 import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
@@ -17,10 +18,8 @@ import SiteModal from "./SiteModal.jsx";
 
 const AllSites = () => {
     const { t } = useTranslation();
-    const [sites, setSites] = useState([]);
+    const { data: sites = [], isLoading: loading, isError, refetch: refetchSites } = useSites();
     const [filteredSites, setFilteredSites] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const navigate = useNavigate();
     const { currentUser } = useAuth();
     const { showError, showSuccess, showWarning } = useSnackbar();
@@ -53,10 +52,6 @@ const AllSites = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const dropdownRef = useRef(null);
     const isSiteAdmin = currentUser?.role === "ADMIN";
-
-    useEffect(() => {
-        fetchSites();
-    }, []);
 
     // Fetch related data when modal opens
     useEffect(() => {
@@ -121,6 +116,11 @@ const AllSites = () => {
         };
     }, []);
 
+    // Initialize filteredSites when sites data changes
+    useEffect(() => {
+        setFilteredSites(sites);
+    }, [sites]);
+
     // Apply filters
     useEffect(() => {
         let result = [...sites];
@@ -182,23 +182,6 @@ const AllSites = () => {
         };
     }, [showAddModal, showEditModal]);
 
-
-    const fetchSites = async () => {
-        try {
-            setLoading(true);
-            const response = await siteService.getAll();
-            setSites(response.data);
-            setFilteredSites(response.data);
-            setError(null);
-        } catch (err) {
-            const errorMessage = t('common.error') + ': ' + err.message;
-            setError(errorMessage);
-            showError("Failed to fetch sites. Please try again.");
-            console.error("Error fetching sites:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const fetchPartners = async () => {
         try {
@@ -336,7 +319,7 @@ const AllSites = () => {
 
         try {
             await siteService.addSite(formDataToSend);
-            fetchSites();
+            refetchSites();
             handleCloseModals();
             showSuccess("Site added successfully!");
         } catch (err) {
@@ -371,7 +354,7 @@ const AllSites = () => {
             }
 
             await siteService.updateSite(formData.id, formDataToSend);
-            fetchSites();
+            refetchSites();
             handleCloseModals();
             showSuccess("Site updated successfully!");
         } catch (err) {
@@ -405,7 +388,7 @@ const AllSites = () => {
     };
 
     if (loading) return <LoadingPage />;
-    if (error) return <div className="error-container">{error}</div>;
+    if (isError) return <div className="error-container">{t('common.error')}</div>;
 
     return (
         <div className="sites-container">

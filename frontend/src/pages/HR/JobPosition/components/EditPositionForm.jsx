@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { Button, CloseButton } from '../../../../components/common/Button/Button';
 import './AddPositionForm.scss';
-import { employeeService } from "../../../../services/hr/employeeService.js";
-import { departmentService } from "../../../../services/hr/departmentService.js";
-import { jobPositionService } from "../../../../services/hr/jobPositionService.js";
+import { useDepartments, useJobPositions, useEmployees } from '../../../../hooks/queries';
 
 const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     const { showError, showWarning } = useSnackbar();
@@ -56,12 +54,9 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [employees, setEmployees] = useState([]);
-    const [departments, setDepartments] = useState([]);
-    const [jobPositions, setJobPositions] = useState([]);
-    const [loadingEmployees, setLoadingEmployees] = useState(false);
-    const [loadingDepartments, setLoadingDepartments] = useState(false);
-    const [loadingPositions, setLoadingPositions] = useState(false);
+    const { data: employees = [], isLoading: loadingEmployees } = useEmployees();
+    const { data: departments = [], isLoading: loadingDepartments } = useDepartments();
+    const { data: jobPositions = [], isLoading: loadingPositions } = useJobPositions();
     const [calculatedSalary, setCalculatedSalary] = useState({
         daily: 0,
         monthly: 0,
@@ -90,15 +85,6 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         return () => {
             document.body.style.overflow = '';
         };
-    }, [isOpen]);
-
-    // Fetch dependencies when modal opens
-    useEffect(() => {
-        if (isOpen) {
-            fetchEmployees();
-            fetchDepartments();
-            fetchJobPositions();
-        }
     }, [isOpen]);
 
     // Map existing position data to form state
@@ -216,42 +202,6 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
             workingHours: workingHours,
             workingTimeRange: workingTimeRange
         });
-    };
-
-    const fetchEmployees = async () => {
-        setLoadingEmployees(true);
-        try {
-            const response = await employeeService.getAll();
-            setEmployees(Array.isArray(response.data) ? response.data : []);
-        } catch (err) {
-            console.error('Error fetching employees:', err);
-        } finally {
-            setLoadingEmployees(false);
-        }
-    };
-
-    const fetchDepartments = async () => {
-        setLoadingDepartments(true);
-        try {
-            const response = await departmentService.getAll();
-            setDepartments(Array.isArray(response.data) ? response.data : []);
-        } catch (err) {
-            console.error('Error fetching departments:', err);
-        } finally {
-            setLoadingDepartments(false);
-        }
-    };
-
-    const fetchJobPositions = async () => {
-        try {
-            setLoadingPositions(true);
-            const response = await jobPositionService.getAll();
-            setJobPositions(Array.isArray(response.data) ? response.data : []);
-        } catch (err) {
-            console.error('Error fetching job positions:', err);
-        } finally {
-            setLoadingPositions(false);
-        }
     };
 
     const getSelectedParentHierarchyInfo = () => {

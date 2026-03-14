@@ -8,7 +8,7 @@ import MerchantModal from './MerchantModal.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import EmployeeAvatar from '../../../components/common/EmployeeAvatar/EmployeeAvatar.jsx';
 import { procurementService } from '../../../services/procurement/procurementService.js';
-import { siteService } from '../../../services/siteService.js';
+import { useSites } from '../../../hooks/queries';
 
 const ProcurementMerchants = () => {
     const [merchants, setMerchants] = useState([]);
@@ -18,7 +18,7 @@ const ProcurementMerchants = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null); // Added for file handling
-    const [sites, setSites] = useState([]);
+    const { data: sites = [] } = useSites();
     const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
     const [currentMerchantId, setCurrentMerchantId] = useState(null);
     const [showSnackbar, setShowSnackbar] = useState(false);
@@ -49,7 +49,7 @@ const ProcurementMerchants = () => {
         notes: ''
     });
 
-    // Fetch merchants and sites on component mount
+    // Fetch merchants on component mount
     useEffect(() => {
         const fetchInitialData = async () => {
             setLoading(true);
@@ -58,9 +58,6 @@ const ProcurementMerchants = () => {
                 const response = await procurementService.getAllMerchants();
                 const merchantsData = response.data || response;
                 setMerchants(merchantsData);
-
-                // Fetch sites using site service
-                await fetchSites();
 
                 setError(null);
             } catch (error) {
@@ -73,18 +70,6 @@ const ProcurementMerchants = () => {
 
         fetchInitialData();
     }, []);
-
-    // Fetch sites using site service
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            const sitesData = response.data || response;
-            setSites(sitesData);
-        } catch (error) {
-            console.error('Error fetching sites:', error);
-            setSites([]);
-        }
-    };
 
     useEffect(() => {
         // Get user role from localStorage

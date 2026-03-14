@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { itemTypeService } from '../../../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../../../services/warehouse/itemCategoryService';
+import { useItemCategories, useItemTypes } from '../../../../../hooks/queries';
 import { Button, CloseButton } from '../../../../../components/common/Button';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
@@ -20,20 +20,18 @@ const AddItemModal = ({
         createdAt: new Date().toISOString().split('T')[0]
     });
 
-    const [parentCategories, setParentCategories] = useState([]);
+    const { data: parentCategories = [] } = useItemCategories();
     const [childCategories, setChildCategories] = useState([]);
     const [allChildCategories, setAllChildCategories] = useState([]);
-    const [itemTypes, setItemTypes] = useState([]);
+    const { data: itemTypes = [] } = useItemTypes();
     const [loadingCategories, setLoadingCategories] = useState(false);
     const [isFormDirty, setIsFormDirty] = useState(false);
     const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
-    // Fetch data on mount
+    // Fetch child categories and reset form on mount
     useEffect(() => {
         if (isOpen) {
-            fetchParentCategories();
             fetchAllChildCategories();
-            fetchItemTypes();
             // Reset form
             setFormData({
                 parentCategoryId: "",
@@ -71,16 +69,6 @@ const AddItemModal = ({
         };
     }, [isOpen, onClose]);
 
-    const fetchParentCategories = async () => {
-        try {
-            const data = await itemCategoryService.getParents();
-            setParentCategories(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error("Failed to fetch parent categories:", error);
-            setParentCategories([]);
-        }
-    };
-
     const fetchAllChildCategories = async () => {
         setLoadingCategories(true);
         try {
@@ -94,16 +82,6 @@ const AddItemModal = ({
             setChildCategories([]);
         } finally {
             setLoadingCategories(false);
-        }
-    };
-
-    const fetchItemTypes = async () => {
-        try {
-            const data = await itemTypeService.getAll();
-            setItemTypes(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error("Failed to fetch item types:", error);
-            setItemTypes([]);
         }
     };
 

@@ -9,12 +9,13 @@ import DataTable from '../../components/common/DataTable/DataTable';
 import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import { partnerService } from '../../services/partnerService.js';
+import { usePartners } from '../../hooks/queries';
 import { Button, CloseButton } from '../../components/common/Button';
 import '../../styles/modal-styles.scss';
 
 const Partners = () => {
+    const { data: partnersData = [], isLoading: loading, refetch: fetchPartners } = usePartners();
     const [partners, setPartners] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newPartner, setNewPartner] = useState({ firstName: '', lastName: '' });
@@ -36,6 +37,11 @@ const Partners = () => {
     // Check if user is admin
     const isAdmin = currentUser && currentUser.role === 'ADMIN';
 
+    // Sync React Query data to local state for CRUD mutations
+    useEffect(() => {
+        setPartners(partnersData);
+    }, [partnersData]);
+
     // Scroll lock for inline modals
     useEffect(() => {
         if (showAddModal || showEditModal) {
@@ -47,24 +53,6 @@ const Partners = () => {
             document.body.style.overflow = 'unset';
         };
     }, [showAddModal, showEditModal]);
-
-    useEffect(() => {
-        fetchPartners();
-    }, []);
-
-    const fetchPartners = async () => {
-        try {
-            setLoading(true);
-            const response = await partnerService.getAll();
-            setPartners(response.data);
-        } catch (err) {
-            console.error('Error fetching partners:', err);
-            setError('Unable to load partners. Please try again.');
-            showError(t('partners.fetchError', 'Unable to load partners'));
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleAddPartner = async (e) => {
         e.preventDefault();

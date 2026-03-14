@@ -7,10 +7,12 @@ import ItemTypeModal from "../WarehouseItemTypes/ItemTypeModal/ItemTypeModal.jsx
 import "./WarehouseViewItemTypesTable.scss";
 import { itemTypeService } from '../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
+import { useItemTypes } from '../../../hooks/queries';
 import { FaPlus } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
 const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
+    const { data: itemTypesData = [], isLoading: itemTypesLoading } = useItemTypes();
     const [tableData, setTableData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,20 +45,10 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         }
     }, [onAddButtonClick]);
 
+    // Sync React Query data to local state for CRUD mutations
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const data = await itemTypeService.getAll();
-                setTableData(data);
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            }
-            setLoading(false);
-        };
-
-        fetchData();
-    }, []);
+        setTableData(itemTypesData);
+    }, [itemTypesData]);
 
     useEffect(() => {
         try {
@@ -267,7 +259,7 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
             <DataTable
                 data={tableData}
                 columns={columns}
-                loading={loading}
+                loading={loading || itemTypesLoading}
                 emptyMessage="No item types found. Try adjusting your search or add a new item type"
                 actions={actions}
                 onRowClick={handleRowClick}

@@ -13,7 +13,7 @@ import { warehouseService } from "../../../../services/warehouse/warehouseServic
 import { warehouseEmployeeService } from "../../../../services/warehouse/warehouseEmployeeService.js";
 import { itemService } from "../../../../services/warehouse/itemService.js";
 import { transactionService } from "../../../../services/transaction/transactionService.js";
-import { siteService } from "../../../../services/siteService.js";
+import { useSites } from "../../../../hooks/queries";
 import warehouseimg from "../../../../assets/imgs/warehouseimg.jpg";
 
 const WarehousesList = () => {
@@ -31,7 +31,7 @@ const WarehousesList = () => {
     const [selectedWorker1, setSelectedWorker1] = useState("");
     const [selectedWorker2, setSelectedWorker2] = useState("");
     const [selectedAlertStatus, setSelectedAlertStatus] = useState("");
-    const [sites, setSites] = useState([]);
+    const { data: sites = [] } = useSites();
     const [managers, setManagers] = useState([]);
     const [workers, setWorkers] = useState([]);
 
@@ -188,17 +188,6 @@ const WarehousesList = () => {
         return count;
     };
 
-    // Fetch sites for filter dropdown
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            setSites(response.data || []);
-        } catch (error) {
-            console.error("Error fetching sites:", error);
-            setSites([]);
-        }
-    };
-
     // Extract unique managers and workers from warehouses
     useEffect(() => {
         if (warehouses.length > 0) {
@@ -282,7 +271,6 @@ const WarehousesList = () => {
     useEffect(() => {
         if (currentUser && currentUser.role) {
             fetchWarehouses();
-            fetchSites();
         }
     }, [currentUser]);
 

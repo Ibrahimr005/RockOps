@@ -6,7 +6,7 @@ export const useItemCategories = (options = {}) => {
         queryKey: ['itemCategories', 'parents'],
         queryFn: async () => {
             const response = await itemCategoryService.getParents();
-            return response.data;
+            return response.data ?? response;
         },
         staleTime: 5 * 60 * 1000,
         ...options,
@@ -18,7 +18,7 @@ export const useAllItemCategories = (options = {}) => {
         queryKey: ['itemCategories', 'all'],
         queryFn: async () => {
             const response = await itemCategoryService.getAll();
-            return response.data;
+            return response.data ?? response;
         },
         staleTime: 5 * 60 * 1000,
         ...options,

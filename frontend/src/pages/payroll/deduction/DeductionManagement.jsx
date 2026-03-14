@@ -28,8 +28,8 @@ import {
 } from 'react-icons/fa';
 import { deductionService, DEDUCTION_CATEGORY_CONFIG } from '../../../services/payroll/deductionService';
 import { employeeDeductionService } from '../../../services/payroll/employeeDeductionService';
-import { employeeService } from '../../../services/hr/employeeService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { useEmployees } from '../../../hooks/queries';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import EmployeeSelector from '../../../components/common/EmployeeSelector/EmployeeSelector.jsx';
@@ -50,7 +50,7 @@ const DeductionManagement = () => {
     const [categories, setCategories] = useState([]);
     const [calculationMethods, setCalculationMethods] = useState([]);
     const [frequencies, setFrequencies] = useState([]);
-    const [employees, setEmployees] = useState([]);
+    const { data: employees = [] } = useEmployees();
     const [loading, setLoading] = useState(true);
     const [loadingEmployeeDeductions, setLoadingEmployeeDeductions] = useState(false);
     const [processingId, setProcessingId] = useState(null);
@@ -105,19 +105,17 @@ const DeductionManagement = () => {
             setLoading(true);
 
             // Load reference data in parallel
-            const [typesRes, categoriesRes, methodsRes, freqRes, employeesRes] = await Promise.all([
+            const [typesRes, categoriesRes, methodsRes, freqRes] = await Promise.all([
                 deductionService.getAllDeductionTypes(),
                 deductionService.getDeductionCategories().catch(() => ({ data: [] })),
                 deductionService.getCalculationMethods().catch(() => ({ data: [] })),
-                deductionService.getFrequencies().catch(() => ({ data: [] })),
-                employeeService.getAll()
+                deductionService.getFrequencies().catch(() => ({ data: [] }))
             ]);
 
             setDeductionTypes(typesRes.data || []);
             setCategories(categoriesRes.data || []);
             setCalculationMethods(methodsRes.data || []);
             setFrequencies(freqRes.data || []);
-            setEmployees(employeesRes.data || []);
 
         } catch (error) {
             console.error('Error loading data:', error);

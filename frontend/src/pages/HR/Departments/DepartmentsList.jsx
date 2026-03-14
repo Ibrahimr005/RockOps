@@ -6,42 +6,19 @@ import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { departmentService } from '../../../services/hr/departmentService.js';
+import { useDepartments } from '../../../hooks/queries';
 import DepartmentModal from './DepartmentModal';
 import './DepartmentsList.scss';
 
 const DepartmentsList = () => {
     const navigate = useNavigate();
     const { showSuccess, showError } = useSnackbar();
-    const [departments, setDepartments] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const { data: departments = [], isLoading: loading, refetch: fetchDepartments } = useDepartments();
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentDepartment, setCurrentDepartment] = useState(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    // Fetch departments
-    const fetchDepartments = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await departmentService.getAll();
-            // console.log('Fetched departments:', response.data);
-
-            setDepartments(response.data);
-        } catch (err) {
-            console.error('Error fetching departments:', err);
-            const errorMessage = err.response?.data?.message || err.message || 'Failed to load departments';
-            setError(errorMessage);
-            showError('Failed to load departments. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchDepartments();
-    }, []);
 
     // Modal handlers
     const handleOpenCreateModal = () => {

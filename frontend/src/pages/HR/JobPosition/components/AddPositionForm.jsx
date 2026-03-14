@@ -3,8 +3,7 @@ import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { Button, CloseButton } from '../../../../components/common/Button/Button';
 import './AddPositionForm.scss';
 import {employeeService} from "../../../../services/hr/employeeService.js";
-import {departmentService} from "../../../../services/hr/departmentService.js";
-import {jobPositionService} from "../../../../services/hr/jobPositionService.js";
+import { useDepartments, useJobPositions } from '../../../../hooks/queries';
 
 const STEPS = [
     { id: 1, label: 'Basic Info & Hierarchy' },
@@ -64,8 +63,8 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
 
     const [loading, setLoading] = useState(false);
     const [employees, setEmployees] = useState([]);
-    const [departments, setDepartments] = useState([]);
-    const [jobPositions, setJobPositions] = useState([]);
+    const { data: departments = [] } = useDepartments();
+    const { data: jobPositions = [] } = useJobPositions();
 
     // Calculated values (Visual only)
     const [calculatedSalary, setCalculatedSalary] = useState({
@@ -106,14 +105,8 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
 
     const fetchInitialData = async () => {
         try {
-            const [empRes, deptRes, posRes] = await Promise.all([
-                employeeService.getAll(),
-                departmentService.getAll(),
-                jobPositionService.getAll()
-            ]);
+            const empRes = await employeeService.getAll();
             setEmployees(Array.isArray(empRes.data) ? empRes.data : []);
-            setDepartments(Array.isArray(deptRes.data) ? deptRes.data : []);
-            setJobPositions(Array.isArray(posRes.data) ? posRes.data : []);
         } catch (err) {
             console.error(err);
             showError("Failed to load required data.");

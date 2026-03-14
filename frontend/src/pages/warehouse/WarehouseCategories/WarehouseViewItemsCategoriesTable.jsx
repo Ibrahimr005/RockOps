@@ -7,9 +7,11 @@ import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
 import { Button } from '../../../components/common/Button';
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
+import { useAllItemCategories } from '../../../hooks/queries';
 import Tabs from "../../../components/common/Tabs/Tabs.jsx";
 
 const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => {
+  const { data: allCategoriesData = [], isLoading: categoriesLoading, isError: categoriesError, refetch: refetchAllCategories } = useAllItemCategories();
   const [allCategories, setAllCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -41,33 +43,21 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
     setShowSnackbar(false);
   };
 
-  // Define fetchAllCategories function at the component level
-  const fetchAllCategories = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-
-      const data = await itemCategoryService.getAll();
-      setAllCategories(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      setError(error.message);
-      setAllCategories([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch all categories on component mount
+  // Sync React Query data to local state
   useEffect(() => {
-    try {
-      fetchAllCategories();
-    } catch (error) {
-      console.error("Error in useEffect:", error);
-      setError(error.message);
+    setAllCategories(Array.isArray(allCategoriesData) ? allCategoriesData : []);
+  }, [allCategoriesData]);
+
+  useEffect(() => {
+    if (categoriesError) {
+      setError('Failed to load categories');
     }
-  }, []);
+  }, [categoriesError]);
+
+  // fetchAllCategories wraps the React Query refetch for backward compat
+  const fetchAllCategories = () => {
+    refetchAllCategories();
+  };
 
   // Function to initiate delete confirmation
   const handleDeleteRequest = (id) => {
@@ -126,7 +116,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
   };
 
   // Show loading state
-  if (loading) {
+  if (loading || categoriesLoading) {
     return (
         <div style={{ padding: '40px', textAlign: 'center' }}>
           <p>Loading categories...</p>
