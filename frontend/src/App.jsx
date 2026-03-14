@@ -1,136 +1,23 @@
-import { useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { BrowserRouter as Router, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './config/queryClient';
 import './App.css'
 import { LanguageProvider } from "./contexts/LanguageContext.jsx";
 import { ThemeProvider } from "./contexts/ThemeContext.jsx";
 import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
+import { SnackbarProvider } from "./contexts/SnackbarContext.jsx";
+import { NotificationProvider } from './contexts/NotificationContext.jsx';
 import Login from "./pages/login/Login.jsx";
 import Sidebar, { SidebarProvider } from "./components/common/Sidebar/Sidebar.jsx";
-import AdminPage from "./pages/admin/AdminPage.jsx";
-import DashboardPage from "./pages/dashboards/DashboardPage.jsx";
-import AdminDashboard from "./pages/dashboards/AdminDashboard.jsx";
-import SiteAdminDashboard from "./pages/dashboards/SiteAdminDashboard.jsx";
-import EquipmentManagerDashboard from "./pages/dashboards/EquipmentManagerDashboard.jsx";
-import WarehouseManagerDashboard from "./pages/dashboards/WarehouseManagerDashboard.jsx";
-import HRManagerDashboard from "./pages/dashboards/HRManagerDashboard.jsx";
-import FinanceManagerDashboard from "./pages/dashboards/FinanceManagerDashboard.jsx";
-import ProcurementDashboard from "./pages/dashboards/ProcurementDashboard.jsx";
-import MaintenanceManagerDashboard from "./pages/dashboards/MaintenanceManagerDashboard.jsx";
-import VacancyList from "./pages/HR/Vacancy/VacancyList.jsx";
-import PositionsList from "./pages/HR/JobPosition/PositionsList.jsx";
-import EmployeesList from "./pages/HR/Employee/EmployeesList.jsx";
-import HRLayout from "./pages/HR/HRLayout.jsx";
-import EmployeeDetails from "./pages/HR/Employee/details/EmployeeDetails.jsx";
-import VacancyDetails from "./pages/HR/Vacancy/details/VacancyDetails.jsx";
-import DepartmentsList from "./pages/HR/Departments/DepartmentsList.jsx";
-import AllSites from "./pages/site/AllSites/AllSites.jsx";
-import SitesLayout from "./pages/site/SitesLayout.jsx";
-import Partners from "./pages/partners/Partners.jsx";
-import SiteDetails from "./pages/site/SiteDetails/SiteDetails.jsx";
-import EquipmentMain from "./pages/equipment/EquipmentMain/EquipmentMain.jsx";
-import { SnackbarProvider } from "./contexts/SnackbarContext.jsx";
-import EquipmentBrandManagement from "./pages/equipment/EquipmentManagement/EquipmentBrandManagement.jsx";
-import EquipmentTypeManagement from "./pages/equipment/EquipmentManagement/EquipmentTypeManagement.jsx";
-import WorkTypeManagement from "./pages/equipment/EquipmentManagement/WorkTypeManagement.jsx";
-import MaintenanceTypeManagement from "./pages/equipment/EquipmentManagement/MaintenanceTypeManagement.jsx";
-import ViewEquipmentData from "./pages/equipment/EquipmentInfo/ViewEquipmentData.jsx";
-import EquipmentDetails from "./pages/equipment/EquipmentDetails/EquipmentDetails.jsx";
-import RelatedDocuments from "./pages/RelatedDocuments/RelatedDocuments.jsx";
-import LeaveRequestDetailPage from './pages/HR/LeaveRequests/LeaveRequestDetailPage';
-import VacationBalancePage from './pages/HR/VacationBalance/VacationBalancePage';
-
-// ===================== Warehouse Imports =====================
-import WarehousesList from "./pages/warehouse/WarehousesList/Warehouse List/WarehousesList.jsx";
-import WarehouseDetails from "./pages/warehouse/WarehousesDetails/WarehouseDetails.jsx";
-import WarehouseInformation from "./pages/warehouse/WarehousesInformation/WarehouseInformation.jsx";
-import WarehouseViewItemCategoriesTable from "./pages/warehouse/WarehouseCategories/WarehouseViewItemsCategoriesTable.jsx";
-import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable.jsx";
-import ItemDetailsPage from "./pages/warehouse/WarehouseItems/ItemDetailsPage/ItemDetailsPage.jsx";
-import TransactionDetailsPage from "./components/common/TransactionDetailsPage/TransactionDetailsPage.jsx";
-import ItemTypeDetailsPage from "./pages/warehouse/WarehouseItemTypes/ItemTypeDetailsPage/ItemTypeDetailsPage.jsx";
-import MeasuringUnits from "./pages/warehouse/WarehouseMeasuringUnits/MeasuringUnits.jsx";
-
-// ===================== Merchant & Procurement Components =====================
-import ProcurementOffers from "./pages/procurement/ProcurementOffers/ProcurementOffers.jsx";
-import ProcurementRequestOrderDetails
-    from "./pages/procurement/ProcurementRequestOrderDetails/ProcurementRequestOrderDetails.jsx";
-import ProcurementMerchants from "./pages/merchant/MerchantList/ProcurementMerchants.jsx";
-import MerchantDetails from "./pages/merchant/MerchantDetails/MerchantDetails.jsx";
-import ProcurementRequestOrders from "./pages/procurement/ProcurementRequestOrders/ProcurementRequestOrders.jsx";
-import PurchaseOrders from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrders.jsx";
-import PurchaseOrderDetails
-    from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrderDetails/PurchaseOrderDetails.jsx";
-import ResolveIssuesPage from "./pages/procurement/ProcurementPurchaseOrders/ResolveIssuesPage/ResolveIssuesPage.jsx";
-import PurchaseOrderDetailsPage from "./components/procurement/PurchaseOrderDetailsPage/PurchaseOrderDetailsPage.jsx";
-import RequestOrderDetailsPage from "./components/procurement/RequestOrderDetailsPage/RequestOrderDetailsPage.jsx";
-import PriceApprovals from "./pages/procurement/ProcurementPriceApprovals/PriceApprovals.jsx";
-import ProcurementLogistics from "./pages/procurement/ProcurementLogistics/ProcurementLogistics.jsx";
-import LogisticsDetailsPage
-    from "./pages/procurement/ProcurementLogistics/LogisticsDetailsPage/LogisticsDetailsPage.jsx";
-
-import PurchaseOrderReturns from "./pages/procurement/PurchaseOrderReturns/PurchaseOrderReturns.jsx";
-import PurchaseOrderReturnDetailsPage
-    from "./pages/procurement/PurchaseOrderReturns/PurchaseOrderReturnDetailsPage/PurchaseOrderReturnDetailsPage.jsx";
-
-// ===================== Finance Imports =====================
-import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
-import Payables from "./pages/finance/Payables/Payables.jsx";
-import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
-import BankReconciliation from "./pages/finance/BankReconciliation/BankReconciliation.jsx";
-import InventoryValuation from "./pages/finance/InventoryValuation/InventoryValuation.jsx";
-import Balances from "./pages/finance/Balances/Balances.jsx";
-import AccountsPayable from "./pages/finance/AccountsPayable/AccountsPayable.jsx";
-import PaymentRequestDetailsPage from "./pages/finance/AccountsPayable/PaymentRequests/PaymentRequestDetailsPage.jsx";
-import CompanyLoansPage from "./pages/finance/CompanyLoans/CompanyLoansPage.jsx";
-import CreateLoanPage from "./pages/finance/CompanyLoans/CreateLoanPage.jsx";
-import LoanDetailsPage from "./pages/finance/CompanyLoans/LoanDetailsPage.jsx";
-import FinancialInstitutionsPage from "./pages/finance/CompanyLoans/FinancialInstitutionsPage.jsx";
-import CreateInstitutionPage from "./pages/finance/CompanyLoans/CreateInstitutionPage.jsx";
-
-// ===================== HR & Payroll Imports =====================
-import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
-import PayrollDashboard from "./pages/payroll/PayrollDashboard/PayrollDashboard.jsx";
-import PayslipList from "./pages/payroll/PayslipList/PayslipList.jsx";
-import LoanManagement from "./pages/payroll/Loans/LoanManagement/LoanManagement.jsx";
-import PayrollLayout from "./pages/payroll/PayrollLayout.jsx";
-import LoanDetails from "./pages/payroll/Loans/LoanDetails/LoanDetails.jsx";
-import PayrollReports from "./pages/payroll/PayrollReports/PayrollReports.jsx";
-import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
-import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
-import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
-import SalaryIncreaseList from "./pages/HR/SalaryIncrease/SalaryIncreaseList.jsx";
-import DemotionList from "./pages/HR/Demotion/DemotionList.jsx";
-import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetails.jsx";
-import PayslipManagement from "./pages/payroll/payslip/PayslipManagement.jsx";
-import PayslipEdit from "./pages/payroll/payslip/PayslipEdit.jsx";
-import DeductionManagement from "./pages/payroll/deduction/DeductionManagement.jsx";
-import BonusManagement from "./pages/payroll/Bonuses/BonusManagement/BonusManagement.jsx";
-import PaymentTypes from "./pages/payroll/PaymentTypes/PaymentTypes.jsx";
-import DepartmentDetails from "./pages/HR/Departments/DepartmentDetails.jsx";
-import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
-import PotentialCandidates from "./pages/HR/PotentialCandidates/PotentialCandidates.jsx";
-import PayrollCycles from "./pages/payroll/PayrollCycles/PayrollCycles.jsx";
-import PayrollDetails from "./pages/payroll/PayrollDetails/PayrollDetails.jsx";
-import EmployeePayrollList from "./pages/payroll/EmployeePayrolls/EmployeePayrollList.jsx";
-import EmployeePayrollDetails from './pages/payroll/EmployeePayrolls/EmployeePayrollDetails/EmployeePayrollDetails.jsx';
-
-// ===================== Maintenance Team Imports =====================
-import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
-import MaintenanceRecords from "./pages/maintenance/MaintenanceRecords/MaintenanceRecords.jsx";
-import StepTypeManagement from "./pages/maintenance/StepTypeManagement/StepTypeManagement.jsx";
-import ContactTypeManagement from "./pages/maintenance/ContactTypeManagement/ContactTypeManagement.jsx";
-import Contacts from "./pages/maintenance/Contacts/Contacts.jsx";
-import MaintenanceRecordDetail from "./pages/maintenance/MaintenanceRecordDetail/MaintenanceRecordDetail.jsx";
-import DirectPurchaseDetailView from "./pages/maintenance/DirectPurchaseDetail/DirectPurchaseDetailView.jsx";
-
-// ===================== Notifications =====================
-import Notifications from './pages/notification/Notifications.jsx';
-import { NotificationProvider } from './contexts/NotificationContext.jsx';
 import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
+import LoadingFallback from "./components/common/LoadingFallback/LoadingFallback.jsx";
 
-// ===================== Secretary Imports =====================
-import MyTasksPage from "./pages/secretary/MyTasksPage/MyTasksPage.jsx";
-import SecretaryTasksPage from "./pages/secretary/SecretaryTasksPage/SecretaryTasksPage.jsx";
+// Layout components — always needed, keep static
+import HRLayout from "./pages/HR/HRLayout.jsx";
+import PayrollLayout from "./pages/payroll/PayrollLayout.jsx";
+import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
+import SitesLayout from "./pages/site/SitesLayout.jsx";
 
 import {
     ADMIN,
@@ -149,7 +36,123 @@ import {
     MAINTENANCE_EMPLOYEE,
     ROLES
 } from './utils/roles';
-import ProcessPaymentPage from "./pages/finance/AccountsPayable/Payments/ProcessPaymentPage.jsx";
+
+// ===================== Lazy-loaded page components =====================
+// Dashboard pages
+const AdminPage = React.lazy(() => import("./pages/admin/AdminPage.jsx"));
+const DashboardPage = React.lazy(() => import("./pages/dashboards/DashboardPage.jsx"));
+const AdminDashboard = React.lazy(() => import("./pages/dashboards/AdminDashboard.jsx"));
+const SiteAdminDashboard = React.lazy(() => import("./pages/dashboards/SiteAdminDashboard.jsx"));
+const EquipmentManagerDashboard = React.lazy(() => import("./pages/dashboards/EquipmentManagerDashboard.jsx"));
+const WarehouseManagerDashboard = React.lazy(() => import("./pages/dashboards/WarehouseManagerDashboard.jsx"));
+const HRManagerDashboard = React.lazy(() => import("./pages/dashboards/HRManagerDashboard.jsx"));
+const FinanceManagerDashboard = React.lazy(() => import("./pages/dashboards/FinanceManagerDashboard.jsx"));
+const ProcurementDashboard = React.lazy(() => import("./pages/dashboards/ProcurementDashboard.jsx"));
+const MaintenanceManagerDashboard = React.lazy(() => import("./pages/dashboards/MaintenanceManagerDashboard.jsx"));
+
+// HR pages
+const VacancyList = React.lazy(() => import("./pages/HR/Vacancy/VacancyList.jsx"));
+const PositionsList = React.lazy(() => import("./pages/HR/JobPosition/PositionsList.jsx"));
+const EmployeesList = React.lazy(() => import("./pages/HR/Employee/EmployeesList.jsx"));
+const EmployeeDetails = React.lazy(() => import("./pages/HR/Employee/details/EmployeeDetails.jsx"));
+const VacancyDetails = React.lazy(() => import("./pages/HR/Vacancy/details/VacancyDetails.jsx"));
+const DepartmentsList = React.lazy(() => import("./pages/HR/Departments/DepartmentsList.jsx"));
+const DepartmentDetails = React.lazy(() => import("./pages/HR/Departments/DepartmentDetails.jsx"));
+const AttendancePage = React.lazy(() => import("./pages/HR/Attendance/AttendancePage.jsx"));
+const EmployeeOnboarding = React.lazy(() => import("./pages/HR/Vacancy/EmployeeOnboarding.jsx"));
+const PromotionList = React.lazy(() => import("./pages/HR/Promotion/PromotionList.jsx"));
+const SalaryIncreaseList = React.lazy(() => import("./pages/HR/SalaryIncrease/SalaryIncreaseList.jsx"));
+const DemotionList = React.lazy(() => import("./pages/HR/Demotion/DemotionList.jsx"));
+const JobPositionDetails = React.lazy(() => import("./pages/HR/JobPosition/details/JobPositionDetails.jsx"));
+const LeaveRequestDetailPage = React.lazy(() => import('./pages/HR/LeaveRequests/LeaveRequestDetailPage'));
+const LeaveRequestList = React.lazy(() => import("./pages/HR/LeaveRequests/LeaveRequestList.jsx"));
+const VacationBalancePage = React.lazy(() => import('./pages/HR/VacationBalance/VacationBalancePage'));
+const PotentialCandidates = React.lazy(() => import("./pages/HR/PotentialCandidates/PotentialCandidates.jsx"));
+
+// Site pages
+const AllSites = React.lazy(() => import("./pages/site/AllSites/AllSites.jsx"));
+const SiteDetails = React.lazy(() => import("./pages/site/SiteDetails/SiteDetails.jsx"));
+const Partners = React.lazy(() => import("./pages/partners/Partners.jsx"));
+
+// Equipment pages
+const EquipmentMain = React.lazy(() => import("./pages/equipment/EquipmentMain/EquipmentMain.jsx"));
+const EquipmentBrandManagement = React.lazy(() => import("./pages/equipment/EquipmentManagement/EquipmentBrandManagement.jsx"));
+const EquipmentTypeManagement = React.lazy(() => import("./pages/equipment/EquipmentManagement/EquipmentTypeManagement.jsx"));
+const WorkTypeManagement = React.lazy(() => import("./pages/equipment/EquipmentManagement/WorkTypeManagement.jsx"));
+const MaintenanceTypeManagement = React.lazy(() => import("./pages/equipment/EquipmentManagement/MaintenanceTypeManagement.jsx"));
+const ViewEquipmentData = React.lazy(() => import("./pages/equipment/EquipmentInfo/ViewEquipmentData.jsx"));
+const EquipmentDetails = React.lazy(() => import("./pages/equipment/EquipmentDetails/EquipmentDetails.jsx"));
+
+// Warehouse pages
+const WarehousesList = React.lazy(() => import("./pages/warehouse/WarehousesList/Warehouse List/WarehousesList.jsx"));
+const WarehouseDetails = React.lazy(() => import("./pages/warehouse/WarehousesDetails/WarehouseDetails.jsx"));
+const WarehouseInformation = React.lazy(() => import("./pages/warehouse/WarehousesInformation/WarehouseInformation.jsx"));
+const WarehouseViewItemCategoriesTable = React.lazy(() => import("./pages/warehouse/WarehouseCategories/WarehouseViewItemsCategoriesTable.jsx"));
+const WarehouseViewItemTypesTable = React.lazy(() => import("./pages/warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable.jsx"));
+const ItemDetailsPage = React.lazy(() => import("./pages/warehouse/WarehouseItems/ItemDetailsPage/ItemDetailsPage.jsx"));
+const ItemTypeDetailsPage = React.lazy(() => import("./pages/warehouse/WarehouseItemTypes/ItemTypeDetailsPage/ItemTypeDetailsPage.jsx"));
+const MeasuringUnits = React.lazy(() => import("./pages/warehouse/WarehouseMeasuringUnits/MeasuringUnits.jsx"));
+const TransactionDetailsPage = React.lazy(() => import("./components/common/TransactionDetailsPage/TransactionDetailsPage.jsx"));
+
+// Merchant & Procurement pages
+const ProcurementMerchants = React.lazy(() => import("./pages/merchant/MerchantList/ProcurementMerchants.jsx"));
+const MerchantDetails = React.lazy(() => import("./pages/merchant/MerchantDetails/MerchantDetails.jsx"));
+const ProcurementOffers = React.lazy(() => import("./pages/procurement/ProcurementOffers/ProcurementOffers.jsx"));
+const ProcurementRequestOrders = React.lazy(() => import("./pages/procurement/ProcurementRequestOrders/ProcurementRequestOrders.jsx"));
+const PurchaseOrders = React.lazy(() => import("./pages/procurement/ProcurementPurchaseOrders/PurchaseOrders.jsx"));
+const PurchaseOrderDetails = React.lazy(() => import("./pages/procurement/ProcurementPurchaseOrders/PurchaseOrderDetails/PurchaseOrderDetails.jsx"));
+const ResolveIssuesPage = React.lazy(() => import("./pages/procurement/ProcurementPurchaseOrders/ResolveIssuesPage/ResolveIssuesPage.jsx"));
+const PurchaseOrderDetailsPage = React.lazy(() => import("./components/procurement/PurchaseOrderDetailsPage/PurchaseOrderDetailsPage.jsx"));
+const RequestOrderDetailsPage = React.lazy(() => import("./components/procurement/RequestOrderDetailsPage/RequestOrderDetailsPage.jsx"));
+const PriceApprovals = React.lazy(() => import("./pages/procurement/ProcurementPriceApprovals/PriceApprovals.jsx"));
+const ProcurementLogistics = React.lazy(() => import("./pages/procurement/ProcurementLogistics/ProcurementLogistics.jsx"));
+const LogisticsDetailsPage = React.lazy(() => import("./pages/procurement/ProcurementLogistics/LogisticsDetailsPage/LogisticsDetailsPage.jsx"));
+const PurchaseOrderReturns = React.lazy(() => import("./pages/procurement/PurchaseOrderReturns/PurchaseOrderReturns.jsx"));
+const PurchaseOrderReturnDetailsPage = React.lazy(() => import("./pages/procurement/PurchaseOrderReturns/PurchaseOrderReturnDetailsPage/PurchaseOrderReturnDetailsPage.jsx"));
+
+// Finance pages
+const GeneralLedger = React.lazy(() => import("./pages/finance/GeneralLedger/GeneralLedger.jsx"));
+const Payables = React.lazy(() => import("./pages/finance/Payables/Payables.jsx"));
+const FixedAssets = React.lazy(() => import("./pages/finance/FixedAssets/FixedAssets.jsx"));
+const BankReconciliation = React.lazy(() => import("./pages/finance/BankReconciliation/BankReconciliation.jsx"));
+const InventoryValuation = React.lazy(() => import("./pages/finance/InventoryValuation/InventoryValuation.jsx"));
+const Balances = React.lazy(() => import("./pages/finance/Balances/Balances.jsx"));
+const AccountsPayable = React.lazy(() => import("./pages/finance/AccountsPayable/AccountsPayable.jsx"));
+const PaymentRequestDetailsPage = React.lazy(() => import("./pages/finance/AccountsPayable/PaymentRequests/PaymentRequestDetailsPage.jsx"));
+const ProcessPaymentPage = React.lazy(() => import("./pages/finance/AccountsPayable/Payments/ProcessPaymentPage.jsx"));
+const CompanyLoansPage = React.lazy(() => import("./pages/finance/CompanyLoans/CompanyLoansPage.jsx"));
+const CreateLoanPage = React.lazy(() => import("./pages/finance/CompanyLoans/CreateLoanPage.jsx"));
+const LoanDetailsPage = React.lazy(() => import("./pages/finance/CompanyLoans/LoanDetailsPage.jsx"));
+const FinancialInstitutionsPage = React.lazy(() => import("./pages/finance/CompanyLoans/FinancialInstitutionsPage.jsx"));
+const CreateInstitutionPage = React.lazy(() => import("./pages/finance/CompanyLoans/CreateInstitutionPage.jsx"));
+
+// Payroll pages
+const PayrollCycles = React.lazy(() => import("./pages/payroll/PayrollCycles/PayrollCycles.jsx"));
+const PayrollDetails = React.lazy(() => import("./pages/payroll/PayrollDetails/PayrollDetails.jsx"));
+const EmployeePayrollList = React.lazy(() => import("./pages/payroll/EmployeePayrolls/EmployeePayrollList.jsx"));
+const EmployeePayrollDetails = React.lazy(() => import('./pages/payroll/EmployeePayrolls/EmployeePayrollDetails/EmployeePayrollDetails.jsx'));
+const LoanManagement = React.lazy(() => import("./pages/payroll/Loans/LoanManagement/LoanManagement.jsx"));
+const LoanDetails = React.lazy(() => import("./pages/payroll/Loans/LoanDetails/LoanDetails.jsx"));
+const PayrollReports = React.lazy(() => import("./pages/payroll/PayrollReports/PayrollReports.jsx"));
+const BonusManagement = React.lazy(() => import("./pages/payroll/Bonuses/BonusManagement/BonusManagement.jsx"));
+const DeductionManagement = React.lazy(() => import("./pages/payroll/deduction/DeductionManagement.jsx"));
+const PaymentTypes = React.lazy(() => import("./pages/payroll/PaymentTypes/PaymentTypes.jsx"));
+const PayslipManagement = React.lazy(() => import("./pages/payroll/payslip/PayslipManagement.jsx"));
+const PayslipEdit = React.lazy(() => import("./pages/payroll/payslip/PayslipEdit.jsx"));
+
+// Maintenance pages
+const MaintenanceRecords = React.lazy(() => import("./pages/maintenance/MaintenanceRecords/MaintenanceRecords.jsx"));
+const StepTypeManagement = React.lazy(() => import("./pages/maintenance/StepTypeManagement/StepTypeManagement.jsx"));
+const ContactTypeManagement = React.lazy(() => import("./pages/maintenance/ContactTypeManagement/ContactTypeManagement.jsx"));
+const Contacts = React.lazy(() => import("./pages/maintenance/Contacts/Contacts.jsx"));
+const MaintenanceRecordDetail = React.lazy(() => import("./pages/maintenance/MaintenanceRecordDetail/MaintenanceRecordDetail.jsx"));
+const DirectPurchaseDetailView = React.lazy(() => import("./pages/maintenance/DirectPurchaseDetail/DirectPurchaseDetailView.jsx"));
+
+// Other pages
+const Notifications = React.lazy(() => import('./pages/notification/Notifications.jsx'));
+const RelatedDocuments = React.lazy(() => import("./pages/RelatedDocuments/RelatedDocuments.jsx"));
+const MyTasksPage = React.lazy(() => import("./pages/secretary/MyTasksPage/MyTasksPage.jsx"));
+const SecretaryTasksPage = React.lazy(() => import("./pages/secretary/SecretaryTasksPage/SecretaryTasksPage.jsx"));
 
 
 const AuthRedirect = () => {
@@ -187,12 +190,14 @@ function App() {
     const [count, setCount] = useState(0)
 
     return (
+        <QueryClientProvider client={queryClient}>
         <Router>
             <SnackbarProvider>
                 <LanguageProvider>
                     <ThemeProvider>
                         <AuthProvider>
                             <NotificationProvider>
+                                <Suspense fallback={<LoadingFallback />}>
                                 <Routes>
                                     <Route path="/login" element={<Login />} />
                                     <Route path="/" element={<AuthRedirect />} />
@@ -253,8 +258,8 @@ function App() {
                                             <Route path="price-approvals" element={<PriceApprovals/>}/>
                                             <Route path="logistics" element={<ProcurementLogistics/>}/>
                                             <Route path="logistics/:id" element={<LogisticsDetailsPage/>}/>
-                                            <Route path="purchase-order-returns" element={<PurchaseOrderReturns/>}/> {/* ADD THIS */}
-                                            <Route path="purchase-order-returns/:id" element={<PurchaseOrderReturnDetailsPage/>}/> {/* ADD THIS */}
+                                            <Route path="purchase-order-returns" element={<PurchaseOrderReturns/>}/>
+                                            <Route path="purchase-order-returns/:id" element={<PurchaseOrderReturnDetailsPage/>}/>
                                         </Route>
 
                                         {/* ===================== HR Management Routes ===================== */}
@@ -281,13 +286,8 @@ function App() {
 
                                         {/* ===================== Payroll Routes ===================== */}
                                         <Route path="/payroll">
-                                            {/* NEW Payroll Cycles - Main Lifecycle Page */}
                                             <Route path="cycles" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayrollCycles/></RoleRoute>}/>
-
-                                            {/* NEW Payroll Details - View specific payroll */}
                                             <Route path="cycles/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayrollDetails/></RoleRoute>}/>
-
-                                            {/* NEW Employee Payrolls - View all employee payroll records */}
                                             <Route path="employee-payrolls" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><EmployeePayrollList/></RoleRoute>}/>
                                             <Route
                                                 path="cycles/:payrollId/employee/:employeeId"
@@ -297,14 +297,9 @@ function App() {
                                                     </RoleRoute>
                                                 }
                                             />
-                                            {/* Keep existing loan management routes */}
                                             <Route path="loans" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><LoanManagement/></RoleRoute>}/>
                                             <Route path="loans/:id" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><LoanDetails/></RoleRoute>}/>
-
-                                            {/* Bonus Management */}
                                             <Route path="bonuses" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><BonusManagement/></RoleRoute>}/>
-
-                                            {/* Keep existing deduction and payslip routes */}
                                             <Route path="deductions" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><DeductionManagement/></RoleRoute>}/>
                                             <Route path="payment-types" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PaymentTypes/></RoleRoute>}/>
                                             <Route path="payslips" element={<RoleRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']}><PayslipManagement/></RoleRoute>}/>
@@ -365,12 +360,14 @@ function App() {
 
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
+                                </Suspense>
                             </NotificationProvider>
                         </AuthProvider>
                     </ThemeProvider>
                 </LanguageProvider>
             </SnackbarProvider>
-        </Router>)
+        </Router>
+        </QueryClientProvider>)
 }
 
 export default App

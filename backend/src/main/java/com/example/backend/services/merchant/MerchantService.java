@@ -14,6 +14,7 @@ import com.example.backend.repositories.warehouse.ItemCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.backend.dto.merchant.MerchantPerformanceDTO;
 import java.time.LocalDate;
@@ -36,6 +37,7 @@ public class MerchantService {
     private final DeliveryItemReceiptRepository deliveryItemReceiptRepository;  // ADD THIS
 
 
+    @Cacheable("merchants")
     @Transactional(readOnly = true)
     public List<Merchant> getAllMerchants() {
         try {

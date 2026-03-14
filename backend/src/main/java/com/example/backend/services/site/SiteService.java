@@ -20,6 +20,7 @@ import com.example.backend.repositories.warehouse.WarehouseRepository;
 import com.example.backend.services.MinioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -67,6 +68,7 @@ public class SiteService
         return site;
     }
 
+    @Cacheable("sites")
     @Transactional(readOnly = true)
     public List<Site> getAllSites() {
         List<Site> sites = siteRepository.findAll();

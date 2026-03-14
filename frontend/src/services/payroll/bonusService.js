@@ -82,7 +82,9 @@ export const bonusService = {
      * @param {Object} filters - { employeeId, month, year }
      */
     getAllBonuses: async (filters = {}) => {
-        const params = { siteId: getSiteId() };
+        const siteId = getSiteId();
+        if (!siteId) return { data: [] };
+        const params = { siteId };
         if (filters.employeeId) params.employeeId = filters.employeeId;
         if (filters.month) params.month = filters.month;
         if (filters.year) params.year = filters.year;

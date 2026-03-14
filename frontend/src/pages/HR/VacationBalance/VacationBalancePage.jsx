@@ -75,10 +75,10 @@ const VacationBalancePage = () => {
 
     const fetchLowBalanceEmployees = async () => {
         try {
-            const response = await vacationBalanceService.getEmployeesWithLowBalance({
-                year: selectedYear,
-                threshold: 5
-            });
+            const response = await vacationBalanceService.getEmployeesWithLowBalance(
+                selectedYear,
+                5
+            );
 
             if (response.data?.success) {
                 setLowBalanceEmployees(response.data.data || []);

@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -37,6 +39,7 @@ public class DepartmentService {
     /**
      * Get all departments as Map objects
      */
+    @Cacheable(value = "departments", key = "'asMap'")
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllDepartmentsAsMap() {
         try {
@@ -93,6 +96,7 @@ public class DepartmentService {
         /**
          * Create department from Map
          */
+        @CacheEvict(value = "departments", allEntries = true)
         @Transactional
         public Map<String, Object> createDepartmentFromMap(Map<String, Object> departmentData) {
             try {
@@ -179,6 +183,7 @@ public class DepartmentService {
         /**
          * Update department from Map
          */
+        @CacheEvict(value = "departments", allEntries = true)
         @Transactional
         public Map<String, Object> updateDepartmentFromMap(UUID id, Map<String, Object> departmentData) {
             try {
@@ -281,6 +286,7 @@ public class DepartmentService {
         /**
      * Delete department by ID
      */
+    @CacheEvict(value = "departments", allEntries = true)
     @Transactional
     public void deleteDepartment(UUID id) {
         try {
@@ -431,6 +437,7 @@ public class DepartmentService {
     }
 
     // Keep original methods for backward compatibility
+    @Cacheable(value = "departments", key = "'entities'")
     @Transactional(readOnly = true)
     public List<Department> getAllDepartments() {
         try {
@@ -464,6 +471,7 @@ public class DepartmentService {
         }
     }
 
+    @CacheEvict(value = "departments", allEntries = true)
     public Department createDepartment(Department department) {
         try {
             logger.info("Creating department: {}", department.getName());
@@ -534,6 +542,7 @@ public class DepartmentService {
         }
     }
 
+    @CacheEvict(value = "departments", allEntries = true)
     public Department updateDepartment(UUID id, Department departmentDetails) {
         try {
             logger.info("Updating department with id: {}", id);
