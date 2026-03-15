@@ -64,6 +64,7 @@ public class TransactionMapperService {
                 .batchNumber(transaction.getBatchNumber())
                 .sentFirst(transaction.getSentFirst())
                 .purpose(transaction.getPurpose())
+                .maintenanceId(transaction.getMaintenance() != null ? transaction.getMaintenance().getId() : null)
                 .description(transaction.getDescription())
                 .items(toItemDTOs(transaction.getItems()))
                 .build();
@@ -166,18 +167,24 @@ public class TransactionMapperService {
             switch (type) {
                 case WAREHOUSE:
                     return warehouseRepository.findById(entityId)
-                            .map(Warehouse::getName)
+                            .map(w -> {
+                                String siteName = w.getSite() != null ? w.getSite().getName() : null;
+                                return siteName != null ? w.getName() + " (" + siteName + ")" : w.getName();
+                            })
                             .orElse("Unknown Warehouse");
                 case EQUIPMENT:
                     return equipmentRepository.findById(entityId)
-                            .map(Equipment::getName)
+                            .map(e -> {
+                                String siteName = e.getSite() != null ? e.getSite().getName() : null;
+                                String equipName = e.getName() != null ? e.getName() : "Equipment";
+                                return siteName != null ? equipName + " (" + siteName + ")" : equipName;
+                            })
                             .orElse("Unknown Equipment");
                 case MERCHANT:
                     return merchantRepository.findById(entityId)
                             .map(Merchant::getName)
                             .orElse("Unknown Merchant");
                 case PROCUREMENT:
-                    // For procurement, we might want to return a generic name or handle differently
                     return "Procurement Team";
                 default:
                     return "Unknown Entity";

@@ -661,3 +661,208 @@ form {
   margin-top: 4px !important;
   padding-top: 8px !important;
 }
+
+/* ====================================
+   LINKED TRANSACTIONS SECTION
+   ==================================== */
+
+.maintenance-linked-transactions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border-color);
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  svg {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+  }
+}
+
+.maintenance-linked-transactions-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  h3 {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  svg {
+    color: var(--color-primary);
+  }
+}
+
+.maintenance-linked-transactions-badge {
+  background-color: rgba(72, 128, 255, 0.12);
+  color: var(--color-primary);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: var(--bold-font-weight);
+}
+
+.maintenance-linked-transactions-selected-badge {
+  background-color: rgba(76, 175, 80, 0.12);
+  color: var(--color-success);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: var(--bold-font-weight);
+}
+
+.maintenance-linked-transactions-content {
+  padding-top: 12px;
+
+  .section-description {
+    margin-top: 0;
+  }
+}
+
+.maintenance-linked-existing {
+  margin-bottom: 16px;
+
+  h4 {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+    font-weight: var(--bold-font-weight);
+  }
+}
+
+.maintenance-available-transactions {
+  h4 {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+    font-weight: var(--bold-font-weight);
+  }
+}
+
+.maintenance-transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.maintenance-transaction-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background-color: var(--color-surface);
+  transition: all var(--transition-fast);
+
+  &.linked {
+    border-left: 3px solid var(--color-success);
+    background-color: rgba(76, 175, 80, 0.04);
+  }
+
+  &.selectable {
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--color-primary);
+      background-color: rgba(72, 128, 255, 0.04);
+    }
+
+    &.selected {
+      border-color: var(--color-primary);
+      border-left: 3px solid var(--color-primary);
+      background-color: rgba(72, 128, 255, 0.08);
+    }
+  }
+}
+
+.maintenance-transaction-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.maintenance-transaction-batch {
+  font-weight: var(--bold-font-weight);
+  color: var(--head-title-color);
+  font-size: 0.95rem;
+}
+
+.maintenance-transaction-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: var(--bold-font-weight);
+
+  &.linked {
+    color: var(--color-success);
+  }
+}
+
+.maintenance-transaction-card-checkbox {
+  input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+  }
+}
+
+.maintenance-transaction-card-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+
+.maintenance-transaction-items-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.maintenance-transaction-item-tag {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+}
+
+.maintenance-transactions-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.maintenance-transactions-empty {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--color-text-secondary);
+
+  svg {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 4px 0;
+    font-size: 0.95rem;
+  }
+
+  small {
+    font-size: 0.8rem;
+    color: var(--color-text-tertiary);
+  }
+}

@@ -10,6 +10,7 @@ import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
 import { Button, CloseButton } from '../../../components/common/Button';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const EquipmentBrandManagement = () => {
     const [brands, setBrands] = useState([]);
@@ -21,10 +22,10 @@ const EquipmentBrandManagement = () => {
         name: '',
         description: ''
     });
-    const [deletingBrand, setDeletingBrand] = useState(null);
+    const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, brand: null });
 
     // Use the snackbar context
-    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar, showConfirmation } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -141,23 +142,20 @@ const EquipmentBrandManagement = () => {
     };
 
     const confirmDelete = (brandId, brandName) => {
-        showConfirmation(
-            `Are you sure you want to delete "${brandName}"?`,
-            () => performDelete(brandId, brandName),
-            () => setDeletingBrand(null)
-        );
+        setDeleteConfirmation({ isOpen: true, brand: { id: brandId, name: brandName } });
     };
 
-    const performDelete = async (brandId, brandName) => {
+    const performDelete = async () => {
+        const { id, name } = deleteConfirmation.brand;
         try {
-            await equipmentBrandService.deleteEquipmentBrand(brandId);
-            showSuccess(`Equipment brand "${brandName}" has been deleted successfully`);
-            fetchBrands(); // Refresh the list
+            await equipmentBrandService.deleteEquipmentBrand(id);
+            showSuccess(`Equipment brand "${name}" has been deleted successfully`);
+            fetchBrands();
         } catch (err) {
             console.error('Error deleting equipment brand:', err);
             showError(`Failed to delete equipment brand: ${err.response?.data?.message || err.message}`);
         } finally {
-            setDeletingBrand(null);
+            setDeleteConfirmation({ isOpen: false, brand: null });
         }
     };
 
@@ -342,6 +340,17 @@ const EquipmentBrandManagement = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmationDialog
+                isVisible={deleteConfirmation.isOpen}
+                type="delete"
+                title="Delete Equipment Brand"
+                message={deleteConfirmation.brand ? `Are you sure you want to delete "${deleteConfirmation.brand.name}"? This action cannot be undone.` : ''}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={performDelete}
+                onCancel={() => setDeleteConfirmation({ isOpen: false, brand: null })}
+            />
         </div>
     );
 };

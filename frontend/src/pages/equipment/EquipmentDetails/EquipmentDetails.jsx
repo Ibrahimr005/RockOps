@@ -7,9 +7,7 @@ import InSiteMaintenanceLog from "../InSiteMaintenanceLog/InSiteMaintenanceLog";
 import EquipmentConsumablesInventory from "../EquipmentConsumablesInventory/EquipmentConsumablesInventory ";
 import EquipmentDashboard from "../EquipmentDashboard/EquipmentDashboard";
 import Modal from "react-modal";
-import MaintenanceTransactionModal from '../MaintenanceTransactionModal/MaintenanceTransactionModal';
 import MaintenanceAddModal from '../MaintenanceAddModal/MaintenanceAddModal';
-import AddConsumablesModal from '../EquipmentConsumablesInventory/AddConsumablesModal/AddConsumablesModal';
 import { equipmentService } from "../../../services/equipmentService";
 import { useSnackbar } from "../../../contexts/SnackbarContext";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -42,13 +40,8 @@ const EquipmentDetails = () => {
     const [error, setError] = useState(null);
     const [previewImage, setPreviewImage] = useState(null);
 
-    const [selectedMaintenanceId, setSelectedMaintenanceId] = useState(null);
-
     // Modal states
-    const [isAddConsumableModalOpen, setIsAddConsumableModalOpen] = useState(false);
-    const [showCreateNotification, setShowCreateNotification] = useState(false);
     const [isAddMaintenanceModalOpen, setIsAddMaintenanceModalOpen] = useState(false);
-    const [isMaintenanceTransactionModalOpen, setIsMaintenanceTransactionModalOpen] = useState(false);
     const [isUnassignDriverModalOpen, setIsUnassignDriverModalOpen] = useState(false);
 
     // Refs for child components
@@ -65,11 +58,7 @@ const EquipmentDetails = () => {
             try {
                 const response = await equipmentService.getEquipmentById(params.EquipmentID);
                 setEquipmentData(response.data);
-                console.log("=== EQUIPMENT DATA FETCHED ===");
-                console.log("Equipment response:", response.data);
-                console.log("Main Driver ID:", response.data?.mainDriverId);
-                console.log("Main Driver Name:", response.data?.mainDriverName);
-                console.log("===============================");
+
 
                 setLoading(false);
             } catch (error) {
@@ -107,11 +96,6 @@ const EquipmentDetails = () => {
             console.error('Error refreshing equipment data:', error);
             showError('Driver unassigned but failed to refresh data');
         }
-    };
-
-    const handleAddTransactionToMaintenance = (maintenanceId) => {
-        setSelectedMaintenanceId(maintenanceId);
-        setIsMaintenanceTransactionModalOpen(true);
     };
 
     // Refresh Sarky log after adding new entry
@@ -245,11 +229,7 @@ const EquipmentDetails = () => {
             className: 'warning'
         });
     }
-    
-    // Debug: Log equipment status and activeMaintenanceRecordId
-    console.log('Equipment Status:', equipmentData?.status);
-    console.log('Active Maintenance Record ID:', equipmentData?.activeMaintenanceRecordId);
-    console.log('Button should show:', equipmentData?.status === 'IN_MAINTENANCE' && equipmentData?.activeMaintenanceRecordId);
+
 
     // Add Manage Drivers button for all drivable equipment (regardless of assignment status)
     if (equipmentData?.drivable && permissions.canEdit) {
@@ -328,7 +308,6 @@ const EquipmentDetails = () => {
                                 <EquipmentConsumablesInventory
                                     ref={consumablesInventoryRef}
                                     equipmentId={params.EquipmentID}
-                                    onAddClick={() => permissions.canCreate && setIsAddConsumableModalOpen(true)}
                                 />
                             </div>
                         </div>
@@ -351,7 +330,6 @@ const EquipmentDetails = () => {
                                     ref={inSiteMaintenanceLogRef}
                                     equipmentId={params.EquipmentID}
                                     onAddMaintenanceClick={handleAddInSiteMaintenance}
-                                    onAddTransactionClick={handleAddTransactionToMaintenance}
                                     showAddButton={true}
                                 />
                             </div>
@@ -372,17 +350,6 @@ const EquipmentDetails = () => {
                 </div>
             </div>
 
-            {/* Add Consumable Modal */}
-            {permissions.canCreate && (
-                <AddConsumablesModal
-                    isOpen={isAddConsumableModalOpen}
-                    onClose={() => setIsAddConsumableModalOpen(false)}
-                    equipmentId={params.EquipmentID}
-                    equipmentData={equipmentData}
-                    onTransactionAdded={refreshAllTabs}
-                />
-            )}
-
             {/* Modals */}
             {isAddMaintenanceModalOpen && permissions.canCreate && (
                 <MaintenanceAddModal
@@ -390,16 +357,6 @@ const EquipmentDetails = () => {
                     onClose={() => setIsAddMaintenanceModalOpen(false)}
                     equipmentId={params.EquipmentID}
                     onMaintenanceAdded={refreshAllTabs}
-                />
-            )}
-
-            {isMaintenanceTransactionModalOpen && permissions.canCreate && (
-                <MaintenanceTransactionModal
-                    isOpen={isMaintenanceTransactionModalOpen}
-                    onClose={() => setIsMaintenanceTransactionModalOpen(false)}
-                    equipmentId={params.EquipmentID}
-                    maintenanceId={selectedMaintenanceId}
-                    onTransactionAdded={refreshAllTabs}
                 />
             )}
 

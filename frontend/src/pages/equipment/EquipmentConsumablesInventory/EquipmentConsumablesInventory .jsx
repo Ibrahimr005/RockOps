@@ -1,5 +1,5 @@
 import React, {forwardRef, useEffect, useImperativeHandle, useState} from 'react';
-import { FaPlus } from 'react-icons/fa';
+// FaPlus removed - consumables only come through validated transactions now
 import { Button, CloseButton } from '../../../components/common/Button';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import { equipmentService } from '../../../services/equipmentService';
@@ -14,7 +14,7 @@ import EquipmentConsumablesHistoryModal from "./EquipmentConsumablesHistoryModal
 import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/TransactionViewModal/TransactionViewModal.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 
-const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref) => {
+const EquipmentConsumablesInventory = forwardRef(({equipmentId}, ref) => {
 
     const [consumables, setConsumables] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -575,10 +575,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             itemsPerPageOptions={[5, 10, 15, 20]}
                             defaultItemsPerPage={5}
                             emptyMessage="No consumables found"
-                            showAddButton={permissions.canCreate && activeTab === 'current'}
-                            addButtonText="Add Consumable"
-                            addButtonIcon={<FaPlus />}
-                            onAddClick={onAddClick}
+                            showAddButton={false}
                             showExportButton={true}
                             exportButtonText={`Export ${activeTab === 'current' ? 'Consumables' : 'Surplus Items'}`}
                             exportFileName={`equipment_${activeTab === 'current' ? 'consumables' : 'surplus_items'}`}

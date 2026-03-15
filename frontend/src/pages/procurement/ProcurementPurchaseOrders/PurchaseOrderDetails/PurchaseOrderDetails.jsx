@@ -29,7 +29,7 @@ const PurchaseOrderDetails = () => {
     const [showActions, setShowActions] = useState(false);
 
     // Define your API URL based on your project setup
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1';
+    const API_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080') + '/api/v1';
 
     useEffect(() => {
         fetchPurchaseOrderDetails();

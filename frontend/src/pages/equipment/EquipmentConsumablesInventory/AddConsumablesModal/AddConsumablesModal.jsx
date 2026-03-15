@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import { equipmentService } from '../../../../services/equipmentService';
 import BatchValidationWorkflow from '../../../../components/equipment/BatchValidationWorkflow/BatchValidationWorkflow.jsx';
+// Note: equipmentService still used by handleTransactionValidate via processUnifiedTransaction
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './AddConsumablesModal.scss';
 
@@ -34,61 +35,6 @@ const AddConsumablesModal = ({
             setShowDiscardDialog(true);
         } else {
             onClose();
-        }
-    };
-
-    // Handle transaction creation for new batch numbers
-    const handleTransactionCreate = async (transactionData) => {
-        setIsFormDirty(true);
-        try {
-            console.log('🚀 AddConsumablesModal: Creating transaction with data:', transactionData);
-            
-            const itemsArray = transactionData.items.map(item => ({
-                itemTypeId: item.itemTypeId,
-                quantity: item.quantity
-            }));
-            
-            console.log('📦 AddConsumablesModal: Mapped items array:', itemsArray);
-            console.log('🔧 AddConsumablesModal: Transaction parameters:', {
-                equipmentId,
-                senderId: transactionData.senderId,
-                senderType: transactionData.senderType,
-                batchNumber: transactionData.batchNumber,
-                purpose: 'CONSUMABLE',
-                transactionDate: transactionData.transactionDate,
-                description: transactionData.description
-            });
-
-            await equipmentService.receiveTransaction(
-                equipmentId,
-                transactionData.senderId,
-                transactionData.senderType,
-                transactionData.batchNumber,
-                'CONSUMABLE', // Ensure purpose is set correctly
-                itemsArray,
-                transactionData.transactionDate,
-                transactionData.description
-            );
-
-            // Refresh parent component data
-            if (onTransactionAdded) {
-                onTransactionAdded();
-            }
-
-            showSuccess('Consumable transaction created successfully!');
-        } catch (error) {
-            console.error('Error creating consumable transaction:', error);
-            if (error.response?.status === 403) {
-                showError('You don\'t have permission to create this transaction.');
-            } else if (error.response?.status === 400) {
-                const message = error.response.data?.message || 'Invalid transaction data.';
-                showError(message);
-            } else if (error.response?.status === 409) {
-                showError('Batch number conflict. This batch number may already exist.');
-            } else {
-                showError('Failed to create transaction. Please try again.');
-            }
-            throw error;
         }
     };
 
@@ -156,11 +102,10 @@ const AddConsumablesModal = ({
                 equipmentId={equipmentId}
                 equipmentData={equipmentData}
                 transactionPurpose="CONSUMABLE"
-                onTransactionCreate={handleTransactionCreate}
                 onTransactionValidate={handleTransactionValidate}
                 isOpen={isOpen}
                 onClose={handleCloseAttempt}
-                title="Add Consumables Transaction"
+                title="Validate Consumables Transaction"
             />
 
             <ConfirmationDialog

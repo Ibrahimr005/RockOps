@@ -262,7 +262,7 @@ const BatchValidationWorkflow = ({
 
             // Handle scenarios
             if (result.scenario === 'not_found') {
-                showInfo('Batch number available. You can create a new transaction.');
+                showWarning('No incoming transaction found with this batch number. Transactions must be created by the warehouse.');
             } else if (result.scenario === 'incoming_validation') {
                 showInfo('Incoming transaction found. You can validate the received items.');
                 prepareValidationItems(result.transaction.items);
@@ -366,12 +366,8 @@ const BatchValidationWorkflow = ({
             if (validationResult?.scenario === 'incoming_validation') {
                 // Handle transaction validation
                 await handleTransactionValidation();
-            } else if (validationResult?.scenario === 'not_found') {
-                // Handle new transaction creation
-                await handleTransactionCreation();
             } else {
                 showError('Cannot proceed with this batch number.');
-
             }
         } catch (error) {
             console.error('Error handling transaction:', error);
@@ -535,148 +531,9 @@ const BatchValidationWorkflow = ({
 
                             {validationResult.scenario === 'not_found' && (
                                 <div className="create-transaction-section">
-                                    <h4>Create New Transaction</h4>
-                                    
-                                    {/* Date and Description */}
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <label htmlFor="transactionDate">Transaction Date</label>
-                                            <input
-                                                type="datetime-local"
-                                                id="transactionDate"
-                                                value={transactionDate}
-                                                onChange={(e) => setTransactionDate(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label htmlFor="description">Description (Optional)</label>
-                                            <input
-                                                type="text"
-                                                id="description"
-                                                value={description}
-                                                onChange={(e) => setDescription(e.target.value)}
-                                                placeholder="Enter description"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Site and Warehouse Selection */}
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <label htmlFor="site">Source Site</label>
-                                            <select
-                                                id="site"
-                                                value={selectedSite}
-                                                onChange={(e) => setSelectedSite(e.target.value)}
-                                                required
-                                            >
-                                                <option value="">Select Site</option>
-                                                {sites.map(site => (
-                                                    <option key={site.id} value={site.id}>
-                                                        {site.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="form-group">
-                                            <label htmlFor="warehouse">Source Warehouse</label>
-                                            <select
-                                                id="warehouse"
-                                                value={selectedWarehouse}
-                                                onChange={(e) => setSelectedWarehouse(e.target.value)}
-                                                required
-                                                disabled={!selectedSite || isLoadingWarehouses}
-                                            >
-                                                <option value="">
-                                                    {isLoadingWarehouses 
-                                                        ? "Loading warehouses..." 
-                                                        : !selectedSite 
-                                                            ? "Select a site first" 
-                                                            : "Select Warehouse"
-                                                    }
-                                                </option>
-                                                {warehouses.map(warehouse => (
-                                                    <option key={warehouse.id} value={warehouse.id}>
-                                                        {warehouse.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {/* Items Section */}
-                                    <div className="items-section">
-                                        <div className="items-header">
-                                            <label>Requested Items</label>
-                                            <Button
-                                                variant="primary"
-                                                size="sm"
-                                                onClick={addItem}
-                                                disabled={!selectedWarehouse || isLoadingItems || availableItemTypes.length === 0}
-                                                className="add-item-button"
-                                            >
-                                                Add Item
-                                            </Button>
-                                        </div>
-
-                                        {transactionItems.map((item, index) => (
-                                            <div key={index} className="item-container">
-                                                <div className="item-header">
-                                                    <span>Item {index + 1}</span>
-                                                    {transactionItems.length > 1 && (
-                                                        <Button
-                                                            variant="danger"
-                                                            size="sm"
-                                                            onClick={() => removeItem(index)}
-                                                            className="remove-item-button"
-                                                        >
-                                                            Remove
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                                <div className="form-row">
-                                                    <div className="form-group">
-                                                        <label>Item Type</label>
-                                                        <select
-                                                            value={item.itemType.id}
-                                                            onChange={(e) => handleItemChange(index, 'itemTypeId', e.target.value)}
-                                                            required
-                                                            disabled={!selectedWarehouse || isLoadingItems}
-                                                        >
-                                                            <option value="">
-                                                                {isLoadingItems 
-                                                                    ? "Loading items..." 
-                                                                    : availableItemTypes.length === 0 
-                                                                        ? "No items available" 
-                                                                        : "Select Item Type"
-                                                                }
-                                                            </option>
-                                                            {getAvailableItemTypes(index).map(itemType => (
-                                                                <option key={itemType.id} value={itemType.id}>
-                                                                    {itemType.name} 
-                                                                    {itemType.measuringUnit ? ` (${itemType.measuringUnit})` : ""} 
-
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <div className="form-group">
-                                                        <label>Quantity</label>
-                                                        <input
-                                                            type="number"
-                                                            value={item.quantity}
-                                                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                                                            min="1"
-                                                            max={item.itemType.id ? getMaxQuantityForItem(item.itemType.id) : undefined}
-                                                            required
-                                                            disabled={!item.itemType.id}
-                                                            placeholder={item.itemType.id ? `Max: ${getMaxQuantityForItem(item.itemType.id)}` : "Select item first"}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div className="no-transaction-message">
+                                        <h4>No Transaction Found</h4>
+                                        <p>No incoming transaction was found with this batch number. Transactions must be initiated by the warehouse. Please contact the warehouse team to send items to this equipment.</p>
                                     </div>
                                 </div>
                             )}
@@ -740,7 +597,7 @@ const BatchValidationWorkflow = ({
                             >
                                 Continue
                             </Button>
-                        ) : validationResult && (validationResult.scenario === 'not_found' || validationResult.scenario === 'incoming_validation') ? (
+                        ) : validationResult && validationResult.scenario === 'incoming_validation' ? (
                             <Button
                                 variant="primary"
                                 type="submit"

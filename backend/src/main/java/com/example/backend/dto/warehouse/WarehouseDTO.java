@@ -1,6 +1,5 @@
 package com.example.backend.dto.warehouse;
 
-import com.example.backend.models.site.Site;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,5 +15,6 @@ public class WarehouseDTO {
     private UUID id;
     private String name;
     private String photoUrl;
-    private Site site;
+    private UUID siteId;
+    private String siteName;
 }

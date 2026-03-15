@@ -69,7 +69,7 @@ const TransactionDiscrepancyResolver = ({
         const resolutionData = {
             discrepancies: discrepancies.map(disc => ({
                 itemId: disc.item.id,
-                itemName: disc.item.itemType?.name,
+                itemName: disc.item.itemTypeName,
                 expectedQty: disc.expectedQty,
                 receivedQty: disc.receivedQty,
                 difference: disc.difference,
@@ -159,17 +159,17 @@ const TransactionDiscrepancyResolver = ({
                         <div className="discrepancy-resolver-item-header">
                             {getDiscrepancyIcon(discrepancy)}
                             <div className="discrepancy-resolver-item-info">
-                                <h4>{discrepancy.item.itemType?.name || 'Unknown Item'}</h4>
+                                <h4>{discrepancy.item.itemTypeName || 'Unknown Item'}</h4>
                                 <div className="discrepancy-resolver-item-quantities">
                                     <span className="discrepancy-resolver-expected">
-                                        Expected: {discrepancy.expectedQty} {discrepancy.item.itemType?.unit || 'units'}
+                                        Expected: {discrepancy.expectedQty} {discrepancy.item.itemUnit || 'units'}
                                     </span>
                                     <span className="discrepancy-resolver-received">
-                                        Received: {discrepancy.receivedQty} {discrepancy.item.itemType?.unit || 'units'}
+                                        Received: {discrepancy.receivedQty} {discrepancy.item.itemUnit || 'units'}
                                     </span>
                                     <span className={`discrepancy-resolver-difference ${discrepancy.type}`}>
                                         {discrepancy.difference > 0 ? '+' : ''}{discrepancy.difference} 
-                                        {discrepancy.item.itemType?.unit || 'units'}
+                                        {discrepancy.item.itemUnit || 'units'}
                                     </span>
                                 </div>
                             </div>

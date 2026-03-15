@@ -11,6 +11,7 @@ import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
 import { Button, CloseButton } from '../../../components/common/Button';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const WorkTypeManagement = () => {
     const [workTypes, setWorkTypes] = useState([]);
@@ -25,10 +26,10 @@ const WorkTypeManagement = () => {
         active: true
     });
     const [selectedEquipmentTypes, setSelectedEquipmentTypes] = useState([]);
-    const [deletingWorkType, setDeletingWorkType] = useState(null);
+    const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, workType: null });
 
     // Use the snackbar context
-    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar ,showConfirmation } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar, showConfirmation } = useSnackbar();
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -297,23 +298,20 @@ const WorkTypeManagement = () => {
     };
 
     const confirmDelete = (workTypeId, workTypeName) => {
-        showConfirmation(
-            `Are you sure you want to delete "${workTypeName}"?`,
-            () => performDelete(workTypeId, workTypeName),
-            () => setDeletingWorkType(null)
-        );
+        setDeleteConfirmation({ isOpen: true, workType: { id: workTypeId, name: workTypeName } });
     };
 
-    const performDelete = async (workTypeId, workTypeName) => {
+    const performDelete = async () => {
+        const { id, name } = deleteConfirmation.workType;
         try {
-            await workTypeService.delete(workTypeId);
-            showSuccess(`Work type "${workTypeName}" has been deleted successfully`);
-            fetchWorkTypes(); // Refresh the list
+            await workTypeService.delete(id);
+            showSuccess(`Work type "${name}" has been deleted successfully`);
+            fetchWorkTypes();
         } catch (err) {
             console.error('Error deleting work type:', err);
             showError(`Failed to delete work type: ${err.response?.data?.message || err.message}`);
         } finally {
-            setDeletingWorkType(null);
+            setDeleteConfirmation({ isOpen: false, workType: null });
         }
     };
 
@@ -543,6 +541,17 @@ const WorkTypeManagement = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmationDialog
+                isVisible={deleteConfirmation.isOpen}
+                type="delete"
+                title="Delete Work Type"
+                message={deleteConfirmation.workType ? `Are you sure you want to delete "${deleteConfirmation.workType.name}"? This action cannot be undone.` : ''}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={performDelete}
+                onCancel={() => setDeleteConfirmation({ isOpen: false, workType: null })}
+            />
         </div>
     );
 };

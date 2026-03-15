@@ -30,7 +30,8 @@ import {
 // Add this to your imports at the top
 import { FiCheck } from 'react-icons/fi';
 
-const API_URL = 'http://localhost:8080/api/v1';
+import { API_BASE_URL } from '../../../config/api.config';
+const API_URL = `${API_BASE_URL}/api/v1`;
 
 const ProcurementOffers = () => {
     const navigate = useNavigate();

@@ -18,6 +18,7 @@ import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.services.MinioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,12 +44,20 @@ public class SiteService
         this.minioService = minioService;
     }
 
+    @Transactional(readOnly = true)
     public Site getSiteById(UUID id)
     {
-        return siteRepository.findById(id).orElse(null);
+        Site site = siteRepository.findById(id).orElse(null);
+        if (site != null) {
+            site.setEquipmentCount(site.getEquipment() != null ? site.getEquipment().size() : 0);
+            site.setEmployeeCount(site.getEmployees() != null ? site.getEmployees().size() : 0);
+            site.setWarehouseCount(site.getWarehouses() != null ? site.getWarehouses().size() : 0);
+            site.setMerchantCount(site.getMerchants() != null ? site.getMerchants().size() : 0);
+        }
+        return site;
     }
 
-
+    @Transactional(readOnly = true)
     public List<Site> getAllSites() {
         List<Site> sites = siteRepository.findAll();
         for (Site site : sites) {
@@ -61,6 +70,7 @@ public class SiteService
         return sites;
     }
 
+    @Transactional(readOnly = true)
     public List<Equipment> getSiteEquipments(UUID siteId) {
         Site site = siteRepository.findById(siteId).orElse(null);
         if (site == null) {
@@ -69,6 +79,7 @@ public class SiteService
         return site.getEquipment(); // Ensure this method is correctly mapped
     }
 
+    @Transactional(readOnly = true)
     public List<Employee> getSiteEmployees(UUID siteId) {
         Site site = siteRepository.findById(siteId).orElse(null);
         if (site == null) {
@@ -77,6 +88,7 @@ public class SiteService
         return site.getEmployees(); // Ensure this method is correctly mapped
     }
 
+    @Transactional(readOnly = true)
     public List<Warehouse> getSiteWarehouses(UUID siteId) {
         Site site = siteRepository.findById(siteId).orElse(null);
         if (site == null) {
@@ -87,6 +99,7 @@ public class SiteService
     }
 
 
+    @Transactional(readOnly = true)
     public List<Merchant> getSiteMerchants(UUID siteId) {
         Site site = siteRepository.findById(siteId).orElse(null);
         if (site == null) {
@@ -95,6 +108,7 @@ public class SiteService
         return site.getMerchants(); // Ensure this method is correctly mapped
     }
 
+    @Transactional(readOnly = true)
     public List<FixedAssets> getSiteFixedAssets(UUID siteId) {
         Site site = siteRepository.findById(siteId).orElse(null);
         if (site == null) {
@@ -103,11 +117,13 @@ public class SiteService
         return site.getFixedAssets(); // Ensure this method is correctly mapped
     }
 
+    @Transactional(readOnly = true)
     public List<FixedAssets> getUnassignedFixedAssets() {
         // You'll need to inject FixedAssetsRepository in your SiteService
         return fixedAssetsRepository.findBySiteIsNullAndStatusNot(AssetStatus.DISPOSED);
     }
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getSitePartners(UUID siteId) {
         Site site = siteRepository.findById(siteId).orElse(null);
         if (site == null) {
@@ -131,6 +147,7 @@ public class SiteService
         return partnersList;
     }
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getUnassignedSitePartners(UUID siteId) {
         Site site = siteRepository.findById(siteId).orElse(null);
         if (site == null) {
@@ -167,6 +184,7 @@ public class SiteService
         return unassignedPartnersList;
     }
 
+    @Transactional(readOnly = true)
     public List<Employee> getUnassignedEmployees() {
         System.out.println("=== FETCHING UNASSIGNED EMPLOYEES (EXCLUDING EQUIPMENT DRIVERS) ===");
 
@@ -183,10 +201,12 @@ public class SiteService
         return unassignedEmployees;
     }
     
+    @Transactional(readOnly = true)
     public List<Equipment> getUnassignedEquipment() {
         List<Equipment> availableEquipment = equipmentRepository.findBySiteIsNull();
         return availableEquipment;
     }
+    @Transactional(readOnly = true)
     public List<EquipmentDTO> getSiteEquipmentsDTO(UUID siteId) {
         Site site = siteRepository.findById(siteId).orElse(null);
         if (site == null) {

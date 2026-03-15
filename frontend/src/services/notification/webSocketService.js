@@ -1,5 +1,6 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { API_BASE_URL } from '../../config/api.config';
 
 class WebSocketService {
     constructor() {
@@ -13,24 +14,7 @@ class WebSocketService {
     }
 
     getWebSocketURL() {
-        const hostname = window.location.hostname;
-
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            // Local development
-            return 'http://localhost:8080/ws';
-        } else if (hostname.includes('dev-rock-ops.vercel.app')) {
-            // Development deployment
-            return 'https://rockops.onrender.com/ws';
-        } else if (hostname.includes('rock-ops.vercel.app')) {
-            // Test deployment (with hyphen)
-            return 'https://rockops-backend.onrender.com/ws';
-        } else if (hostname === 'rockops.vercel.app') {
-            // NEW Production deployment (no hyphen)
-            return 'https://rockops-production-backend.onrender.com/ws';
-        } else {
-            // Fallback to localhost
-            return 'http://localhost:8080/ws';
-        }
+        return `${API_BASE_URL}/ws`;
     }
 
     connect(token) {

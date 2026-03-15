@@ -6,22 +6,19 @@ import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import './InSiteMaintenanceLog.scss';
-import MaintenanceTransactionModal from '../MaintenanceTransactionModal/MaintenanceTransactionModal';
+// MaintenanceTransactionModal removed - transactions are initiated from warehouse, validated via TransactionHub
 import MaintenanceAddModal from '../MaintenanceAddModal/MaintenanceAddModal';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 import PageHeader from '../../../components/common/PageHeader';
 import TransactionViewModal from '../../warehouse/WarehouseViewTransactions/TransactionViewModal/TransactionViewModal.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
-const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, onAddTransactionClick, showAddButton = true, showHeader = true }, ref) => {
+const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, showAddButton = true, showHeader = true }, ref) => {
     const [maintenanceRecords, setMaintenanceRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isMaintenanceTransactionModalOpen, setIsMaintenanceTransactionModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedMaintenanceId, setSelectedMaintenanceId] = useState(null);
-    const [selectedBatchNumber, setSelectedBatchNumber] = useState(null);
     const [editingMaintenance, setEditingMaintenance] = useState(null);
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -154,33 +151,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
         ).join('\n\n');
 
         showInfo(`Maintenance: ${record.maintenanceType}\n\nLinked Transactions:\n${transactionDetails}`);
-    };
-
-    // Handle adding transaction to maintenance
-    const handleAddTransactionToMaintenance = (record) => {
-        try {
-            setSelectedMaintenanceId(record.id);
-            setSelectedBatchNumber(record.batchNumber || null);
-            setIsMaintenanceTransactionModalOpen(true);
-        } catch (error) {
-            showError("Failed to open transaction creation modal");
-            console.error("Error opening transaction modal:", error);
-        }
-    };
-
-    // Close maintenance transaction modal
-    const handleCloseMaintenanceTransactionModal = () => {
-        setIsMaintenanceTransactionModalOpen(false);
-        setSelectedMaintenanceId(null);
-        setSelectedBatchNumber(null);
-        showInfo("Transaction creation modal closed");
-    };
-
-    // Refresh after transaction added
-    const handleTransactionAdded = () => {
-        showSuccess("Transaction added successfully! Refreshing maintenance records...");
-        fetchMaintenanceRecords();
-        handleCloseMaintenanceTransactionModal();
     };
 
     const handleRowClick = (row) => {
@@ -405,18 +375,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                     />
                 )}
             </div>
-
-            {/* Maintenance Transaction Modal */}
-            {isMaintenanceTransactionModalOpen && (
-                <MaintenanceTransactionModal
-                    isOpen={isMaintenanceTransactionModalOpen}
-                    onClose={handleCloseMaintenanceTransactionModal}
-                    equipmentId={equipmentId}
-                    maintenanceId={selectedMaintenanceId}
-                    initialBatchNumber={selectedBatchNumber}
-                    onTransactionAdded={handleTransactionAdded}
-                />
-            )}
 
             {/* Transaction View Modal */}
             <TransactionViewModal

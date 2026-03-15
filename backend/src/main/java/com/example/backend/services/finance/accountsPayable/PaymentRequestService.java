@@ -89,7 +89,7 @@ public class PaymentRequestService {
         this.logisticsService = logisticsService;
         this.loanPaymentRequestService = loanPaymentRequestService;
     }
-
+    @Transactional(readOnly = true)
     public List<PaymentRequestResponseDTO> getAllPaymentRequests() {
         List<PaymentRequest> requests = paymentRequestRepository.findAll();
         return requests.stream()
@@ -275,6 +275,7 @@ public class PaymentRequestService {
     /**
      * Get all pending payment requests
      */
+    @Transactional(readOnly = true)
     public List<PaymentRequestResponseDTO> getPendingPaymentRequests() {
         List<PaymentRequest> requests = paymentRequestRepository.findPendingRequests();
         return requests.stream()
@@ -285,6 +286,7 @@ public class PaymentRequestService {
     /**
      * Get approved and ready to pay payment requests
      */
+    @Transactional(readOnly = true)
     public List<PaymentRequestResponseDTO> getApprovedAndReadyToPay() {
         List<PaymentRequest> requests = paymentRequestRepository.findApprovedAndReadyToPay();
         return requests.stream()
@@ -441,6 +443,7 @@ public class PaymentRequestService {
     /**
      * Get payment requests for a specific maintenance record
      */
+    @Transactional(readOnly = true)
     public List<PaymentRequestResponseDTO> getPaymentRequestsByMaintenanceRecord(UUID maintenanceRecordId) {
         List<PaymentRequest> requests = paymentRequestRepository.findByMaintenanceRecordId(maintenanceRecordId);
         return requests.stream()
@@ -451,6 +454,7 @@ public class PaymentRequestService {
     /**
      * Get payment request by ID
      */
+    @Transactional(readOnly = true)
     public PaymentRequestResponseDTO getPaymentRequestById(UUID id) {
         PaymentRequest request = paymentRequestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Payment Request not found with ID: " + id));

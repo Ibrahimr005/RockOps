@@ -10,6 +10,7 @@ import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
 import { Button, CloseButton } from '../../../components/common/Button';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const EquipmentTypeManagement = () => {
     const [types, setTypes] = useState([]);
@@ -24,10 +25,10 @@ const EquipmentTypeManagement = () => {
         drivable: true
     });
     const [selectedWorkTypes, setSelectedWorkTypes] = useState([]);
-    const [deletingType, setDeletingType] = useState(null);
+    const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, type: null });
 
     // Use the snackbar context
-    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar, showConfirmation } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -183,40 +184,34 @@ const EquipmentTypeManagement = () => {
     };
 
     const confirmDelete = (typeId, typeName) => {
-        showConfirmation(
-            `Are you sure you want to delete "${typeName}"?`,
-            () => performDelete(typeId, typeName),
-            () => setDeletingType(null)
-        );
+        setDeleteConfirmation({ isOpen: true, type: { id: typeId, name: typeName } });
     };
 
-    const performDelete = async (typeId, typeName) => {
+    const performDelete = async () => {
+        const { id, name } = deleteConfirmation.type;
         try {
-            await equipmentService.deleteEquipmentType(typeId);
-            showSuccess(`Equipment type "${typeName}" has been deleted successfully`);
-            fetchTypes(); // Refresh the list with display values
+            await equipmentService.deleteEquipmentType(id);
+            showSuccess(`Equipment type "${name}" has been deleted successfully`);
+            fetchTypes();
         } catch (err) {
             console.error('Error deleting equipment type:', err);
 
-            // Handle specific error cases
             if (err.response?.status === 409) {
-                // Check if it's a resource in use error
                 if (err.response.data?.resourceType && err.response.data?.usageCount) {
                     const { resourceName, usageCount, dependentType } = err.response.data;
                     showError(`Cannot delete equipment type "${resourceName}" because it is currently used by ${usageCount} ${dependentType}${usageCount !== 1 ? 's' : ''}. Please reassign or remove the equipment first.`);
                 } else {
-                    // Fallback for other conflict errors
-                    showError(`Cannot delete equipment type "${typeName}": ${err.response.data?.message || 'Resource is in use'}`);
+                    showError(`Cannot delete equipment type "${name}": ${err.response.data?.message || 'Resource is in use'}`);
                 }
             } else if (err.response?.status === 404) {
-                showError(`Equipment type "${typeName}" not found. It may have been already deleted.`);
+                showError(`Equipment type "${name}" not found. It may have been already deleted.`);
             } else if (err.response?.status === 403) {
                 showError('You don\'t have permission to delete equipment types. Please contact your administrator.');
             } else {
                 showError(`Failed to delete equipment type: ${err.response?.data?.message || err.message}`);
             }
         } finally {
-            setDeletingType(null);
+            setDeleteConfirmation({ isOpen: false, type: null });
         }
     };
 
@@ -459,6 +454,17 @@ const EquipmentTypeManagement = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmationDialog
+                isVisible={deleteConfirmation.isOpen}
+                type="delete"
+                title="Delete Equipment Type"
+                message={deleteConfirmation.type ? `Are you sure you want to delete "${deleteConfirmation.type.name}"? This action cannot be undone.` : ''}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={performDelete}
+                onCancel={() => setDeleteConfirmation({ isOpen: false, type: null })}
+            />
         </div>
     );
 };
