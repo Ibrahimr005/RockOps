@@ -24,14 +24,15 @@
       "Bash(grep:*)",
       "Bash(done)",
       "mcp__claude-flow__system_status",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(./mvnw test:*)"
     ],
     "deny": [],
     "ask": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "claude-flow"
   ],
-  "outputStyle": "default",
-  "enableAllProjectMcpServers": true
+  "outputStyle": "default"
 }

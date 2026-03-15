@@ -22,6 +22,7 @@ public class ItemCategoryService {
     @Autowired(required = false)
     private NotificationService notificationService;
 
+    @Transactional
     public ItemCategory addItemCategory(Map<String, Object> requestBody) {
         String categoryName = (String) requestBody.get("name");
         String categoryDescription = (String) requestBody.get("description");
@@ -252,6 +253,7 @@ public class ItemCategoryService {
     }
 
     // Update an existing ItemCategory
+    @Transactional
     public ItemCategory updateItemCategory(UUID itemCategoryId, Map<String, Object> requestBody) {
         // Fetch the item category to be updated
         ItemCategory itemCategory = itemCategoryRepository.findById(itemCategoryId)
