@@ -19,6 +19,9 @@ import PayrollLayout from "./pages/payroll/PayrollLayout.jsx";
 import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
 import SitesLayout from "./pages/site/SitesLayout.jsx";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { SpeedInsights } from '@vercel/speed-insights/react';
+import { Analytics } from '@vercel/analytics/react';
+import * as Sentry from '@sentry/react';
 
 import {
     ADMIN,
@@ -198,6 +201,10 @@ function App() {
                     <ThemeProvider>
                         <AuthProvider>
                             <NotificationProvider>
+                                <Sentry.ErrorBoundary fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>
+                                    <h2>Something went wrong</h2>
+                                    <p>The error has been reported. Please refresh the page.</p>
+                                </div>}>
                                 <Suspense fallback={<LoadingFallback />}>
                                 <Routes>
                                     <Route path="/login" element={<Login />} />
@@ -362,12 +369,16 @@ function App() {
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
                                 </Suspense>
+                                </Sentry.ErrorBoundary>
+                                <SpeedInsights />
+                                <Analytics />
                             </NotificationProvider>
                         </AuthProvider>
                     </ThemeProvider>
                 </LanguageProvider>
             </SnackbarProvider>
         </Router>
+        <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>)
 }
 

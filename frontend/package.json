@@ -12,9 +12,11 @@
     "cursor:update": "cd .. && node generate-context.js"
   },
   "dependencies": {
+    "@sentry/react": "^10.43.0",
     "@stomp/stompjs": "^7.1.1",
     "@tanstack/react-query": "^5.90.21",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.9.0",
     "i18next": "^25.2.0",
     "i18next-browser-languagedetector": "^8.1.0",
