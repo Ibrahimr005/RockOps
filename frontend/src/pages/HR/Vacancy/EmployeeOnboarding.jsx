@@ -16,10 +16,10 @@ import './EmployeeOnboarding.scss';
 import { Button } from '../../../components/common/Button/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import { employeeService } from '../../../services/hr/employeeService.js';
-import { jobPositionService } from '../../../services/hr/jobPositionService.js';
 import { candidateService } from '../../../services/hr/candidateService.js';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import {hrEmployeeService} from "../../../services/hr/hrEmployeeService.js";
+import { useJobPositions } from '../../../hooks/queries';
 
 // Salary calculation function matching AddEmployeeModal
 const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplier) => {
@@ -58,7 +58,7 @@ const EmployeeOnboarding = () => {
     const [candidateData, setCandidateData] = useState(null);
 
     // Dropdown data
-    const [jobPositions, setJobPositions] = useState([]);
+    const { data: jobPositions = [] } = useJobPositions();
 
     // Form data state - UPDATED to match AddEmployeeModal exactly
     const [formData, setFormData] = useState({
@@ -136,10 +136,8 @@ const EmployeeOnboarding = () => {
         }
     ];
 
-    // Load prepopulated data from candidate and fetch dropdown data
+    // Load prepopulated data from candidate
     useEffect(() => {
-        fetchJobPositions();
-
         const prepopulatedData = sessionStorage.getItem('prepopulatedEmployeeData');
         if (prepopulatedData) {
             try {
@@ -173,16 +171,6 @@ const EmployeeOnboarding = () => {
             }
         }
     }, [showError]);
-
-    const fetchJobPositions = async () => {
-        try {
-            const response = await jobPositionService.getAll();
-            setJobPositions(Array.isArray(response.data) ? response.data : []);
-        } catch (error) {
-            console.error('Error fetching job positions:', error);
-            showError('Failed to load job positions');
-        }
-    };
 
     // Handle form input changes
     const handleInputChange = (e) => {

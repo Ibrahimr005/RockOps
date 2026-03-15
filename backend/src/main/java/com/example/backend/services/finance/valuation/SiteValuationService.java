@@ -139,6 +139,7 @@ public class SiteValuationService {
     /**
      * Get site valuation (calculate if doesn't exist)
      */
+    @Transactional
     public SiteValuation getSiteValuation(UUID siteId) {
         return siteValuationRepository.findBySiteId(siteId)
                 .orElseGet(() -> calculateSiteValuation(siteId, "SYSTEM"));
@@ -159,6 +160,7 @@ public class SiteValuationService {
     /**
      * Get all site valuations
      */
+    @Transactional
     public List<SiteValuation> getAllSiteValuations() {
         List<Site> sites = siteRepository.findAll();
 
@@ -170,6 +172,7 @@ public class SiteValuationService {
     /**
      * Check if site has valuation record
      */
+    @Transactional(readOnly = true)
     public boolean hasValuation(UUID siteId) {
         return siteValuationRepository.existsBySiteId(siteId);
     }

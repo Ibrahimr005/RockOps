@@ -89,6 +89,58 @@ EquipmentModal, MaintenanceStepModal, RequestOrderModal, CreateLogisticsModal, E
 
 ---
 
+## Phase 3 Changes (2026-03-15)
+
+### Backend: Inventory-Valuation 500 Error Fixed
+- **Root cause:** `LazyInitializationException` in `getSiteBalance()` — accessed `site.getWarehouses()` outside a transaction
+- **Fix:** Added `@Transactional`, replaced lazy collection with `warehouseRepository.findBySiteId()`, added null checks on valuation fields
+
+### Backend: @Transactional(readOnly=true) Added to 6 Services
+- InventoryValuationService (7 methods)
+- OfferFinancialReviewService (5 methods)
+- AccountsPayableDashboardService (3 methods)
+- PromotionRequestService (5 methods)
+- DemotionRequestService (5 methods)
+- SiteValuationService (1 method)
+
+### Backend: @Cacheable Added to Statistics + Dashboard
+- Salary increase stats → `statisticsCache` (2-min TTL)
+- Promotion stats → `statisticsCache` (2-min TTL)
+- Demotion stats → `statisticsCache` (2-min TTL)
+- Finance dashboard summary → `dashboardCache` (1-min TTL)
+- Finance merchant summaries → `dashboardCache` (1-min TTL)
+- CacheConfig refactored to SimpleCacheManager with per-cache TTLs
+
+### Backend: Flyway Migration V2026031405
+5 new indexes: salary_increase_requests(status), offer(status), offer(finance_validation_status), promotion_requests(status), demotion_requests(status)
+
+### Frontend: 14 More Components Migrated + 1 New Hook
+
+**New hook:** `useInventoryValuations()` — wraps inventoryValuationService.getAllSiteValuations()
+
+**Migrated:**
+- useJobPositions: VacancyList, PositionsList, EmployeesList, EmployeeOnboarding (4)
+- useAdminUsers: AdminPage (1)
+- useItemTypes: PendingTransactionsTable, InProgressOffers, RequestOrderModal, MaintenanceTransactionModal, WarehouseDashboard, InWarehouseItems (6)
+- useMerchants: Step2PurchasingForm (1)
+- useInventoryValuations: InventoryValuation, AssetValuesView (2)
+
+### Phase 3 Totals
+- Components migrated this phase: 14
+- Total components migrated across all phases: 36
+- Backend services optimized: 6 (new @Transactional)
+- Backend caching added: 5 endpoints (statistics + dashboard)
+- Errors fixed: inventory-valuation 500 (all original errors now resolved)
+- New database indexes: 5
+
+### Remaining (Phase 4 candidates)
+- EquipmentModal.jsx (2139 lines) — bundled fetchFormData with 5 sequential fetches
+- MaintenanceStepModal.jsx (1334 lines) — complex multi-service
+- CreateLogisticsModal.jsx (1117 lines) — complex multi-service
+- Components using different service methods (getAllTypes vs getAll, procurementService.getAllMerchants vs merchantService.getAll)
+
+---
+
 ## Changes Made
 
 ### 1. Backend: Caffeine In-Process Caching

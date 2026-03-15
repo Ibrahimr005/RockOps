@@ -19,7 +19,7 @@ import RFQImportDialog from './RFQImportDialog/RFQImportDialog.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
 import { procurementService } from '../../../../services/procurement/procurementService.js';
 import { offerRequestItemService } from '../../../../services/procurement/offerRequestItemService.js';
-import { itemTypeService } from '../../../../services/itemTypeService.js';
+import { useItemTypes } from '../../../../hooks/queries';
 
 const InProgressOffers = ({
     offers,
@@ -40,7 +40,7 @@ const InProgressOffers = ({
     const [selectedOfferItem, setSelectedOfferItem] = useState(null);
 
     // NEW: RFQ related states
-    const [itemTypes, setItemTypes] = useState([]);
+    const { data: itemTypes = [] } = useItemTypes();
     const [requestItems, setRequestItems] = useState([]);
     const [showModifyItemsModal, setShowModifyItemsModal] = useState(false);
     const [showExportDialog, setShowExportDialog] = useState(false);
@@ -86,23 +86,6 @@ const InProgressOffers = ({
     }, []);
 
 
-    useEffect(() => {
-        const fetchItemTypes = async () => {
-            try {
-                const response = await itemTypeService.getAll();
-
-                // Extract data array from response
-                const data = response.data || response;
-
-                setItemTypes(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error('Error fetching item types:', error);
-                setItemTypes([]);
-            }
-        };
-
-        fetchItemTypes();
-    }, []);
 
     // NEW: RFQ Handlers
     const handleModifyItems = async () => {

@@ -14,6 +14,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +43,7 @@ public class DemotionRequestService {
     /**
      * Create a new demotion request
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public DemotionRequestDTO createRequest(DemotionRequestCreateDTO dto, String requestedBy) {
         log.info("Creating demotion request by {}", requestedBy);
@@ -134,6 +137,7 @@ public class DemotionRequestService {
     /**
      * Department Head decision (approve or reject)
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public DemotionRequestDTO deptHeadDecision(UUID requestId, DemotionReviewDTO dto, String decidedBy) {
         log.info("Dept Head {} demotion request {} by {}",
@@ -185,6 +189,7 @@ public class DemotionRequestService {
     /**
      * HR decision (approve or reject). On approval, applies the demotion.
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public DemotionRequestDTO hrDecision(UUID requestId, DemotionReviewDTO dto, String decidedBy) {
         log.info("HR {} demotion request {} by {}",
@@ -286,30 +291,36 @@ public class DemotionRequestService {
 
     // ==================== Query Methods ====================
 
+    @Transactional(readOnly = true)
     public List<DemotionRequestDTO> getAll() {
         return demotionRequestRepository.findAllOrderByCreatedAtDesc().stream()
                 .map(DemotionRequestDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<DemotionRequestDTO> getByStatus(DemotionRequest.Status status) {
         return demotionRequestRepository.findByStatus(status).stream()
                 .map(DemotionRequestDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public DemotionRequestDTO getById(UUID id) {
         DemotionRequest request = demotionRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Demotion request not found: " + id));
         return DemotionRequestDTO.fromEntity(request);
     }
 
+    @Transactional(readOnly = true)
     public List<DemotionRequestDTO> getByEmployee(UUID employeeId) {
         return demotionRequestRepository.findByEmployeeId(employeeId).stream()
                 .map(DemotionRequestDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "statisticsCache", key = "'demotionStats'")
+    @Transactional(readOnly = true)
     public Map<String, Object> getStatistics() {
         Map<String, Object> stats = new LinkedHashMap<>();
         stats.put("total", demotionRequestRepository.count());

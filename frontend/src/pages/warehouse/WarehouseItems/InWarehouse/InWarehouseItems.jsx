@@ -3,8 +3,8 @@ import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import { Button, CloseButton } from '../../../../components/common/Button';
 import "./InWarehouseItems.scss";
 import { itemService } from '../../../../services/warehouse/itemService';
-import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
+import { useItemTypes } from '../../../../hooks/queries';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
 import { useNavigate } from 'react-router-dom';
 
@@ -58,7 +58,7 @@ const InWarehouseItems = ({
     const [addItemLoading, setAddItemLoading] = useState(false);
     const [parentCategories, setParentCategories] = useState([]);
     const [childCategories, setChildCategories] = useState([]);
-    const [itemTypes, setItemTypes] = useState([]);
+    const { data: itemTypes = [] } = useItemTypes();
 
     // Filter toggle state
     const [showFilters, setShowFilters] = useState(false);
@@ -89,14 +89,6 @@ const InWarehouseItems = ({
         return Object.values(aggregated);
     };
 
-    const fetchItemTypes = async () => {
-        try {
-            const data = await itemTypeService.getAll();
-            setItemTypes(data);
-        } catch (error) {
-            console.error("Failed to fetch item types:", error);
-        }
-    };
 
     const fetchParentCategories = async () => {
         try {
@@ -135,7 +127,6 @@ const InWarehouseItems = ({
     };
 
     useEffect(() => {
-        fetchItemTypes();
         fetchParentCategories();
     }, []);
 

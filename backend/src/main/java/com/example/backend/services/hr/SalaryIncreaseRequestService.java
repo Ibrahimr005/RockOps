@@ -13,6 +13,8 @@ import com.example.backend.services.id.EntityIdGeneratorService;
 import com.example.backend.services.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,7 @@ public class SalaryIncreaseRequestService {
     /**
      * Create a new salary increase request
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public SalaryIncreaseRequestDTO createRequest(SalaryIncreaseCreateDTO dto, String createdBy) {
         log.info("Creating salary increase request by {}", createdBy);
@@ -160,6 +163,7 @@ public class SalaryIncreaseRequestService {
     /**
      * HR decision (approve or reject)
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public SalaryIncreaseRequestDTO hrDecision(UUID requestId, SalaryIncreaseReviewDTO dto, String decidedBy) {
         log.info("HR {} salary increase request {} by {}", dto.isApproved() ? "approving" : "rejecting", requestId, decidedBy);
@@ -193,6 +197,7 @@ public class SalaryIncreaseRequestService {
     /**
      * Finance decision (approve or reject). On approval, applies the salary increase.
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public SalaryIncreaseRequestDTO financeDecision(UUID requestId, SalaryIncreaseReviewDTO dto, String decidedBy) {
         log.info("Finance {} salary increase request {} by {}", dto.isApproved() ? "approving" : "rejecting", requestId, decidedBy);
@@ -371,6 +376,7 @@ public class SalaryIncreaseRequestService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "statisticsCache", key = "'salaryIncreaseStats'")
     @Transactional(readOnly = true)
     public Map<String, Object> getStatistics() {
         Map<String, Object> stats = new LinkedHashMap<>();

@@ -8,6 +8,8 @@ import com.example.backend.repositories.hr.*;
 import com.example.backend.services.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ public class PromotionRequestService {
     /**
      * Create a new promotion request using DTO
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public PromotionRequest createPromotionRequest(PromotionRequestCreateDTO createDTO, String requestedBy) {
         try {
@@ -114,6 +117,7 @@ public class PromotionRequestService {
     /**
      * Review a promotion request using DTO (HR Manager action)
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public PromotionRequest reviewPromotionRequest(UUID requestId, PromotionRequestReviewDTO reviewDTO, String reviewedBy) {
         try {
@@ -181,6 +185,7 @@ public class PromotionRequestService {
     /**
      * Implement an approved promotion request
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public PromotionRequest implementPromotionRequest(UUID requestId, String implementedBy) {
         try {
@@ -239,6 +244,7 @@ public class PromotionRequestService {
     /**
      * Get all promotion requests with optional filtering
      */
+    @Transactional(readOnly = true)
     public List<PromotionRequest> getAllPromotionRequests(
             PromotionRequest.PromotionStatus status,
             UUID employeeId,
@@ -260,6 +266,7 @@ public class PromotionRequestService {
     /**
      * Get pending promotion requests for HR managers
      */
+    @Transactional(readOnly = true)
     public List<PromotionRequest> getPendingPromotionRequests() {
         return promotionRequestRepository.findByStatusOrderByCreatedAtDesc(PromotionRequest.PromotionStatus.PENDING);
     }
@@ -267,6 +274,7 @@ public class PromotionRequestService {
     /**
      * Get approved promotions ready for implementation
      */
+    @Transactional(readOnly = true)
     public List<PromotionRequest> getPromotionsReadyForImplementation() {
         LocalDate today = LocalDate.now();
         return promotionRequestRepository.findByStatusAndActualEffectiveDateLessThanEqualOrderByActualEffectiveDate(
@@ -276,6 +284,7 @@ public class PromotionRequestService {
     /**
      * Get promotion request by ID
      */
+    @Transactional(readOnly = true)
     public PromotionRequest getPromotionRequestById(UUID requestId) {
         return promotionRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Promotion request not found"));
@@ -284,6 +293,7 @@ public class PromotionRequestService {
     /**
      * Cancel a promotion request
      */
+    @CacheEvict(value = "statisticsCache", allEntries = true)
     @Transactional
     public PromotionRequest cancelPromotionRequest(UUID requestId, String cancelledBy, String reason) {
         try {
@@ -311,6 +321,8 @@ public class PromotionRequestService {
     /**
      * Get promotion statistics
      */
+    @Cacheable(value = "statisticsCache", key = "'promotionStats'")
+    @Transactional(readOnly = true)
     public Map<String, Object> getPromotionStatistics() {
         long totalRequests = promotionRequestRepository.count();
         long pendingRequests = promotionRequestRepository.countByStatus(PromotionRequest.PromotionStatus.PENDING);

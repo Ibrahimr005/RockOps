@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import './MaintenanceTransactionModal.scss';
 import { siteService } from '../../../services/siteService';
-import { itemTypeService } from '../../../services/itemTypeService';
 import { transactionService } from '../../../services/transactionService';
+import { useItemTypes } from '../../../hooks/queries';
 import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
@@ -26,7 +26,7 @@ const MaintenanceTransactionModal = ({
     const [sites, setSites] = useState([]);
     const [selectedSite, setSelectedSite] = useState('');
     const [warehouses, setWarehouses] = useState([]);
-    const [allItemTypes, setAllItemTypes] = useState([]);
+    const { data: allItemTypes = [] } = useItemTypes();
     const [filteredItemTypes, setFilteredItemTypes] = useState([]);
     const [transactionFormData, setTransactionFormData] = useState({
         senderId: '',
@@ -86,20 +86,6 @@ const MaintenanceTransactionModal = ({
         }
     };
 
-    // Fetch item types when warehouse is selected
-    const fetchItemTypes = async () => {
-        if (!transactionFormData.senderId) return;
-
-        try {
-            const response = await itemTypeService.getAll();
-            setAllItemTypes(response.data);
-            setFilteredItemTypes(response.data);
-        } catch (error) {
-            console.error("Error fetching item types:", error);
-            setError("Failed to load item types");
-        }
-    };
-
     // Effect to fetch warehouses when site changes
     useEffect(() => {
         if (selectedSite) {
@@ -107,12 +93,12 @@ const MaintenanceTransactionModal = ({
         }
     }, [selectedSite]);
 
-    // Effect to fetch item types when warehouse changes
+    // Set filtered item types when hook data loads or warehouse changes
     useEffect(() => {
-        if (transactionFormData.senderId) {
-            fetchItemTypes();
+        if (transactionFormData.senderId && allItemTypes.length > 0) {
+            setFilteredItemTypes(allItemTypes);
         }
-    }, [transactionFormData.senderId]);
+    }, [transactionFormData.senderId, allItemTypes]);
 
     // Handle batch number input change
     const handleBatchNumberChange = (e) => {

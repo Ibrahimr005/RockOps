@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DataTable from '../../components/common/DataTable/DataTable';
 import PageHeader from '../../components/common/PageHeader';
@@ -7,36 +7,17 @@ import EditUserModal from './components/EditUserModal';
 import { FaEdit, FaTrash, FaUserPlus } from 'react-icons/fa';
 import { adminService } from '../../services/adminService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
+import { useAdminUsers } from '../../hooks/queries';
 import './AdminPage.css';
 
 const AdminPage = () => {
     const { t } = useTranslation();
     const { showSnackbar } = useSnackbar();
 
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: users = [], isLoading: loading, refetch: refetchUsers } = useAdminUsers();
     const [editingUser, setEditingUser] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('edit'); // 'edit' or 'add'
-
-    // Fetch users on component mount
-    useEffect(() => {
-        fetchUsers();
-    }, []);
-
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const response = await adminService.getUsers();
-
-            setUsers(response.data);
-        } catch (err) {
-            console.error('Error fetching users:', err);
-            showSnackbar(t('admin.fetchUsersError', 'Failed to load users'), 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleDelete = async (userId) => {
         if (!window.confirm(t('admin.confirmDelete'))) {
@@ -45,8 +26,8 @@ const AdminPage = () => {
 
         try {
             await adminService.deleteUser(userId);
-            // Remove user from state
-            setUsers(users.filter(user => user.id !== userId));
+            // Refresh user list
+            await refetchUsers();
             showSnackbar(t('admin.userDeletedSuccessfully', 'User deleted successfully'), 'success');
         } catch (err) {
             console.error('Error deleting user:', err);
@@ -79,15 +60,8 @@ const AdminPage = () => {
             // For updating role only (as per your controller)
             await adminService.updateUserRole(editingUser.id, { role: updatedUserData.role });
 
-            // Update user in state
-            const updatedUser = {
-                ...editingUser,
-                role: updatedUserData.role
-            };
-
-            setUsers(users.map(user =>
-                user.id === editingUser.id ? updatedUser : user
-            ));
+            // Refresh user list
+            await refetchUsers();
 
             // Close modal and clear form
             setShowModal(false);
@@ -104,7 +78,7 @@ const AdminPage = () => {
             await adminService.createUser(newUserData);
 
             // Refresh user list to include the new user
-            await fetchUsers();
+            await refetchUsers();
 
             // Close modal
             setShowModal(false);

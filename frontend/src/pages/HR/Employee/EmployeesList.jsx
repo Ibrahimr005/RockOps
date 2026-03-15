@@ -9,13 +9,13 @@ import AddEmployeeModal from './modals/AddEmployeeModal.jsx';
 import EditEmployeeModal from './modals/EditEmployeeModal.jsx';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { hrEmployeeService } from '../../../services/hr/hrEmployeeService.js';
-import { jobPositionService } from '../../../services/hr/jobPositionService.js';
-import { useSites, useEmployees } from '../../../hooks/queries';
+import { useSites, useEmployees, useJobPositions } from '../../../hooks/queries';
 
 const EmployeesList = () => {
     const { showSuccess, showError } = useSnackbar();
     const { data: employees = [], isLoading: employeesLoading, isError: employeesError, refetch: refetchEmployees } = useEmployees();
     const { data: sites = [] } = useSites();
+    const { data: jobPositions = [] } = useJobPositions();
     const [filteredEmployees, setFilteredEmployees] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('');
@@ -33,7 +33,6 @@ const EmployeesList = () => {
     // Fetch departments and positions for dropdowns
     const [departments, setDepartments] = useState([]);
     const [positions, setPositions] = useState([]);
-    const [jobPositions, setJobPositions] = useState([]);
 
     // Derive departments and positions from employees data
     useEffect(() => {
@@ -202,22 +201,6 @@ const EmployeesList = () => {
     ];
 
     // ... (rest of the functions remain the same)
-
-    // Fetch job positions for the dropdown
-    const fetchJobPositions = async () => {
-        try {
-            const response = await jobPositionService.getAll();
-            setJobPositions(response.data);
-        } catch (error) {
-            console.error('Error fetching job positions:', error);
-            showError('Failed to load job positions');
-        }
-    };
-
-    // Fetch job positions on component mount
-    useEffect(() => {
-        fetchJobPositions();
-    }, []);
 
     // Apply filters to employees
     useEffect(() => {

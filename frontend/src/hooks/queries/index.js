@@ -10,3 +10,4 @@ export { useOffers, useOffersByMultipleStatuses, useCompletedFinanceOffers } fro
 export { useItemTypes } from './useItemTypes';
 export { useWarehouses } from './useWarehouses';
 export { useDepartments } from './useDepartments';
+export { useInventoryValuations } from './useInventoryValuations';

@@ -9,15 +9,17 @@ import { Button } from '../../../components/common/Button/Button';
 import {FaEdit, FaTrashAlt, FaUserPlus} from "react-icons/fa";
 import {useSnackbar} from '../../../contexts/SnackbarContext';
 import {vacancyService} from '../../../services/hr/vacancyService.js';
-import {jobPositionService} from '../../../services/hr/jobPositionService.js';
+import { useJobPositions } from '../../../hooks/queries';
 
 const VacancyList = () => {
     const navigate = useNavigate();
     const {showSuccess, showError} = useSnackbar();
 
+    // Shared job positions hook
+    const { data: jobPositions = [] } = useJobPositions();
+
     // State management - ensure arrays are properly initialized
     const [vacancies, setVacancies] = useState([]);
-    const [jobPositions, setJobPositions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [statusFilter, setStatusFilter] = useState('');
@@ -63,23 +65,9 @@ const VacancyList = () => {
         }
     }, [showError]);
 
-    const fetchJobPositions = useCallback(async () => {
-        try {
-            const response = await jobPositionService.getAll();
-            if (response && response.data) {
-                const jobPositionData = Array.isArray(response.data) ? response.data : [];
-                setJobPositions(jobPositionData);
-            }
-        } catch (error) {
-            console.error('Error fetching job positions:', error);
-            showError('Failed to load job positions');
-        }
-    }, [showError]);
-
     useEffect(() => {
         fetchVacancies();
-        fetchJobPositions();
-    }, [fetchVacancies, fetchJobPositions]);
+    }, [fetchVacancies]);
 
     const handleAddVacancy = useCallback(async (vacancyData) => {
         try {

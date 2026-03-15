@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTimes, FaCheck } from 'react-icons/fa';
 import { siteService } from '../../../services/siteService.js';
 import { warehouseService } from '../../../services/warehouse/warehouseService.js';
-import { itemTypeService } from '../../../services/warehouse/itemTypeService.js';
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService.js';
+import { useItemTypes } from '../../../hooks/queries';
 import { employeeService } from '../../../services/hr/employeeService.js';
 import { requestOrderService } from '../../../services/procurement/requestOrderService.js';
 import { equipmentPurchaseSpecService } from '../../../services/procurement/equipmentPurchaseSpecService.js';
@@ -54,7 +54,7 @@ const RequestOrderModal = ({
     // Data states
     const [employees, setEmployees] = useState([]);
     const [sites, setSites] = useState([]);
-    const [itemTypes, setItemTypes] = useState([]);
+    const { data: itemTypes = [] } = useItemTypes();
     const [warehouses, setWarehouses] = useState([]);
     const [parentCategories, setParentCategories] = useState([]);
     const [childCategoriesByItem, setChildCategoriesByItem] = useState({});
@@ -122,7 +122,6 @@ const RequestOrderModal = ({
         try {
             await Promise.all([
                 fetchSites(),
-                fetchItemTypes(),
                 fetchEmployees(),
                 fetchParentCategories(),
                 fetchAllWarehouses()
@@ -254,15 +253,6 @@ const RequestOrderModal = ({
         }
     };
 
-    const fetchItemTypes = async () => {
-        try {
-            const data = await itemTypeService.getAll();
-            setItemTypes(Array.isArray(data) ? data : []);
-        } catch (err) {
-            console.error('Error fetching item types:', err);
-            setItemTypes([]);
-        }
-    };
 
     const fetchEmployees = async () => {
         try {
