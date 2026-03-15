@@ -201,7 +201,6 @@ export const siteService = {
 
     assignPartner: async (siteId, partnerId, percentage) => {
         try {
-            console.log(`Assigning partner ${partnerId} with ${percentage}% to site ${siteId}`);
 
             const response = await apiClient.post(
                 SITE_ENDPOINTS.ADMIN.ASSIGN_PARTNER(siteId, partnerId),
@@ -338,9 +337,7 @@ export const siteService = {
 // FIXED - Add proper response handling:
     getAvailableWarehouseWorkers: async () => {
         try {
-            console.log("Fetching available warehouse workers...");
             const response = await apiClient.get(SITE_ENDPOINTS.ADMIN.getAvailableWarehouseWorkers);
-            console.log("Available warehouse workers response:", response.data);
             return response;
         } catch (error) {
             console.error("Error fetching available warehouse workers:", error);
@@ -351,9 +348,7 @@ export const siteService = {
 // Get available warehouse workers for a specific site
     getAvailableWarehouseWorkersForSite: async (siteId) => {
         try {
-            console.log(`Fetching available warehouse workers for site ${siteId}...`);
             const response =  await apiClient.get(SITE_ENDPOINTS.ADMIN.getAvailableWarehouseWorkersForSite(siteId));
-            console.log("Site warehouse workers response:", response.data);
             return response;
         } catch (error) {
             console.error(`Error fetching warehouse workers for site ${siteId}:`, error);

@@ -67,8 +67,6 @@ export const ThemeProvider = ({ children }) => {
           newTheme === 'dark' ? '#1e1e1e' : '#f9f9f9');
     }
 
-    // Log for debugging
-    console.log('Theme changed to:', newTheme);
   };
 
   // Toggle between light and dark theme

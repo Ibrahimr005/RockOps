@@ -34,7 +34,7 @@ public class IncomingPaymentRequestController {
                     incomingPaymentRequestService.getAllIncomingPaymentRequests();
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
-            System.err.println("Error fetching incoming payment requests: " + e.getMessage());
+            // Error fetching incoming payment requests
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -51,7 +51,7 @@ public class IncomingPaymentRequestController {
                     incomingPaymentRequestService.getIncomingPaymentRequestsByStatus(status);
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
-            System.err.println("Error fetching incoming payment requests by status: " + e.getMessage());
+            // Error fetching incoming payment requests by status
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -68,7 +68,7 @@ public class IncomingPaymentRequestController {
                     incomingPaymentRequestService.getIncomingPaymentRequestsBySource(source);
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
-            System.err.println("Error fetching incoming payment requests by source: " + e.getMessage());
+            // Error fetching incoming payment requests by source
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -87,7 +87,7 @@ public class IncomingPaymentRequestController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("message", e.getMessage(), "success", false));
         } catch (Exception e) {
-            System.err.println("Error fetching incoming payment request: " + e.getMessage());
+            // Error fetching incoming payment request
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Error fetching incoming payment request", "success", false));
@@ -117,7 +117,7 @@ public class IncomingPaymentRequestController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", e.getMessage(), "success", false));
         } catch (Exception e) {
-            System.err.println("Error confirming incoming payment: " + e.getMessage());
+            // Error confirming incoming payment
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Error confirming incoming payment", "success", false));

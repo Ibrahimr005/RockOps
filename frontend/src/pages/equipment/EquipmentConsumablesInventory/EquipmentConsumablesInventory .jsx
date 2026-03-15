@@ -154,52 +154,24 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId}, ref) => {
             }
             
             setConsumables(response.data);
-            console.log(`Consumables data for ${activeTab}:`, response.data);
-
             setLoading(false);
         } catch (err) {
             console.error('Error fetching consumables inventory:', err);
-            setError(err.message);
+            setError('Failed to load consumables inventory. Please try again.');
             setLoading(false);
         }
     };
 
     const fetchConsumableHistory = async (consumableId) => {
         try {
-            console.log("🔍 [FETCH-HISTORY] Fetching consumable history for ID:", consumableId);
             const response = await consumableService.getConsumableHistory(consumableId);
-            console.log("✅ [FETCH-HISTORY] Fetched consumable history raw response:", response.data);
-            
+
             // Handle new response format with both transactions and resolutions
             if (response.data.transactions) {
-                console.log("📊 [FETCH-HISTORY] Found transactions:", response.data.transactions.length);
-                console.log("📊 [FETCH-HISTORY] Found resolutions:", response.data.resolutions?.length || 0);
-                
-                // Log detailed transaction item data
-                response.data.transactions.forEach((transaction, index) => {
-                    console.log(`📊 [FETCH-HISTORY] Transaction ${index + 1}:`, {
-                        id: transaction.id,
-                        batchNumber: transaction.batchNumber,
-                        status: transaction.status,
-                        items: transaction.items?.map(item => ({
-                            id: item.id,
-                            itemTypeName: item.itemTypeName,
-                            status: item.status,
-                            quantity: item.quantity,
-                            receivedQuantity: item.receivedQuantity,
-                            equipmentReceivedQuantity: item.equipmentReceivedQuantity,
-                            isResolved: item.isResolved,
-                            resolutionType: item.resolutionType,
-                            fullyResolved: item.fullyResolved
-                        }))
-                    });
-                });
-                
                 setConsumableHistory(response.data.transactions);
                 setConsumableResolutions(response.data.resolutions || []);
             } else {
                 // Fallback for old format
-                console.log("📊 [FETCH-HISTORY] Using fallback format");
                 setConsumableHistory(response.data);
                 setConsumableResolutions([]);
             }

@@ -8,8 +8,8 @@ import AttendanceMonthlyView from './components/AttendanceMonthlyView';
 import AttendanceSummaryCard from './components/AttendanceSummaryCard';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './attendance.scss';
-import { siteService } from '../../../services/siteService';
 import { attendanceService } from '../../../services/hr/attendanceService.js';
+import { useSites } from '../../../hooks/queries';
 import ContentLoader from "../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const AttendancePage = () => {
@@ -20,7 +20,7 @@ const AttendancePage = () => {
     const [saving, setSaving] = useState(false);
 
     // Data states
-    const [sites, setSites] = useState([]);
+    const { data: sites = [] } = useSites();
     const [selectedSite, setSelectedSite] = useState('');
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -105,28 +105,12 @@ const AttendancePage = () => {
         };
     }, [hasUnsavedChanges]);
 
-    // Fetch sites on component mount
-    useEffect(() => {
-        fetchSites();
-    }, []);
-
     // Fetch attendance when site or month changes
     useEffect(() => {
         if (selectedSite) {
             fetchMonthlyAttendance();
         }
     }, [selectedSite, selectedMonth, selectedYear]);
-
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            const data = response.data || response;
-            setSites(data);
-        } catch (error) {
-            console.error('Error fetching sites:', error);
-            showSnackbar('Failed to load sites', 'error');
-        }
-    };
 
     const fetchMonthlyAttendance = async () => {
         setLoading(true);
@@ -226,7 +210,6 @@ const AttendancePage = () => {
                 });
             });
 
-            console.log('Saving attendance updates grouped by date:', recordsByDate);
 
             let totalSaved = 0;
             for (const [date, attendanceRecords] of recordsByDate) {
@@ -236,7 +219,6 @@ const AttendancePage = () => {
                     attendanceRecords: attendanceRecords
                 };
 
-                console.log('Sending bulk request for date:', date, bulkData);
 
                 await attendanceService.bulkSaveAttendance(bulkData);
                 totalSaved += attendanceRecords.length;

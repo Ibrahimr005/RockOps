@@ -3,8 +3,10 @@ import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import { Button, CloseButton } from '../../../components/common/Button';
 import "./WarehouseViewItemCategories.scss";
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
+import { useItemCategories } from '../../../hooks/queries';
 
 const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
+    const { data: parentCategoriesData = [], isLoading: categoriesLoading, isError, refetch: refetchCategories } = useItemCategories();
     const [parentCategories, setParentCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -17,25 +19,16 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const modalRef = useRef(null);
 
+    // Sync React Query data to local state
     useEffect(() => {
-        const fetchParentCategories = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const data = await itemCategoryService.getParents();
-                // console.log("dataaaa:" + JSON.stringify(data, null, 2));
-                setParentCategories(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error("Error fetching parent categories:", error);
-                setError(error.message);
-                setParentCategories([]);
-            } finally {
-                setLoading(false);
-            }
-        };
+        setParentCategories(Array.isArray(parentCategoriesData) ? parentCategoriesData : []);
+    }, [parentCategoriesData]);
 
-        fetchParentCategories();
-    }, []);
+    useEffect(() => {
+        if (isError) {
+            setError('Failed to load parent categories. Please try again.');
+        }
+    }, [isError]);
 
     useEffect(() => {
         if (isModalOpen) {
@@ -114,16 +107,8 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                 "success"
             );
 
-            // Refresh local list
-            const fetchData = async () => {
-                try {
-                    const data = await itemCategoryService.getParents();
-                    setParentCategories(Array.isArray(data) ? data : []);
-                } catch (error) {
-                    console.error("Error refreshing categories:", error);
-                }
-            };
-            fetchData();
+            // Refresh local list via React Query
+            refetchCategories();
 
         } catch (error) {
             console.error("Error saving category:", error);
@@ -232,7 +217,7 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
             <DataTable
                 data={parentCategories}
                 columns={columns}
-                loading={loading}
+                loading={loading || categoriesLoading}
                 emptyMessage="No parent categories found"
                 actions={actions}
                 className="parent-categories-table"

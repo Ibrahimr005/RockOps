@@ -17,9 +17,8 @@ import ModifyRequestItemsModal from './ModifyRequestItems/ModifyRequestItemsModa
 import RFQExportDialog from './RFQExportDialog/RFQExportDialog.jsx';
 import RFQImportDialog from './RFQImportDialog/RFQImportDialog.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
-import { procurementService } from '../../../../services/procurement/procurementService.js';
 import { offerRequestItemService } from '../../../../services/procurement/offerRequestItemService.js';
-import { itemTypeService } from '../../../../services/itemTypeService.js';
+import { useItemTypes, useMerchants } from '../../../../hooks/queries';
 
 const InProgressOffers = ({
     offers,
@@ -33,14 +32,14 @@ const InProgressOffers = ({
     onDeleteOffer
 }) => {
     // State for InProgress tab
-    const [merchants, setMerchants] = useState([]);
+    const { data: merchants = [] } = useMerchants();
     const [selectedRequestItem, setSelectedRequestItem] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
     const [selectedOfferItem, setSelectedOfferItem] = useState(null);
 
     // NEW: RFQ related states
-    const [itemTypes, setItemTypes] = useState([]);
+    const { data: itemTypes = [] } = useItemTypes();
     const [requestItems, setRequestItems] = useState([]);
     const [showModifyItemsModal, setShowModifyItemsModal] = useState(false);
     const [showExportDialog, setShowExportDialog] = useState(false);
@@ -69,40 +68,9 @@ const InProgressOffers = ({
     const [showDeleteOfferConfirm, setShowDeleteOfferConfirm] = useState(false);
     const [isDeletingOffer, setIsDeletingOffer] = useState(false);
 
-    // Fetch merchants for dropdown
-    useEffect(() => {
-        const fetchMerchants = async () => {
-            try {
-                const response = await procurementService.getAllMerchants();
-                const merchantsData = response.data || response;
-                setMerchants(Array.isArray(merchantsData) ? merchantsData : []);
-            } catch (error) {
-                console.error('Error fetching merchants:', error);
-                showSnackbar('error', 'Failed to load merchants. Please try again.');
-            }
-        };
-
-        fetchMerchants();
-    }, []);
+    // Merchants data provided by useMerchants() hook
 
 
-    useEffect(() => {
-        const fetchItemTypes = async () => {
-            try {
-                const response = await itemTypeService.getAll();
-
-                // Extract data array from response
-                const data = response.data || response;
-
-                setItemTypes(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error('Error fetching item types:', error);
-                setItemTypes([]);
-            }
-        };
-
-        fetchItemTypes();
-    }, []);
 
     // NEW: RFQ Handlers
     const handleModifyItems = async () => {
@@ -186,12 +154,9 @@ const InProgressOffers = ({
                 status: 'SUBMITTED'
             };
 
-            console.log("🚀 Submitting offer:", offer.id);
-            console.log("🚀 Submitted offer data:", submittedOffer);
 
             if (handleOfferStatusChange) {
                 await handleOfferStatusChange(offer.id, 'SUBMITTED', submittedOffer);
-                console.log("✅ handleOfferStatusChange completed");
             }
 
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
@@ -548,13 +513,11 @@ const InProgressOffers = ({
 
     // Helper function to show snackbar
     const showSnackbar = (type, message) => {
-        console.log("🔔 showSnackbar called with:", type, message);
         setSnackbar({
             show: true,
             type,
             message
         });
-        console.log("🔔 Snackbar state updated");
     };
 
     // Helper function to hide snackbar
@@ -612,14 +575,8 @@ const InProgressOffers = ({
 
     useEffect(() => {
         if (activeOffer && activeOffer.offerItems) {
-            console.log("=== ACTIVE OFFER DEBUG ===");
-            console.log("Active Offer:", activeOffer);
-            console.log("Offer Items:", activeOffer.offerItems);
-            console.log("First offer item:", activeOffer.offerItems[0]);
             if (activeOffer.offerItems[0]) {
-                console.log("Delivery days:", activeOffer.offerItems[0].estimatedDeliveryDays);
             }
-            console.log("========================");
         }
     }, [activeOffer]);
 

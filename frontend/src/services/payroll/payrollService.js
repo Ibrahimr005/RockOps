@@ -57,7 +57,6 @@ export const payrollService = {
     // ========================================
     getLatestPayroll: async () => {
         try {
-            console.log('Fetching latest payroll');
             const response = await apiClient.get(`${PAYROLL_ENDPOINTS.BASE}/latest`);
             return response.data; // Might be empty if no content
         } catch (error) {
@@ -67,9 +66,7 @@ export const payrollService = {
     },
     getAllPayrolls: async () => {
         try {
-            console.log('Fetching all payroll cycles');
             const response = await apiClient.get(PAYROLL_ENDPOINTS.BASE);
-            console.log('Get all payrolls response:', response);
             return response.data;
         } catch (error) {
             console.error('Error fetching payroll cycles:', error);
@@ -79,9 +76,7 @@ export const payrollService = {
 
     getPayrollById: async (id) => {
         try {
-            console.log('Fetching payroll by ID:', id);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.BY_ID(id));
-            console.log('Get payroll by ID response:', response);
             return response.data;
         } catch (error) {
             console.error('Error fetching payroll by ID:', error);
@@ -100,9 +95,7 @@ export const payrollService = {
 
     getPayrollByPeriod: async (startDate, endDate) => {
         try {
-            console.log('Fetching payroll for period:', startDate, 'to', endDate);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.BY_PERIOD(startDate, endDate));
-            console.log('Get payroll by period response:', response);
             return response.data;
         } catch (error) {
             console.error('Error fetching payroll by period:', error);
@@ -117,7 +110,6 @@ export const payrollService = {
 
     createPayroll: async (payrollData) => {
         try {
-            console.log('Creating payroll:', payrollData);
 
             const username = localStorage.getItem('username') || 'admin';
             const requestData = {
@@ -126,7 +118,6 @@ export const payrollService = {
             };
 
             const response = await apiClient.post(PAYROLL_ENDPOINTS.BASE, requestData);
-            console.log('Create payroll response:', response);
             return response.data;
         } catch (error) {
             console.error('Error creating payroll:', error);
@@ -143,12 +134,10 @@ export const payrollService = {
 
     deletePayroll: async (id) => {
         try {
-            console.log('Deleting payroll:', id);
             const username = localStorage.getItem('username') || 'admin';
             const response = await apiClient.delete(
                 `${PAYROLL_ENDPOINTS.DELETE(id)}?username=${username}`
             );
-            console.log('Delete payroll response:', response);
             return response.data;
         } catch (error) {
             console.error('Error deleting payroll:', error);
@@ -169,9 +158,7 @@ export const payrollService = {
 
     getPublicHolidays: async (payrollId) => {
         try {
-            console.log('Fetching public holidays for:', payrollId);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.GET_HOLIDAYS(payrollId));
-            console.log('Get holidays response:', response);
             return response.data;
         } catch (error) {
             console.error('Error fetching public holidays:', error);
@@ -186,12 +173,10 @@ export const payrollService = {
 
     addPublicHolidays: async (payrollId, holidays) => {
         try {
-            console.log('Adding public holidays:', payrollId, holidays);
             const response = await apiClient.post(
                 PAYROLL_ENDPOINTS.ADD_HOLIDAYS(payrollId),
                 holidays
             );
-            console.log('Add holidays response:', response);
             return response.data;
         } catch (error) {
             console.error('Error adding public holidays:', error);
@@ -210,11 +195,8 @@ export const payrollService = {
 
     importAttendance: async (payrollId) => {
         try {
-            console.log('🔵 Importing attendance for payroll:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.IMPORT_ATTENDANCE(payrollId));
 
-            console.log('✅ Import response:', response);
-            console.log('📊 Import data:', response.data);
 
             return response.data;
 
@@ -233,10 +215,7 @@ export const payrollService = {
 
     getAttendanceStatus: async (payrollId) => {
         try {
-            console.log('Fetching attendance status for:', payrollId);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.ATTENDANCE_STATUS(payrollId));
-            console.log('Attendance status response:', response);
-            console.log('Attendance status data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching attendance status:', error);
@@ -251,9 +230,7 @@ export const payrollService = {
 
     finalizeAttendance: async (payrollId) => {
         try {
-            console.log('Finalizing attendance for payroll:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.FINALIZE_ATTENDANCE(payrollId));
-            console.log('Finalize attendance response:', response);
             return response.data;
         } catch (error) {
             console.error('Error finalizing attendance:', error);
@@ -270,9 +247,7 @@ export const payrollService = {
 
     notifyHR: async (payrollId) => {
         try {
-            console.log('Sending HR notification for payroll:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.NOTIFY_HR(payrollId));
-            console.log('Notify HR response:', response);
             return response.data;
         } catch (error) {
             console.error('Error notifying HR:', error);
@@ -289,9 +264,7 @@ export const payrollService = {
 
     resetAttendanceImport: async (payrollId) => {
         try {
-            console.log('⚠️ RESETTING attendance import for payroll:', payrollId);
             const response = await apiClient.delete(PAYROLL_ENDPOINTS.RESET_ATTENDANCE(payrollId));
-            console.log('Reset attendance response:', response);
             return response.data;
         } catch (error) {
             console.error('Error resetting attendance:', error);
@@ -314,10 +287,7 @@ export const payrollService = {
 
     getLeaveStatus: async (payrollId) => {
         try {
-            console.log('Fetching leave status for:', payrollId);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.LEAVE_STATUS(payrollId));
-            console.log('Leave status response:', response);
-            console.log('Leave status data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching leave status:', error);
@@ -332,10 +302,7 @@ export const payrollService = {
 
     processLeaveReview: async (payrollId) => {
         try {
-            console.log('🔵 Processing leave review for payroll:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.PROCESS_LEAVE_REVIEW(payrollId));
-            console.log('✅ Process leave response:', response);
-            console.log('📊 Process leave data:', response.data);
             return response.data;
         } catch (error) {
             console.error('❌ Error processing leave review:', error);
@@ -352,9 +319,7 @@ export const payrollService = {
 
     finalizeLeave: async (payrollId) => {
         try {
-            console.log('Finalizing leave review for payroll:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.FINALIZE_LEAVE(payrollId));
-            console.log('Finalize leave response:', response);
             return response.data;
         } catch (error) {
             console.error('Error finalizing leave review:', error);
@@ -371,9 +336,7 @@ export const payrollService = {
 
     notifyHRForLeave: async (payrollId) => {
         try {
-            console.log('Sending HR notification for leave review:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.NOTIFY_HR_LEAVE(payrollId));
-            console.log('Notify HR for leave response:', response);
             return response.data;
         } catch (error) {
             console.error('Error notifying HR for leave:', error);
@@ -390,10 +353,7 @@ export const payrollService = {
 
     getLeaveRequestsForPayroll: async (payrollId) => {
         try {
-            console.log('Fetching leave requests for payroll:', payrollId);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.LEAVE_REQUESTS_FOR_PAYROLL(payrollId));
-            console.log('Leave requests response:', response);
-            console.log('Leave requests data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching leave requests for payroll:', error);
@@ -407,10 +367,7 @@ export const payrollService = {
 
     getEmployeePayrolls: async (payrollId) => {
         try {
-            console.log('Fetching employee payrolls for:', payrollId);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.EMPLOYEE_PAYROLLS(payrollId));
-            console.log('Get employee payrolls response:', response);
-            console.log('Get employee payrolls data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching employee payrolls:', error);
@@ -420,11 +377,9 @@ export const payrollService = {
 
     getEmployeePayroll: async (payrollId, employeeId) => {
         try {
-            console.log('Fetching employee payroll:', payrollId, employeeId);
             const response = await apiClient.get(
                 PAYROLL_ENDPOINTS.EMPLOYEE_PAYROLL(payrollId, employeeId)
             );
-            console.log('Get employee payroll response:', response);
             return response.data;
         } catch (error) {
             console.error('Error fetching employee payroll:', error);
@@ -451,12 +406,10 @@ export const payrollService = {
 
     moveToLeaveReview: async (payrollId) => {
         try {
-            console.log('Moving to leave review:', payrollId);
             const username = localStorage.getItem('username') || 'admin';
             const response = await apiClient.post(
                 `${PAYROLL_ENDPOINTS.LEAVE_REVIEW(payrollId)}?username=${username}`
             );
-            console.log('Leave review response:', response);
             return response.data;
         } catch (error) {
             console.error('Error moving to leave review:', error);
@@ -466,12 +419,10 @@ export const payrollService = {
 
     moveToOvertimeReview: async (payrollId) => {
         try {
-            console.log('Moving to overtime review:', payrollId);
             const username = localStorage.getItem('username') || 'admin';
             const response = await apiClient.post(
                 `${PAYROLL_ENDPOINTS.OVERTIME_REVIEW(payrollId)}?username=${username}`
             );
-            console.log('Overtime review response:', response);
             return response.data;
         } catch (error) {
             console.error('Error moving to overtime review:', error);
@@ -481,12 +432,10 @@ export const payrollService = {
 
     confirmAndLock: async (payrollId) => {
         try {
-            console.log('Confirming and locking payroll:', payrollId);
             const username = localStorage.getItem('username') || 'admin';
             const response = await apiClient.post(
                 `${PAYROLL_ENDPOINTS.CONFIRM_LOCK(payrollId)}?username=${username}`
             );
-            console.log('Confirm and lock response:', response);
             return response.data;
         } catch (error) {
             console.error('Error confirming and locking payroll:', error);
@@ -501,10 +450,8 @@ export const payrollService = {
 
     transitionState: async (payrollId, endpoint, actionName) => {
         try {
-            console.log(`Transitioning payroll state: ${actionName}`, payrollId);
             const username = localStorage.getItem('username') || 'admin';
             const response = await apiClient.post(`${endpoint}?username=${username}`);
-            console.log(`${actionName} response:`, response);
             return response.data;
         } catch (error) {
             console.error(`Error during ${actionName}:`, error);
@@ -528,10 +475,7 @@ export const payrollService = {
 
     getOvertimeStatus: async (payrollId) => {
         try {
-            console.log('Fetching overtime status for:', payrollId);
             const response = await apiClient.get(`/api/v1/payroll/${payrollId}/overtime-status`);
-            console.log('Overtime status response:', response);
-            console.log('Overtime status data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching overtime status:', error);
@@ -546,10 +490,7 @@ export const payrollService = {
 
     processOvertimeReview: async (payrollId) => {
         try {
-            console.log('🔵 Processing overtime review for payroll:', payrollId);
             const response = await apiClient.post(`/api/v1/payroll/${payrollId}/process-overtime-review`);
-            console.log('✅ Process overtime response:', response);
-            console.log('📊 Process overtime data:', response.data);
             return response.data;
         } catch (error) {
             console.error('❌ Error processing overtime review:', error);
@@ -566,9 +507,7 @@ export const payrollService = {
 
     finalizeOvertime: async (payrollId) => {
         try {
-            console.log('Finalizing overtime review for payroll:', payrollId);
             const response = await apiClient.post(`/api/v1/payroll/${payrollId}/finalize-overtime`);
-            console.log('Finalize overtime response:', response);
             return response.data;
         } catch (error) {
             console.error('Error finalizing overtime review:', error);
@@ -585,9 +524,7 @@ export const payrollService = {
 
     notifyHRForOvertime: async (payrollId) => {
         try {
-            console.log('Sending HR notification for overtime review:', payrollId);
             const response = await apiClient.post(`/api/v1/payroll/${payrollId}/notify-hr-overtime`);
-            console.log('Notify HR for overtime response:', response);
             return response.data;
         } catch (error) {
             console.error('Error notifying HR for overtime:', error);
@@ -604,10 +541,7 @@ export const payrollService = {
 
     getOvertimeRecordsForPayroll: async (payrollId) => {
         try {
-            console.log('Fetching overtime records for payroll:', payrollId);
             const response = await apiClient.get(`/api/v1/payroll/${payrollId}/overtime-records`);
-            console.log('Overtime records response:', response);
-            console.log('Overtime records data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching overtime records for payroll:', error);
@@ -621,10 +555,7 @@ export const payrollService = {
 
     getBonusStatus: async (payrollId) => {
         try {
-            console.log('Fetching bonus status for:', payrollId);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.BONUS_STATUS(payrollId));
-            console.log('Bonus status response:', response);
-            console.log('Bonus status data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching bonus status:', error);
@@ -639,10 +570,7 @@ export const payrollService = {
 
     processBonusReview: async (payrollId) => {
         try {
-            console.log('Processing bonus review for payroll:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.PROCESS_BONUS_REVIEW(payrollId));
-            console.log('Process bonus response:', response);
-            console.log('Process bonus data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error processing bonus review:', error);
@@ -659,9 +587,7 @@ export const payrollService = {
 
     finalizeBonus: async (payrollId) => {
         try {
-            console.log('Finalizing bonus review for payroll:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.FINALIZE_BONUS(payrollId));
-            console.log('Finalize bonus response:', response);
             return response.data;
         } catch (error) {
             console.error('Error finalizing bonus review:', error);
@@ -678,10 +604,7 @@ export const payrollService = {
 
     getBonusSummaries: async (payrollId) => {
         try {
-            console.log('Fetching bonus summaries for payroll:', payrollId);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.BONUS_SUMMARIES(payrollId));
-            console.log('Bonus summaries response:', response);
-            console.log('Bonus summaries data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching bonus summaries for payroll:', error);
@@ -695,10 +618,7 @@ export const payrollService = {
 
     getDeductionStatus: async (payrollId) => {
         try {
-            console.log('Fetching deduction status for:', payrollId);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.DEDUCTION_STATUS(payrollId));
-            console.log('Deduction status response:', response);
-            console.log('Deduction status data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching deduction status:', error);
@@ -713,10 +633,7 @@ export const payrollService = {
 
     processDeductionReview: async (payrollId) => {
         try {
-            console.log('🔵 Processing deduction review for payroll:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.PROCESS_DEDUCTION_REVIEW(payrollId));
-            console.log('✅ Process deduction response:', response);
-            console.log('📊 Process deduction data:', response.data);
             return response.data;
         } catch (error) {
             console.error('❌ Error processing deduction review:', error);
@@ -733,9 +650,7 @@ export const payrollService = {
 
     finalizeDeduction: async (payrollId) => {
         try {
-            console.log('Finalizing deduction review for payroll:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.FINALIZE_DEDUCTION(payrollId));
-            console.log('Finalize deduction response:', response);
             return response.data;
         } catch (error) {
             console.error('Error finalizing deduction review:', error);
@@ -752,9 +667,7 @@ export const payrollService = {
 
     notifyHRForDeduction: async (payrollId) => {
         try {
-            console.log('Sending HR notification for deduction review:', payrollId);
             const response = await apiClient.post(PAYROLL_ENDPOINTS.NOTIFY_HR_DEDUCTION(payrollId));
-            console.log('Notify HR for deduction response:', response);
             return response.data;
         } catch (error) {
             console.error('Error notifying HR for deduction:', error);
@@ -771,10 +684,7 @@ export const payrollService = {
 
     getDeductionSummaries: async (payrollId) => {
         try {
-            console.log('Fetching deduction summaries for payroll:', payrollId);
             const response = await apiClient.get(PAYROLL_ENDPOINTS.DEDUCTION_SUMMARIES(payrollId));
-            console.log('Deduction summaries response:', response);
-            console.log('Deduction summaries data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching deduction summaries for payroll:', error);
@@ -784,12 +694,10 @@ export const payrollService = {
 
     moveToDeductionReview: async (payrollId) => {
         try {
-            console.log('Moving to deduction review:', payrollId);
             const username = localStorage.getItem('username') || 'admin';
             const response = await apiClient.post(
                 `${PAYROLL_ENDPOINTS.DEDUCTION_REVIEW(payrollId)}?username=${username}`
             );
-            console.log('Deduction review response:', response);
             return response.data;
         } catch (error) {
             console.error('Error moving to deduction review:', error);
@@ -803,10 +711,8 @@ export const payrollService = {
 
     markAsPaid: async (payrollId) => {
         try {
-            console.log('🔵 Marking payroll as paid:', payrollId);
             const username = localStorage.getItem('username') || 'admin';
             const response = await apiClient.post(`/api/v1/payroll/${payrollId}/mark-paid?username=${username}`);
-            console.log('✅ Mark as paid response:', response);
             return response.data;
         } catch (error) {
             console.error('❌ Error marking payroll as paid:', error);
@@ -823,13 +729,11 @@ export const payrollService = {
 
     sendToFinance: async (payrollId, paymentSource) => {
         try {
-            console.log('🔵 Sending payroll to finance:', payrollId, paymentSource);
             const response = await apiClient.post(`/api/v1/payroll/${payrollId}/send-to-finance`, {
                 paymentSourceType: paymentSource.type,
                 paymentSourceId: paymentSource.id,
                 paymentSourceName: paymentSource.name
             });
-            console.log('✅ Send to finance response:', response);
             return response.data;
         } catch (error) {
             console.error('❌ Error sending payroll to finance:', error);
@@ -853,9 +757,7 @@ export const payrollService = {
      */
     createBatches: async (payrollId) => {
         try {
-            console.log('🔵 Creating batches for payroll:', payrollId);
             const response = await apiClient.post(`/api/v1/payroll/${payrollId}/create-batches`);
-            console.log('✅ Create batches response:', response);
             return response.data;
         } catch (error) {
             console.error('❌ Error creating batches:', error);
@@ -875,9 +777,7 @@ export const payrollService = {
      */
     getBatches: async (payrollId) => {
         try {
-            console.log('Fetching batches for payroll:', payrollId);
             const response = await apiClient.get(`/api/v1/payroll/${payrollId}/batches`);
-            console.log('Get batches response:', response);
             return response.data;
         } catch (error) {
             console.error('Error fetching batches:', error);
@@ -890,9 +790,7 @@ export const payrollService = {
      */
     sendBatchesToFinance: async (payrollId) => {
         try {
-            console.log('🔵 Sending batches to finance:', payrollId);
             const response = await apiClient.post(`/api/v1/payroll/${payrollId}/send-batches-to-finance`);
-            console.log('✅ Send batches to finance response:', response);
             return response.data;
         } catch (error) {
             console.error('❌ Error sending batches to finance:', error);
@@ -912,9 +810,7 @@ export const payrollService = {
      */
     getEmployeesWithoutPaymentType: async (payrollId) => {
         try {
-            console.log('Fetching employees without payment type:', payrollId);
             const response = await apiClient.get(`/api/v1/payroll/${payrollId}/employees-without-payment-type`);
-            console.log('Employees without payment type response:', response);
             return response.data;
         } catch (error) {
             console.error('Error fetching employees without payment type:', error);
@@ -931,9 +827,7 @@ export const payrollService = {
      */
     getAllPaymentTypes: async () => {
         try {
-            console.log('Fetching all payment types');
             const response = await apiClient.get('/api/v1/payment-types/all');
-            console.log('Payment types response:', response);
             return response.data;
         } catch (error) {
             console.error('Error fetching payment types:', error);
@@ -946,9 +840,7 @@ export const payrollService = {
      */
     getActivePaymentTypes: async () => {
         try {
-            console.log('Fetching active payment types');
             const response = await apiClient.get('/api/v1/payment-types');
-            console.log('Active payment types response:', response);
             return response.data;
         } catch (error) {
             console.error('Error fetching active payment types:', error);
@@ -961,9 +853,7 @@ export const payrollService = {
      */
     createPaymentType: async (paymentTypeData) => {
         try {
-            console.log('Creating payment type:', paymentTypeData);
             const response = await apiClient.post('/api/v1/payment-types', paymentTypeData);
-            console.log('Create payment type response:', response);
             return response.data;
         } catch (error) {
             console.error('Error creating payment type:', error);
@@ -981,9 +871,7 @@ export const payrollService = {
      */
     updatePaymentType: async (paymentTypeId, paymentTypeData) => {
         try {
-            console.log('Updating payment type:', paymentTypeId, paymentTypeData);
             const response = await apiClient.put(`/api/v1/payment-types/${paymentTypeId}`, paymentTypeData);
-            console.log('Update payment type response:', response);
             return response.data;
         } catch (error) {
             console.error('Error updating payment type:', error);
@@ -1001,9 +889,7 @@ export const payrollService = {
      */
     deactivatePaymentType: async (paymentTypeId) => {
         try {
-            console.log('Deactivating payment type:', paymentTypeId);
             const response = await apiClient.post(`/api/v1/payment-types/${paymentTypeId}/deactivate`);
-            console.log('Deactivate payment type response:', response);
             return response.data;
         } catch (error) {
             console.error('Error deactivating payment type:', error);
@@ -1019,9 +905,7 @@ export const payrollService = {
      */
     activatePaymentType: async (paymentTypeId) => {
         try {
-            console.log('Activating payment type:', paymentTypeId);
             const response = await apiClient.post(`/api/v1/payment-types/${paymentTypeId}/activate`);
-            console.log('Activate payment type response:', response);
             return response.data;
         } catch (error) {
             console.error('Error activating payment type:', error);
@@ -1037,12 +921,10 @@ export const payrollService = {
      */
     updateEmployeePaymentType: async (employeeId, paymentTypeId, bankDetails = {}) => {
         try {
-            console.log('Updating employee payment type:', employeeId, paymentTypeId);
             const response = await apiClient.put(`/api/v1/employees/${employeeId}/payment-type`, {
                 paymentTypeId,
                 ...bankDetails
             });
-            console.log('Update employee payment type response:', response);
             return response.data;
         } catch (error) {
             console.error('Error updating employee payment type:', error);

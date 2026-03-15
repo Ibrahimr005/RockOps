@@ -89,6 +89,9 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
     // Dashboard metrics methods
     long countByItemStatus(ItemStatus itemStatus);
 
+    @Query("SELECT i.itemStatus, COUNT(i) FROM Item i GROUP BY i.itemStatus")
+    List<Object[]> countGroupByItemStatus();
+
     // NEW METHODS - ADD THESE:
 
     /**

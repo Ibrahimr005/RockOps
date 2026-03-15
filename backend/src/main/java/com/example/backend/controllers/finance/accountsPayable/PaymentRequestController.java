@@ -146,17 +146,12 @@ public class PaymentRequestController {
             @PathVariable UUID offerId,
             @RequestBody(required = false) Map<String, String> body) {
         try {
-            System.out.println("🔵 Controller: Creating payment request");
-            System.out.println("🔵 PO ID: " + purchaseOrderId);
-            System.out.println("🔵 Offer ID: " + offerId);
+            log.debug("Creating payment request - PO: {}, Offer: {}", purchaseOrderId, offerId);
 
             // Get username from body or use "system"
             String username = "system";
             if (body != null && body.containsKey("username")) {
                 username = body.get("username");
-                System.out.println("🔵 Username from body: " + username);
-            } else {
-                System.out.println("⚠️ No username in body, using: system");
             }
 
             PaymentRequestResponseDTO paymentRequest = paymentRequestService.createPaymentRequestFromPO(
@@ -165,20 +160,18 @@ public class PaymentRequestController {
                     username
             );
 
-            System.out.println("✅ Payment request created: " + paymentRequest.getRequestNumber());
+            log.info("Payment request created: {}", paymentRequest.getRequestNumber());
             return ResponseEntity.ok(paymentRequest);
 
         } catch (RuntimeException e) {
-            System.err.println("❌ Runtime error: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Runtime error creating payment request", e);
             return ResponseEntity.badRequest().body(Map.of(
                     "error", e.getMessage(),
                     "purchaseOrderId", purchaseOrderId.toString(),
                     "offerId", offerId.toString()
             ));
         } catch (Exception e) {
-            System.err.println("❌ Server error: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Server error creating payment request", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error creating payment request: " + e.getMessage()));
         }

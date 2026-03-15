@@ -35,7 +35,7 @@ const HRDashboard = () => {
                 setError(null);
             } catch (err) {
                 console.error('Error fetching dashboard data:', err);
-                setError(err.message);
+                setError('Failed to load dashboard data. Please try again.');
             } finally {
                 setLoading(false);
             }

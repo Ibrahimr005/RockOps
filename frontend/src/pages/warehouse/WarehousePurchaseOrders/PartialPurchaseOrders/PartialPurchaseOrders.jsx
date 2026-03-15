@@ -32,7 +32,6 @@ const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
                 order.status === 'PARTIAL' && order.requestOrder?.requesterId === warehouseId
             );
 
-            console.log("filtered partial orders for warehouse:", filteredOrders);
 
             setPartialOrders(filteredOrders);
         } catch (error) {

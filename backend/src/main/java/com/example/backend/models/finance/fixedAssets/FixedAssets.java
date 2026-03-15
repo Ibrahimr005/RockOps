@@ -1,7 +1,7 @@
 package com.example.backend.models.finance.fixedAssets;
 
 import com.example.backend.models.site.Site;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -73,8 +73,7 @@ public class FixedAssets
 
     @ManyToOne
     @JoinColumn(name = "site_id", referencedColumnName = "id")
-    //@JsonIgnore
-    @JsonManagedReference
+    @JsonBackReference
     private Site site;
 
 }

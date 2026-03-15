@@ -353,7 +353,6 @@ const SiteWarehousesTab = ({siteId}) => {
             const response = await siteService.getSiteWarehouses(siteId);
             const data = response.data;
 
-            console.log("Warehouse data from API:", data);
 
             if (Array.isArray(data)) {
                 // For each warehouse, fetch full details to get employee information
@@ -364,7 +363,6 @@ const SiteWarehousesTab = ({siteId}) => {
                             const detailResponse = await warehouseService.getById(warehouse.id);
                             const fullWarehouseData = detailResponse.data || detailResponse;
 
-                            console.log(`Full details for ${warehouse.name}:`, fullWarehouseData);
 
                             return {
                                 conventionalId: `WH-${String(index + 1).padStart(3, '0')}`,
@@ -414,7 +412,6 @@ const SiteWarehousesTab = ({siteId}) => {
 
 // Enhanced findManagerName function with detailed employee debugging
     const findManagerName = (warehouse) => {
-        console.log("Finding manager for warehouse:", warehouse.name);
 
         // Check if managerName is directly available
         if (warehouse.managerName) {
@@ -423,46 +420,32 @@ const SiteWarehousesTab = ({siteId}) => {
 
         // Check if employees array exists and has data
         if (warehouse.employees && Array.isArray(warehouse.employees) && warehouse.employees.length > 0) {
-            console.log("Employees found:", warehouse.employees.length);
 
             // Debug: Log each employee's complete structure
             warehouse.employees.forEach((emp, index) => {
-                console.log(`Employee ${index + 1} complete structure:`, JSON.stringify(emp, null, 2));
-                console.log(`Employee ${index + 1} keys:`, Object.keys(emp));
 
                 // Check all possible position-related fields
-                console.log(`Employee ${index + 1} position fields:`, {
-                    jobPosition: emp.jobPosition,
-                    position: emp.position,
-                    role: emp.role,
-                    jobTitle: emp.jobTitle,
-                    positionName: emp.positionName
-                });
             });
 
             // Try multiple ways to find the manager
             const manager = warehouse.employees.find(emp => {
-                console.log(`Checking employee: ${emp.firstName} ${emp.lastName}`);
 
                 // Method 0: Check if employee.name contains manager info
                 if (emp.name) {
                     const nameMatch = emp.name.toLowerCase().includes("warehouse manager") ||
                         emp.name.toLowerCase().includes("manager");
-                    console.log(`Method 0 - name field: "${emp.name}" -> ${nameMatch}`);
                     if (nameMatch) return true;
                 }
 
                 // Method 1: jobPosition.positionName
                 if (emp.jobPosition?.positionName) {
                     const positionMatch = emp.jobPosition.positionName.toLowerCase() === "warehouse manager";
-                    console.log(`Method 1 - jobPosition.positionName: "${emp.jobPosition.positionName}" -> ${positionMatch}`);
                     if (positionMatch) return true;
                 }
 
                 // Method 2: direct position field
                 if (emp.position) {
                     const positionMatch = emp.position.toLowerCase() === "warehouse manager";
-                    console.log(`Method 2 - position: "${emp.position}" -> ${positionMatch}`);
                     if (positionMatch) return true;
                 }
 
@@ -470,21 +453,18 @@ const SiteWarehousesTab = ({siteId}) => {
                 if (emp.role) {
                     const roleMatch = emp.role.toLowerCase() === "warehouse_manager" ||
                         emp.role.toLowerCase() === "warehouse manager";
-                    console.log(`Method 3 - role: "${emp.role}" -> ${roleMatch}`);
                     if (roleMatch) return true;
                 }
 
                 // Method 4: jobTitle field
                 if (emp.jobTitle) {
                     const titleMatch = emp.jobTitle.toLowerCase() === "warehouse manager";
-                    console.log(`Method 4 - jobTitle: "${emp.jobTitle}" -> ${titleMatch}`);
                     if (titleMatch) return true;
                 }
 
                 // Method 5: positionName field (direct)
                 if (emp.positionName) {
                     const nameMatch = emp.positionName.toLowerCase() === "warehouse manager";
-                    console.log(`Method 5 - positionName: "${emp.positionName}" -> ${nameMatch}`);
                     if (nameMatch) return true;
                 }
 
@@ -494,10 +474,8 @@ const SiteWarehousesTab = ({siteId}) => {
             if (manager) {
                 // Use the name field directly since firstName/lastName don't exist in this API response
                 const managerName = manager.name || `${manager.firstName || ''} ${manager.lastName || ''}`.trim() || 'Unknown Manager';
-                console.log("Found manager:", managerName);
                 return managerName;
             } else {
-                console.log("No manager found with any of the search methods");
             }
         }
 
@@ -510,15 +488,11 @@ const SiteWarehousesTab = ({siteId}) => {
             // Fetch available managers (not assigned to any warehouse)
             const managersResponse = await siteService.getAvailableWarehouseManagers();
             const managersData = managersResponse.data?.data || managersResponse.data || [];
-            console.log("Managers response:", managersResponse);
-            console.log("Managers data:", managersData);
             setManagers(Array.isArray(managersData) ? managersData : []);
 
             // Fetch available workers (not assigned to any warehouse and not warehouse managers)
             const workersResponse = await siteService.getAvailableWarehouseWorkers();
             const workersData = workersResponse.data?.data || workersResponse.data || [];
-            console.log("Workers response:", workersResponse);
-            console.log("Workers data:", workersData);
             setWorkers(Array.isArray(workersData) ? workersData : []);
 
             if (managersData.length === 0 && workersData.length === 0) {
@@ -544,9 +518,7 @@ const SiteWarehousesTab = ({siteId}) => {
 
     const fetchEditManagers = async (warehouseToEdit = null) => {
         try {
-            console.log("=== FETCH EDIT MANAGERS DEBUG ===");
             const targetWarehouse = warehouseToEdit || editingWarehouse;
-            console.log("targetWarehouse:", targetWarehouse);
 
             // Get available managers and current warehouse's manager
             const managersResponse = await siteService.getAvailableWarehouseManagers();
@@ -559,7 +531,6 @@ const SiteWarehousesTab = ({siteId}) => {
 
             // If we're editing a warehouse and it has a current manager, include that manager
             if (targetWarehouse && targetWarehouse.employees) {
-                console.log("targetWarehouse.employees:", targetWarehouse.employees);
 
                 const currentManager = targetWarehouse.employees.find(emp => {
                     const isManager = (emp.jobPosition?.positionName?.toLowerCase() === "warehouse manager") ||
@@ -567,11 +538,9 @@ const SiteWarehousesTab = ({siteId}) => {
                         (emp.role?.toLowerCase() === "warehouse_manager") ||
                         (emp.role?.toLowerCase() === "warehouse manager") ||
                         (emp.name?.toLowerCase().includes("warehouse manager"));
-                    console.log(`Checking ${emp.name}: isManager = ${isManager}, position = ${emp.position}`);
                     return isManager;
                 });
 
-                console.log("currentManager found in fetchEditManagers:", currentManager);
 
                 if (currentManager && !availableManagers.find(m => m.id === currentManager.id)) {
                     // Split name into firstName and lastName since the API only provides 'name'
@@ -581,12 +550,10 @@ const SiteWarehousesTab = ({siteId}) => {
                         firstName: nameParts[0] || 'Unknown',
                         lastName: nameParts.slice(1).join(' ') || 'Manager'
                     };
-                    console.log("Adding current manager to available list:", managerToAdd);
                     availableManagers.push(managerToAdd);
                 }
             }
 
-            console.log("Final editManagers list:", availableManagers);
             setEditManagers(availableManagers);
 
             // Fetch available workers
@@ -610,7 +577,6 @@ const SiteWarehousesTab = ({siteId}) => {
                     return !isManager;
                 });
 
-                console.log("Current workers found:", currentWorkers);
 
                 // Add current workers to available list and selected list
                 const currentWorkerIds = [];
@@ -638,8 +604,6 @@ const SiteWarehousesTab = ({siteId}) => {
                     });
                 });
 
-                console.log("Setting edit selected workers:", currentWorkersFormatted);
-                console.log("Setting edit selected worker IDs:", currentWorkerIds);
 
                 setEditSelectedWorkerIds(currentWorkerIds);
                 setEditSelectedWorkers(currentWorkersFormatted);
@@ -721,22 +685,10 @@ const SiteWarehousesTab = ({siteId}) => {
             setEditPreviewImage(null);
 
             const warehouse = row.originalData;
-            console.log("=== EDIT MODAL DEBUG ===");
-            console.log("Opening edit modal for warehouse:", warehouse);
-            console.log("Warehouse employees:", warehouse.employees);
 
             // Debug: Log each employee's structure
             if (warehouse.employees) {
                 warehouse.employees.forEach((emp, index) => {
-                    console.log(`Employee ${index + 1}:`, {
-                        id: emp.id,
-                        name: emp.name,
-                        firstName: emp.firstName,
-                        lastName: emp.lastName,
-                        jobPosition: emp.jobPosition,
-                        position: emp.position,
-                        role: emp.role
-                    });
                 });
             }
 
@@ -752,7 +704,6 @@ const SiteWarehousesTab = ({siteId}) => {
                 });
             }
 
-            console.log("Found current manager:", currentManager);
 
             // Find current workers (all employees except the manager)
             let currentWorkers = [];
@@ -760,7 +711,6 @@ const SiteWarehousesTab = ({siteId}) => {
                 currentWorkers = warehouse.employees.filter(emp => emp.id !== currentManager?.id);
             }
 
-            console.log("Found current workers:", currentWorkers);
 
             setEditFormData({
                 id: warehouse.id,
@@ -881,15 +831,8 @@ const SiteWarehousesTab = ({siteId}) => {
                 formDataToSend.append("photo", editFormData.photo);
             }
 
-            console.log("Sending warehouse update data:", {
-                id: editFormData.id,
-                warehouseData: warehouseData,
-                hasPhoto: !!editFormData.photo,
-                selectedWorkers: editSelectedWorkers
-            });
 
             const response = await warehouseService.update(editFormData.id, formDataToSend);
-            console.log("Update response:", response);
 
             // Refresh warehouse list
             fetchWarehouses();
@@ -990,8 +933,6 @@ const SiteWarehousesTab = ({siteId}) => {
     // Handle form submission
     const handleAddWarehouse = async (event) => {
         event.preventDefault();
-        console.log("event.currentTarget:", event.currentTarget);
-        console.log("form elements:", event.currentTarget?.elements);
 
         const formElements = event.currentTarget.elements;
         const warehouseName = formElements.name.value.trim();
@@ -1101,7 +1042,6 @@ const SiteWarehousesTab = ({siteId}) => {
             const response = await siteService.getWarehouseEmployees(warehouseId);
             const employees = response.data?.data || [];
 
-            console.log("Warehouse employees fetched:", employees);
             setWarehouseEmployees(Array.isArray(employees) ? employees : []);
         } catch (error) {
             console.error("Error fetching warehouse employees:", error);

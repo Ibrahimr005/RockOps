@@ -3,7 +3,10 @@ package com.example.backend.services;
 import com.example.backend.models.Partner;
 import com.example.backend.repositories.PartnerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,16 +21,20 @@ public class PartnerService
         this.partnerRepository = partnerRepository;
     }
 
+    @Cacheable("partners")
+    @Transactional(readOnly = true)
     public List<Partner> getAllPartners()
     {
         return partnerRepository.findAll();
     }
 
+    @CacheEvict(value = "partners", allEntries = true)
     public Partner savePartner(Partner partner)
     {
         return partnerRepository.save(partner);
     }
 
+    @CacheEvict(value = "partners", allEntries = true)
     public Partner updatePartner(int id, Partner updatedPartner) {
         Partner existingPartner = partnerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Partner not found with id: " + id));
@@ -38,6 +45,7 @@ public class PartnerService
         return partnerRepository.save(existingPartner);
     }
 
+    @CacheEvict(value = "partners", allEntries = true)
     public void deletePartner(int id) {
         // Check if partner exists
         if (!partnerRepository.existsById(id)) {

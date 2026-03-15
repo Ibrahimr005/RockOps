@@ -3,8 +3,6 @@ package com.example.backend.controllers.hr;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.payroll.EmployeePayroll;
 import com.example.backend.models.payroll.PaymentType;
-import com.example.backend.repositories.payroll.EmployeePayrollRepository;
-import com.example.backend.repositories.payroll.PaymentTypeRepository;
 import com.example.backend.services.hr.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,12 +20,6 @@ public class EmployeeController {
 
     @Autowired
     private EmployeeService employeeService;
-
-    @Autowired
-    private PaymentTypeRepository paymentTypeRepository;
-
-    @Autowired
-    private EmployeePayrollRepository employeePayrollRepository;
 
     @GetMapping("/warehouse-workers")
     public List<Employee> getWarehouseWorkers() {
@@ -338,8 +330,7 @@ public class EmployeeController {
             String paymentTypeIdStr = (String) request.get("paymentTypeId");
             if (paymentTypeIdStr != null && !paymentTypeIdStr.isEmpty()) {
                 UUID paymentTypeId = UUID.fromString(paymentTypeIdStr);
-                paymentType = paymentTypeRepository.findById(paymentTypeId)
-                        .orElseThrow(() -> new RuntimeException("Payment type not found"));
+                paymentType = employeeService.getPaymentTypeById(paymentTypeId);
                 employee.setPaymentType(paymentType);
             }
 
@@ -366,7 +357,7 @@ public class EmployeeController {
 
             // Also update EmployeePayroll records in editable payrolls (not yet locked)
             // Using the query that eagerly fetches Payroll to avoid lazy loading issues
-            List<EmployeePayroll> editablePayrolls = employeePayrollRepository.findEditableByEmployeeId(employeeId);
+            List<EmployeePayroll> editablePayrolls = employeeService.findEditablePayrollsByEmployeeId(employeeId);
 
             int updatedPayrollCount = 0;
             for (EmployeePayroll ep : editablePayrolls) {
@@ -382,7 +373,7 @@ public class EmployeeController {
                 ep.setBankAccountHolderName(bankAccountHolderName);
                 ep.setWalletNumber(walletNumber);
 
-                employeePayrollRepository.save(ep);
+                employeeService.saveEmployeePayroll(ep);
                 updatedPayrollCount++;
             }
 

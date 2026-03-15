@@ -243,14 +243,14 @@ const ContactsTab = ({ merchant }) => {
                                     variant="primary"
                                     size="sm"
                                     icon={<FaUser />}
-                                    onClick={() => console.log('View contact', contact.id)}
+                                    onClick={() => {}}
                                     title="View Details"
                                 />
                                 <IconButton
                                     variant="primary"
                                     size="sm"
                                     icon={<FaEdit />}
-                                    onClick={() => console.log('Edit contact', contact.id)}
+                                    onClick={() => {}}
                                     title="Edit Contact"
                                 />
                                 <IconButton

@@ -10,6 +10,8 @@ import com.example.backend.services.FileStorageService;
 import com.example.backend.services.site.SiteAdminService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,6 +26,7 @@ import java.util.*;
 @RequestMapping("/siteadmin")
 public class SiteAdminController
 {
+    private static final Logger log = LoggerFactory.getLogger(SiteAdminController.class);
     private final SiteAdminService siteAdminService;
     //private final fileStorageService fileStorageService;
     private final FileStorageService fileStorageService;
@@ -75,8 +78,7 @@ public class SiteAdminController
             errorResponse.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
-            System.err.println("Error deleting site: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error deleting site: {}", e.getMessage(), e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Internal server error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
@@ -116,8 +118,7 @@ public class SiteAdminController
             @RequestParam("siteData") String siteDataJson,
             @RequestParam(value = "photo", required = false) MultipartFile photo) {
         try {
-            // Log request
-            System.out.println("Received update request for site ID: " + id);
+            log.debug("Received update request for site ID: {}", id);
 
             // Convert JSON String to a Map
             ObjectMapper objectMapper = new ObjectMapper();
@@ -135,7 +136,7 @@ public class SiteAdminController
 
             return ResponseEntity.ok(updatedSite);
         } catch (RuntimeException e) {
-            System.err.println("Error updating site: " + e.getMessage());
+            log.error("Error updating site: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
@@ -148,50 +149,40 @@ public class SiteAdminController
             @PathVariable UUID siteId,
             @PathVariable UUID equipmentId) {
 
-        System.out.println("=== Controller: Equipment Assignment Request ===");
-        System.out.println("Site ID: " + siteId);
-        System.out.println("Equipment ID: " + equipmentId);
+        log.debug("Equipment assignment request - Site: {}, Equipment: {}", siteId, equipmentId);
 
         try {
             // Pre-flight checks
             if (!siteAdminService.siteExists(siteId)) {
-                System.err.println("Site not found: " + siteId);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Site with ID " + siteId + " not found");
             }
 
             if (!siteAdminService.equipmentExists(equipmentId)) {
-                System.err.println("Equipment not found: " + equipmentId);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Equipment with ID " + equipmentId + " not found");
             }
 
-            System.out.println("Pre-flight checks passed, calling service...");
-
             Equipment updatedEquipment = siteAdminService.assignEquipmentToSite(siteId, equipmentId);
-
-            System.out.println("Service call successful");
             return ResponseEntity.ok(updatedEquipment);
 
         } catch (IllegalArgumentException e) {
-            System.err.println("Invalid argument: " + e.getMessage());
+            log.warn("Invalid argument assigning equipment: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Invalid request: " + e.getMessage());
 
         } catch (IllegalStateException e) {
-            System.err.println("Invalid state: " + e.getMessage());
+            log.warn("Invalid state assigning equipment: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("Conflict: " + e.getMessage());
 
         } catch (RuntimeException e) {
-            System.err.println("Runtime exception: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Runtime error assigning equipment", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error: " + e.getMessage());
 
         } catch (Exception e) {
-            System.err.println("Unexpected error: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Unexpected error assigning equipment", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Internal server error occurred while assigning equipment");
         }
@@ -267,8 +258,7 @@ public class SiteAdminController
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("Error in getAvailableWarehouseManagers: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error in getAvailableWarehouseManagers", e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
@@ -292,8 +282,7 @@ public class SiteAdminController
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("Error in getAvailableWarehouseManagersForSite: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error in getAvailableWarehouseManagersForSite", e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
@@ -317,8 +306,7 @@ public class SiteAdminController
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("Error in getAvailableWarehouseWorkers: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error in getAvailableWarehouseWorkers", e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
@@ -342,8 +330,7 @@ public class SiteAdminController
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("Error in getAvailableWarehouseWorkersForSite: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error in getAvailableWarehouseWorkersForSite", e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
@@ -376,8 +363,7 @@ public class SiteAdminController
             return ResponseEntity.badRequest().body(errorResponse);
 
         } catch (Exception e) {
-            System.err.println("Error unassigning employee from warehouse: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error unassigning employee from warehouse", e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
@@ -400,8 +386,7 @@ public class SiteAdminController
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("Error fetching warehouse employees: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error fetching warehouse employees", e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);

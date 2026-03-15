@@ -163,7 +163,7 @@ public class AdminService {
     private void checkAdminAccess() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(Role.ADMIN.name()))) {
+                .anyMatch(a -> a.getAuthority().equals("ROLE_" + Role.ADMIN.name()))) {
             throw new AccessDeniedException("Access denied. Admin role required.");
         }
     }

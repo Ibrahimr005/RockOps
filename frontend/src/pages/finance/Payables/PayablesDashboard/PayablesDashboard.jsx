@@ -42,7 +42,6 @@ const PayablesDashboard = () => {
         try {
             setLoading(true);
 
-            console.log('=== FETCHING DASHBOARD DATA ===');
 
             // Fetch all dashboard data using financeService
             const [
@@ -61,14 +60,6 @@ const PayablesDashboard = () => {
                 financeService.invoices.getAgingSummary() // JSON format
             ]);
 
-            console.log('Dashboard data fetched:', {
-                outstanding,
-                overdue,
-                dueWeek,
-                recentInvoices,
-                recentPayments,
-                agingSummary
-            });
 
 // Extract data from Axios responses
             const outstandingData = outstanding.data || outstanding;
@@ -78,13 +69,6 @@ const PayablesDashboard = () => {
             const paymentsData = recentPayments.data || recentPayments;
             const agingData = agingSummary.data || agingSummary;
 
-            console.log('=== EXTRACTED DASHBOARD DATA ===');
-            console.log('Outstanding data:', outstandingData);
-            console.log('Overdue data:', overdueData);
-            console.log('DueWeek data:', dueWeekData);
-            console.log('Invoices data:', invoicesData);
-            console.log('Payments data:', paymentsData);
-            console.log('Aging data:', agingData);
 
 // Extract arrays from responses safely
             let overdueArray = [];
@@ -120,12 +104,6 @@ const PayablesDashboard = () => {
                 paymentsArray = paymentsData.content;
             }
 
-            console.log('Final extracted arrays:', {
-                overdueArray: overdueArray.length,
-                dueWeekArray: dueWeekArray.length,
-                invoicesArray: invoicesArray.length,
-                paymentsArray: paymentsArray.length
-            });
 
 // Calculate total paid this month from recent payments
             const currentMonth = new Date().getMonth();
@@ -148,10 +126,6 @@ const PayablesDashboard = () => {
                 return sum + (parseFloat(payment.amount) || 0);
             }, 0);
 
-            console.log('Calculated totals:', {
-                paymentsThisMonth: paymentsThisMonth.length,
-                totalPaidThisMonth
-            });
 
             setDashboardData({
                 summary: {

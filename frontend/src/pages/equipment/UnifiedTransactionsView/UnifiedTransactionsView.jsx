@@ -122,7 +122,6 @@ const UnifiedTransactionsView = forwardRef(({
                 response = await equipmentService.getAllEquipment();
             } else {
                 // For other entity types, we'll need to add specific services
-                console.warn(`No service found for entity type: ${entityType}`);
                 return [];
             }
 

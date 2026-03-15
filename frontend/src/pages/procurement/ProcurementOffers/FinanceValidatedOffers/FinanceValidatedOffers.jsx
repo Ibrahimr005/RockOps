@@ -906,7 +906,6 @@ const FinanceValidatedOffers = ({
     const confirmFinalize = async () => {
         setIsContinuing(true);
         try {
-            console.log('Finalizing offer with full fulfillment...');
 
             if (isEquipmentOffer) {
                 // Equipment offers go to inspection before finalization
@@ -957,10 +956,8 @@ const FinanceValidatedOffers = ({
     const confirmContinueAndReturn = async () => {
         setIsContinuing(true);
         try {
-            console.log('Starting continue and return process...');
 
             const result = await offerService.continueAndReturnOffer(activeOffer.id);
-            console.log('Backend result:', result);
 
             let successMessage = '';
 
@@ -982,7 +979,6 @@ const FinanceValidatedOffers = ({
                         id: result.acceptedOfferId,
                         status: 'INSPECTION_PENDING'
                     };
-                    console.log('Switching to inspection tab with equipment offer:', inspectionOffer);
                     onOfferSentToInspection(inspectionOffer);
                 } else if (onOfferFinalized) {
                     // Non-equipment offers go to finalize
@@ -991,14 +987,12 @@ const FinanceValidatedOffers = ({
                         id: result.acceptedOfferId,
                         status: 'FINALIZING'
                     };
-                    console.log('Switching to finalize tab with offer:', finalizedOffer);
                     onOfferFinalized(finalizedOffer);
                 }
             }
 
             // Handle new offer for rejected items (don't auto-switch)
             if (result.newOfferId && onRetryOffer) {
-                console.log('New offer created for rejected items:', result.newOfferId);
             }
 
             // Remove current offer from finance validated tab
@@ -1319,12 +1313,6 @@ const FinanceValidatedOffers = ({
 
     useEffect(() => {
         if (activeOffer && activeOffer.offerItems && activeOffer.offerItems.length > 0) {
-            console.log("=== OFFER ITEM DEBUG ===");
-            console.log("First offer item:", activeOffer.offerItems[0]);
-            console.log("Rejection reason:", activeOffer.offerItems[0].rejectionReason);
-            console.log("Finance rejection reason:", activeOffer.offerItems[0].financeRejectionReason);
-            console.log("All keys:", Object.keys(activeOffer.offerItems[0]));
-            console.log("========================");
         }
     }, [activeOffer]);
 

@@ -34,7 +34,6 @@ const MerchantDetails = () => {
         try {
             setLoading(true);
             const response = await merchantService.getById(id);
-            console.log('Merchant details response:', response);
             setMerchant(response.data || response);
         } catch (error) {
             console.error('Error fetching merchant details:', error);

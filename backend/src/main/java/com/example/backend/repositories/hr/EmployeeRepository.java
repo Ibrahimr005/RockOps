@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -263,4 +264,11 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     @Query(value = "SELECT COUNT(*) FROM employee e " +
            "WHERE EXTRACT(YEAR FROM e.hire_date) = :year", nativeQuery = true)
     Long countByHireYear(@Param("year") int year);
+
+    // Distribution: count by department and contract type
+    @Query("SELECT d.name, jp.contractType, COUNT(e) " +
+           "FROM Employee e JOIN e.jobPosition jp JOIN jp.department d " +
+           "WHERE jp IS NOT NULL AND d IS NOT NULL " +
+           "GROUP BY d.name, jp.contractType")
+    List<Object[]> findEmployeeCountByDepartmentAndContractType();
 }

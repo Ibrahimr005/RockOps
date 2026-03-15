@@ -357,8 +357,6 @@ const MaintenanceAddModal = ({
                 setError(error.response.data.error);
             } else if (error.response?.data?.message) {
                 setError(error.response.data.message);
-            } else if (error.message) {
-                setError(error.message);
             } else {
                 setError(`Failed to ${isEditing ? 'update' : 'create'} maintenance record`);
             }

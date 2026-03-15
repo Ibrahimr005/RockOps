@@ -2,6 +2,8 @@ package com.example.backend.controllers;
 
 import com.example.backend.services.FileStorageService;
 import com.example.backend.services.MinioService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,8 @@ import java.util.UUID;
 @CrossOrigin(origins = "http://localhost:3000")
 public class MinioController {
 
+    private static final Logger log = LoggerFactory.getLogger(MinioController.class);
+
     private final MinioService minioService;
 
     public MinioController(MinioService minioService) {
@@ -23,32 +27,23 @@ public class MinioController {
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
-        System.out.println("Received file upload request");
-
         try {
-            // Debugging: Check if file is null or empty
             if (file == null) {
-                System.out.println("Error: File is null");
                 return ResponseEntity.badRequest().body("File is required");
             }
             if (file.isEmpty()) {
-                System.out.println("Error: Uploaded file is empty");
                 return ResponseEntity.badRequest().body("Cannot upload an empty file");
             }
 
-            // Print file details
-            System.out.println("File received: Name = " + file.getOriginalFilename() +
-                    ", Size = " + file.getSize() + " bytes, " +
-                    "Content Type = " + file.getContentType());
+            log.debug("File received: Name={}, Size={} bytes, ContentType={}",
+                    file.getOriginalFilename(), file.getSize(), file.getContentType());
 
-            // Call service to upload file
             String fileName = minioService.uploadFile(file);
 
-            System.out.println("File uploaded successfully: " + fileName);
+            log.info("File uploaded successfully: {}", fileName);
             return ResponseEntity.ok("File uploaded successfully: " + fileName);
         } catch (Exception e) {
-            System.out.println("Error uploading file: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error uploading file: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error uploading file: " + e.getMessage());
         }
     }
@@ -75,7 +70,7 @@ public class MinioController {
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            System.err.println("Error getting equipment main photo: " + e.getMessage());
+            log.error("Error getting equipment main photo: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error retrieving equipment image: " + e.getMessage());
         }
     }
@@ -83,7 +78,6 @@ public class MinioController {
     @GetMapping("/equipment/{equipmentId}/main-photo/refresh")
     public ResponseEntity<String> refreshEquipmentMainPhoto(@PathVariable UUID equipmentId) {
         try {
-            // Force refresh of presigned URL
             String imageUrl = minioService.getEquipmentMainPhoto(equipmentId);
             if (imageUrl != null) {
                 return ResponseEntity.ok(imageUrl);
@@ -91,7 +85,7 @@ public class MinioController {
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            System.err.println("Error refreshing equipment main photo: " + e.getMessage());
+            log.error("Error refreshing equipment main photo: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error refreshing equipment image: " + e.getMessage());
         }
     }

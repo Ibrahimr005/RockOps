@@ -103,12 +103,12 @@ const SiteFixedAssetsTab = ({siteId}) => {
 
             setLoading(false);
         } catch (err) {
-            setError(err.message);
+            setError('Failed to load fixed assets. Please try again.');
             setAssetsData([]);
             setLoading(false);
             setSnackbar({
                 show: true,
-                message: err.message,
+                message: 'Failed to load fixed assets. Please try again.',
                 type: 'error'
             });
         }

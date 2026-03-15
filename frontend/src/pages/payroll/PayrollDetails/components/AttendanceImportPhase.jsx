@@ -62,7 +62,6 @@ const AttendanceImportPhase = ({ payroll, onTransition, onRefresh, processing, o
     const fetchEmployeePayrolls = async () => {
         try {
             const response = await payrollService.getEmployeePayrolls(payroll.id);
-            console.log('📊 Employee Payrolls Data:', response);
             setEmployeePayrolls(Array.isArray(response) ? response : []);
         } catch (error) {
             console.error('Error fetching employee payrolls:', error);
@@ -76,7 +75,6 @@ const AttendanceImportPhase = ({ payroll, onTransition, onRefresh, processing, o
             setImporting(true);
 
             const summary = await payrollService.importAttendance(payroll.id);
-            console.log('📊 Import Summary:', summary);
 
             setImportSummary(summary);
 
@@ -194,11 +192,6 @@ const AttendanceImportPhase = ({ payroll, onTransition, onRefresh, processing, o
             return <div className="error-state">Failed to load attendance status</div>;
         }
 
-        console.log('🎯 Rendering decision:', {
-            attendanceFinalized: attendanceStatus.attendanceFinalized,
-            attendanceImported: attendanceStatus.attendanceImported,
-            employeePayrollsCount: employeePayrolls.length
-        });
 
         // Finalized state
         if (attendanceStatus.attendanceFinalized) {

@@ -13,7 +13,9 @@ import com.example.backend.repositories.finance.balances.BankAccountRepository;
 import com.example.backend.repositories.finance.balances.CashSafeRepository;
 import com.example.backend.repositories.finance.balances.CashWithPersonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -51,6 +53,8 @@ public class AccountsPayableDashboardService {
     /**
      * Get dashboard summary (6 cards + recent activity)
      */
+    @Cacheable(value = "dashboardCache", key = "'financeSummary'")
+    @Transactional(readOnly = true)
     public AccountsPayableDashboardSummaryResponseDTO getDashboardSummary() {
         // 1. Pending Offers Count
         long pendingOffersCount = offerFinancialReviewRepository.count(); // This should filter by pending status
@@ -97,6 +101,7 @@ public class AccountsPayableDashboardService {
     /**
      * Get balance summary (overview of all accounts)
      */
+    @Transactional(readOnly = true)
     public BalanceSummaryResponseDTO getBalanceSummary() {
         // Bank Accounts
         List<com.example.backend.models.finance.balances.BankAccount> bankAccounts = bankAccountRepository.findAll();
@@ -146,6 +151,8 @@ public class AccountsPayableDashboardService {
     /**
      * Get merchant payment summary (for "By Merchant" page)
      */
+    @Cacheable(value = "dashboardCache", key = "'financeMerchants'")
+    @Transactional(readOnly = true)
     public List<MerchantPaymentSummaryResponseDTO> getMerchantPaymentSummaries() {
         // Get all payments grouped by merchant
         List<AccountPayablePayment> allPayments =

@@ -203,7 +203,6 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
 
         try {
             // TODO: Implement delete API call when backend endpoint is available
-            console.log('Delete request:', request);
 
             // For now, just refresh the table
             fetchPendingOrders();

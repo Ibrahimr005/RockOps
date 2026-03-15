@@ -1737,6 +1737,20 @@ public class OfferService {
     }
 
     /**
+     * Update the finance validation status of an offer
+     */
+    @Transactional
+    public OfferDTO updateFinanceValidationStatus(UUID offerId, com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus validationStatus) {
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found"));
+        offer.setFinanceValidationStatus(validationStatus);
+        offer.setFinanceReviewedAt(null);
+        offer.setFinanceReviewedByUserId(null);
+        Offer savedOffer = offerRepository.save(offer);
+        return offerMapper.toDTO(savedOffer);
+    }
+
+    /**
      * Handle Finance Module's approval/rejection response
      * This is called by the Finance Module after they review an offer
      */

@@ -19,8 +19,8 @@ import {
 } from 'react-icons/fa';
 import { Button, CloseButton } from '../../../../components/common/Button';
 import { bonusService, BONUS_STATUS, BONUS_STATUS_CONFIG } from '../../../../services/payroll/bonusService';
-import { employeeService } from '../../../../services/hr/employeeService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import { useEmployees } from '../../../../hooks/queries';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import PageHeader from '../../../../components/common/PageHeader/index.js';
@@ -39,7 +39,7 @@ const BonusManagement = () => {
     const [activeTab, setActiveTab] = useState('bonuses');
     const [bonuses, setBonuses] = useState([]);
     const [bonusTypes, setBonusTypes] = useState([]);
-    const [employees, setEmployees] = useState([]);
+    const { data: employees = [] } = useEmployees();
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
 
@@ -68,15 +68,13 @@ const BonusManagement = () => {
         try {
             setLoading(true);
 
-            const [bonusesRes, typesRes, employeesRes] = await Promise.all([
+            const [bonusesRes, typesRes] = await Promise.all([
                 bonusService.getAllBonuses().catch(() => ({ data: [] })),
-                bonusService.getAllBonusTypes().catch(() => ({ data: [] })),
-                employeeService.getAll().catch(() => ({ data: [] }))
+                bonusService.getAllBonusTypes().catch(() => ({ data: [] }))
             ]);
 
             setBonuses(bonusesRes.data || bonusesRes || []);
             setBonusTypes(typesRes.data || typesRes || []);
-            setEmployees(employeesRes.data || employeesRes || []);
 
         } catch (error) {
             console.error('Error loading data:', error);

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { FaBuilding, FaPlus, FaChevronDown } from 'react-icons/fa';
 import { siteService } from "../../../services/siteService.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
+import { useSites } from "../../../hooks/queries";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
 import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
@@ -17,10 +18,8 @@ import SiteModal from "./SiteModal.jsx";
 
 const AllSites = () => {
     const { t } = useTranslation();
-    const [sites, setSites] = useState([]);
+    const { data: sites = [], isLoading: loading, isError, refetch: refetchSites } = useSites();
     const [filteredSites, setFilteredSites] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const navigate = useNavigate();
     const { currentUser } = useAuth();
     const { showError, showSuccess, showWarning } = useSnackbar();
@@ -54,11 +53,6 @@ const AllSites = () => {
     const dropdownRef = useRef(null);
     const isSiteAdmin = currentUser?.role === "ADMIN";
 
-    useEffect(() => {
-        console.log("AllSites component mounted");
-        fetchSites();
-    }, []);
-
     // Fetch related data when modal opens
     useEffect(() => {
         if (showAddModal || showEditModal) {
@@ -69,8 +63,6 @@ const AllSites = () => {
     // Set form data when editing site
     useEffect(() => {
         if (editingSite) {
-            console.log("Setting up form with editing site data:", editingSite);
-
             setFormData({
                 id: editingSite.id,
                 name: editingSite.name || "",
@@ -123,6 +115,11 @@ const AllSites = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    // Initialize filteredSites when sites data changes
+    useEffect(() => {
+        setFilteredSites(sites);
+    }, [sites]);
 
     // Apply filters
     useEffect(() => {
@@ -186,33 +183,6 @@ const AllSites = () => {
     }, [showAddModal, showEditModal]);
 
 
-    const fetchSites = async () => {
-        try {
-            setLoading(true);
-            const response = await siteService.getAll();
-            console.log("Sites fetched from service:", response.data);
-            response.data.forEach((site, index) => {
-                console.log(`Site ${index} photoUrl:`, site.photoUrl);
-            });
-
-            if (response.data.length > 0) {
-                console.log("First site structure:", Object.keys(response.data[0]));
-                console.log("First site full object:", response.data[0]);
-                console.log("FULL SITE DATA FOR COUNTING:", JSON.stringify(response.data[0], null, 2)); // Add this line
-            }
-            setSites(response.data);
-            setFilteredSites(response.data);
-            setError(null);
-        } catch (err) {
-            const errorMessage = t('common.error') + ': ' + err.message;
-            setError(errorMessage);
-            showError("Failed to fetch sites. Please try again.");
-            console.error("Error fetching sites:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const fetchPartners = async () => {
         try {
             const response = await siteService.getAllPartners();
@@ -270,56 +240,18 @@ const AllSites = () => {
         setShowAddModal(true);
     };
 
-    // Debug function to help identify site structure
-    const debugSiteObject = (site) => {
-        console.log("Full site object:", site);
-        // List all top-level keys
-        console.log("Site object keys:", Object.keys(site));
-
-        // Check for different possible partner structures
-        if (site.partners) {
-            console.log("Partners property exists:", site.partners);
-            if (Array.isArray(site.partners)) {
-                console.log("Partners is an array with", site.partners.length, "items");
-                if (site.partners.length > 0) {
-                    console.log("First partner:", site.partners[0]);
-                }
-            } else {
-                console.log("Partners is not an array, but:", typeof site.partners);
-            }
-        }
-
-        if (site.sitePartners) {
-            console.log("sitePartners property exists:", site.sitePartners);
-            if (Array.isArray(site.sitePartners)) {
-                console.log("sitePartners is an array with", site.sitePartners.length, "items");
-                if (site.sitePartners.length > 0) {
-                    console.log("First sitePartner:", site.sitePartners[0]);
-                }
-            }
-        }
-    };
-
     const fetchSite = async (siteId) => {
         try {
             const siteResponse = await siteService.getById(siteId);
             const siteData = siteResponse.data;
-            console.log("Raw response from API:", siteData);
-
             try {
-                // Try fetching partners specifically for this site
                 const partnersResponse = await siteService.getSitePartners(siteId);
-                console.log("Site partners fetched separately:", partnersResponse.data);
-                // Add the partners to the site data
                 siteData.partners = partnersResponse.data;
             } catch (partnerErr) {
                 showWarning("Could not fetch site partners separately");
                 console.warn("Could not fetch site partners separately:", partnerErr.message);
                 // Continue with the basic site data even if partners fetch fails
             }
-
-            // Debug what we found
-            debugSiteObject(siteData);
 
             return siteData;
         } catch (err) {
@@ -337,7 +269,6 @@ const AllSites = () => {
 
             // Get detailed site info
             const siteDetails = await fetchSite(site.id);
-            console.log("Fetched site details for editing:", siteDetails);
 
             // Set the editing site with complete details
             setEditingSite(siteDetails);
@@ -388,7 +319,7 @@ const AllSites = () => {
 
         try {
             await siteService.addSite(formDataToSend);
-            fetchSites();
+            refetchSites();
             handleCloseModals();
             showSuccess("Site added successfully!");
         } catch (err) {
@@ -423,7 +354,7 @@ const AllSites = () => {
             }
 
             await siteService.updateSite(formData.id, formDataToSend);
-            fetchSites();
+            refetchSites();
             handleCloseModals();
             showSuccess("Site updated successfully!");
         } catch (err) {
@@ -457,7 +388,7 @@ const AllSites = () => {
     };
 
     if (loading) return <LoadingPage />;
-    if (error) return <div className="error-container">{error}</div>;
+    if (isError) return <div className="error-container">{t('common.error')}</div>;
 
     return (
         <div className="sites-container">

@@ -35,7 +35,6 @@ const FixedAssets = () => {
         try {
             setLoading(true);
 
-            console.log('=== FETCHING FIXED ASSETS STATS ===');
 
             // Use financeService instead of manual fetch calls
             const [assetsResponse, disposalsResponse] = await Promise.all([
@@ -43,15 +42,11 @@ const FixedAssets = () => {
                 financeService.fixedAssets.getAllDisposals()
             ]);
 
-            console.log('Raw assets response:', assetsResponse);
-            console.log('Raw disposals response:', disposalsResponse);
 
             // Extract data from Axios responses
             const assets = assetsResponse.data || assetsResponse;
             const disposals = disposalsResponse.data || disposalsResponse;
 
-            console.log('Extracted assets:', assets);
-            console.log('Extracted disposals:', disposals);
 
             // Ensure we have arrays
             const assetsArray = Array.isArray(assets) ? assets : [];
@@ -61,11 +56,6 @@ const FixedAssets = () => {
             const totalAssets = assetsArray.length;
             const activeAssets = assetsArray.filter(asset => asset.status === 'ACTIVE').length;
 
-            console.log('Calculated metrics:', {
-                totalAssets,
-                activeAssets,
-                disposalsCount: disposalsArray.length
-            });
 
             // Calculate total value and monthly depreciation for active assets
             let totalValue = 0;
@@ -111,10 +101,6 @@ const FixedAssets = () => {
                 monthlyDepreciation += avgMonthlyDep * remainingActiveAssets;
             }
 
-            console.log('Final calculations:', {
-                totalValue,
-                monthlyDepreciation
-            });
 
             // Format the data for the IntroCard
             setStats([

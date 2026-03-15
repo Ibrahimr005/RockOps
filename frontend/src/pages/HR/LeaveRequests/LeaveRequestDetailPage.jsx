@@ -36,7 +36,6 @@ const LeaveRequestDetailPage = () => {
                 setLeaveRequest(response.data.data);
             } else {
                 showError('Failed to load leave request details');
-                console.log(response.data)
             }
         } catch (error) {
             console.error('Error fetching leave request:', error);
@@ -137,7 +136,6 @@ const LeaveRequestDetailPage = () => {
                     setActionLoading(true);
                     const response = await leaveRequestService.cancelLeaveRequest(id);
 
-                    console.log('Cancel response:', response);
 
                     // Handle different response structures
                     const success = response.success !== false && !response.error;

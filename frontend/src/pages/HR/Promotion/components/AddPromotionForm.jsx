@@ -169,7 +169,6 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
                         showWarning(`Employee may not be eligible: ${reason}`);
                     } else if (eligibilityResponse.data.eligible === true) {
                         // Optionally show success message
-                        console.log('Employee is eligible for promotion');
                     }
                 }
                 // If it's a placeholder, don't show any warning

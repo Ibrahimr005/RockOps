@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FaTruck, FaUser, FaBuilding, FaCheckCircle } from 'react-icons/fa';
-import { siteService } from '../../../services/siteService';
 import directPurchaseService from '../../../services/directPurchaseService';
 import { Button } from '../../../components/common/Button';
+import { useSites } from '../../../hooks/queries';
 
 const Step4TransportingForm = ({ ticketId, ticketData, onSave, onComplete, isLoading }) => {
     const [formData, setFormData] = useState({
@@ -14,16 +14,14 @@ const Step4TransportingForm = ({ ticketId, ticketData, onSave, onComplete, isLoa
         transportResponsibleEmployeeId: ''
     });
 
-    const [siteList, setSiteList] = useState([]);
+    const { data: siteList = [] } = useSites();
     const [contacts, setContacts] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [errors, setErrors] = useState({});
     const [loadingContacts, setLoadingContacts] = useState(false);
     const [loadingEmployees, setLoadingEmployees] = useState(false);
 
-    useEffect(() => {
-        loadSites();
-    }, []);
+    // Sites data provided by useSites() hook
 
     useEffect(() => {
         // Load existing data from ticketData
@@ -59,15 +57,6 @@ const Step4TransportingForm = ({ ticketId, ticketData, onSave, onComplete, isLoa
             loadEmployees(formData.transportToSiteId);
         }
     }, [formData.transportToSiteId]);
-
-    const loadSites = async () => {
-        try {
-            const response = await siteService.getAllSites();
-            setSiteList(response.data || []);
-        } catch (error) {
-            console.error('Error loading sites:', error);
-        }
-    };
 
     const loadContacts = async (merchantId) => {
         try {

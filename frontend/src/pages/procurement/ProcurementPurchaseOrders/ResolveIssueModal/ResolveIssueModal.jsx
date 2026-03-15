@@ -50,7 +50,6 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
                 issue => issue.issueStatus === 'REPORTED'
             );
 
-            console.log('Fetched unresolved issues:', unresolvedIssues);
             setIssues(unresolvedIssues);
 
             // Initialize resolutions object
@@ -125,7 +124,6 @@ const ResolveIssueModal = ({ purchaseOrder, isOpen, onClose, onSubmit }) => {
 
         try {
             const resolutionArray = Object.values(resolutions);
-            console.log('Submitting resolutions:', resolutionArray);
             await onSubmit(resolutionArray);
             onClose();
         } catch (err) {

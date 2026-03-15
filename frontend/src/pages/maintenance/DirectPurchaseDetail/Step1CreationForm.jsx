@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTrash, FaShoppingCart } from 'react-icons/fa';
 import { equipmentService } from '../../../services/equipmentService';
 import { authService } from '../../../services/authService';
-import { siteService } from '../../../services/siteService';
 import maintenanceService from '../../../services/maintenanceService';
 import { Button, IconButton } from '../../../components/common/Button';
+import { useSites } from '../../../hooks/queries';
 
 const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
     const [formData, setFormData] = useState({
@@ -18,7 +18,7 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
         items: []
     });
 
-    const [siteList, setSiteList] = useState([]);
+    const { data: siteList = [] } = useSites();
     const [allEquipment, setAllEquipment] = useState([]);
     const [filteredEquipment, setFilteredEquipment] = useState([]);
     const [maintenanceUsers, setMaintenanceUsers] = useState([]);
@@ -26,7 +26,6 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        loadSites();
         loadEquipment();
         loadMaintenanceUsers();
         loadCurrentUser();
@@ -71,15 +70,6 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
             }));
         }
     }, [currentUser, formData.responsibleUserId]);
-
-    const loadSites = async () => {
-        try {
-            const response = await siteService.getAllSites();
-            setSiteList(response.data || []);
-        } catch (error) {
-            console.error('Error loading sites:', error);
-        }
-    };
 
     const loadEquipment = async () => {
         try {

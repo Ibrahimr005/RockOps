@@ -71,7 +71,6 @@ const EquipmentManagerDashboard = () => {
             const response = await equipmentService.getAllSites();
             if (response.data) {
                 setSites(response.data);
-                console.log(response.data);
                 return response.data;
             }
         } catch (error) {

@@ -39,9 +39,6 @@ const IssuesTab = ({ purchaseOrder, issues, onRefresh, onResolveSuccess, onError
         [issues]
     );
 
-    console.log('=== UNRESOLVED ISSUES ===', JSON.stringify(unresolvedIssues, null, 2));
-    console.log('=== RESOLVED ISSUES ===', JSON.stringify(resolvedIssues, null, 2));
-
     // Group unresolved issues by merchant
     const issuesByMerchant = useMemo(() => {
         const grouped = {};

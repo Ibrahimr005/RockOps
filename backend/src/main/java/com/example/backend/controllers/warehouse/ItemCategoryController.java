@@ -29,7 +29,6 @@ public class ItemCategoryController {
     // Get all categories
     @GetMapping
     public ResponseEntity<List<ItemCategory>> getAllCategories() {
-        System.out.println("************");
         List<ItemCategory> categories = itemCategoryService.getAllCategories();
         return new ResponseEntity<>(categories, HttpStatus.OK);
     }
@@ -91,8 +90,7 @@ public class ItemCategoryController {
 
     @GetMapping("/test")
     public ResponseEntity<String> test() {
-        System.out.println("🔥 TEST ENDPOINT HIT 🔥");
-        return new ResponseEntity<>("Test OK ✅", HttpStatus.OK);
+        return new ResponseEntity<>("Test OK", HttpStatus.OK);
     }
 
     // Add this AFTER your existing @GetMapping("/children") method

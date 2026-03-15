@@ -1,7 +1,7 @@
 // EquipmentItemForm.jsx — Equipment spec item picker for RequestOrderModal Step 2
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTimes } from 'react-icons/fa';
-import { equipmentTypeService } from '../../../services/equipmentTypeService.js';
+import { useEquipmentTypes } from '../../../hooks/queries';
 import { equipmentBrandService } from '../../../services/equipmentBrandService.js';
 import './EquipmentItemForm.scss';
 
@@ -20,25 +20,20 @@ const EMPTY_EQUIPMENT_ITEM = {
 };
 
 const EquipmentItemForm = ({ items, onChange, isSubmitting }) => {
-    const [equipmentTypes, setEquipmentTypes] = useState([]);
+    const { data: equipmentTypes = [] } = useEquipmentTypes();
     const [equipmentBrands, setEquipmentBrands] = useState([]);
 
     useEffect(() => {
-        const fetchLookups = async () => {
+        const fetchBrands = async () => {
             try {
-                const [typesRes, brandsRes] = await Promise.all([
-                    equipmentTypeService.getAllEquipmentTypes(),
-                    equipmentBrandService.getAllEquipmentBrands()
-                ]);
-                const typesData = typesRes?.data || typesRes;
+                const brandsRes = await equipmentBrandService.getAllEquipmentBrands();
                 const brandsData = brandsRes?.data || brandsRes;
-                setEquipmentTypes(Array.isArray(typesData) ? typesData : []);
                 setEquipmentBrands(Array.isArray(brandsData) ? brandsData : []);
             } catch (err) {
-                console.error('Error fetching equipment lookups:', err);
+                console.error('Error fetching equipment brands:', err);
             }
         };
-        fetchLookups();
+        fetchBrands();
     }, []);
 
     const handleItemChange = (index, field, value) => {

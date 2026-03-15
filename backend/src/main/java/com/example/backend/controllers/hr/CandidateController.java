@@ -5,6 +5,8 @@ import com.example.backend.services.hr.CandidateService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/candidates")
 public class CandidateController {
+
+    private static final Logger log = LoggerFactory.getLogger(CandidateController.class);
 
     @Autowired
     private CandidateService candidateService;
@@ -136,14 +140,11 @@ public class CandidateController {
             @PathVariable UUID id,
             @RequestBody Map<String, Object> statusUpdate) {
 
-        System.out.println("=== UPDATE CANDIDATE STATUS ENDPOINT ===");
-        System.out.println("Candidate ID: " + id);
-        System.out.println("Request body: " + statusUpdate);
+        log.debug("Update candidate status - ID: {}", id);
 
         try {
             // Validate request body
             if (statusUpdate == null || statusUpdate.isEmpty()) {
-                System.out.println("ERROR: Empty request body");
                 return ResponseEntity.badRequest()
                         .body(Map.of(
                                 "error", "Request body cannot be empty",
@@ -167,9 +168,8 @@ public class CandidateController {
                     } else if (ratingObj instanceof String && !((String) ratingObj).trim().isEmpty()) {
                         rating = Integer.parseInt((String) ratingObj);
                     }
-                    System.out.println("Parsed rating: " + rating);
                 } catch (NumberFormatException e) {
-                    System.out.println("ERROR: Invalid rating format: " + ratingObj);
+                    log.warn("Invalid rating format: {}", ratingObj);
                     return ResponseEntity.badRequest()
                             .body(Map.of(
                                     "error", "Invalid rating format. Must be a number between 1 and 5.",
@@ -180,15 +180,8 @@ public class CandidateController {
                 }
             }
 
-            System.out.println("Extracted parameters:");
-            System.out.println("  Status: " + newStatus);
-            System.out.println("  Rejection Reason: " + rejectionReason);
-            System.out.println("  Rating: " + rating);
-            System.out.println("  Rating Notes: " + ratingNotes);
-
             // Validate required fields
             if (newStatus == null || newStatus.trim().isEmpty()) {
-                System.out.println("ERROR: Status is required");
                 return ResponseEntity.badRequest()
                         .body(Map.of(
                                 "error", "Status is required",
@@ -199,7 +192,6 @@ public class CandidateController {
 
             // Validate rating range
             if (rating != null && (rating < 1 || rating > 5)) {
-                System.out.println("ERROR: Rating out of range: " + rating);
                 return ResponseEntity.badRequest()
                         .body(Map.of(
                                 "error", "Rating must be between 1 and 5",
@@ -213,11 +205,10 @@ public class CandidateController {
             Candidate updatedCandidate = candidateService.updateCandidateStatusWithDetails(
                     id, newStatus.trim(), rejectionReason, rating, ratingNotes);
 
-            System.out.println("Status update successful");
             return ResponseEntity.ok(updatedCandidate);
 
         } catch (EntityNotFoundException e) {
-            System.out.println("ENTITY_NOT_FOUND: " + e.getMessage());
+            log.warn("Candidate not found: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of(
                             "error", "Candidate not found",
@@ -228,7 +219,7 @@ public class CandidateController {
                     ));
 
         } catch (IllegalArgumentException e) {
-            System.out.println("VALIDATION_ERROR: " + e.getMessage());
+            log.warn("Validation error: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of(
                             "error", "Validation failed",
@@ -239,8 +230,7 @@ public class CandidateController {
                     ));
 
         } catch (Exception e) {
-            System.out.println("UNEXPECTED_ERROR: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-            e.printStackTrace();
+            log.error("Unexpected error updating candidate status for {}", id, e);
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of(

@@ -57,8 +57,7 @@ public class ProcurmentTeamController {
             @RequestParam("merchantData") String merchantDataJson,
             @RequestParam(value = "photo", required = false) MultipartFile photo) {
         try {
-            // Log request
-            System.out.println("Received update request for merchant ID: " + id);
+            // Update request for merchant
 
             // Convert JSON String to a Map
             ObjectMapper objectMapper = new ObjectMapper();
@@ -75,7 +74,6 @@ public class ProcurmentTeamController {
             Merchant updatedMerchant = procurementTeamService.updateMerchant(id, merchantData);
             return ResponseEntity.ok(updatedMerchant);
         } catch (RuntimeException e) {
-            System.err.println("Error updating merchant: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();

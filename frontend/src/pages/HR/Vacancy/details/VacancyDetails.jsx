@@ -33,10 +33,9 @@ const VacancyDetails = () => {
                 setLoading(true);
                 const response = await vacancyService.getById(id);
                 setVacancy(response.data);
-                console.log('Vacancy Data:', response.data);
             } catch (error) {
                 console.error('Error fetching vacancy details:', error);
-                setError(error.message);
+                setError('Failed to load vacancy details. Please try again.');
                 showError('Failed to load vacancy details');
             } finally {
                 setLoading(false);

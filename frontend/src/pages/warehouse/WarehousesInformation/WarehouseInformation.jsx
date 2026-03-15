@@ -18,10 +18,9 @@ const WarehouseInformation = () => {
     const fetchWarehouseDetails = async () => {
       try {
         const data = await warehouseService.getById(id);
-        console.log(JSON.stringify(data, null, 2));
         setWarehouseData(data);
       } catch (error) {
-        setError(error.message);
+        setError('Failed to load warehouse details. Please try again.');
       } finally {
         setLoading(false);
       }

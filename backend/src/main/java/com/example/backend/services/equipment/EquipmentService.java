@@ -31,7 +31,7 @@ import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.repositories.MaintenanceRecordRepository;
 import com.example.backend.services.notification.NotificationService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -107,6 +107,7 @@ public class EquipmentService {
 
     // GET methods
 
+    @Transactional(readOnly = true)
     public List<EquipmentDTO> getAllEquipment() {
         List<Equipment> equipments = equipmentRepository.findAllWithAssociations();
         return equipments.stream()
@@ -118,6 +119,7 @@ public class EquipmentService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public EquipmentDTO getEquipmentById(UUID id) {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
@@ -137,6 +139,7 @@ public class EquipmentService {
         return dto;
     }
 
+    @Transactional(readOnly = true)
     public List<EquipmentDTO> getEquipmentByType(UUID typeId) {
         EquipmentType type = equipmentTypeRepository.findById(typeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + typeId));
@@ -943,6 +946,7 @@ public class EquipmentService {
      * @param equipmentTypeId The ID of the equipment type
      * @return List of employee summaries who can drive this equipment type
      */
+    @Transactional(readOnly = true)
     public List<EmployeeSummaryDTO> getEligibleDriversForEquipmentType(UUID equipmentTypeId) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
                 .orElseThrow(
@@ -962,6 +966,7 @@ public class EquipmentService {
      * Get drivers for Sarky logs (anyone who can drive this type) - simplified
      * version
      */
+    @Transactional(readOnly = true)
     public List<EmployeeSummaryDTO> getDriversForSarkyByEquipmentType(UUID equipmentTypeId) {
         // Reuse logic from getEligibleDrivers since we don't need to filter by
         // availability for Sarky logs
@@ -972,6 +977,7 @@ public class EquipmentService {
     /**
      * Check compatibility between a specific driver and equipment
      */
+    @Transactional(readOnly = true)
     public DriverCompatibilityResponse checkDriverCompatibility(UUID equipmentId, UUID employeeId) {
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
@@ -1085,6 +1091,7 @@ public class EquipmentService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<WorkTypeDTO> getSupportedWorkTypesForEquipmentType(UUID typeId) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(typeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + typeId));
@@ -1102,6 +1109,7 @@ public class EquipmentService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public EquipmentSarkyAnalyticsDTO getSarkyAnalyticsForEquipment(UUID equipmentId) {
         // Mock implementation or real one
         return new EquipmentSarkyAnalyticsDTO();

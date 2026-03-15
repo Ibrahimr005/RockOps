@@ -4,9 +4,9 @@ import { FaTools, FaUser } from 'react-icons/fa';
 import { Button, CloseButton } from '../../../components/common/Button';
 import contactService from '../../../services/contactService.js';
 import { equipmentService } from '../../../services/equipmentService.js';
-import { siteService } from '../../../services/siteService.js';
 import maintenanceService from '../../../services/maintenanceService.js';
 import { authService } from '../../../services/authService.js';
+import { useSites } from '../../../hooks/queries';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
@@ -29,8 +29,8 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
         responsibleUserId: ''
     });
 
+    const { data: siteList = [] } = useSites();
     const [equipmentList, setEquipmentList] = useState([]);
-    const [siteList, setSiteList] = useState([]);
     const [maintenanceUsers, setMaintenanceUsers] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
     const [errors, setErrors] = useState({});
@@ -39,7 +39,6 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
     useEffect(() => {
         if (isOpen) {
             loadEquipment();
-            loadSites();
             loadMaintenanceUsers();
             loadCurrentUser();
             // Prevent background scroll when modal is open
@@ -64,15 +63,6 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
             console.error('Error loading equipment:', error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const loadSites = async () => {
-        try {
-            const response = await siteService.getAllSites();
-            setSiteList(response.data || []);
-        } catch (error) {
-            console.error('Error loading sites:', error);
         }
     };
 
@@ -251,7 +241,6 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 totalCost: formData.estimatedCost ? parseFloat(formData.estimatedCost.toString().replace(/,/g, '')) : 0,
                 estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost.toString().replace(/,/g, '')) : 0
             };
-            console.log('Submitting maintenance record:', submitData);
             onSubmit(submitData);
         }
     };

@@ -74,11 +74,9 @@ const promotionService = {
         // Create the request promise
         const requestPromise = (async () => {
             try {
-                console.log('Creating promotion request with data:', promotionData);
 
                 const response = await apiClient.post(PROMOTION_ENDPOINTS.BASE, promotionData);
 
-                console.log('Promotion creation response:', response);
                 return response;
             } catch (error) {
                 console.error('Error creating promotion request:', error);
@@ -107,7 +105,6 @@ const promotionService = {
      */
     getAllPromotionRequests: async (filters = {}) => {
         try {
-            console.log('Fetching promotion requests with filters:', filters);
 
             // Clean up filters - remove empty values
             const cleanFilters = Object.entries(filters)
@@ -118,7 +115,6 @@ const promotionService = {
                 params: cleanFilters
             });
 
-            console.log('Fetched promotion requests response:', response);
             return response;
         } catch (error) {
             console.error('Error fetching promotion requests:', error);
@@ -140,7 +136,6 @@ const promotionService = {
      */
     getPromotionRequestById: async (id) => {
         try {
-            console.log('Fetching promotion request by ID:', id);
 
             if (!id) {
                 throw new Error('Promotion request ID is required');
@@ -148,7 +143,6 @@ const promotionService = {
 
             const response = await apiClient.get(PROMOTION_ENDPOINTS.BY_ID(id));
 
-            console.log('Fetched promotion request:', response);
             return response;
         } catch (error) {
             console.error(`Error fetching promotion request ${id}:`, error);
@@ -170,11 +164,9 @@ const promotionService = {
      */
     getPendingPromotionRequests: async () => {
         try {
-            console.log('Fetching pending promotion requests');
 
             const response = await apiClient.get(PROMOTION_ENDPOINTS.PENDING);
 
-            console.log('Fetched pending promotions:', response);
             return response;
         } catch (error) {
             console.error('Error fetching pending promotion requests:', error);
@@ -205,7 +197,6 @@ const promotionService = {
 
         const requestPromise = (async () => {
             try {
-                console.log('Reviewing promotion request:', { id, reviewData });
 
                 if (!id) {
                     throw new Error('Promotion request ID is required');
@@ -223,7 +214,6 @@ const promotionService = {
 
                 const response = await apiClient.put(PROMOTION_ENDPOINTS.REVIEW(id), reviewData);
 
-                console.log('Review response:', response);
                 return response;
             } catch (error) {
                 console.error(`Error reviewing promotion request ${id}:`, error);
@@ -258,7 +248,6 @@ const promotionService = {
 
         const requestPromise = (async () => {
             try {
-                console.log('Implementing promotion request:', id);
 
                 if (!id) {
                     throw new Error('Promotion request ID is required');
@@ -266,7 +255,6 @@ const promotionService = {
 
                 const response = await apiClient.post(PROMOTION_ENDPOINTS.IMPLEMENT(id));
 
-                console.log('Implementation response:', response);
                 return response;
             } catch (error) {
                 console.error(`Error implementing promotion request ${id}:`, error);
@@ -314,7 +302,6 @@ const promotionService = {
 
         const requestPromise = (async () => {
             try {
-                console.log('Cancelling promotion request:', { id, reason });
 
                 if (!id) {
                     throw new Error('Promotion request ID is required');
@@ -326,7 +313,6 @@ const promotionService = {
 
                 const response = await apiClient.post(PROMOTION_ENDPOINTS.CANCEL(id), { reason });
 
-                console.log('Cancellation response:', response);
                 return response;
             } catch (error) {
                 console.error(`Error cancelling promotion request ${id}:`, error);
@@ -362,11 +348,9 @@ const promotionService = {
      */
     getPromotionsReadyForImplementation: async () => {
         try {
-            console.log('Fetching promotions ready for implementation');
 
             const response = await apiClient.get(PROMOTION_ENDPOINTS.READY_FOR_IMPLEMENTATION);
 
-            console.log('Ready for implementation response:', response);
             return response;
         } catch (error) {
             console.error('Error fetching promotions ready for implementation:', error);
@@ -387,11 +371,9 @@ const promotionService = {
      */
     getPromotionStatistics: async () => {
         try {
-            console.log('Fetching promotion statistics');
 
             const response = await apiClient.get(PROMOTION_ENDPOINTS.STATISTICS);
 
-            console.log('Statistics response:', response);
             return response;
         } catch (error) {
             console.error('Error fetching promotion statistics:', error);
@@ -415,7 +397,6 @@ const promotionService = {
      */
     getEmployeePromotionSummary: async (employeeId) => {
         try {
-            console.log('Fetching employee promotion summary for:', employeeId);
 
             if (!employeeId) {
                 throw new Error('Employee ID is required');
@@ -423,7 +404,6 @@ const promotionService = {
 
             const response = await apiClient.get(PROMOTION_ENDPOINTS.EMPLOYEE_SUMMARY(employeeId));
 
-            console.log('Employee promotion summary response:', response);
             return response;
         } catch (error) {
             console.error(`Error fetching employee promotion summary for ${employeeId}:`, error);
@@ -451,7 +431,6 @@ const promotionService = {
             }
             const response = await apiClient.get(PROMOTION_ENDPOINTS.EMPLOYEE_ELIGIBILITY(employeeId));
 
-            console.log('Eligibility check response:', response);
             return response;
         } catch (error) {
             console.error(`Error checking promotion eligibility for employee ${employeeId}:`, error);
@@ -474,7 +453,6 @@ const promotionService = {
      */
     checkEmployeeHasPendingPromotion: async (employeeId) => {
         try {
-            console.log('Checking pending promotions for employee:', employeeId);
 
             if (!employeeId) {
                 throw new Error('Employee ID is required');
@@ -508,7 +486,6 @@ const promotionService = {
                 }
             };
 
-            console.log('Pending promotion check result:', result);
             return result;
         } catch (error) {
             console.error(`Error checking pending promotions for employee ${employeeId}:`, error);
@@ -532,7 +509,6 @@ const promotionService = {
      */
     getPromotionRequestsByDepartment: async (departmentId, type = 'current') => {
         try {
-            console.log('Fetching promotion requests for department:', { departmentId, type });
 
             if (!departmentId) {
                 throw new Error('Department ID is required');
@@ -542,7 +518,6 @@ const promotionService = {
                 params: { type }
             });
 
-            console.log('Department promotion requests response:', response);
             return response;
         } catch (error) {
             console.error(`Error fetching promotion requests for department ${departmentId}:`, error);
@@ -565,7 +540,6 @@ const promotionService = {
      */
     bulkPromotionAction: async (bulkActionData) => {
         try {
-            console.log('Performing bulk promotion action:', bulkActionData);
 
             if (!bulkActionData || !bulkActionData.action) {
                 throw new Error('Bulk action type is required');
@@ -577,7 +551,6 @@ const promotionService = {
 
             const response = await apiClient.post(PROMOTION_ENDPOINTS.BULK_ACTION, bulkActionData);
 
-            console.log('Bulk action response:', response);
             return response;
         } catch (error) {
             console.error('Error performing bulk promotion action:', error);
@@ -599,7 +572,6 @@ const promotionService = {
      */
     getPromotionAnalytics: async (filters = {}) => {
         try {
-            console.log('Fetching promotion analytics with filters:', filters);
 
             // Clean up filters
             const cleanFilters = Object.entries(filters)
@@ -610,7 +582,6 @@ const promotionService = {
                 params: cleanFilters
             });
 
-            console.log('Analytics response:', response);
             return response;
         } catch (error) {
             console.error('Error fetching promotion analytics:', error);
@@ -633,7 +604,6 @@ const promotionService = {
      */
     exportPromotionData: async (exportOptions = {}) => {
         try {
-            console.log('Exporting promotion data with options:', exportOptions);
 
             // Clean up export options
             const cleanOptions = Object.entries(exportOptions)
@@ -645,7 +615,6 @@ const promotionService = {
                 responseType: 'blob' // For file downloads
             });
 
-            console.log('Export response:', response);
             return response;
         } catch (error) {
             console.error('Error exporting promotion data:', error);
@@ -674,11 +643,9 @@ const promotionService = {
      */
     healthCheck: async () => {
         try {
-            console.log('Checking promotion service health');
 
             const response = await apiClient.get(PROMOTION_ENDPOINTS.HEALTH);
 
-            console.log('Health check response:', response);
             return response;
         } catch (error) {
             console.error('Error checking promotion service health:', error);
@@ -699,7 +666,6 @@ const promotionService = {
      */
     clearPendingRequests: () => {
         pendingRequests.clear();
-        console.log('All pending promotion requests cleared');
     },
 
     /**

@@ -86,12 +86,12 @@ const SiteMerchantsTab = ({ siteId }) => {
 
             setLoading(false);
         } catch (err) {
-            setError(err.message);
+            setError('Failed to load merchants. Please try again.');
             setMerchantData([]);
             setLoading(false);
             setSnackbar({
                 show: true,
-                message: err.message,
+                message: 'Failed to load merchants. Please try again.',
                 type: 'error'
             });
         }

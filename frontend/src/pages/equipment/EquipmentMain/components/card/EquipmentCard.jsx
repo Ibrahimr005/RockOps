@@ -63,22 +63,17 @@ const EquipmentCard = forwardRef((props, ref) => {
         try {
             const response = await equipmentService.getEquipmentMainPhoto(equipmentId);
             if (response.data) {
-                console.log(`Successfully fetched photo for equipment ${equipmentId}:`, response.data);
                 setImageUrl(response.data);
             }
         } catch (error) {
-            console.log(`Failed to fetch photo for equipment ${equipmentId}:`, error);
             // Try refresh to get new presigned URL (important for AWS S3 which has expiring URLs)
             try {
                 const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(equipmentId);
                 if (refreshResponse.data) {
-                    console.log(`Successfully refreshed photo for equipment ${equipmentId}:`, refreshResponse.data);
                     setImageUrl(refreshResponse.data);
                 }
             } catch (refreshError) {
-                console.log(`Failed to refresh photo for equipment ${equipmentId}:`, refreshError);
                 // Keep existing imageUrl as fallback, or use empty string
-                console.log(`Using fallback image for equipment ${equipmentId}`);
             }
         }
     };
@@ -104,7 +99,6 @@ const EquipmentCard = forwardRef((props, ref) => {
         fetchEquipmentPhoto(newEquipmentId);
 
         // Log for debugging
-        console.log(`EquipmentCard updated for ${newModelName} with siteName: ${newSiteName} and image: ${newImageUrl}`);
     };
 
     // Function to set custom actions for the card
@@ -126,7 +120,6 @@ const EquipmentCard = forwardRef((props, ref) => {
                     src={imageUrl || equipmentIcon}
                     alt={modelName}
                     onError={(e) => {
-                        console.log(`Image failed to load for ${modelName}: ${imageUrl}`);
                         e.target.src = equipmentIcon;
                     }}
                 />

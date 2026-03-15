@@ -1,10 +1,9 @@
 // MaintenanceTransactionModal.jsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import './MaintenanceTransactionModal.scss';
 import { siteService } from '../../../services/siteService';
-import { itemTypeService } from '../../../services/itemTypeService';
 import { transactionService } from '../../../services/transactionService';
+import { useItemTypes, useSites } from '../../../hooks/queries';
 import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
@@ -24,20 +23,15 @@ const MaintenanceTransactionModal = ({
     const [showTransactionForm, setShowTransactionForm] = useState(false);
 
     // States for transaction creation
-    const [sites, setSites] = useState([]);
+    const { data: sites = [] } = useSites();
     const [selectedSite, setSelectedSite] = useState('');
     const [warehouses, setWarehouses] = useState([]);
-    const [allItemTypes, setAllItemTypes] = useState([]);
+    const { data: allItemTypes = [] } = useItemTypes();
     const [filteredItemTypes, setFilteredItemTypes] = useState([]);
     const [transactionFormData, setTransactionFormData] = useState({
         senderId: '',
         description: '',
         items: [{ itemTypeId: '', quantity: 1 }]
-    });
-
-    const token = localStorage.getItem('token');
-    const axiosInstance = axios.create({
-        headers: { Authorization: `Bearer ${token}` }
     });
 
     // Dirty state tracking
@@ -58,24 +52,12 @@ const MaintenanceTransactionModal = ({
     // Initialize
     useEffect(() => {
         if (isOpen) {
-            fetchSites();
             if (initialBatchNumber) {
                 setBatchNumber(initialBatchNumber);
                 verifyBatchNumber(initialBatchNumber);
             }
         }
     }, [isOpen, initialBatchNumber]);
-
-    // Fetch sites for transaction form
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            setSites(response.data);
-        } catch (error) {
-            console.error("Error fetching sites:", error);
-            setError("Failed to load sites");
-        }
-    };
 
     // Fetch warehouses when site is selected
     const fetchWarehousesBySite = async (siteId) => {
@@ -92,20 +74,6 @@ const MaintenanceTransactionModal = ({
         }
     };
 
-    // Fetch item types when warehouse is selected
-    const fetchItemTypes = async () => {
-        if (!transactionFormData.senderId) return;
-
-        try {
-            const response = await itemTypeService.getAll();
-            setAllItemTypes(response.data);
-            setFilteredItemTypes(response.data);
-        } catch (error) {
-            console.error("Error fetching item types:", error);
-            setError("Failed to load item types");
-        }
-    };
-
     // Effect to fetch warehouses when site changes
     useEffect(() => {
         if (selectedSite) {
@@ -113,12 +81,12 @@ const MaintenanceTransactionModal = ({
         }
     }, [selectedSite]);
 
-    // Effect to fetch item types when warehouse changes
+    // Set filtered item types when hook data loads or warehouse changes
     useEffect(() => {
-        if (transactionFormData.senderId) {
-            fetchItemTypes();
+        if (transactionFormData.senderId && allItemTypes.length > 0) {
+            setFilteredItemTypes(allItemTypes);
         }
-    }, [transactionFormData.senderId]);
+    }, [transactionFormData.senderId, allItemTypes]);
 
     // Handle batch number input change
     const handleBatchNumberChange = (e) => {
@@ -297,7 +265,6 @@ const MaintenanceTransactionModal = ({
                 );
             }
 
-            console.log("Transaction created/linked successfully:", transactionResponse.data);
             onTransactionAdded(transactionResponse.data);
             onClose();
         } catch (error) {

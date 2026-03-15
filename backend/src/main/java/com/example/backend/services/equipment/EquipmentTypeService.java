@@ -19,6 +19,8 @@ import com.example.backend.services.notification.NotificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -52,6 +54,7 @@ public class EquipmentTypeService {
         this.jobPositionRepository = jobPositionRepository;
     }
 
+    @Cacheable("equipmentTypes")
     @Transactional(readOnly = true)
     public List<EquipmentTypeDTO> getAllEquipmentTypes() {
         return equipmentTypeRepository.findAll().stream()
@@ -73,6 +76,7 @@ public class EquipmentTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with name: " + name));
     }
 
+    @CacheEvict(value = "equipmentTypes", allEntries = true)
     @Transactional
     public EquipmentTypeDTO createEquipmentType(EquipmentTypeDTO dto) {
         // Check if equipment type with this name already exists
@@ -127,6 +131,7 @@ public class EquipmentTypeService {
         return EquipmentTypeDTO.fromEntity(savedEntity);
     }
 
+    @CacheEvict(value = "equipmentTypes", allEntries = true)
     @Transactional
     public EquipmentTypeDTO updateEquipmentType(UUID id, EquipmentTypeDTO dto) {
         // Check if the type exists
@@ -205,6 +210,7 @@ public class EquipmentTypeService {
         return EquipmentTypeDTO.fromEntity(updatedEntity);
     }
 
+    @CacheEvict(value = "equipmentTypes", allEntries = true)
     @Transactional
     public void deleteEquipmentType(UUID id) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(id)

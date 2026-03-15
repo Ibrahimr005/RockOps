@@ -9,15 +9,17 @@ import { Button } from '../../../components/common/Button/Button';
 import {FaEdit, FaTrashAlt, FaUserPlus} from "react-icons/fa";
 import {useSnackbar} from '../../../contexts/SnackbarContext';
 import {vacancyService} from '../../../services/hr/vacancyService.js';
-import {jobPositionService} from '../../../services/hr/jobPositionService.js';
+import { useJobPositions } from '../../../hooks/queries';
 
 const VacancyList = () => {
     const navigate = useNavigate();
     const {showSuccess, showError} = useSnackbar();
 
+    // Shared job positions hook
+    const { data: jobPositions = [] } = useJobPositions();
+
     // State management - ensure arrays are properly initialized
     const [vacancies, setVacancies] = useState([]);
-    const [jobPositions, setJobPositions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [statusFilter, setStatusFilter] = useState('');
@@ -44,7 +46,6 @@ const VacancyList = () => {
             const response = await vacancyService.getAll();
 
             if (response && response.data) {
-                console.log(response.data)
                 const vacancyData = Array.isArray(response.data) ? response.data : [];
                 setVacancies(vacancyData);
             } else {
@@ -64,29 +65,13 @@ const VacancyList = () => {
         }
     }, [showError]);
 
-    const fetchJobPositions = useCallback(async () => {
-        try {
-            const response = await jobPositionService.getAll();
-            if (response && response.data) {
-                const jobPositionData = Array.isArray(response.data) ? response.data : [];
-                setJobPositions(jobPositionData);
-            }
-        } catch (error) {
-            console.error('Error fetching job positions:', error);
-            showError('Failed to load job positions');
-        }
-    }, [showError]);
-
     useEffect(() => {
         fetchVacancies();
-        fetchJobPositions();
-    }, [fetchVacancies, fetchJobPositions]);
+    }, [fetchVacancies]);
 
     const handleAddVacancy = useCallback(async (vacancyData) => {
-        console.log("Submitting vacancy with data:", vacancyData);
         try {
             const response = await vacancyService.create(vacancyData);
-            console.log("Created vacancy response:", response);
 
             if (response && response.data) {
                 // Verify the response contains the expected data
@@ -111,10 +96,8 @@ const VacancyList = () => {
     }, [fetchVacancies, showSuccess, showError]);
 
     const handleEditVacancy = useCallback(async (id, updatedData) => {
-        console.log("Updating vacancy with ID:", id, "Data:", updatedData);
         try {
             const response = await vacancyService.update(id, updatedData);
-            console.log("Update response:", response);
 
             if (response && response.data) {
                 showSuccess('Vacancy updated successfully');
@@ -153,13 +136,11 @@ const VacancyList = () => {
     }, [fetchVacancies, showSuccess, showError]);
 
     const handleEditClick = useCallback((vacancy) => {
-        console.log("Edit vacancy clicked:", vacancy);
         setSelectedVacancy(vacancy);
         setShowEditModal(true);
     }, []);
 
     const handleRowClick = useCallback((row) => {
-        console.log('Navigating to vacancy details:', row.id);
         navigate(`/hr/vacancies/${row.id}`);
     }, [navigate]);
 

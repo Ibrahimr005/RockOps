@@ -3,6 +3,7 @@ package com.example.backend.models.warehouse;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.user.User;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -47,6 +48,7 @@ public class Warehouse {
 
     @ManyToOne
     @JoinColumn(name = "site_id", referencedColumnName = "id")
+    @JsonBackReference
     private Site site;
 
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL)

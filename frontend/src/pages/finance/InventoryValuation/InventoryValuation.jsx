@@ -3,8 +3,7 @@ import './InventoryValuation.scss';
 import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 import AssetValuesView from './AssetValuesView/AssetValuesView.jsx';
 import Snackbar from '../../../components/common/Snackbar2/Snackbar2.jsx';
-import {inventoryValuationService} from '../../../services/finance/inventoryValuationService.js'
-import { siteService } from '../../../services/siteService.js';
+import { useInventoryValuations } from '../../../hooks/queries';
 
 const InventoryValuation = () => {
     // Snackbar states
@@ -12,33 +11,16 @@ const InventoryValuation = () => {
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
 
-    // Sites filter state
-    const [sites, setSites] = useState([]);
+    // Sites filter state from shared hook
+    const { data: sites = [], isLoading: loadingSites } = useInventoryValuations();
     const [selectedSiteIds, setSelectedSiteIds] = useState([]);
-    const [loadingSites, setLoadingSites] = useState(true);
 
-    // Fetch sites on mount
+    // Set selected site IDs when sites data loads
     useEffect(() => {
-        fetchSites();
-    }, []);
-
-    const fetchSites = async () => {
-        setLoadingSites(true);
-        try {
-            // ✅ CHANGED: Use new endpoint with expenses data
-            const response = await inventoryValuationService.getAllSiteValuations();
-            const data = response.data || response;
-            console.log('Sites with expenses data:', data);
-            const siteList = Array.isArray(data) ? data : [];
-            setSites(siteList);
-            setSelectedSiteIds(siteList.map(site => site.siteId));
-        } catch (error) {
-            console.error('Failed to fetch sites:', error);
-            setSites([]);
-        } finally {
-            setLoadingSites(false);
+        if (sites.length > 0 && selectedSiteIds.length === 0) {
+            setSelectedSiteIds(sites.map(site => site.siteId));
         }
-    };
+    }, [sites]);
 
     const showSnackbar = (message, type = 'success') => {
         setNotificationMessage(message);

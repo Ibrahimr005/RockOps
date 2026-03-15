@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import './ProcurementOffers.scss';
@@ -7,6 +7,9 @@ import Tabs from "../../../components/common/Tabs/Tabs.jsx"
 
 // Import services
 import { offerService } from '../../../services/procurement/offerService.js';
+
+// Import React Query hooks
+import { useOffers, useOffersByMultipleStatuses, useCompletedFinanceOffers } from '../../../hooks/queries/useOffers.js';
 
 // Import tabs
 import UnstartedOffers from './UnstartedOffers/UnstartedOffers';
@@ -40,7 +43,6 @@ const ProcurementOffers = () => {
 
     // State
     const [pendingNewOffer, setPendingNewOffer] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [offers, setOffers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('unstarted');
@@ -52,13 +54,137 @@ const ProcurementOffers = () => {
     const [pendingFinalizedOffer, setPendingFinalizedOffer] = useState(null);
     const [pendingCompletedOffer, setPendingCompletedOffer] = useState(null);
     const [pendingValidatedOffer, setPendingValidatedOffer] = useState(null);
-    const [pendingFinanceOffer, setPendingFinanceOffer] = useState(null); // NEW: Track finance validated offer
+    const [pendingFinanceOffer, setPendingFinanceOffer] = useState(null);
     const [pendingInspectionOffer, setPendingInspectionOffer] = useState(null);
+
+    // Map activeTab to the status used by useOffers
+    const statusForTab = useMemo(() => {
+        switch (activeTab) {
+            case 'unstarted': return 'UNSTARTED';
+            case 'inprogress': return 'INPROGRESS';
+            case 'submitted': return 'SUBMITTED';
+            case 'inspection': return 'INSPECTION_PENDING';
+            case 'finalize': return 'FINALIZING';
+            case 'completed': return 'COMPLETED';
+            default: return null; // validated and finance use specialized hooks
+        }
+    }, [activeTab]);
+
+    // Standard single-status query (used for most tabs)
+    const {
+        data: singleStatusData,
+        isLoading: singleStatusLoading,
+        refetch: refetchSingleStatus
+    } = useOffers(statusForTab, {
+        enabled: statusForTab !== null,
+    });
+
+    // Validated tab uses multiple statuses
+    const {
+        data: validatedData,
+        isLoading: validatedLoading,
+        refetch: refetchValidated
+    } = useOffersByMultipleStatuses(['MANAGERACCEPTED', 'MANAGERREJECTED'], {
+        enabled: activeTab === 'validated',
+    });
+
+    // Finance tab uses its own endpoint
+    const {
+        data: financeData,
+        isLoading: financeLoading,
+        refetch: refetchFinance
+    } = useCompletedFinanceOffers({
+        enabled: activeTab === 'finance',
+    });
+
+    // Derive the correct data and loading state based on the active tab
+    const hookData = useMemo(() => {
+        if (activeTab === 'validated') return validatedData || [];
+        if (activeTab === 'finance') return financeData || [];
+        return singleStatusData || [];
+    }, [activeTab, singleStatusData, validatedData, financeData]);
+
+    // Separate loading state for request order fetch (not managed by React Query)
+    const [requestOrderLoading, setRequestOrderLoading] = useState(false);
+
+    const loading = useMemo(() => {
+        if (requestOrderLoading) return true;
+        if (activeTab === 'validated') return validatedLoading;
+        if (activeTab === 'finance') return financeLoading;
+        if (statusForTab !== null) return singleStatusLoading;
+        return false;
+    }, [activeTab, singleStatusLoading, validatedLoading, financeLoading, statusForTab, requestOrderLoading]);
+
+    // Refetch function that calls the right query's refetch
+    const refetchOffers = useCallback(() => {
+        if (activeTab === 'validated') return refetchValidated();
+        if (activeTab === 'finance') return refetchFinance();
+        return refetchSingleStatus();
+    }, [activeTab, refetchSingleStatus, refetchValidated, refetchFinance]);
+
+    // Track previous hook data to detect changes (replaces the old fetchData callback)
+    const prevHookDataRef = useRef(null);
+
+    // Sync hook data into local offers state + handle active offer selection
+    useEffect(() => {
+        // Skip if data hasn't actually changed (reference comparison)
+        if (hookData === prevHookDataRef.current) return;
+        prevHookDataRef.current = hookData;
+
+        const offersData = hookData;
+        setOffers(offersData);
+
+        // Set active offer based on context
+        if (offersData.length > 0) {
+            if (pendingSubmittedOffer && activeTab === 'submitted') {
+                const submittedOffer = offersData.find(offer => offer.id === pendingSubmittedOffer.id);
+                setActiveOffer(submittedOffer || offersData[0]);
+                setPendingSubmittedOffer(null);
+            }
+            else if (pendingValidatedOffer && activeTab === 'validated') {
+                const validatedOffer = offersData.find(offer => offer.id === pendingValidatedOffer.id);
+                setActiveOffer(validatedOffer || offersData[0]);
+                setPendingValidatedOffer(null);
+            }
+            else if (pendingFinanceOffer && activeTab === 'finance') {
+                const financeOffer = offersData.find(offer => offer.id === pendingFinanceOffer.id);
+                setActiveOffer(financeOffer || offersData[0]);
+                setPendingFinanceOffer(null);
+            }
+            else if (pendingInspectionOffer && activeTab === 'inspection') {
+                const inspectionOffer = offersData.find(offer => offer.id === pendingInspectionOffer.id);
+                setActiveOffer(inspectionOffer || offersData[0]);
+                setPendingInspectionOffer(null);
+            }
+            else if (pendingFinalizedOffer && activeTab === 'finalize') {
+                const finalizedOffer = offersData.find(offer => offer.id === pendingFinalizedOffer.id);
+                setActiveOffer(finalizedOffer || offersData[0]);
+                setPendingFinalizedOffer(null);
+            }
+            else if (pendingCompletedOffer && activeTab === 'completed') {
+                setActiveOffer(pendingCompletedOffer);
+                setPendingCompletedOffer(null);
+            }
+            else if (pendingNewOffer && activeTab === 'unstarted') {
+                const newOffer = offersData.find(offer => offer.id === pendingNewOffer.id);
+                setActiveOffer(newOffer || offersData[0]);
+                setPendingNewOffer(null);
+            }
+            else if (activeOffer && offersData.find(offer => offer.id === activeOffer.id)) {
+                const updatedActiveOffer = offersData.find(offer => offer.id === activeOffer.id);
+                setActiveOffer(updatedActiveOffer);
+            }
+            else {
+                setActiveOffer(offersData[0]);
+            }
+        } else {
+            setActiveOffer(null);
+        }
+    }, [hookData, activeTab, pendingSubmittedOffer, pendingValidatedOffer, pendingFinanceOffer, pendingInspectionOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer]);
 
     // Helper function for authenticated fetch (keep for backward compatibility with child components)
     const fetchWithAuth = async (url, options = {}) => {
         const token = localStorage.getItem('token');
-        console.log("token:" + token);
 
         if (!token) {
             throw new Error('Authentication token not found');
@@ -108,7 +234,6 @@ const ProcurementOffers = () => {
 
     useEffect(() => {
         if (location.state?.newOffer) {
-            console.log('📦 RECEIVED NEW OFFER FROM NAVIGATION:', location.state.newOffer);
             setPendingNewOffer(location.state.newOffer);
             setActiveTab(location.state.activeTab || 'unstarted');
 
@@ -117,143 +242,24 @@ const ProcurementOffers = () => {
         }
     }, [location.state, navigate]);
 
-    // Fetch data using service
+    // Get user role from localStorage on mount
     useEffect(() => {
-        // Get user role from localStorage
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         if (userInfo && userInfo.role) {
             setUserRole(userInfo.role);
         }
+    }, []);
 
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                let offersData;
-
-                if (activeTab === 'unstarted') {
-                    offersData = await offerService.getByStatus('UNSTARTED');
-                } else if (activeTab === 'inprogress') {
-                    offersData = await offerService.getByStatus('INPROGRESS');
-                } else if (activeTab === 'submitted') {
-                    offersData = await offerService.getByStatus('SUBMITTED');
-                } else if (activeTab === 'validated') {
-                    offersData = await offerService.getMultipleStatuses(['MANAGERACCEPTED', 'MANAGERREJECTED']);
-                } else if (activeTab === 'finance') {
-                    offersData = await offerService.getCompletedFinanceOffers();
-                } else if (activeTab === 'inspection') {
-                    offersData = await offerService.getByStatus('INSPECTION_PENDING');
-                } else if (activeTab === 'finalize') {
-                    offersData = await offerService.getByStatus('FINALIZING');
-                } else if (activeTab === 'completed') {
-                    offersData = await offerService.getByStatus('COMPLETED');
-                } else {
-                    offersData = [];
-                }
-
-                console.log(`📊 Fetched ${offersData.length} offers for ${activeTab} tab`);
-                setOffers(offersData);
-
-                // Set active offer based on context
-                if (offersData.length > 0) {
-                    // If we have a pending submitted offer and we're on the submitted tab, select it
-                    if (pendingSubmittedOffer && activeTab === 'submitted') {
-                        console.log('🎯 Looking for pending submitted offer:', pendingSubmittedOffer.id);
-                        const submittedOffer = offersData.find(offer => offer.id === pendingSubmittedOffer.id);
-                        if (submittedOffer) {
-                            console.log('✅ Found submitted offer, setting as active');
-                            setActiveOffer(submittedOffer);
-                            setPendingSubmittedOffer(null);
-                        } else {
-                            console.log('⚠️ Submitted offer not found in data, selecting first offer');
-                            setActiveOffer(offersData[0]);
-                        }
-                    }
-                    // If we have a pending validated offer and we're on the validated tab, select it
-                    else if (pendingValidatedOffer && activeTab === 'validated') {
-                        const validatedOffer = offersData.find(offer => offer.id === pendingValidatedOffer.id);
-                        if (validatedOffer) {
-                            setActiveOffer(validatedOffer);
-                            setPendingValidatedOffer(null);
-                        } else {
-                            setActiveOffer(offersData[0]);
-                        }
-                    }
-                    // If we have a pending finance offer and we're on the finance tab, select it
-                    else if (pendingFinanceOffer && activeTab === 'finance') {
-                        const financeOffer = offersData.find(offer => offer.id === pendingFinanceOffer.id);
-                        if (financeOffer) {
-                            setActiveOffer(financeOffer);
-                            setPendingFinanceOffer(null);
-                        } else {
-                            setActiveOffer(offersData[0]);
-                        }
-                    }
-                    // If we have a pending inspection offer and we're on the inspection tab, select it
-                    else if (pendingInspectionOffer && activeTab === 'inspection') {
-                        const inspectionOffer = offersData.find(offer => offer.id === pendingInspectionOffer.id);
-                        if (inspectionOffer) {
-                            setActiveOffer(inspectionOffer);
-                            setPendingInspectionOffer(null);
-                        } else {
-                            setActiveOffer(offersData[0]);
-                        }
-                    }
-                    // If we have a pending finalized offer and we're on the finalize tab, select it
-                    else if (pendingFinalizedOffer && activeTab === 'finalize') {
-                        const finalizedOffer = offersData.find(offer => offer.id === pendingFinalizedOffer.id);
-                        if (finalizedOffer) {
-                            setActiveOffer(finalizedOffer);
-                            setPendingFinalizedOffer(null);
-                        } else {
-                            setActiveOffer(offersData[0]);
-                        }
-                    }
-                    // If we have a pending completed offer and we're on the completed tab, select it
-                    else if (pendingCompletedOffer && activeTab === 'completed') {
-                        setActiveOffer(pendingCompletedOffer);
-                        setPendingCompletedOffer(null);
-                    }
-                    // If we have a pending new offer and we're on the unstarted tab, select it
-                    else if (pendingNewOffer && activeTab === 'unstarted') {
-                        const newOffer = offersData.find(offer => offer.id === pendingNewOffer.id);
-                        if (newOffer) {
-                            setActiveOffer(newOffer);
-                            setPendingNewOffer(null);
-                        } else {
-                            setActiveOffer(offersData[0]);
-                        }
-                    }
-                    // If we have an activeOffer and it exists in the new data, keep it selected
-                    else if (activeOffer && offersData.find(offer => offer.id === activeOffer.id)) {
-                        // Find the updated version of the active offer from the fetched data
-                        const updatedActiveOffer = offersData.find(offer => offer.id === activeOffer.id);
-                        setActiveOffer(updatedActiveOffer);
-                    }
-                    else {
-                        // Otherwise, select the first offer
-                        setActiveOffer(offersData[0]);
-                    }
-                } else {
-                    setActiveOffer(null);
-                }
-
-                setLoading(false);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                setError('Failed to load data. Please try again.');
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer, pendingValidatedOffer, pendingFinanceOffer, pendingInspectionOffer]);
-// ⬆️ IMPORTANT: Removed 'activeOffer' from dependencies to prevent infinite loop; // Add pendingFinanceOffer
+    // Refetch data when pending offer state changes trigger a tab switch that needs fresh data
+    useEffect(() => {
+        refetchOffers();
+    }, [pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer, pendingValidatedOffer, pendingFinanceOffer, pendingInspectionOffer]);
 
     // When active offer changes, fetch its request order
     useEffect(() => {
         const loadRequestOrderForActiveOffer = async () => {
             if (activeOffer && !activeOffer.requestOrder) {
-                setLoading(true);
+                setRequestOrderLoading(true);
                 try {
                     const requestOrder = await fetchRequestOrderForOffer(activeOffer.id);
                     if (requestOrder) {
@@ -263,10 +269,10 @@ const ProcurementOffers = () => {
                             requestOrder: requestOrder
                         });
                     }
-                    setLoading(false);
+                    setRequestOrderLoading(false);
                 } catch (error) {
                     console.error('Error loading request order:', error);
-                    setLoading(false);
+                    setRequestOrderLoading(false);
                 }
             }
         };
@@ -275,14 +281,12 @@ const ProcurementOffers = () => {
     }, [activeOffer]);
 
     // Handle starting work on an offer (change from UNSTARTED to INPROGRESS)
-// Handle starting work on an offer (change from UNSTARTED to INPROGRESS)
     const handleOfferStatusChange = async (offerId, newStatus, offerData = null) => {
         try {
             await offerService.updateStatus(offerId, newStatus);
 
             // If this is a submission (INPROGRESS -> SUBMITTED), redirect to submitted tab
             if (newStatus === 'SUBMITTED' && offerData) {
-                console.log('📤 Offer submitted, switching to submitted tab with offer:', offerData);
 
                 // Store the submitted offer for selection after tab switch
                 setPendingSubmittedOffer({
@@ -290,14 +294,14 @@ const ProcurementOffers = () => {
                     status: 'SUBMITTED'
                 });
 
-                // Switch to submitted tab - this will trigger the useEffect that loads offers
+                // Switch to submitted tab - the hook will automatically refetch
                 setActiveTab('submitted');
 
                 // Don't update the current offers list since we're switching tabs
                 return;
             }
 
-            // For other status changes, update the current tab's offers
+            // For other status changes, update the current tab's offers locally for immediate UI feedback
             const updatedOffers = offers.filter(o => o.id !== offerId);
             setOffers(updatedOffers);
 
@@ -305,6 +309,9 @@ const ProcurementOffers = () => {
             if (activeOffer && activeOffer.id === offerId) {
                 setActiveOffer(updatedOffers.length > 0 ? updatedOffers[0] : null);
             }
+
+            // Refetch to ensure consistency with server
+            refetchOffers();
 
             setSuccess(`Offer ${newStatus.toLowerCase()} successfully!`);
             setTimeout(() => setSuccess(null), 3000);
@@ -405,7 +412,6 @@ const ProcurementOffers = () => {
 
     // Handle offer validated (approved/declined) callback
     const handleOfferValidated = (validatedOffer, action) => {
-        console.log(`Offer ${action}:`, validatedOffer);
 
         // Store the validated offer for selection after tab switch
         setPendingValidatedOffer(validatedOffer);
@@ -416,7 +422,6 @@ const ProcurementOffers = () => {
 
     // NEW: Handle offer sent to finance callback
     const handleOfferSentToFinance = (financeOffer) => {
-        console.log('Offer sent to finance:', financeOffer);
 
         // Store the finance offer for selection after tab switch
         setPendingFinanceOffer(financeOffer);

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FaTimes, FaSpinner } from 'react-icons/fa';
 import { Button, CloseButton } from '../../../../components/common/Button';
 import EmployeeSelector from '../../../../components/common/EmployeeSelector/EmployeeSelector';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { salaryIncreaseService } from '../../../../services/hr/salaryIncreaseService.js';
-import { employeeService } from '../../../../services/hr/employeeService.js';
-import { jobPositionService } from '../../../../services/hr/jobPositionService.js';
+import { useJobPositions, useEmployees } from '../../../../hooks/queries';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 
 const CreateSalaryIncreaseModal = ({ onClose, onSuccess }) => {
@@ -21,14 +20,30 @@ const CreateSalaryIncreaseModal = ({ onClose, onSuccess }) => {
     });
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [selectedPosition, setSelectedPosition] = useState(null);
-    const [employees, setEmployees] = useState([]);
-    const [positions, setPositions] = useState([]);
+    const { data: rawEmployees = [], isLoading: employeesLoading } = useEmployees();
+    const { data: positions = [], isLoading: positionsLoading } = useJobPositions();
     const [currentSalary, setCurrentSalary] = useState(null);
     const [validation, setValidation] = useState({});
     const [loading, setLoading] = useState(false);
-    const [loadingData, setLoadingData] = useState(true);
     const [isFormDirty, setIsFormDirty] = useState(false);
     const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+    const loadingData = employeesLoading || positionsLoading;
+
+    const employees = useMemo(() => {
+        return rawEmployees.map(emp => ({
+            id: emp.id,
+            firstName: emp.firstName,
+            lastName: emp.lastName,
+            employeeId: emp.employeeNumber,
+            email: emp.email,
+            departmentName: emp.departmentName || emp.jobPosition?.department?.name,
+            jobPositionName: emp.jobPositionName || emp.jobPosition?.positionName,
+            photoUrl: emp.photoUrl,
+            monthlySalary: emp.monthlySalary,
+            baseSalaryOverride: emp.baseSalaryOverride
+        }));
+    }, [rawEmployees]);
 
     // Scroll lock
     useEffect(() => {
@@ -44,38 +59,6 @@ const CreateSalaryIncreaseModal = ({ onClose, onSuccess }) => {
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [loading, isFormDirty]);
-
-    // Load employees and positions
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                setLoadingData(true);
-                const [empRes, posRes] = await Promise.all([
-                    employeeService.getAll(),
-                    jobPositionService.getAll()
-                ]);
-                const empData = empRes.data || [];
-                setEmployees(empData.map(emp => ({
-                    id: emp.id,
-                    firstName: emp.firstName,
-                    lastName: emp.lastName,
-                    employeeId: emp.employeeNumber,
-                    email: emp.email,
-                    departmentName: emp.departmentName || emp.jobPosition?.department?.name,
-                    jobPositionName: emp.jobPositionName || emp.jobPosition?.positionName,
-                    photoUrl: emp.photoUrl,
-                    monthlySalary: emp.monthlySalary,
-                    baseSalaryOverride: emp.baseSalaryOverride
-                })));
-                setPositions(posRes.data || []);
-            } catch (error) {
-                showError('Failed to load employee and position data');
-            } finally {
-                setLoadingData(false);
-            }
-        };
-        loadData();
-    }, [showError]);
 
     const handleCloseAttempt = () => {
         if (isFormDirty) {

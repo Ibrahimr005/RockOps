@@ -303,12 +303,6 @@ const RelatedDocuments = () => {
 
         setLoading(true);
         try {
-            console.log('Assigning document to sarky month:', {
-                documentId: documentToPromote.id,
-                month: promoteMonth,
-                year: promoteYear
-            });
-            
             await documentService.assignToSarkyMonth(documentToPromote.id, promoteMonth, promoteYear);
             showSnackbar(`Document assigned to ${getMonthLabel(promoteMonth)} ${promoteYear}`, 'success');
             setShowPromoteModal(false);
@@ -328,7 +322,6 @@ const RelatedDocuments = () => {
 
         setLoading(true);
         try {
-            console.log('Removing sarky assignment for document:', documentId);
             await documentService.removeSarkyAssignment(documentId);
             showSnackbar('Monthly assignment removed', 'success');
             loadDocuments();

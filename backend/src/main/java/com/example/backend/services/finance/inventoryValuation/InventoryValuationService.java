@@ -79,6 +79,7 @@ public class InventoryValuationService {
     /**
      * Get all pending item price approvals across all warehouses
      */
+    @Transactional(readOnly = true)
     public List<PendingItemApprovalDTO> getAllPendingApprovals() {
         List<ItemPriceApproval> pendingApprovals = itemPriceApprovalRepository
                 .findByApprovalStatusOrderByRequestedAtDesc(ApprovalStatus.PENDING);
@@ -91,6 +92,7 @@ public class InventoryValuationService {
     /**
      * Get pending approvals for a specific warehouse
      */
+    @Transactional(readOnly = true)
     public List<PendingItemApprovalDTO> getPendingApprovalsByWarehouse(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
@@ -189,6 +191,7 @@ public class InventoryValuationService {
     /**
      * Get all approved item price approvals (history)
      */
+    @Transactional(readOnly = true)
     public List<ApprovedItemHistoryDTO> getApprovalHistory() {
         List<ItemPriceApproval> approvedItems = itemPriceApprovalRepository
                 .findByApprovalStatusOrderByApprovedAtDesc(ApprovalStatus.APPROVED);
@@ -203,6 +206,7 @@ public class InventoryValuationService {
     /**
      * Get warehouse balance with valuation data
      */
+    @Transactional(readOnly = true)
     public WarehouseBalanceDTO getWarehouseBalance(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
@@ -227,6 +231,7 @@ public class InventoryValuationService {
     /**
      * Get site balance with full valuation data
      */
+    @Transactional
     public SiteBalanceDTO getSiteBalance(UUID siteId) {
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new IllegalArgumentException("Site not found"));
@@ -234,19 +239,22 @@ public class InventoryValuationService {
         // Get site valuation (will calculate if doesn't exist)
         SiteValuation siteValuation = siteValuationService.getSiteValuation(siteId);
 
-        // Get warehouse balances
-        List<WarehouseBalanceDTO> warehouseBalances = site.getWarehouses().stream()
-                .map(warehouse -> getWarehouseBalance(warehouse.getId()))
-                .collect(Collectors.toList());
+        // Get warehouse balances - use warehouseRepository to avoid lazy loading issues
+        List<Warehouse> siteWarehouses = warehouseRepository.findBySiteId(siteId);
+        List<WarehouseBalanceDTO> warehouseBalances = siteWarehouses != null
+                ? siteWarehouses.stream()
+                    .map(warehouse -> getWarehouseBalance(warehouse.getId()))
+                    .collect(Collectors.toList())
+                : Collections.emptyList();
 
         return SiteBalanceDTO.builder()
                 .siteId(site.getId())
                 .siteName(site.getName())
-                .totalValue(siteValuation.getTotalValue())
-                .totalWarehouses(siteValuation.getWarehouseCount())
-                .equipmentCount(siteValuation.getEquipmentCount())
-                .totalEquipmentValue(siteValuation.getEquipmentValue())
-                .totalWarehouseValue(siteValuation.getWarehouseValue())
+                .totalValue(siteValuation.getTotalValue() != null ? siteValuation.getTotalValue() : 0.0)
+                .totalWarehouses(siteValuation.getWarehouseCount() != null ? siteValuation.getWarehouseCount() : 0)
+                .equipmentCount(siteValuation.getEquipmentCount() != null ? siteValuation.getEquipmentCount() : 0)
+                .totalEquipmentValue(siteValuation.getEquipmentValue() != null ? siteValuation.getEquipmentValue() : 0.0)
+                .totalWarehouseValue(siteValuation.getWarehouseValue() != null ? siteValuation.getWarehouseValue() : 0.0)
                 .warehouses(warehouseBalances)
                 .build();
     }
@@ -254,6 +262,7 @@ public class InventoryValuationService {
     /**
      * Get all site balances with valuation data
      */
+    @Transactional
     public List<SiteBalanceDTO> getAllSiteBalances() {
         List<Site> sites = siteRepository.findAll();
 
@@ -336,6 +345,7 @@ public class InventoryValuationService {
     /**
      * Get item breakdown (value composition) for a warehouse
      */
+    @Transactional(readOnly = true)
     public List<ItemBreakdownDTO> getWarehouseItemBreakdown(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
@@ -359,6 +369,7 @@ public class InventoryValuationService {
     /**
      * Get ALL item history for a warehouse
      */
+    @Transactional(readOnly = true)
     public List<WarehouseTransactionHistoryDTO> getWarehouseAllItemHistory(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
@@ -493,6 +504,7 @@ public class InventoryValuationService {
     }
 
 
+    @Transactional(readOnly = true)
     public List<ConsumableBreakdownDTO> getEquipmentConsumablesBreakdown(UUID equipmentId) {
         List<Consumable> consumables = consumableRepository.findByEquipmentIdAndStatus(
                 equipmentId, ItemStatus.IN_WAREHOUSE);

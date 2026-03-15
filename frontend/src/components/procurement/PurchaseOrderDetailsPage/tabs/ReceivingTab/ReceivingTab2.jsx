@@ -41,8 +41,6 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
     };
 
     const handlePrintAllMerchants = () => {
-        console.log('Print all merchants clicked'); // Debug log
-        console.log('Items by merchant:', itemsByMerchant); // Debug log
         setLanguageSelectionType('all');
         setShowLanguageModal(true);
     };

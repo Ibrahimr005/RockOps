@@ -24,6 +24,7 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -342,8 +343,24 @@ public class JobPositionService {
     }
 
     /**
+     * Get root job positions (no parent)
+     */
+    public List<JobPosition> getRootPositions() {
+        return jobPositionRepository.findByParentJobPositionIsNull();
+    }
+
+    /**
+     * Get child positions for a given parent ID
+     */
+    public List<JobPosition> getChildPositions(UUID parentId) {
+        return jobPositionRepository.findByParentJobPositionId(parentId);
+    }
+
+    /**
      * Get all job positions as DTOs with eager loading of sites
      */
+    @Cacheable("jobPositions")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<JobPositionDTO> getAllJobPositionDTOs() {
         List<JobPosition> jobPositions = jobPositionRepository.findAll();
 

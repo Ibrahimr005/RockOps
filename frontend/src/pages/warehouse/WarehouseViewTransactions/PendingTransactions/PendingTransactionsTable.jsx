@@ -9,10 +9,10 @@ import "./PendingTransactions.scss"
 import { transactionService } from '../../../../services/transaction/transactionService.js';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
 import { itemService } from '../../../../services/warehouse/itemService';
-import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
 import { siteService } from '../../../../services/siteService';
 import { equipmentService } from '../../../../services/equipmentService';
 import { useNavigate } from 'react-router-dom';
+import { useItemTypes } from '../../../../hooks/queries';
 
 const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, onTransactionUpdate }) => {
     const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
 
     // Data states
     const [items, setItems] = useState([]);
-    const [allItemTypes, setAllItemTypes] = useState([]);
+    const { data: allItemTypes = [] } = useItemTypes();
     const [warehouseData, setWarehouseData] = useState({ name: "", id: "" });
 
     // Snackbar state
@@ -50,7 +50,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
     useEffect(() => {
         fetchPendingTransactions();
         fetchItems();
-        fetchAllItemTypes();
         fetchWarehouseDetails();
     }, [warehouseId, refreshTrigger]);
 
@@ -76,17 +75,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         } catch (error) {
             console.error("Failed to fetch items:", error);
             setItems([]);
-        }
-    };
-
-    const fetchAllItemTypes = async () => {
-        try {
-            const response = await itemTypeService.getAll();
-            const data = response.data || response;
-            setAllItemTypes(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error("Failed to fetch item types:", error);
-            setAllItemTypes([]);
         }
     };
 

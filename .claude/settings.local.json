@@ -25,14 +25,13 @@
       "Bash(done)",
       "mcp__claude-flow__system_status",
       "Bash(node:*)",
-      "Bash(./mvnw test:*)"
+      "Bash(git:*)",
+      "Bash(cd D:/RockOps/backend && ./mvnw.cmd compile -q -DskipTests 2>&1)",
+      "Bash(cd D:/RockOps/backend && ./mvnw.cmd compile -DskipTests 2>&1 | tail -5)",
+      "Bash(cd D:/RockOps/frontend && npm run build 2>&1 | tail -10)"
     ],
     "deny": [],
     "ask": []
   },
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "claude-flow"
-  ],
   "outputStyle": "default"
 }

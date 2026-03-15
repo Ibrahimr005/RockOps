@@ -28,11 +28,9 @@ public class RequestOrderController {
     @PostMapping()
     public ResponseEntity<?> createRequest(@RequestBody Map<String, Object> requestData) {
         try {
-            System.out.println("Received request data: " + requestData);
             RequestOrder requestOrder = requestOrderService.createRequest(requestData);
             return ResponseEntity.ok(requestOrder);
         } catch (RuntimeException e) {
-            System.err.println("Error creating request order: " + e.getMessage());
 
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("message", e.getMessage());
@@ -40,9 +38,6 @@ public class RequestOrderController {
 
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         } catch (Exception e) {
-            System.err.println("Unexpected error: " + e.getMessage());
-            e.printStackTrace();
-
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("message", "An unexpected error occurred. Please try again later.");
             errorResponse.put("error", "Internal server error");
@@ -73,8 +68,6 @@ public class RequestOrderController {
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
-            System.err.println("Error fetching request order: " + e.getMessage());
-            e.printStackTrace();
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Error fetching request order: " + e.getMessage());

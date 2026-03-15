@@ -49,7 +49,6 @@ const AgingReport = () => {
         try {
             setLoading(true);
 
-            console.log('=== FETCHING AGING DATA ===');
 
             // Fetch all aging data in parallel using financeService
             const [
@@ -66,13 +65,6 @@ const AgingReport = () => {
                 financeService.invoices.getAgedOver90()
             ]);
 
-            console.log('Raw aging responses:', {
-                summaryResponse,
-                invoices0To30Response,
-                invoices31To60Response,
-                invoices61To90Response,
-                invoicesOver90Response
-            });
 
             // Extract data from Axios responses
             const summary = summaryResponse.data || summaryResponse;
@@ -81,28 +73,9 @@ const AgingReport = () => {
             const invoices61To90 = invoices61To90Response.data || invoices61To90Response;
             const invoicesOver90 = invoicesOver90Response.data || invoicesOver90Response;
 
-            console.log('Extracted aging data:', {
-                summary,
-                invoices0To30,
-                invoices31To60,
-                invoices61To90,
-                invoicesOver90
-            });
 
             // Debug: Log the detailed breakdown
-            console.log('Summary amounts:', {
-                aged0To30: summary.aged0To30,
-                aged31To60: summary.aged31To60,
-                aged61To90: summary.aged61To90,
-                agedOver90: summary.agedOver90
-            });
 
-            console.log('Invoice counts:', {
-                invoices0To30: Array.isArray(invoices0To30) ? invoices0To30.length : 0,
-                invoices31To60: Array.isArray(invoices31To60) ? invoices31To60.length : 0,
-                invoices61To90: Array.isArray(invoices61To90) ? invoices61To90.length : 0,
-                invoicesOver90: Array.isArray(invoicesOver90) ? invoicesOver90.length : 0
-            });
 
             setAgingData({
                 summary: summary || {
@@ -147,11 +120,9 @@ const AgingReport = () => {
             setDownloadingPdf(true);
             showInfo('Generating PDF report...');
 
-            console.log('=== EXPORTING AGING REPORT PDF ===');
 
             const response = await financeService.invoices.exportAgingToPDF();
 
-            console.log('PDF export response:', response);
 
             // Extract blob from response
             const blob = response.data || response;

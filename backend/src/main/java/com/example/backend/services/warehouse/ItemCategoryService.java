@@ -7,6 +7,8 @@ import com.example.backend.repositories.warehouse.ItemCategoryRepository;
 import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -22,6 +24,7 @@ public class ItemCategoryService {
     @Autowired(required = false)
     private NotificationService notificationService;
 
+    @CacheEvict(value = "itemCategories", allEntries = true)
     @Transactional
     public ItemCategory addItemCategory(Map<String, Object> requestBody) {
         String categoryName = (String) requestBody.get("name");
@@ -116,12 +119,16 @@ public class ItemCategoryService {
     }
 
     // Get all categories
+    @Cacheable("itemCategories")
+    @Transactional(readOnly = true)
     public List<ItemCategory> getAllCategories() {
         System.out.println("***************");
         return itemCategoryRepository.findAll();
     }
 
     // Get only parent categories (categories that have at least one child)
+    @Cacheable(value = "itemCategories", key = "'parents'")
+    @Transactional(readOnly = true)
     public List<ItemCategory> getParentCategories() {
         try {
             List<ItemCategory> allCategories = itemCategoryRepository.findAll();
@@ -174,6 +181,7 @@ public class ItemCategoryService {
     }
 
     // Delete an existing ItemCategory
+    @CacheEvict(value = "itemCategories", allEntries = true)
     public void deleteItemCategory(UUID itemCategoryId) {
         // Fetch the item category to be deleted
         ItemCategory itemCategory = itemCategoryRepository.findById(itemCategoryId)
@@ -253,6 +261,7 @@ public class ItemCategoryService {
     }
 
     // Update an existing ItemCategory
+    @CacheEvict(value = "itemCategories", allEntries = true)
     @Transactional
     public ItemCategory updateItemCategory(UUID itemCategoryId, Map<String, Object> requestBody) {
         // Fetch the item category to be updated

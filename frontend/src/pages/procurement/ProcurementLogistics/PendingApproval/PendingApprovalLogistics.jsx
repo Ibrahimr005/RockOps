@@ -60,17 +60,13 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
     };
     const fetchAvailablePurchaseOrders = async () => {
         try {
-            console.log('Fetching purchase orders...');
             const allPOs = await purchaseOrderService.getAll();
-            console.log('All POs with items:', allPOs);
 
             const filtered = allPOs.filter(po => {
                 const items = po.purchaseOrderItems || [];
-                console.log(`PO ${po.poNumber}: has ${items.length} items, will ${items.length > 0 ? 'INCLUDE' : 'EXCLUDE'}`);
                 return items.length > 0;
             });
 
-            console.log('Filtered POs with items:', filtered);
 
             const transformedPOs = filtered.map(po => ({
                 ...po,
@@ -88,7 +84,6 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
                 merchantName: po.requestOrder?.requesterName || 'N/A'
             }));
 
-            console.log('Transformed POs ready for modal:', transformedPOs);
             setAvailablePurchaseOrders(transformedPOs);
         } catch (error) {
             console.error('Error fetching purchase orders:', error);
@@ -98,17 +93,13 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
 
     const fetchAvailablePurchaseOrderReturns = async () => {
         try {
-            console.log('Fetching purchase order returns...');
             const allPORs = await poReturnService.getAll();
-            console.log('All PO Returns with items:', allPORs);
 
             const filtered = allPORs.filter(por => {
                 const items = por.returnItems || [];
-                console.log(`PO Return ${por.returnId}: has ${items.length} items, will ${items.length > 0 ? 'INCLUDE' : 'EXCLUDE'}`);
                 return items.length > 0;
             });
 
-            console.log('Filtered PO Returns with items:', filtered);
 
             const transformedPORs = filtered.map(por => ({
                 ...por,
@@ -124,7 +115,6 @@ const PendingApprovalLogistics = ({ onCountChange }) => {
                 merchantName: por.merchantName
             }));
 
-            console.log('Transformed PO Returns ready for modal:', transformedPORs);
             setAvailablePurchaseOrderReturns(transformedPORs);
         } catch (error) {
             console.error('Error fetching purchase order returns:', error);

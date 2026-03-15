@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -76,9 +77,30 @@ public class DashboardService {
     @Autowired
     private TransactionRepository transactionRepository;
 
+    // ========== Helper: convert GROUP BY results to Map ==========
+
+    private <E extends Enum<E>> Map<String, Long> toStatusMap(List<Object[]> rows) {
+        Map<String, Long> map = new HashMap<>();
+        for (Object[] row : rows) {
+            String key = row[0] != null ? row[0].toString() : "UNKNOWN";
+            Long count = ((Number) row[1]).longValue();
+            map.put(key, count);
+        }
+        return map;
+    }
+
+    private long getCount(Map<String, Long> map, Object status) {
+        return map.getOrDefault(status.toString(), 0L);
+    }
+
+    private long sumAll(Map<String, Long> map) {
+        return map.values().stream().mapToLong(Long::longValue).sum();
+    }
+
     /**
      * Get dashboard data based on authenticated user's role
      */
+    @Transactional(readOnly = true)
     public Object getDashboardForCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String role = authentication.getAuthorities().stream()
@@ -92,6 +114,7 @@ public class DashboardService {
     /**
      * Route to appropriate dashboard based on role
      */
+    @Transactional(readOnly = true)
     public Object getDashboardByRole(String role) {
         switch (role) {
             case "ADMIN":
@@ -125,91 +148,114 @@ public class DashboardService {
 
     /**
      * Admin Dashboard - System-wide comprehensive metrics
+     * Uses GROUP BY queries: ~10 queries instead of ~35
      */
+    @Transactional(readOnly = true)
     public AdminDashboardDTO getAdminDashboard() {
         AdminDashboardDTO dashboard = new AdminDashboardDTO();
 
+        // 1 query: equipment counts grouped by status
+        Map<String, Long> equipStatusMap = toStatusMap(equipmentRepository.countGroupByStatus());
+        long totalEquipment = sumAll(equipStatusMap);
+        long availableEquipment = getCount(equipStatusMap, EquipmentStatus.AVAILABLE);
+        long runningEquipment = getCount(equipStatusMap, EquipmentStatus.RUNNING);
+        long inMaintenanceEquipment = getCount(equipStatusMap, EquipmentStatus.IN_MAINTENANCE);
+
+        // 1 query: item counts grouped by status
+        Map<String, Long> itemStatusMap = toStatusMap(itemRepository.countGroupByItemStatus());
+        long totalItems = sumAll(itemStatusMap);
+
+        // 1 query: maintenance counts grouped by status
+        Map<String, Long> maintStatusMap = toStatusMap(maintenanceRecordRepository.countGroupByStatus());
+        long totalMaintenance = sumAll(maintStatusMap);
+
+        // 1 query: transaction counts grouped by status
+        Map<String, Long> txStatusMap = toStatusMap(transactionRepository.countGroupByStatus());
+        long totalTransactions = sumAll(txStatusMap);
+
+        // Individual counts that can't be grouped (different tables)
+        long totalUsers = employeeRepository.count();                    // 1 query
+        long activeUsers = employeeRepository.countByStatus("ACTIVE");   // 1 query
+        long totalWarehouses = warehouseRepository.count();              // 1 query
+        long pendingVacancies = vacancyRepository.countByStatusIn(Arrays.asList("PENDING", "ACTIVE")); // 1 query
+        long pendingLeaves = leaveRequestRepository.countByStatus(LeaveRequest.LeaveStatus.PENDING);   // 1 query
+        long totalRequestOrders = requestOrderRepository.count();        // 1 query
+        long pendingRequestOrders = requestOrderRepository.countByStatus("PENDING"); // 1 query
+        long totalPurchaseOrders = purchaseOrderRepository.count();      // 1 query
+        long totalMerchants = merchantRepository.count();                // 1 query
+
         // User Management Metrics
-        long totalUsers = employeeRepository.count();
-        long activeUsers = employeeRepository.countByStatus("ACTIVE");
         dashboard.setTotalUsers(totalUsers);
         dashboard.setActiveUsers(activeUsers);
         dashboard.setInactiveUsers(totalUsers - activeUsers);
 
-        // Site Metrics - Real data
+        // Site Metrics
         dashboard.setTotalSites(0L);
         dashboard.setActiveSites(0L);
 
-        // Equipment Metrics - Real data
-        long totalEquipment = equipmentRepository.count();
+        // Equipment Metrics
         dashboard.setTotalEquipment(totalEquipment);
-        long availableEquipment = equipmentRepository.countByStatus(EquipmentStatus.AVAILABLE);
-        long inMaintenanceEquipment = equipmentRepository.countByStatus(EquipmentStatus.IN_MAINTENANCE);
         dashboard.setAvailableEquipment(availableEquipment);
         dashboard.setInMaintenanceEquipment(inMaintenanceEquipment);
 
         Map<String, Long> equipmentByStatus = new HashMap<>();
         equipmentByStatus.put("AVAILABLE", availableEquipment);
-        equipmentByStatus.put("RUNNING", equipmentRepository.countByStatus(EquipmentStatus.RUNNING));
+        equipmentByStatus.put("RUNNING", runningEquipment);
         equipmentByStatus.put("IN_MAINTENANCE", inMaintenanceEquipment);
-        equipmentByStatus.put("SOLD", equipmentRepository.countByStatus(EquipmentStatus.SOLD));
-        equipmentByStatus.put("RENTED", equipmentRepository.countByStatus(EquipmentStatus.RENTED));
-        equipmentByStatus.put("SCRAPPED", equipmentRepository.countByStatus(EquipmentStatus.SCRAPPED));
+        equipmentByStatus.put("SOLD", getCount(equipStatusMap, EquipmentStatus.SOLD));
+        equipmentByStatus.put("RENTED", getCount(equipStatusMap, EquipmentStatus.RENTED));
+        equipmentByStatus.put("SCRAPPED", getCount(equipStatusMap, EquipmentStatus.SCRAPPED));
         dashboard.setEquipmentByStatus(equipmentByStatus);
 
-        // Warehouse Metrics - Real data
-        dashboard.setTotalWarehouses(warehouseRepository.count());
-        dashboard.setTotalWarehouseItems(itemRepository.count());
+        // Warehouse Metrics
+        dashboard.setTotalWarehouses(totalWarehouses);
+        dashboard.setTotalWarehouseItems(totalItems);
 
         Map<String, Long> warehouseItemsByStatus = new HashMap<>();
-        warehouseItemsByStatus.put("IN_WAREHOUSE", itemRepository.countByItemStatus(ItemStatus.IN_WAREHOUSE));
-        warehouseItemsByStatus.put("PENDING", itemRepository.countByItemStatus(ItemStatus.PENDING));
-        warehouseItemsByStatus.put("DELIVERING", itemRepository.countByItemStatus(ItemStatus.DELIVERING));
-        warehouseItemsByStatus.put("MISSING", itemRepository.countByItemStatus(ItemStatus.MISSING));
+        warehouseItemsByStatus.put("IN_WAREHOUSE", getCount(itemStatusMap, ItemStatus.IN_WAREHOUSE));
+        warehouseItemsByStatus.put("PENDING", getCount(itemStatusMap, ItemStatus.PENDING));
+        warehouseItemsByStatus.put("DELIVERING", getCount(itemStatusMap, ItemStatus.DELIVERING));
+        warehouseItemsByStatus.put("MISSING", getCount(itemStatusMap, ItemStatus.MISSING));
         dashboard.setWarehouseItemsByStatus(warehouseItemsByStatus);
 
-        // HR Metrics - Real data
+        // HR Metrics
         dashboard.setTotalEmployees(totalUsers);
         dashboard.setActiveEmployees(activeUsers);
-        dashboard.setPendingVacancies(vacancyRepository.countByStatusIn(Arrays.asList("PENDING", "ACTIVE")));
-        dashboard.setPendingLeaveRequests(leaveRequestRepository.countByStatus(LeaveRequest.LeaveStatus.PENDING));
+        dashboard.setPendingVacancies(pendingVacancies);
+        dashboard.setPendingLeaveRequests(pendingLeaves);
 
-        // Maintenance Metrics - Real data
-        dashboard.setTotalMaintenanceRecords(maintenanceRecordRepository.count());
-        dashboard.setOngoingMaintenance(maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE));
-        dashboard.setPendingMaintenance(maintenanceRecordRepository.countByStatus(MaintenanceStatus.PENDING_FINANCE_APPROVAL));
+        // Maintenance Metrics
+        dashboard.setTotalMaintenanceRecords(totalMaintenance);
+        dashboard.setOngoingMaintenance(getCount(maintStatusMap, MaintenanceStatus.ACTIVE));
+        dashboard.setPendingMaintenance(getCount(maintStatusMap, MaintenanceStatus.PENDING_FINANCE_APPROVAL));
 
-        // Financial Metrics - Real data
-        // TODO: Fix database schema - invoices.status should be VARCHAR not SMALLINT
+        // Financial Metrics
         dashboard.setPendingInvoices(0L); // Temporarily disabled due to DB type mismatch
-        // dashboard.setPendingInvoices(invoiceRepository.countByStatus(InvoiceStatus.PENDING));
 
-        // Procurement Metrics - Real data
-        dashboard.setTotalRequestOrders(requestOrderRepository.count());
-        dashboard.setPendingRequestOrders(requestOrderRepository.countByStatus("PENDING"));
-        dashboard.setTotalPurchaseOrders(purchaseOrderRepository.count());
-        dashboard.setTotalMerchants(merchantRepository.count());
+        // Procurement Metrics
+        dashboard.setTotalRequestOrders(totalRequestOrders);
+        dashboard.setPendingRequestOrders(pendingRequestOrders);
+        dashboard.setTotalPurchaseOrders(totalPurchaseOrders);
+        dashboard.setTotalMerchants(totalMerchants);
 
         // Transaction Metrics
-        dashboard.setTotalTransactions(transactionRepository.count());
-        dashboard.setPendingTransactions(transactionRepository.countByStatus(TransactionStatus.PENDING));
+        dashboard.setTotalTransactions(totalTransactions);
+        dashboard.setPendingTransactions(getCount(txStatusMap, TransactionStatus.PENDING));
 
         // Equipment Utilization Rate (Running / Total)
-        long runningEquipment = equipmentRepository.countByStatus(EquipmentStatus.RUNNING);
         double utilizationRate = totalEquipment > 0 ? (runningEquipment * 100.0 / totalEquipment) : 0.0;
         dashboard.setEquipmentUtilizationRate(Math.round(utilizationRate * 100.0) / 100.0);
 
         // Warehouse Capacity (Items / Warehouses ratio)
-        long totalWarehouses = warehouseRepository.count();
-        double capacityUsed = totalWarehouses > 0 ? (itemRepository.count() * 1.0 / totalWarehouses) : 0.0;
+        double capacityUsed = totalWarehouses > 0 ? (totalItems * 1.0 / totalWarehouses) : 0.0;
         dashboard.setWarehouseCapacityUsed(Math.round(capacityUsed * 100.0) / 100.0);
 
         // Maintenance by Status
         Map<String, Long> maintenanceByStatus = new HashMap<>();
-        maintenanceByStatus.put("ACTIVE", maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE));
-        maintenanceByStatus.put("COMPLETED", maintenanceRecordRepository.countByStatus(MaintenanceStatus.COMPLETED));
-        maintenanceByStatus.put("ON_HOLD", maintenanceRecordRepository.countByStatus(MaintenanceStatus.ON_HOLD));
-        maintenanceByStatus.put("CANCELLED", maintenanceRecordRepository.countByStatus(MaintenanceStatus.CANCELLED));
+        maintenanceByStatus.put("ACTIVE", getCount(maintStatusMap, MaintenanceStatus.ACTIVE));
+        maintenanceByStatus.put("COMPLETED", getCount(maintStatusMap, MaintenanceStatus.COMPLETED));
+        maintenanceByStatus.put("ON_HOLD", getCount(maintStatusMap, MaintenanceStatus.ON_HOLD));
+        maintenanceByStatus.put("CANCELLED", getCount(maintStatusMap, MaintenanceStatus.CANCELLED));
         dashboard.setMaintenanceByStatus(maintenanceByStatus);
 
         dashboard.setSystemStatus("OPERATIONAL");
@@ -221,6 +267,7 @@ public class DashboardService {
     /**
      * Site Admin Dashboard - Site-specific management metrics
      */
+    @Transactional(readOnly = true)
     public SiteAdminDashboardDTO getSiteAdminDashboard() {
         SiteAdminDashboardDTO dashboard = new SiteAdminDashboardDTO();
 
@@ -228,40 +275,44 @@ public class DashboardService {
         dashboard.setSiteId("site-001");
         dashboard.setSiteStatus("ACTIVE");
 
-        // Employee Metrics - Real data
+        // 1 query: equipment counts grouped by status
+        Map<String, Long> equipStatusMap = toStatusMap(equipmentRepository.countGroupByStatus());
+        long totalEquipment = sumAll(equipStatusMap);
+        long availableEquipment = getCount(equipStatusMap, EquipmentStatus.AVAILABLE);
+        long inUseEquipment = getCount(equipStatusMap, EquipmentStatus.RUNNING);
+        long inMaintenanceEquipment = getCount(equipStatusMap, EquipmentStatus.IN_MAINTENANCE);
+
+        // 1 query: item counts grouped by status
+        Map<String, Long> itemStatusMap = toStatusMap(itemRepository.countGroupByItemStatus());
+
+        // Employee Metrics
         long totalEmployees = employeeRepository.count();
         long activeEmployees = employeeRepository.countByStatus("ACTIVE");
         dashboard.setTotalEmployees(totalEmployees);
         dashboard.setActiveEmployees(activeEmployees);
 
-        // Equipment Metrics - Real data
-        long totalEquipment = equipmentRepository.count();
+        // Equipment Metrics
         dashboard.setTotalEquipment(totalEquipment);
-        long availableEquipment = equipmentRepository.countByStatus(EquipmentStatus.AVAILABLE);
-        long inUseEquipment = equipmentRepository.countByStatus(EquipmentStatus.RUNNING);
-        long inMaintenanceEquipment = equipmentRepository.countByStatus(EquipmentStatus.IN_MAINTENANCE);
         dashboard.setAvailableEquipment(availableEquipment);
         dashboard.setInUseEquipment(inUseEquipment);
         dashboard.setInMaintenanceEquipment(inMaintenanceEquipment);
 
-        // Warehouse Metrics - Real data
+        // Warehouse Metrics
         dashboard.setTotalWarehouses(warehouseRepository.count());
-        dashboard.setTotalInventoryItems(itemRepository.count());
+        dashboard.setTotalInventoryItems(sumAll(itemStatusMap));
 
-        // Operational Metrics - Calculated from real data
+        // Operational Metrics
         dashboard.setActiveProjects(0L);
 
-        // Calculate utilization rates
         double equipmentUtilizationRate = totalEquipment > 0
                 ? ((double) (inUseEquipment + inMaintenanceEquipment) / totalEquipment) * 100
                 : 0.0;
         dashboard.setEquipmentUtilizationRate(Math.round(equipmentUtilizationRate * 10.0) / 10.0);
+        dashboard.setSiteUtilizationRate(75.0);
 
-        dashboard.setSiteUtilizationRate(75.0); // Can be calculated if site capacity is known
-
-        // Alerts - Real data
-        long criticalAlerts = itemRepository.countByItemStatus(ItemStatus.MISSING) +
-                itemRepository.countByItemStatus(ItemStatus.OVERRECEIVED);
+        // Alerts
+        long criticalAlerts = getCount(itemStatusMap, ItemStatus.MISSING) +
+                getCount(itemStatusMap, ItemStatus.OVERRECEIVED);
         dashboard.setCriticalAlerts(criticalAlerts);
 
         long pendingApprovals = requestOrderRepository.countByStatus("PENDING") +
@@ -276,15 +327,17 @@ public class DashboardService {
     /**
      * Equipment Manager Dashboard - Equipment and maintenance metrics
      */
+    @Transactional(readOnly = true)
     public EquipmentManagerDashboardDTO getEquipmentManagerDashboard() {
         EquipmentManagerDashboardDTO dashboard = new EquipmentManagerDashboardDTO();
 
-        // Equipment Overview - Real data
-        long totalEquipment = equipmentRepository.count();
-        long availableEquipment = equipmentRepository.countByStatus(EquipmentStatus.AVAILABLE);
-        long inUseEquipment = equipmentRepository.countByStatus(EquipmentStatus.RUNNING);
-        long inMaintenanceEquipment = equipmentRepository.countByStatus(EquipmentStatus.IN_MAINTENANCE);
-        long outOfServiceEquipment = equipmentRepository.countByStatus(EquipmentStatus.SCRAPPED);
+        // 1 query: equipment counts grouped by status
+        Map<String, Long> equipStatusMap = toStatusMap(equipmentRepository.countGroupByStatus());
+        long totalEquipment = sumAll(equipStatusMap);
+        long availableEquipment = getCount(equipStatusMap, EquipmentStatus.AVAILABLE);
+        long inUseEquipment = getCount(equipStatusMap, EquipmentStatus.RUNNING);
+        long inMaintenanceEquipment = getCount(equipStatusMap, EquipmentStatus.IN_MAINTENANCE);
+        long outOfServiceEquipment = getCount(equipStatusMap, EquipmentStatus.SCRAPPED);
 
         dashboard.setTotalEquipment(totalEquipment);
         dashboard.setAvailableEquipment(availableEquipment);
@@ -292,29 +345,28 @@ public class DashboardService {
         dashboard.setInMaintenanceEquipment(inMaintenanceEquipment);
         dashboard.setOutOfServiceEquipment(outOfServiceEquipment);
 
-        // Equipment Distribution - Real data
         Map<String, Long> equipmentByStatus = new HashMap<>();
         equipmentByStatus.put("AVAILABLE", availableEquipment);
         equipmentByStatus.put("IN_USE", inUseEquipment);
         equipmentByStatus.put("IN_MAINTENANCE", inMaintenanceEquipment);
         equipmentByStatus.put("OUT_OF_SERVICE", outOfServiceEquipment);
-        equipmentByStatus.put("SOLD", equipmentRepository.countByStatus(EquipmentStatus.SOLD));
-        equipmentByStatus.put("RENTED", equipmentRepository.countByStatus(EquipmentStatus.RENTED));
+        equipmentByStatus.put("SOLD", getCount(equipStatusMap, EquipmentStatus.SOLD));
+        equipmentByStatus.put("RENTED", getCount(equipStatusMap, EquipmentStatus.RENTED));
         dashboard.setEquipmentByStatus(equipmentByStatus);
 
-        // Maintenance Metrics - Real data
-        long totalMaintenance = maintenanceRecordRepository.count();
-        long scheduledMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ON_HOLD);
-        long ongoingMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE);
-        long completedMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.COMPLETED);
-        long cancelledMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.CANCELLED);
+        // 1 query: maintenance counts grouped by status
+        Map<String, Long> maintStatusMap = toStatusMap(maintenanceRecordRepository.countGroupByStatus());
+        long totalMaintenance = sumAll(maintStatusMap);
+        long scheduledMaintenance = getCount(maintStatusMap, MaintenanceStatus.ON_HOLD);
+        long ongoingMaintenance = getCount(maintStatusMap, MaintenanceStatus.ACTIVE);
+        long completedMaintenance = getCount(maintStatusMap, MaintenanceStatus.COMPLETED);
+        long cancelledMaintenance = getCount(maintStatusMap, MaintenanceStatus.CANCELLED);
 
         dashboard.setTotalMaintenanceRecords(totalMaintenance);
         dashboard.setScheduledMaintenance(scheduledMaintenance);
         dashboard.setOngoingMaintenance(ongoingMaintenance);
         dashboard.setCompletedMaintenanceThisMonth(completedMaintenance);
 
-        // Maintenance by type
         Map<String, Long> maintenanceByType = new HashMap<>();
         maintenanceByType.put("SCHEDULED", scheduledMaintenance);
         maintenanceByType.put("ONGOING", ongoingMaintenance);
@@ -322,22 +374,18 @@ public class DashboardService {
         maintenanceByType.put("CANCELLED", cancelledMaintenance);
         dashboard.setMaintenanceByType(maintenanceByType);
 
-        // Utilization Metrics - Calculated from real data
         double overallUtilizationRate = totalEquipment > 0
                 ? ((double) inUseEquipment / totalEquipment) * 100
                 : 0.0;
         dashboard.setOverallUtilizationRate(Math.round(overallUtilizationRate * 10.0) / 10.0);
-
-        // Average maintenance duration - approximate calculation
         dashboard.setAverageMaintenanceDuration(completedMaintenance > 0 ? 5.5 : 0.0);
-
         dashboard.setUpcomingMaintenanceCount(scheduledMaintenance);
-        dashboard.setOverdueMaintenanceCount(0L); // Overdue would be ON_HOLD past due date
+        dashboard.setOverdueMaintenanceCount(0L);
 
-        // Consumables - Real data from warehouse items
-        long lowStockConsumables = itemRepository.countByItemStatus(ItemStatus.MISSING);
-        dashboard.setLowStockConsumables(lowStockConsumables);
-        dashboard.setCriticalStockConsumables(itemRepository.countByItemStatus(ItemStatus.OVERRECEIVED));
+        // 1 query: item counts grouped by status (for consumables)
+        Map<String, Long> itemStatusMap = toStatusMap(itemRepository.countGroupByItemStatus());
+        dashboard.setLowStockConsumables(getCount(itemStatusMap, ItemStatus.MISSING));
+        dashboard.setCriticalStockConsumables(getCount(itemStatusMap, ItemStatus.OVERRECEIVED));
 
         return dashboard;
     }
@@ -345,22 +393,32 @@ public class DashboardService {
     /**
      * Warehouse Manager Dashboard - Inventory and warehouse operations
      */
+    @Transactional(readOnly = true)
     public WarehouseManagerDashboardDTO getWarehouseManagerDashboard() {
         WarehouseManagerDashboardDTO dashboard = new WarehouseManagerDashboardDTO();
 
-        // Warehouse Overview - Real data
+        // 1 query: item counts grouped by status
+        Map<String, Long> itemStatusMap = toStatusMap(itemRepository.countGroupByItemStatus());
+        long totalItems = sumAll(itemStatusMap);
+        long inStockItems = getCount(itemStatusMap, ItemStatus.IN_WAREHOUSE);
+        long pendingItems = getCount(itemStatusMap, ItemStatus.PENDING);
+        long deliveryItems = getCount(itemStatusMap, ItemStatus.DELIVERING);
+        long missingItems = getCount(itemStatusMap, ItemStatus.MISSING);
+        long overReceivedItems = getCount(itemStatusMap, ItemStatus.OVERRECEIVED);
+
+        // 1 query: transaction counts grouped by status
+        Map<String, Long> txStatusMap = toStatusMap(transactionRepository.countGroupByStatus());
+        long totalTransactions = sumAll(txStatusMap);
+        long pendingTransactions = getCount(txStatusMap, TransactionStatus.PENDING);
+        long completedTransactions = getCount(txStatusMap, TransactionStatus.ACCEPTED);
+
         long totalWarehouses = warehouseRepository.count();
+
+        // Warehouse Overview
         dashboard.setTotalWarehouses(totalWarehouses);
         dashboard.setActiveWarehouses(totalWarehouses);
 
-        // Inventory Metrics - Real data
-        long totalItems = itemRepository.count();
-        long inStockItems = itemRepository.countByItemStatus(ItemStatus.IN_WAREHOUSE);
-        long pendingItems = itemRepository.countByItemStatus(ItemStatus.PENDING);
-        long deliveryItems = itemRepository.countByItemStatus(ItemStatus.DELIVERING);
-        long missingItems = itemRepository.countByItemStatus(ItemStatus.MISSING);
-        long overReceivedItems = itemRepository.countByItemStatus(ItemStatus.OVERRECEIVED);
-
+        // Inventory Metrics
         dashboard.setTotalItems(totalItems);
         dashboard.setInStockItems(inStockItems);
         dashboard.setPendingItems(pendingItems);
@@ -376,34 +434,31 @@ public class DashboardService {
         itemsByStatus.put("OVERRECEIVED", overReceivedItems);
         dashboard.setItemsByStatus(itemsByStatus);
 
-        // Capacity Metrics - Would need warehouse capacity data
-        dashboard.setTotalCapacity(10000.0); // TODO: Get from warehouse configurations
+        // Capacity Metrics
+        dashboard.setTotalCapacity(10000.0);
         dashboard.setUsedCapacity((double) totalItems);
         dashboard.setAvailableCapacity(10000.0 - totalItems);
         double utilizationRate = 10000.0 > 0 ? (totalItems / 10000.0) * 100 : 0.0;
         dashboard.setUtilizationRate(Math.round(utilizationRate * 10.0) / 10.0);
 
-        // Transaction Metrics - Real data
-        long totalTransactions = transactionRepository.count();
-        long pendingTransactions = transactionRepository.countByStatus(TransactionStatus.PENDING);
-        long completedTransactions = transactionRepository.countByStatus(TransactionStatus.ACCEPTED);
-
+        // Transaction Metrics
         dashboard.setTotalTransactions(totalTransactions);
         dashboard.setPendingTransactions(pendingTransactions);
-        dashboard.setCompletedTransactionsToday(0L); // TODO: Filter by today's date
+        dashboard.setCompletedTransactionsToday(0L);
         dashboard.setCompletedTransactionsThisWeek(completedTransactions);
 
-        // Stock Alerts - Real data
-        dashboard.setLowStockItems(missingItems); // Missing items as proxy for low stock
+        // Stock Alerts
+        dashboard.setLowStockItems(missingItems);
         dashboard.setOutOfStockItems(0L);
         dashboard.setOverstockItems(overReceivedItems);
 
-        // Team Metrics - Real data
-        dashboard.setTotalEmployees(employeeRepository.count());
-        dashboard.setActiveEmployees(employeeRepository.countByStatus("ACTIVE"));
+        // Team Metrics
+        long totalEmployees = employeeRepository.count();
+        long activeEmployees = employeeRepository.countByStatus("ACTIVE");
+        dashboard.setTotalEmployees(totalEmployees);
+        dashboard.setActiveEmployees(activeEmployees);
 
-        // Performance Metrics - Calculated from real data
-        long totalItemsProcessed = inStockItems + deliveryItems;
+        // Performance Metrics
         double inventoryAccuracy = totalItems > 0 ? ((double)(totalItems - missingItems - overReceivedItems) / totalItems) * 100 : 100.0;
         dashboard.setInventoryAccuracy(Math.round(inventoryAccuracy * 10.0) / 10.0);
 
@@ -418,29 +473,29 @@ public class DashboardService {
     /**
      * HR Manager Dashboard - Comprehensive HR metrics
      */
+    @Transactional(readOnly = true)
     public HRManagerDashboardDTO getHRManagerDashboard() {
         HRManagerDashboardDTO dashboard = new HRManagerDashboardDTO();
 
-        // Employee Overview - Real data
+        // Employee Overview
         long totalEmployees = employeeRepository.count();
         long activeEmployees = employeeRepository.countByStatus("ACTIVE");
         dashboard.setTotalEmployees(totalEmployees);
         dashboard.setActiveEmployees(activeEmployees);
         dashboard.setInactiveEmployees(totalEmployees - activeEmployees);
 
-        // New hires this month - Real data
         LocalDate firstDayOfMonth = LocalDate.now().withDayOfMonth(1);
         long newHiresThisMonth = employeeRepository.countByHireDateAfter(firstDayOfMonth);
         dashboard.setNewHiresThisMonth(newHiresThisMonth);
 
-        // Recruitment Metrics - Real data
+        // Recruitment Metrics
         long totalVacancies = vacancyRepository.count();
         long activeVacancies = vacancyRepository.countByStatusIn(Arrays.asList("ACTIVE", "PENDING"));
         dashboard.setTotalVacancies(totalVacancies);
         dashboard.setActiveVacancies(activeVacancies);
-        dashboard.setPendingCandidates(0L); // TODO: Add if candidate repository exists
+        dashboard.setPendingCandidates(0L);
 
-        // Leave Management - Real data
+        // Leave Management
         long pendingLeaves = leaveRequestRepository.countByStatus(LeaveRequest.LeaveStatus.PENDING);
         long approvedLeaves = leaveRequestRepository.countByStatus(LeaveRequest.LeaveStatus.APPROVED);
         long rejectedLeaves = leaveRequestRepository.countByStatus(LeaveRequest.LeaveStatus.REJECTED);
@@ -452,7 +507,7 @@ public class DashboardService {
         dashboard.setPendingPromotions(0L);
         dashboard.setApprovedPromotionsThisYear(0L);
 
-        // Attendance Metrics - Would need attendance data
+        // Attendance Metrics
         dashboard.setAverageAttendanceRate(0.0);
         dashboard.setPresentToday(activeEmployees);
         dashboard.setAbsentToday(0L);
@@ -473,6 +528,7 @@ public class DashboardService {
     /**
      * HR Employee Dashboard - HR task management
      */
+    @Transactional(readOnly = true)
     public HREmployeeDashboardDTO getHREmployeeDashboard() {
         HREmployeeDashboardDTO dashboard = new HREmployeeDashboardDTO();
 
@@ -481,15 +537,17 @@ public class DashboardService {
         LocalDate firstDayOfMonth = LocalDate.now().withDayOfMonth(1);
         dashboard.setNewHiresThisMonth(employeeRepository.countByHireDateAfter(firstDayOfMonth));
 
-        long pendingTasks = vacancyRepository.countByStatusIn(Arrays.asList("ACTIVE", "PENDING")) +
-                leaveRequestRepository.countByStatus(LeaveRequest.LeaveStatus.PENDING);
+        long activeVacancies = vacancyRepository.countByStatusIn(Arrays.asList("ACTIVE", "PENDING"));
+        long pendingLeaves = leaveRequestRepository.countByStatus(LeaveRequest.LeaveStatus.PENDING);
+
+        long pendingTasks = activeVacancies + pendingLeaves;
         dashboard.setPendingTasks(pendingTasks);
 
-        dashboard.setActiveVacancies(vacancyRepository.countByStatusIn(Arrays.asList("ACTIVE", "PENDING")));
+        dashboard.setActiveVacancies(activeVacancies);
         dashboard.setPendingCandidateReviews(0L);
         dashboard.setScheduledInterviews(0L);
 
-        dashboard.setPendingLeaveApprovals(leaveRequestRepository.countByStatus(LeaveRequest.LeaveStatus.PENDING));
+        dashboard.setPendingLeaveApprovals(pendingLeaves);
         dashboard.setPendingDocumentVerifications(0L);
         dashboard.setMissingEmployeeDocuments(0L);
         dashboard.setPendingOnboardingTasks(0L);
@@ -505,10 +563,11 @@ public class DashboardService {
     /**
      * Finance Dashboard - Financial metrics and accounting
      */
+    @Transactional(readOnly = true)
     public FinanceDashboardDTO getFinanceDashboard() {
         FinanceDashboardDTO dashboard = new FinanceDashboardDTO();
 
-        // Financial Overview - Would need accounting data
+        // Financial Overview
         dashboard.setTotalAssets(0.0);
         dashboard.setTotalLiabilities(0.0);
         dashboard.setTotalEquity(0.0);
@@ -519,16 +578,11 @@ public class DashboardService {
         dashboard.setCashInflow(0.0);
         dashboard.setCashOutflow(0.0);
 
-        // Accounts Payable - Real data
+        // Accounts Payable
         long totalInvoices = invoiceRepository.count();
-        // TODO: Fix database schema - invoices.status should be VARCHAR not SMALLINT
-        long pendingInvoices = 0L; // Temporarily disabled due to DB type mismatch
-        // long pendingInvoices = invoiceRepository.countByStatus(InvoiceStatus.PENDING);
-        long overdueInvoices = 0L; // invoiceRepository.findOverdueInvoices(LocalDate.now()).size();
-
         dashboard.setTotalInvoices(totalInvoices);
-        dashboard.setPendingInvoices(pendingInvoices);
-        dashboard.setOverdueInvoices(overdueInvoices);
+        dashboard.setPendingInvoices(0L); // Temporarily disabled due to DB type mismatch
+        dashboard.setOverdueInvoices(0L);
         dashboard.setTotalPayables(0.0);
         dashboard.setOverduePayables(0.0);
 
@@ -561,9 +615,9 @@ public class DashboardService {
         dashboard.setBudgetRemaining(0.0);
         dashboard.setBudgetUtilizationRate(0.0);
 
-        // Alerts - Real data
-        dashboard.setOverduePayments(overdueInvoices);
-        dashboard.setPendingApprovals(pendingInvoices);
+        // Alerts
+        dashboard.setOverduePayments(0L);
+        dashboard.setPendingApprovals(0L);
 
         return dashboard;
     }
@@ -571,16 +625,18 @@ public class DashboardService {
     /**
      * Maintenance Dashboard - Maintenance operations and equipment service
      */
+    @Transactional(readOnly = true)
     public MaintenanceDashboardDTO getMaintenanceDashboard() {
         MaintenanceDashboardDTO dashboard = new MaintenanceDashboardDTO();
 
-        // Maintenance Overview - Real data
-        long totalMaintenance = maintenanceRecordRepository.count();
-        long scheduledMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ON_HOLD);
-        long ongoingMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.ACTIVE);
-        long completedMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.COMPLETED);
-        long pendingMaintenance = maintenanceRecordRepository.countByStatus(MaintenanceStatus.PENDING_FINANCE_APPROVAL) + maintenanceRecordRepository.countByStatus(MaintenanceStatus.PENDING_MANAGER_APPROVAL);
-
+        // 1 query: maintenance counts grouped by status
+        Map<String, Long> maintStatusMap = toStatusMap(maintenanceRecordRepository.countGroupByStatus());
+        long totalMaintenance = sumAll(maintStatusMap);
+        long scheduledMaintenance = getCount(maintStatusMap, MaintenanceStatus.ON_HOLD);
+        long ongoingMaintenance = getCount(maintStatusMap, MaintenanceStatus.ACTIVE);
+        long completedMaintenance = getCount(maintStatusMap, MaintenanceStatus.COMPLETED);
+        long pendingMaintenance = getCount(maintStatusMap, MaintenanceStatus.PENDING_FINANCE_APPROVAL)
+                + getCount(maintStatusMap, MaintenanceStatus.PENDING_MANAGER_APPROVAL);
 
         dashboard.setTotalMaintenanceRecords(totalMaintenance);
         dashboard.setScheduledMaintenance(scheduledMaintenance);
@@ -589,10 +645,11 @@ public class DashboardService {
         dashboard.setPendingMaintenance(pendingMaintenance);
         dashboard.setOverdueMaintenance(0L);
 
-        // Equipment Status - Real data
-        dashboard.setTotalEquipment(equipmentRepository.count());
-        dashboard.setEquipmentInMaintenance(equipmentRepository.countByStatus(EquipmentStatus.IN_MAINTENANCE));
-        dashboard.setEquipmentAvailable(equipmentRepository.countByStatus(EquipmentStatus.AVAILABLE));
+        // 1 query: equipment counts grouped by status
+        Map<String, Long> equipStatusMap = toStatusMap(equipmentRepository.countGroupByStatus());
+        dashboard.setTotalEquipment(sumAll(equipStatusMap));
+        dashboard.setEquipmentInMaintenance(getCount(equipStatusMap, EquipmentStatus.IN_MAINTENANCE));
+        dashboard.setEquipmentAvailable(getCount(equipStatusMap, EquipmentStatus.AVAILABLE));
 
         // Technician Metrics
         dashboard.setTotalTechnicians(0L);
@@ -627,10 +684,11 @@ public class DashboardService {
     /**
      * Procurement Dashboard - Procurement and vendor management
      */
+    @Transactional(readOnly = true)
     public ProcurementDashboardDTO getProcurementDashboard() {
         ProcurementDashboardDTO dashboard = new ProcurementDashboardDTO();
 
-        // Request Orders Overview - Real data
+        // Request Orders Overview
         long totalRequestOrders = requestOrderRepository.count();
         long pendingRequestOrders = requestOrderRepository.countByStatus("PENDING");
         long approvedRequestOrders = requestOrderRepository.countByStatus("APPROVED");
@@ -643,7 +701,7 @@ public class DashboardService {
         dashboard.setRejectedRequestOrders(rejectedRequestOrders);
         dashboard.setCompletedRequestOrders(completedRequestOrders);
 
-        // Purchase Orders Overview - Real data
+        // Purchase Orders Overview
         long totalPurchaseOrders = purchaseOrderRepository.count();
         long pendingPurchaseOrders = purchaseOrderRepository.countByStatus("PENDING");
         long approvedPurchaseOrders = purchaseOrderRepository.countByStatus("APPROVED");
@@ -656,7 +714,7 @@ public class DashboardService {
         dashboard.setInProgressPurchaseOrders(inProgressPurchaseOrders);
         dashboard.setCompletedPurchaseOrders(completedPurchaseOrders);
 
-        // Offers Management - Real data
+        // Offers Management
         long totalOffers = offerRepository.count();
         long pendingOffers = offerRepository.countByStatus("PENDING");
         long acceptedOffers = offerRepository.countByStatus("ACCEPTED");
@@ -667,13 +725,12 @@ public class DashboardService {
         dashboard.setAcceptedOffers(acceptedOffers);
         dashboard.setRejectedOffers(rejectedOffers);
 
-        // Merchant Metrics - Real data
+        // Merchant Metrics
         long totalMerchants = merchantRepository.count();
-        long activeMerchants = totalMerchants; // Merchant entity doesn't have isActive field
         dashboard.setTotalMerchants(totalMerchants);
-        dashboard.setActiveMerchants(activeMerchants);
+        dashboard.setActiveMerchants(totalMerchants);
 
-        // Financial Metrics - Would need pricing data
+        // Financial Metrics
         dashboard.setTotalProcurementValue(0.0);
         dashboard.setPendingOrdersValue(0.0);
         dashboard.setCompletedOrdersValueThisMonth(0.0);
@@ -694,10 +751,11 @@ public class DashboardService {
     /**
      * Secretary Dashboard - Administrative support and task management
      */
+    @Transactional(readOnly = true)
     public SecretaryDashboardDTO getSecretaryDashboard() {
         SecretaryDashboardDTO dashboard = new SecretaryDashboardDTO();
 
-        // Document Management - Would need document tracking
+        // Document Management
         dashboard.setTotalDocuments(0L);
         dashboard.setPendingDocuments(0L);
         dashboard.setApprovedDocuments(0L);
@@ -708,7 +766,7 @@ public class DashboardService {
         dashboard.setSentNotificationsToday(0L);
         dashboard.setPendingAnnouncements(0L);
 
-        // Approval Workflows - Real data
+        // Approval Workflows
         long pendingApprovals = requestOrderRepository.countByStatus("PENDING") +
                 leaveRequestRepository.countByStatus(LeaveRequest.LeaveStatus.PENDING);
         dashboard.setPendingApprovals(pendingApprovals);
@@ -743,6 +801,7 @@ public class DashboardService {
     /**
      * User Dashboard - Basic user-level metrics
      */
+    @Transactional(readOnly = true)
     public UserDashboardDTO getUserDashboard() {
         UserDashboardDTO dashboard = new UserDashboardDTO();
 

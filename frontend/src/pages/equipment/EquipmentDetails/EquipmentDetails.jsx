@@ -63,7 +63,7 @@ const EquipmentDetails = () => {
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching equipment data:", error);
-                setError(error.message);
+                setError('Failed to load equipment details. Please try again.');
                 setLoading(false);
             }
         };
@@ -74,7 +74,6 @@ const EquipmentDetails = () => {
             } catch (error) {
                 console.error("Error fetching equipment photo:", error);
                 try {
-                    console.log("Retrying with refresh...");
                     const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
                     setPreviewImage(refreshResponse.data);
                 } catch (refreshError) {

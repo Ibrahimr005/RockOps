@@ -5,12 +5,12 @@ import FinanceAssetCard from '../FinanceAssetCard/FinanceAssetCard.jsx';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import { inventoryValuationService } from '../../../../services/finance/inventoryValuationService.js';
 import { siteService } from '../../../../services/siteService.js';
+import { useInventoryValuations } from '../../../../hooks/queries';
 import { FiMapPin, FiPackage, FiTool, FiArchive, FiFilter } from 'react-icons/fi';
 import siteimgg from "../../../../assets/imgs/siteimgg.jpg";
 
 const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
-    const [sitesData, setSitesData] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const { data: sitesData = [], isLoading: loading } = useInventoryValuations();
     const [filteredSitesData, setFilteredSitesData] = useState([]);
     const [expandedSite, setExpandedSite] = useState(null);
     const [expandedCategory, setExpandedCategory] = useState(null);
@@ -35,24 +35,6 @@ const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
-    };
-
-    useEffect(() => {
-        fetchAllSiteValuations();
-    }, []);
-
-    const fetchAllSiteValuations = async () => {
-        setLoading(true);
-        try {
-            const data = await inventoryValuationService.getAllSiteValuations();
-            setSitesData(data);
-            setFilteredSitesData(data);
-        } catch (error) {
-            console.error('Failed to fetch site valuations:', error);
-            showSnackbar('Failed to load site valuations', 'error');
-        } finally {
-            setLoading(false);
-        }
     };
 
     useEffect(() => {
@@ -94,9 +76,7 @@ const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
             setLoading(true);
             try {
                 const data = await inventoryValuationService.getSiteBalance(siteId);
-                console.log('📦 WAREHOUSE DATA:', data.warehouses);
                 data.warehouses.forEach((warehouse, index) => {
-                    console.log(`Warehouse ${index}:`, warehouse);
                 });
                 setWarehousesData(data.warehouses || []);
             } catch (error) {
@@ -115,13 +95,9 @@ const AssetValuesView = ({ showSnackbar, selectedSiteIds = [] }) => {
             const response = await siteService.getSiteEquipmentDTO(siteId);
             const data = response.data || response || []; // ✅ Handle response wrapping
 
-            console.log('🔧 EQUIPMENT RESPONSE:', response);
-            console.log('🔧 EQUIPMENT DATA:', data);
 
             if (Array.isArray(data)) {
                 data.forEach((equipment, index) => {
-                    console.log(`Equipment ${index}:`, equipment);
-                    console.log('  - imageUrl:', equipment.imageUrl);
                 });
 
                 setEquipmentData(data);

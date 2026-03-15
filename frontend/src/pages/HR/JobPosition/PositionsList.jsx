@@ -9,22 +9,18 @@ import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import { CloseButton } from '../../../components/common/Button/Button';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { jobPositionService } from '../../../services/hr/jobPositionService.js';
+import { useJobPositions } from '../../../hooks/queries';
 import './PositionsList.scss';
 
 const PositionsList = () => {
     const navigate = useNavigate();
     const { showSuccess, showError } = useSnackbar();
-    const [positions, setPositions] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: positions = [], isLoading: loading, isError, refetch: refetchPositions } = useJobPositions();
     const [error, setError] = useState(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [showEditForm, setShowEditForm] = useState(false);
     const [selectedPosition, setSelectedPosition] = useState(null);
     const [positionToDelete, setPositionToDelete] = useState(null);
-
-    useEffect(() => {
-        fetchPositions();
-    }, []);
 
     // Disable background scrolling when modals are open
     useEffect(() => {
@@ -39,36 +35,12 @@ const PositionsList = () => {
         };
     }, [showAddForm, showEditForm]);
 
-    const fetchPositions = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await jobPositionService.getAll();
-            const data = response.data;
-
-            console.log(data);
-            setPositions(Array.isArray(data) ? data : []);
-        } catch (err) {
-            console.error('Error fetching positions:', err);
-            // Handle backend custom error response structure
-            const errorMessage = err.response?.data?.userMessage ||
-                err.response?.data?.message ||
-                err.message ||
-                'Failed to load positions';
-            setError(errorMessage);
-            showError('Failed to load positions. Please try again.');
-            setPositions([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleAddPosition = async (formData) => {
         try {
             setError(null);
             const response = await jobPositionService.create(formData);
 
-            await fetchPositions();
+            await refetchPositions();
             setShowAddForm(false);
             showSuccess('Job position created successfully!');
         } catch (err) {
@@ -90,7 +62,7 @@ const PositionsList = () => {
             // selectedPosition.id is used as the path variable
             await jobPositionService.update(selectedPosition.id, formData);
 
-            await fetchPositions();
+            await refetchPositions();
             setShowEditForm(false);
             setSelectedPosition(null);
             showSuccess('Job position updated successfully!');
@@ -117,7 +89,7 @@ const PositionsList = () => {
         try {
             setError(null);
             await jobPositionService.delete(positionToDelete.id);
-            await fetchPositions();
+            await refetchPositions();
             showSuccess('Job position deleted successfully!');
         } catch (err) {
             console.error('Error deleting position:', err);

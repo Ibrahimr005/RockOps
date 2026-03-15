@@ -1,6 +1,5 @@
 package com.example.backend.controllers.equipment;
 
-import ch.qos.logback.core.net.SyslogOutputStream;
 import com.example.backend.dto.equipment.*;
 import com.example.backend.services.equipment.SarkyLogService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -63,15 +62,9 @@ public class SarkyLogController {
         sarkyLogDTO.setWorkTypeId(workTypeId);
         sarkyLogDTO.setWorkedHours(workedHours);
         sarkyLogDTO.setDate(LocalDate.parse(date));
-        System.out.println("Driver Id");
-        System.out.println(driverId);
         if( driverId != null && driverId.toString().isEmpty() != true ) {
         sarkyLogDTO.setDriverId(driverId);
         }
-
-        System.out.println("DTO ");
-        System.out.println(sarkyLogDTO);
-
 
         return new ResponseEntity<>(sarkyLogService.createSarkyLog(sarkyLogDTO, file), HttpStatus.CREATED);
     }

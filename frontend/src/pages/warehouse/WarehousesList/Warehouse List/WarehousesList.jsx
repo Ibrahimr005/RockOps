@@ -13,7 +13,7 @@ import { warehouseService } from "../../../../services/warehouse/warehouseServic
 import { warehouseEmployeeService } from "../../../../services/warehouse/warehouseEmployeeService.js";
 import { itemService } from "../../../../services/warehouse/itemService.js";
 import { transactionService } from "../../../../services/transaction/transactionService.js";
-import { siteService } from "../../../../services/siteService.js";
+import { useSites } from "../../../../hooks/queries";
 import warehouseimg from "../../../../assets/imgs/warehouseimg.jpg";
 
 const WarehousesList = () => {
@@ -31,7 +31,7 @@ const WarehousesList = () => {
     const [selectedWorker1, setSelectedWorker1] = useState("");
     const [selectedWorker2, setSelectedWorker2] = useState("");
     const [selectedAlertStatus, setSelectedAlertStatus] = useState("");
-    const [sites, setSites] = useState([]);
+    const { data: sites = [] } = useSites();
     const [managers, setManagers] = useState([]);
     const [workers, setWorkers] = useState([]);
 
@@ -188,17 +188,6 @@ const WarehousesList = () => {
         return count;
     };
 
-    // Fetch sites for filter dropdown
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            setSites(response.data || []);
-        } catch (error) {
-            console.error("Error fetching sites:", error);
-            setSites([]);
-        }
-    };
-
     // Extract unique managers and workers from warehouses
     useEffect(() => {
         if (warehouses.length > 0) {
@@ -282,7 +271,6 @@ const WarehousesList = () => {
     useEffect(() => {
         if (currentUser && currentUser.role) {
             fetchWarehouses();
-            fetchSites();
         }
     }, [currentUser]);
 
@@ -312,14 +300,8 @@ const WarehousesList = () => {
 
     const fetchAndFilterWarehousesForEmployee = async (allWarehouses) => {
         try {
-            console.log("Filtering warehouses for employee:", currentUser.username);
-            console.log("Total warehouses available:", allWarehouses.length);
-
             const assignments = await warehouseEmployeeService.getAssignmentsByUsername(currentUser.username);
-            console.log("Found assignments:", assignments);
-
             if (!Array.isArray(assignments) || assignments.length === 0) {
-                console.log("No assignments array or empty assignments");
                 setWarehouses([]);
                 return;
             }
@@ -328,15 +310,11 @@ const WarehousesList = () => {
                 .map(assignment => assignment.warehouse?.id)
                 .filter(Boolean);
 
-            console.log("Assigned warehouse IDs:", assignedWarehouseIds);
-
             const assignedWarehouses = allWarehouses.filter(warehouse =>
                 assignedWarehouseIds.includes(warehouse.id)
             );
 
             setWarehouses(assignedWarehouses);
-            console.log(`Warehouse employee can see ${assignedWarehouses.length} out of ${allWarehouses.length} warehouses`);
-            console.log("Visible warehouses:", assignedWarehouses.map(w => w.name));
 
         } catch (error) {
             console.error("Error filtering warehouses for employee:", error);
@@ -348,18 +326,12 @@ const WarehousesList = () => {
         try {
             setLoading(true);
 
-            console.log("Fetching warehouses for user role:", currentUser?.role);
-
             const respo = await warehouseService.getAll();
-            console.log("Fetched warehouse data:", JSON.stringify(respo, null, 2));
 
             if (currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
-                console.log("User is WAREHOUSE_EMPLOYEE, filtering warehouses");
                 await fetchAndFilterWarehousesForEmployee(respo);
             } else {
-                console.log("User is not WAREHOUSE_EMPLOYEE, showing all warehouses");
                 setWarehouses(respo);
-                console.log("Fetched all warehouses for role:", currentUser?.role);
             }
 
             setError(null);
@@ -375,11 +347,10 @@ const WarehousesList = () => {
         try {
             const data = await warehouseEmployeeService.getWarehouseEmployees();
             setWarehouseEmployees(data);
-            console.log("Successfully fetched warehouse employees:", data.length);
         } catch (error) {
             console.error("Error fetching warehouse employees:", error);
             setWarehouseEmployees([]);
-            showSnackbar('error', `Failed to load warehouse employees: ${error.message}`);
+            showSnackbar('error', 'Failed to load warehouse employees. Please try again.');
         }
     };
 
@@ -396,7 +367,6 @@ const WarehousesList = () => {
     }, [showAssignmentModal]);
 
     const handleOpenAssignmentModal = (warehouse) => {
-        console.log('🔵 Opening assignment modal for:', warehouse.name);
         setSelectedWarehouse(warehouse);
         setShowAssignmentModal(true);
         fetchWarehouseEmployees();
@@ -632,7 +602,6 @@ const WarehousesList = () => {
             </div>
 
             {/* Assignment Modal */}
-            {console.log('🟢 Rendering, showAssignmentModal:', showAssignmentModal, 'selectedWarehouse:', selectedWarehouse)}
             <AssignmentModal
                 isOpen={showAssignmentModal}
                 onClose={handleCloseAssignmentModal}

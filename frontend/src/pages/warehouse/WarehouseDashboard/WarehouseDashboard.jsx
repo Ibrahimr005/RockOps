@@ -8,8 +8,8 @@ import './WarehouseDashboard.scss';
 // Import services
 import { warehouseService } from '../../../services/warehouse/warehouseService';
 import { itemService } from '../../../services/warehouse/itemService';
-import { itemTypeService } from '../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
+import { useItemTypes } from '../../../hooks/queries';
 
 const WarehouseManagerDashboard = () => {
     const [loading, setLoading] = useState(false);
@@ -20,7 +20,7 @@ const WarehouseManagerDashboard = () => {
     // State for all data
     const [warehouses, setWarehouses] = useState([]);
     const [items, setItems] = useState([]);
-    const [itemTypes, setItemTypes] = useState([]);
+    const { data: itemTypes = [] } = useItemTypes();
     const [itemCategories, setItemCategories] = useState([]);
     const [warehouseSummaries, setWarehouseSummaries] = useState({});
     const [itemCounts, setItemCounts] = useState({});
@@ -37,16 +37,6 @@ const WarehouseManagerDashboard = () => {
         }
     };
 
-    const fetchItemTypes = async () => {
-        try {
-            const data = await itemTypeService.getAll();
-            setItemTypes(data);
-            return data;
-        } catch (error) {
-            console.error('Error fetching item types:', error);
-            return [];
-        }
-    };
 
     const fetchItemCategories = async () => {
         try {
@@ -95,7 +85,6 @@ const WarehouseManagerDashboard = () => {
         try {
             // Fetch base data
             const warehousesData = await fetchWarehouses();
-            await fetchItemTypes();
             await fetchItemCategories();
 
             // Fetch warehouse-specific data

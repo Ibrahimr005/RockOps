@@ -66,11 +66,6 @@ export const documentService = {
     },
 
     assignToSarkyMonth: (documentId, month, year) => {
-        console.log('Assigning to sarky month - API call:', {
-            documentId,
-            month: Number(month),
-            year: Number(year)
-        });
         return apiClient.put(`${DOCUMENT_ENDPOINTS.ASSIGN_SARKY(documentId)}?month=${Number(month)}&year=${Number(year)}`);
     },
 

@@ -2,6 +2,7 @@ package com.example.backend.models.user;
 
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.models.warehouse.WarehouseEmployee;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -33,6 +34,7 @@ public class User implements UserDetails
     @Column(nullable = false, unique = true)
     private String username;
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
     @Column(nullable = false)
     private String firstName;
@@ -48,7 +50,7 @@ public class User implements UserDetails
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
 

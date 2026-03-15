@@ -22,6 +22,9 @@ public interface EquipmentRepository extends JpaRepository<Equipment, UUID> {
     // Dashboard metrics methods
     long countByStatus(EquipmentStatus status);
 
+    @Query("SELECT e.status, COUNT(e) FROM Equipment e GROUP BY e.status")
+    List<Object[]> countGroupByStatus();
+
     List<Equipment> findByImageStorageKeyIsNull();
 
     boolean existsByPurchaseOrderId(UUID purchaseOrderId);

@@ -45,13 +45,9 @@ const AuditTrail = () => {
         try {
             setLoading(true);
 
-            console.log('=== DEBUGGING AUDIT LOGS ===');
 
             const response = await financeService.auditLogs.getAll();
 
-            console.log('Raw response:', response);
-            console.log('Response type:', typeof response);
-            console.log('Is response array?', Array.isArray(response));
 
             // Extract the actual data from the response
             let data;
@@ -63,8 +59,6 @@ const AuditTrail = () => {
                 data = response;
             }
 
-            console.log('Extracted data:', data);
-            console.log('Data type:', typeof data);
 
             // Handle different response structures
             let auditArray = [];
@@ -83,12 +77,8 @@ const AuditTrail = () => {
                 if (arrayKeys.length > 0) {
                     auditArray = data[arrayKeys[0]]; // Use the first array found
                 }
-                console.log('Object keys:', Object.keys(data));
-                console.log('Found array keys:', arrayKeys);
             }
 
-            console.log('Final audit array:', auditArray);
-            console.log('Final array length:', auditArray.length);
 
             setAuditRecords(auditArray);
             showSuccess('Audit logs fetched successfully');
@@ -189,7 +179,6 @@ const AuditTrail = () => {
 
     // Export event handlers
     const handleExportStart = () => {
-        console.log('Export started...');
     };
 
     const handleExportComplete = (exportInfo) => {

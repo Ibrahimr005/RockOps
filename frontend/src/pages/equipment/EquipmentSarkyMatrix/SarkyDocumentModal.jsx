@@ -176,7 +176,6 @@ const SarkyDocumentModal = ({
 
     // Handle document viewing
     const handleViewDocument = async (doc) => {
-        console.log('Viewing document:', doc);
         try {
             if (doc.url) {
                 // Open document in new tab for viewing
@@ -199,7 +198,6 @@ const SarkyDocumentModal = ({
 
     // Handle document deletion
     const handleDeleteDocument = async (documentId) => {
-        console.log('Deleting document:', documentId);
         if (!permissions.canEdit) {
             showError('You do not have permission to delete documents');
             return;
@@ -228,7 +226,6 @@ const SarkyDocumentModal = ({
 
     // Handle remove sarky assignment
     const handleRemoveSarkyAssignment = async (documentId) => {
-        console.log('Removing sarky assignment:', documentId);
         if (!permissions.canEdit) {
             showError('You do not have permission to modify documents');
             return;

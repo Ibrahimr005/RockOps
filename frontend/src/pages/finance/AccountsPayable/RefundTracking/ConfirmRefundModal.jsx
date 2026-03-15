@@ -52,11 +52,6 @@ const ConfirmRefundModal = ({ refund, onClose, onConfirm }) => {
             const cashSafesData = cashSafesResponse?.data || cashSafesResponse || [];
             const cashWithPersonsData = cashWithPersonsResponse?.data || cashWithPersonsResponse || [];
 
-            console.log('Fetched accounts:', {
-                bankAccounts: bankAccountsData,
-                cashSafes: cashSafesData,
-                cashWithPersons: cashWithPersonsData
-            });
 
             setAccounts({
                 bankAccounts: Array.isArray(bankAccountsData) ? bankAccountsData : [],

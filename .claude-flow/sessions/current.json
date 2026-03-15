@@ -1,13 +1,13 @@
 {
-  "id": "session-1773513502481",
-  "startedAt": "2026-03-14T18:38:22.481Z",
-  "cwd": "/Users/abdallahgomaa/IdeaProjects/RockOps",
+  "id": "session-1773436976975",
+  "startedAt": "2026-03-13T21:22:56.975Z",
+  "cwd": "D:\\RockOps",
   "context": {},
   "metrics": {
-    "edits": 17,
+    "edits": 408,
     "commands": 0,
     "tasks": 0,
     "errors": 0
   },
-  "restoredAt": "2026-03-15T14:04:46.749Z"
+  "restoredAt": "2026-03-15T18:26:25.096Z"
 }

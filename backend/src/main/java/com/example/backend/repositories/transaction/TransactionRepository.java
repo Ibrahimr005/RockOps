@@ -62,6 +62,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     // Dashboard metrics methods
     long countByStatus(TransactionStatus status);
 
+    @Query("SELECT t.status, COUNT(t) FROM Transaction t GROUP BY t.status")
+    List<Object[]> countGroupByStatus();
+
     List<Transaction> findBySenderIdOrReceiverId(UUID senderId, UUID receiverId);
 }
 

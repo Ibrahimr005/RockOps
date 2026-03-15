@@ -14,10 +14,13 @@ import com.example.backend.repositories.PartnerRepository;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.finance.fixedAssets.FixedAssetsRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
+import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.repositories.warehouse.WarehouseRepository;
 import com.example.backend.services.MinioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -31,16 +34,20 @@ public class SiteService
     private final EmployeeRepository employeeRepository;
     private final EquipmentRepository equipmentRepository;
     private final FixedAssetsRepository fixedAssetsRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final MerchantRepository merchantRepository;
     private final MinioService minioService;
 
     @Autowired
-    public SiteService(SiteRepository siteRepository, PartnerRepository partnerRepository, EmployeeRepository employeeRepository, EquipmentRepository equipmentRepository, FixedAssetsRepository fixedAssetsRepository, MinioService minioService)
+    public SiteService(SiteRepository siteRepository, PartnerRepository partnerRepository, EmployeeRepository employeeRepository, EquipmentRepository equipmentRepository, FixedAssetsRepository fixedAssetsRepository, WarehouseRepository warehouseRepository, MerchantRepository merchantRepository, MinioService minioService)
     {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.employeeRepository = employeeRepository;
         this.equipmentRepository = equipmentRepository;
         this.fixedAssetsRepository = fixedAssetsRepository;
+        this.warehouseRepository = warehouseRepository;
+        this.merchantRepository = merchantRepository;
         this.minioService = minioService;
     }
 
@@ -49,23 +56,38 @@ public class SiteService
     {
         Site site = siteRepository.findById(id).orElse(null);
         if (site != null) {
-            site.setEquipmentCount(site.getEquipment() != null ? site.getEquipment().size() : 0);
-            site.setEmployeeCount(site.getEmployees() != null ? site.getEmployees().size() : 0);
-            site.setWarehouseCount(site.getWarehouses() != null ? site.getWarehouses().size() : 0);
-            site.setMerchantCount(site.getMerchants() != null ? site.getMerchants().size() : 0);
+            List<Object[]> result = siteRepository.findSiteCountsById(id);
+            if (result != null && !result.isEmpty()) {
+                Object[] counts = result.get(0);
+                site.setEquipmentCount(((Number) counts[0]).intValue());
+                site.setEmployeeCount(((Number) counts[1]).intValue());
+                site.setWarehouseCount(((Number) counts[2]).intValue());
+                site.setMerchantCount(((Number) counts[3]).intValue());
+            }
         }
         return site;
     }
 
+    @Cacheable("sites")
     @Transactional(readOnly = true)
     public List<Site> getAllSites() {
         List<Site> sites = siteRepository.findAll();
+
+        // Single query gets all counts — avoids N+1 problem
+        List<Object[]> allCounts = siteRepository.findAllSiteCounts();
+        Map<UUID, Object[]> countsMap = new HashMap<>();
+        for (Object[] row : allCounts) {
+            countsMap.put((UUID) row[0], row);
+        }
+
         for (Site site : sites) {
-            // Force load the collections and set the counts
-            site.setEquipmentCount(site.getEquipment().size());
-            site.setEmployeeCount(site.getEmployees().size());
-            site.setWarehouseCount(site.getWarehouses().size());
-            site.setMerchantCount(site.getMerchants().size());
+            Object[] counts = countsMap.get(site.getId());
+            if (counts != null) {
+                site.setEquipmentCount(((Number) counts[1]).intValue());
+                site.setEmployeeCount(((Number) counts[2]).intValue());
+                site.setWarehouseCount(((Number) counts[3]).intValue());
+                site.setMerchantCount(((Number) counts[4]).intValue());
+            }
         }
         return sites;
     }
@@ -81,40 +103,22 @@ public class SiteService
 
     @Transactional(readOnly = true)
     public List<Employee> getSiteEmployees(UUID siteId) {
-        Site site = siteRepository.findById(siteId).orElse(null);
-        if (site == null) {
-            return new ArrayList<>(); // Return an empty list if the site does not exist
-        }
-        return site.getEmployees(); // Ensure this method is correctly mapped
+        return employeeRepository.findBySiteId(siteId);
     }
 
     @Transactional(readOnly = true)
     public List<Warehouse> getSiteWarehouses(UUID siteId) {
-        Site site = siteRepository.findById(siteId).orElse(null);
-        if (site == null) {
-            return new ArrayList<>(); // Return an empty list if the site does not exist
-        }
-
-        return site.getWarehouses(); // This will now include the warehouse manager
+        return warehouseRepository.findBySiteId(siteId);
     }
-
 
     @Transactional(readOnly = true)
     public List<Merchant> getSiteMerchants(UUID siteId) {
-        Site site = siteRepository.findById(siteId).orElse(null);
-        if (site == null) {
-            return new ArrayList<>(); // Return an empty list if the site does not exist
-        }
-        return site.getMerchants(); // Ensure this method is correctly mapped
+        return merchantRepository.findBySiteId(siteId);
     }
 
     @Transactional(readOnly = true)
     public List<FixedAssets> getSiteFixedAssets(UUID siteId) {
-        Site site = siteRepository.findById(siteId).orElse(null);
-        if (site == null) {
-            return new ArrayList<>(); // Return an empty list if the site does not exist
-        }
-        return site.getFixedAssets(); // Ensure this method is correctly mapped
+        return fixedAssetsRepository.findBySiteId(siteId);
     }
 
     @Transactional(readOnly = true)

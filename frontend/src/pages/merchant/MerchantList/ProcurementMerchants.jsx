@@ -8,7 +8,7 @@ import MerchantModal from './MerchantModal.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import EmployeeAvatar from '../../../components/common/EmployeeAvatar/EmployeeAvatar.jsx';
 import { procurementService } from '../../../services/procurement/procurementService.js';
-import { siteService } from '../../../services/siteService.js';
+import { useSites } from '../../../hooks/queries';
 
 const ProcurementMerchants = () => {
     const [merchants, setMerchants] = useState([]);
@@ -18,7 +18,7 @@ const ProcurementMerchants = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null); // Added for file handling
-    const [sites, setSites] = useState([]);
+    const { data: sites = [] } = useSites();
     const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
     const [currentMerchantId, setCurrentMerchantId] = useState(null);
     const [showSnackbar, setShowSnackbar] = useState(false);
@@ -49,7 +49,7 @@ const ProcurementMerchants = () => {
         notes: ''
     });
 
-    // Fetch merchants and sites on component mount
+    // Fetch merchants on component mount
     useEffect(() => {
         const fetchInitialData = async () => {
             setLoading(true);
@@ -59,13 +59,10 @@ const ProcurementMerchants = () => {
                 const merchantsData = response.data || response;
                 setMerchants(merchantsData);
 
-                // Fetch sites using site service
-                await fetchSites();
-
                 setError(null);
             } catch (error) {
                 console.error('Error fetching merchants:', error);
-                setError(error.message);
+                setError('Failed to load merchants. Please try again.');
             } finally {
                 setLoading(false);
             }
@@ -73,18 +70,6 @@ const ProcurementMerchants = () => {
 
         fetchInitialData();
     }, []);
-
-    // Fetch sites using site service
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            const sitesData = response.data || response;
-            setSites(sitesData);
-        } catch (error) {
-            console.error('Error fetching sites:', error);
-            setSites([]);
-        }
-    };
 
     useEffect(() => {
         // Get user role from localStorage
@@ -96,13 +81,10 @@ const ProcurementMerchants = () => {
 
     // Handle row click to navigate to merchant details page
     const handleRowClick = (merchant) => {
-        console.log("Navigating to merchant details:", merchant);
         navigate(`/merchants/${merchant.id}`);
     };
 
     const onEdit = (merchant) => {
-        console.log("Editing merchant:", merchant);
-
         setFormData({
             name: merchant.name,
             merchantTypes: merchant.merchantTypes || [],  // Changed from merchantType
@@ -134,7 +116,6 @@ const ProcurementMerchants = () => {
 
     // Updated onDelete function to show confirmation dialog
     const onDelete = (merchant) => {
-        console.log("Attempting to delete merchant:", merchant);
         setMerchantToDelete(merchant);
         setShowDeleteDialog(true);
     };
@@ -473,7 +454,6 @@ const ProcurementMerchants = () => {
 
     const handleInfoClick = () => {
         // Add info click functionality here if needed
-        console.log("Info button clicked");
     };
 
     // Get merchant stats for IntroCard

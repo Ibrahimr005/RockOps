@@ -72,16 +72,13 @@ const PositionPromotions = ({ position, positionId, onRefresh }) => {
     };
 
     const handleViewPromotion = (promotion) => {
-        console.log('View promotion:', promotion);
     };
 
     const handleApprovePromotion = (promotion) => {
-        console.log('Approve promotion:', promotion);
         showSuccess(`Promotion for ${promotion.employeeName} approved successfully!`);
     };
 
     const handleRejectPromotion = (promotion) => {
-        console.log('Reject promotion:', promotion);
         showSuccess(`Promotion for ${promotion.employeeName} rejected.`);
     };
 

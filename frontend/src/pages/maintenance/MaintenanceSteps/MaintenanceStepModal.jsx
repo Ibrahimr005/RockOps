@@ -199,7 +199,6 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const loadStepTypes = async () => {
         try {
             const response = await stepTypeService.getAllStepTypes();
-            console.log('Step types loaded:', response);
             // Format step type names to title case and remove underscores for display
             const formattedStepTypes = (response || []).map(st => ({
                 ...st,
@@ -251,18 +250,13 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
     const loadEquipmentAndEmployees = async () => {
         try {
-            console.log('Loading equipment and employees for maintenance record:', maintenanceRecord);
-
             // Use equipmentService to get equipment
             const equipmentResponse = await equipmentService.getEquipmentById(maintenanceRecord.equipmentId);
             const equipment = equipmentResponse.data;
-            console.log('Equipment loaded:', equipment);
 
             if (equipment?.siteId) {
                 // Load employees from that site
-                console.log('Fetching employees for site:', equipment.siteId);
                 const employeesResponse = await siteService.getSiteEmployees(equipment.siteId);
-                console.log('Employees loaded:', employeesResponse.data);
 
                 // Robustly handle response data
                 let employees = [];
@@ -272,18 +266,14 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                     employees = employeesResponse.data.content;
                 } else if (Array.isArray(employeesResponse.data)) {
                     employees = employeesResponse.data;
-                } else {
-                    console.warn('Unexpected employees response format:', employeesResponse);
                 }
 
                 setAvailableEmployees(employees);
             } else {
-                console.log('No site found on equipment, equipment object:', equipment);
                 setAvailableEmployees([]);
             }
         } catch (error) {
             console.error('Error loading equipment and employees:', error);
-            console.error('Error details:', error.response);
             setAvailableEmployees([]); // Ensure it's always an array on error
         }
     };
@@ -313,8 +303,6 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
         try {
             // Use maintenanceService to get relevant merchants
             const response = await maintenanceService.getAvailableMerchants();
-            console.log('Merchants loaded:', response.data);
-
             if (Array.isArray(response.data)) {
                 setMerchants(response.data);
             } else if (Array.isArray(response)) {
@@ -322,7 +310,6 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             } else if (response.data && Array.isArray(response.data.content)) {
                 setMerchants(response.data.content);
             } else {
-                console.warn('Unexpected format for merchants:', response);
                 setMerchants([]);
             }
         } catch (error) {
@@ -337,10 +324,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             return;
         }
         try {
-            console.log('Loading contacts for merchant:', merchantId);
             const response = await maintenanceService.getContactsByMerchant(merchantId);
-            console.log('Merchant contacts loaded:', response.data);
-            console.log('Merchant contacts loaded:', response.data);
             if (Array.isArray(response.data)) {
                 setMerchantContacts(response.data);
             } else if (Array.isArray(response)) {
@@ -348,7 +332,6 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             } else if (response.data && Array.isArray(response.data.content)) {
                 setMerchantContacts(response.data.content);
             } else {
-                console.warn('Unexpected format for merchant contacts:', response);
                 setMerchantContacts([]);
             }
         } catch (error) {
@@ -653,7 +636,6 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 submitData.toLocation = formData.fromLocation || currentLocation;
             }
 
-            console.log('Submitting maintenance step data:', submitData);
             try {
                 await onSubmit(submitData);
             } catch (error) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaDollarSign, FaShoppingBag, FaPlus, FaTrash } from 'react-icons/fa';
-import { merchantService } from '../../../services/merchant/merchantService';
 import { Button, IconButton } from '../../../components/common/Button';
+import { useMerchants } from '../../../hooks/queries';
 
 const Step2PurchasingForm = ({ ticketId, ticketData, onSave, onComplete, isLoading }) => {
     const [formData, setFormData] = useState({
@@ -10,12 +10,8 @@ const Step2PurchasingForm = ({ ticketId, ticketData, onSave, onComplete, isLoadi
         items: []
     });
 
-    const [merchantList, setMerchantList] = useState([]);
+    const { data: merchantList = [] } = useMerchants();
     const [errors, setErrors] = useState({});
-
-    useEffect(() => {
-        loadMerchants();
-    }, []);
 
     useEffect(() => {
         // Load existing data from ticketData
@@ -27,15 +23,6 @@ const Step2PurchasingForm = ({ ticketId, ticketData, onSave, onComplete, isLoadi
             });
         }
     }, [ticketData]);
-
-    const loadMerchants = async () => {
-        try {
-            const response = await merchantService.getAllMerchants();
-            setMerchantList(response.data || []);
-        } catch (error) {
-            console.error('Error loading merchants:', error);
-        }
-    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

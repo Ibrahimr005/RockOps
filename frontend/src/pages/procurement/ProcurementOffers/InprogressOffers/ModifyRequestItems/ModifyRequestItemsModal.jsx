@@ -5,6 +5,7 @@ import ConfirmationDialog from '../../../../../components/common/ConfirmationDia
 import { Button, CloseButton, IconButton } from '../../../../../components/common/Button';
 import { offerRequestItemService } from '../../../../../services/procurement/offerRequestItemService.js';
 import { itemCategoryService } from '../../../../../services/warehouse/itemCategoryService.js';
+import { useItemCategories } from '../../../../../hooks/queries';
 
 const ModifyRequestItemsModal = ({
                                      isVisible,
@@ -32,7 +33,7 @@ const ModifyRequestItemsModal = ({
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Categories for filtering
-    const [parentCategories, setParentCategories] = useState([]);
+    const { data: parentCategories = [] } = useItemCategories();
     const [childCategories, setChildCategories] = useState([]);
 
     // Form state for editing
@@ -57,7 +58,6 @@ const ModifyRequestItemsModal = ({
     useEffect(() => {
         if (isVisible && offer) {
             loadRequestItems();
-            fetchParentCategories();
             setIsInitialized(false); // Reset initialization state when modal opens
         }
     }, [isVisible, offer]);
@@ -70,16 +70,6 @@ const ModifyRequestItemsModal = ({
             setChildCategories([]);
         }
     }, [addFormData.parentCategoryId]);
-
-    const fetchParentCategories = async () => {
-        try {
-            const categories = await itemCategoryService.getParents();
-            setParentCategories(categories);
-        } catch (error) {
-            console.error('Error fetching parent categories:', error);
-            setParentCategories([]);
-        }
-    };
 
     const fetchChildCategories = async (parentCategoryId) => {
         try {
@@ -179,11 +169,6 @@ const ModifyRequestItemsModal = ({
     };
 
     const handleSaveEdit = async (item) => {
-        console.log("=== ATTEMPTING TO SAVE ===");
-        console.log("Item ID being sent:", item.id);
-        console.log("Full item object:", item);
-        console.log("editFormData:", editFormData);
-        console.log("editFormData[item.id]:", editFormData[item.id]);
 
         const updatedData = editFormData[item.id];
 
@@ -196,13 +181,6 @@ const ModifyRequestItemsModal = ({
         try {
             setIsLoading(true);
 
-            console.log("API Call - Offer ID:", offer.id);
-            console.log("API Call - Item ID:", item.id);
-            console.log("API Call - Payload:", {
-                itemTypeId: item.itemTypeId,
-                quantity: quantityNum,
-                comment: item.comment || null
-            });
 
             await offerRequestItemService.updateRequestItem(offer.id, item.id, {
                 itemTypeId: item.itemTypeId,

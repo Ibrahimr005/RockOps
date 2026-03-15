@@ -42,6 +42,7 @@ public class PayrollService {
     private final BonusRepository bonusRepository;
     private final EntityIdGeneratorService entityIdGeneratorService;
 
+    @Transactional(readOnly = true)
     public Optional<Payroll> getLastPayroll() {
         return payrollRepository.findFirstByOrderByEndDateDesc();
     }
@@ -338,6 +339,7 @@ public class PayrollService {
     /**
      * Get payroll by ID
      */
+    @Transactional(readOnly = true)
     public Payroll getPayrollById(UUID payrollId) {
         return payrollRepository.findById(payrollId)
                 .orElseThrow(() -> new PayrollNotFoundException("Payroll not found: " + payrollId));
@@ -346,6 +348,7 @@ public class PayrollService {
     /**
      * Get all payrolls (ordered by most recent first)
      */
+    @Transactional(readOnly = true)
     public List<Payroll> getAllPayrolls() {
         return payrollRepository.findAllByOrderByEndDateDesc();
     }
@@ -353,6 +356,7 @@ public class PayrollService {
     /**
      * Get payroll by date range
      */
+    @Transactional(readOnly = true)
     public Payroll getPayrollByDateRange(LocalDate startDate, LocalDate endDate) {
         return payrollRepository.findByStartDateAndEndDate(startDate, endDate)
                 .orElseThrow(() -> new PayrollNotFoundException(
@@ -363,6 +367,7 @@ public class PayrollService {
     /**
      * Get employee payroll details
      */
+    @Transactional(readOnly = true)
     public EmployeePayroll getEmployeePayroll(UUID payrollId, UUID employeeId) {
         return employeePayrollRepository.findByPayrollIdAndEmployeeId(payrollId, employeeId)
                 .orElseThrow(() -> new PayrollNotFoundException(
@@ -374,6 +379,7 @@ public class PayrollService {
     /**
      * Get all employee payrolls for a payroll
      */
+    @Transactional(readOnly = true)
     public List<EmployeePayroll> getEmployeePayrolls(UUID payrollId) {
         return employeePayrollRepository.findByPayrollId(payrollId);
     }
@@ -381,6 +387,7 @@ public class PayrollService {
     /**
      * Get payroll history for a specific employee across all payroll cycles
      */
+    @Transactional(readOnly = true)
     public List<EmployeePayroll> getPayrollHistoryByEmployee(UUID employeeId) {
         return employeePayrollRepository.findByEmployeeIdWithPayrollDetails(employeeId);
     }

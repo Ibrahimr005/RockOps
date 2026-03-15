@@ -88,20 +88,12 @@ const PromotionList = () => {
             setLoading(true);
             setError(null);
 
-            console.log('=== Starting fetchPromotions ===');
-
             // Test if the service exists
             if (!promotionService) {
                 throw new Error('Promotion service is not available');
             }
 
-            console.log('Promotion service available, calling getAllPromotionRequests...');
-
             const response = await promotionService.getAllPromotionRequests();
-
-            console.log('Raw API Response:', response);
-            console.log('Response type:', typeof response);
-            console.log('Response keys:', response ? Object.keys(response) : 'null');
 
             // Handle different possible response structures
             let promotionsData = [];
@@ -109,9 +101,6 @@ const PromotionList = () => {
 
             if (response) {
                 if (response.data) {
-                    console.log('Response.data:', response.data);
-                    console.log('Response.data type:', typeof response.data);
-
                     if (response.data.success && response.data.data) {
                         // Spring Boot wrapped response: { success: true, data: [...] }
                         promotionsData = response.data.data;
@@ -140,42 +129,24 @@ const PromotionList = () => {
                 debugMessage = 'Response is null or undefined';
             }
 
-            console.log('Debug message:', debugMessage);
-            console.log('Final promotionsData:', promotionsData);
-            console.log('promotionsData type:', typeof promotionsData);
-            console.log('promotionsData isArray:', Array.isArray(promotionsData));
-
             // Ensure we have an array
             if (!Array.isArray(promotionsData)) {
-                console.warn('promotionsData is not an array, converting to empty array');
                 promotionsData = [];
-            }
-
-            // Log first item structure if available
-            if (promotionsData.length > 0) {
-                console.log('First promotion item:', promotionsData[0]);
-                console.log('First promotion keys:', Object.keys(promotionsData[0]));
             }
 
             setPromotions(promotionsData);
             setDebugInfo(debugMessage);
             setError(null);
 
-            console.log('=== fetchPromotions completed successfully ===');
-
         } catch (error) {
-            console.error('=== Error in fetchPromotions ===');
-            console.error('Error object:', error);
-            console.error('Error message:', error.message);
-            console.error('Error response:', error.response);
-            console.error('Error stack:', error.stack);
+            console.error('Error fetching promotions:', error);
 
             // Use specialized error handler
             errorHandler.handleFetchError(error, 'promotion requests', 'Loading promotion list');
 
             setPromotions([]);
             setDebugInfo(`Error: ${error.message}`);
-            setError(error.message);
+            setError('Failed to load promotion requests. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -183,10 +154,7 @@ const PromotionList = () => {
 
     const fetchStatistics = async () => {
         try {
-            console.log('=== Fetching statistics ===');
-
             const response = await promotionService.getPromotionStatistics();
-            console.log('Statistics response:', response);
 
             let statsData = {
                 total: 0,
@@ -204,7 +172,6 @@ const PromotionList = () => {
                 }
             }
 
-            console.log('Final statistics:', statsData);
             setStatistics(statsData);
 
         } catch (error) {
@@ -222,10 +189,7 @@ const PromotionList = () => {
         }
 
         try {
-            console.log('Creating promotion with data:', promotionData);
-
             const response = await promotionService.createPromotionRequest(promotionData);
-            console.log('Create promotion response:', response);
 
             showSuccess('Promotion request created successfully');
             setShowAddForm(false);
@@ -250,11 +214,7 @@ const PromotionList = () => {
         }
 
         try {
-            console.log('Reviewing promotion:', {promotionId, reviewData});
-
             const response = await promotionService.reviewPromotionRequest(promotionId, reviewData);
-
-            console.log('Review successful:', response);
             showSuccess(`Promotion request ${reviewData.action.toLowerCase()}d successfully`);
 
             setShowReviewModal(false);
@@ -279,11 +239,7 @@ const PromotionList = () => {
         }
 
         try {
-            console.log('Implementing promotion:', promotionId);
-
             const response = await promotionService.implementPromotionRequest(promotionId);
-
-            console.log('Implementation successful:', response);
             showSuccess('Promotion implemented successfully');
 
             // Refresh data
@@ -305,11 +261,7 @@ const PromotionList = () => {
         }
 
         try {
-            console.log('Cancelling promotion:', {promotionId, reason});
-
             const response = await promotionService.cancelPromotionRequest(promotionId, reason);
-
-            console.log('Cancellation successful:', response);
             showSuccess('Promotion request cancelled successfully');
 
             // Refresh data
@@ -331,8 +283,6 @@ const PromotionList = () => {
         }
 
         try {
-            console.log('Exporting promotion data...');
-
             const exportOptions = {
                 format: 'csv',
                 status: statusFilter || null,

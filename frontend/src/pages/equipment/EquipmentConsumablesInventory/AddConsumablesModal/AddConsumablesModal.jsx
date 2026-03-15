@@ -42,7 +42,6 @@ const AddConsumablesModal = ({
     const handleTransactionValidate = async (validationData) => {
         setIsFormDirty(true);
         try {
-            console.log('🚀 AddConsumablesModal: Starting transaction validation with data:', validationData);
             
             const receivedQuantities = {};
             const itemsNotReceived = {};
@@ -52,13 +51,6 @@ const AddConsumablesModal = ({
                 itemsNotReceived[item.transactionItemId] = item.itemNotReceived;
             });
 
-            console.log('📦 AddConsumablesModal: Prepared validation data:', {
-                equipmentId,
-                transactionId: validationData.transactionId,
-                receivedQuantities,
-                itemsNotReceived,
-                purpose: 'CONSUMABLE'
-            });
 
             const response = await equipmentService.processUnifiedTransaction(
                 equipmentId,
@@ -71,12 +63,10 @@ const AddConsumablesModal = ({
                 }
             );
 
-            console.log('✅ AddConsumablesModal: Transaction validation response:', response.data);
 
             // Refresh parent component data with a slight delay to ensure backend processing is complete
             if (onTransactionAdded) {
                 setTimeout(() => {
-                    console.log('🔄 AddConsumablesModal: Refreshing parent component data...');
                     onTransactionAdded();
                 }, 500); // 500ms delay
             }

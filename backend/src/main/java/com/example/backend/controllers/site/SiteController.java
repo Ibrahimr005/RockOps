@@ -8,6 +8,8 @@ import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.services.site.SiteService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 @RequestMapping("api/v1/site")
 public class SiteController
 {
+    private static final Logger log = LoggerFactory.getLogger(SiteController.class);
     private final SiteService siteService;
     @Autowired
     public SiteController(SiteService siteService) {
@@ -54,25 +57,14 @@ public class SiteController
 
     @GetMapping("/{siteId}/employees")
     public ResponseEntity<?> getSiteEmployees(@PathVariable UUID siteId) {
-        Site site = siteService.getSiteById(siteId);
-        if (site == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList()); // ✅ Always return JSON
-        }
-
         List<Employee> employeeList = siteService.getSiteEmployees(siteId);
-        return ResponseEntity.ok(employeeList != null ? employeeList : Collections.emptyList()); // ✅ Ensure JSON format
+        return ResponseEntity.ok(employeeList);
     }
 
     @GetMapping("/{siteId}/warehouses")
     public ResponseEntity<?> getSiteWarehouses(@PathVariable UUID siteId) {
-        Site site = siteService.getSiteById(siteId);
-        if (site == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
-        }
-
         List<Warehouse> warehouses = siteService.getSiteWarehouses(siteId);
 
-        // Return only the fields we need for the frontend
         List<Map<String, Object>> simplifiedWarehouses = warehouses.stream()
                 .map(warehouse -> {
                     Map<String, Object> warehouseData = new HashMap<>();
@@ -88,24 +80,14 @@ public class SiteController
 
     @GetMapping("/{siteId}/merchants")
     public ResponseEntity<?> getSiteMerchants(@PathVariable UUID siteId) {
-        Site site = siteService.getSiteById(siteId);
-        if (site == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList()); // ✅ Always return JSON
-        }
-
         List<Merchant> merchantList = siteService.getSiteMerchants(siteId);
-        return ResponseEntity.ok(merchantList != null ? merchantList : Collections.emptyList()); // ✅ Ensure JSON format
+        return ResponseEntity.ok(merchantList);
     }
 
     @GetMapping("/{siteId}/fixedassets")
     public ResponseEntity<?> getSiteFixedAssets(@PathVariable UUID siteId) {
-        Site site = siteService.getSiteById(siteId);
-        if (site == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList()); // ✅ Always return JSON
-        }
-
         List<FixedAssets> fixedAssetsList = siteService.getSiteFixedAssets(siteId);
-        return ResponseEntity.ok(fixedAssetsList != null ? fixedAssetsList : Collections.emptyList()); // ✅ Ensure JSON format
+        return ResponseEntity.ok(fixedAssetsList);
     }
 
     @GetMapping("/unassigned-fixedassets")
@@ -141,18 +123,8 @@ public class SiteController
     @GetMapping("/unassigned-employees")
     public ResponseEntity<List<Employee>> getUnassignedEmployees() {
         try {
-            System.out.println("=== Fetching unassigned employees ===");
-
             List<Employee> unassignedEmployees = siteService.getUnassignedEmployees();
-
-            System.out.println("Found " + (unassignedEmployees != null ? unassignedEmployees.size() : 0) + " unassigned employees");
-
-            if (unassignedEmployees != null) {
-                for (Employee emp : unassignedEmployees) {
-                    System.out.println("Employee: " + emp.getFirstName() + " " + emp.getLastName() +
-                            ", Site: " + (emp.getSite() != null ? emp.getSite().getName() : "None"));
-                }
-            }
+            log.debug("Found {} unassigned employees", unassignedEmployees != null ? unassignedEmployees.size() : 0);
 
             List<Employee> result = unassignedEmployees != null ? unassignedEmployees : Collections.emptyList();
 
@@ -162,8 +134,7 @@ public class SiteController
                     .body(result);
 
         } catch (Exception e) {
-            System.err.println("Error fetching unassigned employees: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error fetching unassigned employees", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(Collections.emptyList());

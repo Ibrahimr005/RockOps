@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { itemCategoryService } from "../../../../services/warehouse/itemCategoryService.js";
 import { measuringUnitService } from "../../../../services/warehouse/measuringUnitService.js";
+import { useItemCategories } from '../../../../hooks/queries';
 import { Button, CloseButton } from "../../../../components/common/Button";
 import MeasuringUnitModal from "../../WarehouseMeasuringUnits/MeasuringUnitModal/MeasuringUnitModal.jsx";
 import "./ItemTypeModal.scss"
@@ -24,7 +25,7 @@ const ItemTypeModal = ({
         comment: ""
     });
 
-    const [parentCategories, setParentCategories] = useState([]);
+    const { data: parentCategories = [] } = useItemCategories();
     const [childCategories, setChildCategories] = useState([]);
     const [allChildCategories, setAllChildCategories] = useState([]);
     const [loadingCategories, setLoadingCategories] = useState(false);
@@ -32,24 +33,13 @@ const ItemTypeModal = ({
     const [loadingUnits, setLoadingUnits] = useState(false);
     const [isMeasuringUnitModalOpen, setIsMeasuringUnitModalOpen] = useState(false);
 
-    // Fetch parent categories, child categories, and measuring units on mount
+    // Fetch child categories and measuring units on mount
     useEffect(() => {
         if (isOpen) {
-            fetchParentCategories();
             fetchAllChildCategories();
             fetchMeasuringUnits();
         }
     }, [isOpen]);
-
-    const fetchParentCategories = async () => {
-        try {
-            const data = await itemCategoryService.getParents();
-            setParentCategories(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error('Error fetching parent categories:', error);
-            setParentCategories([]);
-        }
-    };
 
     const fetchAllChildCategories = async () => {
         setLoadingCategories(true);

@@ -494,7 +494,6 @@ const AttendanceTab = ({ employee, formatDate }) => {
             icon: <FaEye />,
             onClick: (row) => {
                 // Handle view attendance record details
-                console.log('View attendance record:', row);
             }
         },
         {
@@ -503,7 +502,6 @@ const AttendanceTab = ({ employee, formatDate }) => {
             icon: <FaEdit />,
             onClick: (row) => {
                 // Handle edit attendance record
-                console.log('Edit attendance record:', row);
             },
             isDisabled: (row) => {
                 // Disable editing for old records or certain statuses

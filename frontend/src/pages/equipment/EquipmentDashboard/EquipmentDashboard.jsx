@@ -2,7 +2,6 @@ import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'rea
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Clock, Package, Wrench, TrendingUp, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
-import axios from 'axios';
 import PageHeader from '../../../components/common/PageHeader';
 import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards';
 import './EquipmentDashboard.scss';
@@ -23,11 +22,6 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
             maintenanceEvents: 0,
             averageWorkHours: 0
         }
-    });
-
-    const token = localStorage.getItem('token');
-    const axiosInstance = axios.create({
-        headers: { Authorization: `Bearer ${token}` }
     });
 
     const fetchDashboardData = async () => {

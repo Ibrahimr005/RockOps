@@ -530,11 +530,9 @@ const PayslipList = () => {
                     status: 'Payment Status'
                 }}
                 onExportStart={() => {
-                    console.log('Export started');
                     showSuccess('Starting payslips export...');
                 }}
                 onExportComplete={(data) => {
-                    console.log('Export completed:', data);
                     showSuccess(`Successfully exported ${data.rowCount} payslips to Excel`);
                 }}
                 onExportError={(error) => {

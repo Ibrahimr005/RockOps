@@ -59,9 +59,7 @@ public class OfferFinancialReviewService {
     /**
      * Get all pending offers waiting for finance validation
      */
-    /**
-     * Get all pending offers waiting for finance validation
-     */
+    @Transactional(readOnly = true)
     public List<OfferFinancialReviewResponseDTO> getPendingOffers() {
         // 1. Get offers with status PENDING_FINANCE_VALIDATION from procurement
         List<Offer> pendingOffers = offerRepository.findByFinanceValidationStatus(
@@ -100,6 +98,7 @@ public class OfferFinancialReviewService {
     /**
      * Get all review history
      */
+    @Transactional(readOnly = true)
     public List<OfferFinancialReviewResponseDTO> getAllReviews() {
         List<OfferFinancialReview> reviews = reviewRepository.findAll();
         return reviews.stream()
@@ -110,6 +109,7 @@ public class OfferFinancialReviewService {
     /**
      * Get reviews by status
      */
+    @Transactional(readOnly = true)
     public List<OfferFinancialReviewResponseDTO> getReviewsByStatus(FinanceReviewStatus status) {
         List<OfferFinancialReview> reviews = reviewRepository.findByStatus(status);
         return reviews.stream()
@@ -120,6 +120,7 @@ public class OfferFinancialReviewService {
     /**
      * Get review by offer ID
      */
+    @Transactional(readOnly = true)
     public OfferFinancialReviewResponseDTO getReviewByOfferId(UUID offerId) {
         return reviewRepository.findByOfferId(offerId)
                 .map(this::convertToDTO)
@@ -454,6 +455,7 @@ public class OfferFinancialReviewService {
     /**
      * Get review by ID
      */
+    @Transactional(readOnly = true)
     public OfferFinancialReviewResponseDTO getReviewById(UUID reviewId) {
         return reviewRepository.findById(reviewId)
                 .map(this::convertToDTO)

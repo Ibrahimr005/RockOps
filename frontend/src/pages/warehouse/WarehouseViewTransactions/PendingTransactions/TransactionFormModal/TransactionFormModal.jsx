@@ -4,6 +4,7 @@ import { itemTypeService } from '../../../../../services/warehouse/itemTypeServi
 import { itemCategoryService } from '../../../../../services/warehouse/itemCategoryService';
 import { siteService } from '../../../../../services/siteService';
 import { Button, CloseButton } from '../../../../../components/common/Button';
+import { useSites, useItemCategories } from '../../../../../hooks/queries';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import "./TransactionFormModal.scss";
 
@@ -26,11 +27,11 @@ const TransactionFormModal = ({
     const [isFormDirty, setIsFormDirty] = useState(false);
     const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
-    const [allSites, setAllSites] = useState([]);
+    const { data: allSites = [] } = useSites();
     const [selectedReceiverSite, setSelectedReceiverSite] = useState("");
     const [receiverOptions, setReceiverOptions] = useState([]);
 
-    const [parentCategories, setParentCategories] = useState([]);
+    const { data: parentCategories = [] } = useItemCategories();
     const [childCategoriesByItem, setChildCategoriesByItem] = useState({});
 
     const [newTransaction, setNewTransaction] = useState({
@@ -46,8 +47,6 @@ const TransactionFormModal = ({
 
     useEffect(() => {
         if (isOpen) {
-            fetchAllSites();
-            fetchParentCategories();
             setCurrentStep(1);
             setIsFormDirty(false);
             if (mode === "create") {
@@ -141,26 +140,6 @@ const TransactionFormModal = ({
 
     // ─── Data Fetching ────────────────────────────────────────────────────────
 
-    const fetchAllSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            const data = response.data || response;
-            setAllSites(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error("Failed to fetch sites:", error);
-            setAllSites([]);
-        }
-    };
-
-    const fetchParentCategories = async () => {
-        try {
-            const data = await itemCategoryService.getParents();
-            setParentCategories(data);
-        } catch (error) {
-            console.error('Error fetching parent categories:', error);
-        }
-    };
-
     const fetchChildCategories = async (parentCategoryId, itemIndex) => {
         if (!parentCategoryId) {
             setChildCategoriesByItem(prev => ({ ...prev, [itemIndex]: [] }));
@@ -188,7 +167,6 @@ const TransactionFormModal = ({
                 return [];
             }
             const data = response.data || response;
-            console.log(`Fetched ${entityType} for site ${siteId}:`, data);
             return Array.isArray(data) ? data : [];
         } catch (error) {
             console.error(`Failed to fetch ${entityType} for site ${siteId}:`, error);

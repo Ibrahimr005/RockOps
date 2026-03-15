@@ -54,7 +54,6 @@ const DeductionReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDia
     const fetchDeductionStatus = async () => {
         try {
             const status = await payrollService.getDeductionStatus(payroll.id);
-            console.log('📊 Deduction Status:', status);
             setDeductionStatus(status);
         } catch (error) {
             console.error('Error fetching deduction status:', error);
@@ -65,7 +64,6 @@ const DeductionReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDia
     const fetchDeductionSummaries = async () => {
         try {
             const data = await payrollService.getDeductionSummaries(payroll.id);
-            console.log('📊 Deduction Summaries:', data);
             setDeductionSummaries(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching deduction summaries:', error);
@@ -79,7 +77,6 @@ const DeductionReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDia
             setProcessingDeduction(true);
 
             const result = await payrollService.processDeductionReview(payroll.id);
-            console.log('📊 Process Deduction Result:', result);
 
             if (result.status === 'SUCCESS') {
                 showSuccess(result.message);
@@ -205,10 +202,6 @@ const DeductionReviewPhase = ({ payroll, onTransition, onRefresh, openConfirmDia
             return <div className="error-state">Failed to load deduction status</div>;
         }
 
-        console.log('🎯 Rendering decision:', {
-            deductionFinalized: deductionStatus.deductionFinalized,
-            deductionProcessed: deductionStatus.deductionProcessed
-        });
 
         // Finalized state
         if (deductionStatus.deductionFinalized) {

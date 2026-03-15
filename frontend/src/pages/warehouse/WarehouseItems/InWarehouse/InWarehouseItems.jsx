@@ -3,8 +3,8 @@ import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import { Button, CloseButton } from '../../../../components/common/Button';
 import "./InWarehouseItems.scss";
 import { itemService } from '../../../../services/warehouse/itemService';
-import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
+import { useItemTypes, useItemCategories } from '../../../../hooks/queries';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
 import { useNavigate } from 'react-router-dom';
 
@@ -56,9 +56,9 @@ const InWarehouseItems = ({
         createdAt: new Date().toISOString().split('T')[0]
     });
     const [addItemLoading, setAddItemLoading] = useState(false);
-    const [parentCategories, setParentCategories] = useState([]);
+    const { data: parentCategories = [] } = useItemCategories();
     const [childCategories, setChildCategories] = useState([]);
-    const [itemTypes, setItemTypes] = useState([]);
+    const { data: itemTypes = [] } = useItemTypes();
 
     // Filter toggle state
     const [showFilters, setShowFilters] = useState(false);
@@ -89,23 +89,6 @@ const InWarehouseItems = ({
         return Object.values(aggregated);
     };
 
-    const fetchItemTypes = async () => {
-        try {
-            const data = await itemTypeService.getAll();
-            setItemTypes(data);
-        } catch (error) {
-            console.error("Failed to fetch item types:", error);
-        }
-    };
-
-    const fetchParentCategories = async () => {
-        try {
-            const data = await itemCategoryService.getParents();
-            setParentCategories(data);
-        } catch (error) {
-            console.error("Failed to fetch parent categories:", error);
-        }
-    };
 
     const fetchChildCategories = async (parentCategoryId) => {
         if (!parentCategoryId) {
@@ -134,10 +117,7 @@ const InWarehouseItems = ({
         }
     };
 
-    useEffect(() => {
-        fetchItemTypes();
-        fetchParentCategories();
-    }, []);
+    // Parent categories provided by useItemCategories() hook
 
     useEffect(() => {
         if (isAddItemModalOpen) {
@@ -523,7 +503,7 @@ const InWarehouseItems = ({
                     'quantity': 'Current Quantity',
                     'itemType.measuringUnit': 'Unit of Measure'
                 }}
-                onExportStart={() => console.log('Starting export...')}
+                onExportStart={() => {}}
                 onExportComplete={(info) => showSnackbar(`Successfully exported ${info.rowCount} items to ${info.filename}`, "success")}
                 onExportError={(error) => {
                     showSnackbar("Failed to export items", "error");

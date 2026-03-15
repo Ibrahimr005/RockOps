@@ -7,6 +7,8 @@ import com.example.backend.models.equipment.Consumable;
 import com.example.backend.models.warehouse.ItemStatus;
 import com.example.backend.services.equipment.ConsumablesService;
 import com.example.backend.services.equipment.EquipmentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,8 @@ import com.example.backend.models.equipment.EquipmentStatus;
 @RequestMapping("/api/equipment")
 public class EquipmentController {
 
+    private static final Logger log = LoggerFactory.getLogger(EquipmentController.class);
+
     @Autowired
     private EquipmentService equipmentService;
 
@@ -46,14 +50,14 @@ public class EquipmentController {
     @GetMapping("/status-options")
     public ResponseEntity<List<Map<String, String>>> getEquipmentStatusOptions() {
         List<Map<String, String>> statusOptions = new ArrayList<>();
-        
+
         for (EquipmentStatus status : EquipmentStatus.values()) {
             Map<String, String> option = new HashMap<>();
             option.put("value", status.name());
             option.put("label", status.name().replace("_", " "));
             statusOptions.add(option);
         }
-        
+
         return ResponseEntity.ok(statusOptions);
     }
 
@@ -83,16 +87,15 @@ public class EquipmentController {
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam Map<String, Object> requestBody) {
         try {
-            System.out.println("=== CONTROLLER: Received equipment creation request ===");
-            System.out.println("Request Body Keys: " + requestBody.keySet());
+            log.debug("Received equipment creation request with keys: {}", requestBody.keySet());
             if (file != null) {
-                System.out.println("File received: " + file.getOriginalFilename() + " (" + file.getSize() + " bytes)");
+                log.debug("File received: {} ({} bytes)", file.getOriginalFilename(), file.getSize());
             }
-            
+
             EquipmentDTO savedEquipment = equipmentService.createEquipment(requestBody, file);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedEquipment);
         } catch (IllegalArgumentException e) {
-            System.err.println("CONTROLLER ERROR (Bad Request): " + e.getMessage());
+            log.warn("Bad request creating equipment: {}", e.getMessage());
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Bad Request");
             errorResponse.put("message", e.getMessage());
@@ -111,8 +114,7 @@ public class EquipmentController {
              errorResponse.put("status", 409);
              return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
         } catch (Exception e) {
-            System.err.println("CONTROLLER ERROR (Internal Server Error): " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error creating equipment: {}", e.getMessage(), e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Internal Server Error");
             errorResponse.put("message", "Failed to create equipment: " + e.getMessage());
@@ -137,9 +139,9 @@ public class EquipmentController {
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam Map<String, Object> requestBody) throws Exception {
 
-        System.out.println("Received Request Body: " + requestBody);
+        log.debug("Received update request for equipment {}: {}", id, requestBody);
         if (file != null) {
-            System.out.println("Received File: " + file.getOriginalFilename());
+            log.debug("Received file: {}", file.getOriginalFilename());
         }
 
         EquipmentDTO updatedEquipment = equipmentService.updateEquipment(id, requestBody, file);
@@ -269,15 +271,15 @@ public class EquipmentController {
     public ResponseEntity<Map<String, Object>> getConsumableAnalytics(@PathVariable UUID equipmentId) {
         try {
             List<Consumable> consumables = consumablesService.getConsumablesByEquipmentId(equipmentId);
-            
+
             Map<String, Object> analytics = new HashMap<>();
-            
+
             // Calculate basic metrics
             int totalItems = consumables.size();
             double totalValue = consumables.stream()
                 .mapToDouble(c -> c.getQuantity())
                 .sum();
-            
+
             // Calculate category breakdown
             Map<String, Object> categoryBreakdown = consumables.stream()
                 .filter(c -> c.getItemType() != null && c.getItemType().getItemCategory() != null)
@@ -294,7 +296,7 @@ public class EquipmentController {
                         }
                     )
                 ));
-            
+
             // Calculate most used items
             Map<String, Long> topConsumables = consumables.stream()
                 .filter(c -> c.getItemType() != null)
@@ -312,7 +314,7 @@ public class EquipmentController {
                     (e1, e2) -> e1,
                     LinkedHashMap::new
                 ));
-            
+
             // Calculate monthly consumption trends
             Map<String, Object> monthlyTrends = consumables.stream()
                 .filter(c -> c.getTransaction() != null && c.getTransaction().getTransactionDate() != null)
@@ -335,7 +337,7 @@ public class EquipmentController {
                         }
                     )
                 ));
-            
+
             // Calculate low stock alerts (items with quantity <= 5)
             List<Map<String, Object>> lowStockItems = consumables.stream()
                 .filter(c -> c.getQuantity() <= 5 && c.getItemType() != null)
@@ -343,12 +345,12 @@ public class EquipmentController {
                     Map<String, Object> item = new HashMap<>();
                     item.put("itemName", c.getItemType().getName());
                     item.put("currentQuantity", c.getQuantity());
-                    item.put("category", c.getItemType().getItemCategory() != null ? 
+                    item.put("category", c.getItemType().getItemCategory() != null ?
                         c.getItemType().getItemCategory().getName() : "Uncategorized");
                     return item;
                 })
                 .collect(Collectors.toList());
-            
+
             // Calculate reorder frequency (transactions per month for each item)
             Map<String, Object> reorderFrequency = consumables.stream()
                 .filter(c -> c.getItemType() != null && c.getTransaction() != null)
@@ -360,9 +362,9 @@ public class EquipmentController {
                             Map<String, Object> stats = new HashMap<>();
                             stats.put("totalTransactions", list.size());
                             stats.put("totalQuantity", list.stream().mapToInt(Consumable::getQuantity).sum());
-                            stats.put("avgQuantityPerTransaction", 
+                            stats.put("avgQuantityPerTransaction",
                                 list.stream().mapToInt(Consumable::getQuantity).average().orElse(0));
-                            
+
                             // Calculate months with transactions
                             Set<String> monthsWithTransactions = list.stream()
                                 .filter(c -> c.getTransaction().getTransactionDate() != null)
@@ -371,16 +373,16 @@ public class EquipmentController {
                                     return date.getYear() + "-" + String.format("%02d", date.getMonthValue());
                                 })
                                 .collect(Collectors.toSet());
-                            
+
                             stats.put("monthsActive", monthsWithTransactions.size());
-                            stats.put("avgTransactionsPerMonth", 
+                            stats.put("avgTransactionsPerMonth",
                                 monthsWithTransactions.size() > 0 ? (double) list.size() / monthsWithTransactions.size() : 0);
-                            
+
                             return stats;
                         }
                     )
                 ));
-            
+
             analytics.put("totalItems", totalItems);
             analytics.put("totalQuantity", totalValue);
             analytics.put("categoryBreakdown", categoryBreakdown);
@@ -391,7 +393,7 @@ public class EquipmentController {
             analytics.put("lowStockCount", lowStockItems.size());
             analytics.put("categoriesCount", categoryBreakdown.size());
             analytics.put("topConsumablesCount", topConsumables.size());
-            
+
             return ResponseEntity.ok(analytics);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
@@ -432,8 +434,7 @@ public class EquipmentController {
             errorResponse.put("status", 404);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         } catch (Exception e) {
-            System.err.println("Error assigning driver: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error assigning driver: {}", e.getMessage(), e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Internal Server Error");
             errorResponse.put("message", "Failed to assign driver: " + e.getMessage());
@@ -474,8 +475,7 @@ public class EquipmentController {
             errorResponse.put("status", 404);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         } catch (Exception e) {
-            System.err.println("Error unassigning driver: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error unassigning driver: {}", e.getMessage(), e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Internal Server Error");
             errorResponse.put("message", "Failed to unassign driver: " + e.getMessage());

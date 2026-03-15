@@ -87,15 +87,12 @@ export const purchaseOrderService = {
     // Process delivery session (warehouse receives items from one merchant)
     processDelivery: async (purchaseOrderId, deliveryData) => {
         try {
-            console.log('Processing delivery for PO:', purchaseOrderId);
-            console.log('Delivery data:', deliveryData);
 
             const response = await apiClient.post(
                 PURCHASE_ORDER_ENDPOINTS.PROCESS_DELIVERY(purchaseOrderId),
                 deliveryData
             );
 
-            console.log('Process delivery response:', response);
             return response.data || response;
         } catch (error) {
             console.error('Error processing delivery:', error);
@@ -120,15 +117,12 @@ export const purchaseOrderService = {
     // Resolve multiple issues with individual resolution types
     resolveIssues: async (purchaseOrderId, resolutions) => {
         try {
-            console.log('Resolving issues for PO:', purchaseOrderId);
-            console.log('Resolutions:', resolutions);
 
             const response = await apiClient.post(
                 PURCHASE_ORDER_ENDPOINTS.RESOLVE_ISSUES(),
                 resolutions
             );
 
-            console.log('Resolve issues response:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error resolving issues:', error);

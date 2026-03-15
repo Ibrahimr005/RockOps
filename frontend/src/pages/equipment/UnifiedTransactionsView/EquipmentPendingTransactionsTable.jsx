@@ -11,6 +11,7 @@ import { siteService } from "../../../services/siteService";
 import { warehouseService } from "../../../services/warehouse/warehouseService.js";
 import { itemTypeService } from "../../../services/warehouse/itemTypeService.js";
 import { itemCategoryService } from "../../../services/warehouse/itemCategoryService.js";
+import { useSites } from "../../../hooks/queries";
 
 const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
     const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
         id: "",
     });
     const [transactionRole, setTransactionRole] = useState("sender");
-    const [allSites, setAllSites] = useState([]);
+    const { data: allSites = [] } = useSites();
     const [selectedSenderSite, setSelectedSenderSite] = useState("");
     const [selectedReceiverSite, setSelectedReceiverSite] = useState("");
     const [newTransaction, setNewTransaction] = useState({
@@ -80,7 +81,6 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
         fetchItems();
         fetchAllItemTypes();
         fetchEquipmentDetails();
-        fetchAllSites();
         fetchParentCategories();
     }, [equipmentId, refreshTrigger]);
 
@@ -186,15 +186,6 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
             setSelectedReceiverSite("");
         }
     }, [transactionRole, equipmentId]);
-
-    const fetchAllSites = async () => {
-        try {
-            const response = await siteService.getAllSites();
-            setAllSites(response.data);
-        } catch (error) {
-            console.error("Failed to fetch sites:", error);
-        }
-    };
 
     const fetchEquipmentDetails = async () => {
         try {

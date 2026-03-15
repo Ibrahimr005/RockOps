@@ -4,7 +4,7 @@ import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 import Snackbar from '../../../components/common/Snackbar/Snackbar.jsx';
 import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import Tabs from '../../../components/common/Tabs/Tabs.jsx';
-import { adminService } from '../../../services/adminService.js';
+import { userService } from '../../../services/user/userService.js';
 import { taskService } from '../../../services/secretary/taskService.js';
 import TaskCalendar from './TaskCalendar/TaskCalendar.jsx';
 import DayTasksPanel from './DayTasksPanel/DayTasksPanel.jsx';
@@ -44,7 +44,7 @@ const SecretaryTasksPage = () => {
             setLoading(true);
             const [tasksData, usersData] = await Promise.all([
                 taskService.getAll(),
-                adminService.getUsers(),
+                userService.getAll(),
             ]);
             setTasks(tasksData);
             setUsers(Array.isArray(usersData) ? usersData : usersData.data ?? []);
