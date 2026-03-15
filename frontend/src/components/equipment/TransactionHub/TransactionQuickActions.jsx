@@ -5,6 +5,7 @@ import { equipmentService } from '../../../services/equipmentService';
 import { warehouseService } from '../../../services/warehouseService';
 import { itemService } from '../../../services/warehouse/itemService';
 import { Button, CloseButton, IconButton } from '../../../components/common/Button';
+import { useWarehouses } from '../../../hooks/queries';
 
 const TransactionQuickActions = ({
     equipmentId,
@@ -22,29 +23,17 @@ const TransactionQuickActions = ({
     const [description, setDescription] = useState('');
     
     // Data states
-    const [warehouses, setWarehouses] = useState([]);
+    const { data: warehouses = [] } = useWarehouses();
     const [availableItems, setAvailableItems] = useState([]);
     const [itemSearchTerm, setItemSearchTerm] = useState('');
 
-    useEffect(() => {
-        fetchWarehouses();
-    }, []);
+    // Warehouses data provided by useWarehouses() hook
 
     useEffect(() => {
         if (selectedWarehouse) {
             fetchWarehouseItems(selectedWarehouse);
         }
     }, [selectedWarehouse]);
-
-    const fetchWarehouses = async () => {
-        try {
-            const response = await warehouseService.getAll();
-            setWarehouses(response.data || response || []);
-        } catch (error) {
-            console.error('Failed to fetch warehouses:', error);
-            setError('Failed to load warehouses');
-        }
-    };
 
     const fetchWarehouseItems = async (warehouseId) => {
         try {

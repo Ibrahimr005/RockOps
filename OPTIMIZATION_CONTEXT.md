@@ -141,6 +141,26 @@ EquipmentModal, MaintenanceStepModal, RequestOrderModal, CreateLogisticsModal, E
 
 ---
 
+## Phase 4 Changes (2026-03-15)
+
+### Frontend: Additional Complex Component Migrations (20 files)
+The frontend-final agent migrated additional complex components found in the Phase 2 skipped list and from broader codebase searches. These include equipment modals, procurement forms, warehouse views, and maintenance forms.
+
+### Backend: System.out.println Cleanup — REVERTED
+An automated regex replacement of 1,080 System.out.println calls across 56 files was attempted. The regex inadvertently corrupted variable names and method calls by stripping characters that overlapped with emoji Unicode byte sequences (e.g., "Broadcast" became "roadcast", "getProcessedBy" became "getProcessedy"). After finding 61 compilation errors, all backend service/config changes were reverted to the committed Phase 3 state. The System.out.println cleanup should be done manually or with a per-line approach in a future session.
+
+### Verification
+- `npm run build` — built in 9.37s ✅
+- `./mvnw clean compile -DskipTests` — BUILD SUCCESS ✅
+
+### Remaining Tasks
+1. System.out.println → @Slf4j cleanup (50 files, ~1080 statements) — needs manual or per-file approach
+2. EquipmentModal.jsx (2139 lines) — bundled fetchFormData with 5 sequential fetches
+3. MaintenanceStepModal.jsx (1334 lines) — complex multi-service
+4. CreateLogisticsModal.jsx (1117 lines) — complex multi-service
+
+---
+
 ## Changes Made
 
 ### 1. Backend: Caffeine In-Process Caching

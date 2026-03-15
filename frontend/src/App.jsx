@@ -18,6 +18,7 @@ import HRLayout from "./pages/HR/HRLayout.jsx";
 import PayrollLayout from "./pages/payroll/PayrollLayout.jsx";
 import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
 import SitesLayout from "./pages/site/SitesLayout.jsx";
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import {
     ADMIN,

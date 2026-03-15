@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { FaTimes, FaUpload, FaExclamationCircle, FaInfoCircle, FaCheck, FaArrowRight, FaTrash } from "react-icons/fa";
 import { equipmentService } from "../../../../../services/equipmentService.js";
-import { equipmentTypeService } from "../../../../../services/equipmentTypeService.js";
 import { equipmentBrandService } from "../../../../../services/equipmentBrandService.js";
-import { siteService } from "../../../../../services/siteService.js";
-import { merchantService } from "../../../../../services/merchant/merchantService.js";
 import { documentService } from "../../../../../services/documentService.js";
 import { useSnackbar } from "../../../../../contexts/SnackbarContext.jsx";
+import { useEquipmentTypes, useSites, useMerchants } from "../../../../../hooks/queries";
 import { Button, CloseButton } from '../../../../../components/common/Button';
 import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import DocumentUpload from '../../../../../components/equipment/DocumentUpload';
@@ -16,6 +14,14 @@ import '../../../../../styles/form-validation.scss';
 const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => {
     const { showSuccess, showError, showInfo, showWarning } = useSnackbar();
     const contentRef = useRef(null);
+
+    // React Query hooks for reference data
+    const { data: equipmentTypesData, isLoading: isLoadingTypes } = useEquipmentTypes();
+    const { data: sitesData, isLoading: isLoadingSites } = useSites();
+    const { data: merchantsData, isLoading: isLoadingMerchants } = useMerchants();
+    const equipmentTypes = useMemo(() => equipmentTypesData || [], [equipmentTypesData]);
+    const sites = useMemo(() => sitesData || [], [sitesData]);
+    const merchants = useMemo(() => Array.isArray(merchantsData) ? merchantsData : [], [merchantsData]);
 
     // Helper functions for formatting
     const formatDateForDisplay = (dateString) => {
@@ -96,10 +102,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [equipmentTypes, setEquipmentTypes] = useState([]);
     const [equipmentBrands, setEquipmentBrands] = useState([]);
-    const [sites, setSites] = useState([]);
-    const [merchants, setMerchants] = useState([]);
     const [previewImage, setPreviewImage] = useState(null);
     const [formData, setFormData] = useState(initialFormState);
     const [displayValues, setDisplayValues] = useState({
@@ -342,17 +345,9 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     const fetchFormData = async () => {
         setLoading(true);
         try {
-            // Fetch equipment types
-            const typesResponse = await equipmentTypeService.getAllEquipmentTypes();
-            setEquipmentTypes(typesResponse.data);
-
-            // Fetch equipment brands
+            // Fetch equipment brands (not covered by React Query hooks)
             const brandsResponse = await equipmentBrandService.getAllEquipmentBrands();
             setEquipmentBrands(brandsResponse.data);
-
-            // Fetch sites
-            const sitesResponse = await siteService.getAllSites();
-            setSites(sitesResponse.data);
 
             // Fetch equipment status options
             try {
@@ -369,17 +364,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                     { value: "SOLD", label: "Sold" },
                     { value: "SCRAPPED", label: "Scrapped" }
                 ]);
-            }
-
-            // Fetch merchants
-            try {
-                const merchantsResponse = await merchantService.getAllMerchants();
-                const merchantsData = merchantsResponse?.data || merchantsResponse;
-                setMerchants(Array.isArray(merchantsData) ? merchantsData : []);
-            } catch (error) {
-                console.error("Error fetching merchants:", error);
-                setMerchants([]);
-                showWarning("Could not fetch merchant data. Some features may be limited.");
             }
 
             setLoading(false);

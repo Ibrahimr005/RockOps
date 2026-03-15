@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { Button, CloseButton } from '../../../../components/common/Button/Button';
 import './AddPositionForm.scss';
-import {employeeService} from "../../../../services/hr/employeeService.js";
-import { useDepartments, useJobPositions } from '../../../../hooks/queries';
+import { useDepartments, useJobPositions, useEmployees } from '../../../../hooks/queries';
 
 const STEPS = [
     { id: 1, label: 'Basic Info & Hierarchy' },
@@ -62,7 +61,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
     });
 
     const [loading, setLoading] = useState(false);
-    const [employees, setEmployees] = useState([]);
+    const { data: employees = [] } = useEmployees();
     const { data: departments = [] } = useDepartments();
     const { data: jobPositions = [] } = useJobPositions();
 
@@ -103,14 +102,8 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
 
     // --- Data Fetching & Calculations ---
 
-    const fetchInitialData = async () => {
-        try {
-            const empRes = await employeeService.getAll();
-            setEmployees(Array.isArray(empRes.data) ? empRes.data : []);
-        } catch (err) {
-            console.error(err);
-            showError("Failed to load required data.");
-        }
+    const fetchInitialData = () => {
+        // Employee data now provided by useEmployees() hook
     };
 
     const resetForm = () => {

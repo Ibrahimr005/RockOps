@@ -6,6 +6,7 @@ import { siteService } from '../../../services/siteService.js';
 import { itemService } from '../../../services/warehouse/itemService.js';
 import { warehouseService } from '../../../services/warehouseService.js';
 import { Button, CloseButton } from '../../../components/common/Button';
+import { useSites } from '../../../hooks/queries';
 import './BatchValidationWorkflow.scss';
 
 const BatchValidationWorkflow = ({
@@ -29,7 +30,7 @@ const BatchValidationWorkflow = ({
     const [currentStep, setCurrentStep] = useState('batch_input'); // 'batch_input', 'scenario_handling'
 
     // Transaction creation state
-    const [sites, setSites] = useState([]);
+    const { data: sites = [] } = useSites();
     const [selectedSite, setSelectedSite] = useState('');
     const [warehouses, setWarehouses] = useState([]);
     const [selectedWarehouse, setSelectedWarehouse] = useState('');
@@ -57,7 +58,6 @@ const BatchValidationWorkflow = ({
     useEffect(() => {
         if (isOpen) {
             resetForm();
-            fetchSites();
             if (equipmentData?.site?.id) {
                 setSelectedSite(equipmentData.site.id);
             }
@@ -74,16 +74,6 @@ const BatchValidationWorkflow = ({
         setValidationItems([]);
         setDescription('');
         setTransactionDate(new Date().toISOString().slice(0, 16));
-    };
-
-    // Fetch sites
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            setSites(response.data || []);
-        } catch (error) {
-            console.error('Error fetching sites:', error);
-        }
     };
 
     // Fetch warehouses by site

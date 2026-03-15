@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactions.scss";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import { equipmentService } from "../../../services/equipmentService";
-import { siteService } from "../../../services/siteService";
 import { Button, CloseButton } from '../../../components/common/Button';
+import { useSites } from '../../../hooks/queries';
 
 const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate, equipmentId }) => {
+    const { data: allSites = [] } = useSites();
     const [updatedTransaction, setUpdatedTransaction] = useState(transaction || {});
     const [transactionRole, setTransactionRole] = useState("");
     const [items, setItems] = useState([]);
-    const [allSites, setAllSites] = useState([]);
     const [selectedSenderSite, setSelectedSenderSite] = useState("");
     const [selectedReceiverSite, setSelectedReceiverSite] = useState("");
     const [senderOptions, setSenderOptions] = useState([]);
@@ -95,7 +95,6 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
     useEffect(() => {
         if (isOpen) {
             fetchEquipmentData();
-            fetchAllSites();
             fetchItems();
         }
     }, [isOpen, equipmentId]);
@@ -112,15 +111,6 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
             setEquipmentData(response.data);
         } catch (error) {
             console.error("Failed to fetch equipment data:", error);
-        }
-    };
-
-    const fetchAllSites = async () => {
-        try {
-            const response = await siteService.getAllSites();
-            setAllSites(response.data);
-        } catch (error) {
-            console.error("Failed to fetch sites:", error);
         }
     };
 

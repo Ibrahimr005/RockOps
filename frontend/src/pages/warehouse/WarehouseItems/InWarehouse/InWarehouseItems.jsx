@@ -4,7 +4,7 @@ import { Button, CloseButton } from '../../../../components/common/Button';
 import "./InWarehouseItems.scss";
 import { itemService } from '../../../../services/warehouse/itemService';
 import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
-import { useItemTypes } from '../../../../hooks/queries';
+import { useItemTypes, useItemCategories } from '../../../../hooks/queries';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
 import { useNavigate } from 'react-router-dom';
 
@@ -56,7 +56,7 @@ const InWarehouseItems = ({
         createdAt: new Date().toISOString().split('T')[0]
     });
     const [addItemLoading, setAddItemLoading] = useState(false);
-    const [parentCategories, setParentCategories] = useState([]);
+    const { data: parentCategories = [] } = useItemCategories();
     const [childCategories, setChildCategories] = useState([]);
     const { data: itemTypes = [] } = useItemTypes();
 
@@ -90,15 +90,6 @@ const InWarehouseItems = ({
     };
 
 
-    const fetchParentCategories = async () => {
-        try {
-            const data = await itemCategoryService.getParents();
-            setParentCategories(data);
-        } catch (error) {
-            console.error("Failed to fetch parent categories:", error);
-        }
-    };
-
     const fetchChildCategories = async (parentCategoryId) => {
         if (!parentCategoryId) {
             setChildCategories([]);
@@ -126,9 +117,7 @@ const InWarehouseItems = ({
         }
     };
 
-    useEffect(() => {
-        fetchParentCategories();
-    }, []);
+    // Parent categories provided by useItemCategories() hook
 
     useEffect(() => {
         if (isAddItemModalOpen) {

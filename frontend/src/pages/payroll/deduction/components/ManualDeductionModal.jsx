@@ -5,8 +5,8 @@ import React, { useState, useEffect } from 'react';
 import { FaUser, FaMinusCircle, FaCalendarAlt, FaPercent, FaDollarSign } from 'react-icons/fa';
 import { Button, CloseButton } from '../../../../components/common/Button';
 import { deductionService } from '../../../../services/payroll/deductionService';
-import { employeeService } from '../../../../services/hr/employeeService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import { useEmployees } from '../../../../hooks/queries';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './ManualDeductionModal.scss';
 
@@ -21,8 +21,8 @@ const ManualDeductionModal = ({ deduction, onClose, onSuccess }) => {
         };
     }, []);
 
+    const { data: employees = [] } = useEmployees();
     const [loading, setLoading] = useState(false);
-    const [employees, setEmployees] = useState([]);
     const [deductionTypes, setDeductionTypes] = useState([]);
     const [formData, setFormData] = useState({
         employeeId: '',
@@ -38,7 +38,6 @@ const ManualDeductionModal = ({ deduction, onClose, onSuccess }) => {
     const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     useEffect(() => {
-        loadEmployees();
         loadDeductionTypes();
 
         if (deduction) {
@@ -53,16 +52,6 @@ const ManualDeductionModal = ({ deduction, onClose, onSuccess }) => {
             });
         }
     }, [deduction]);
-
-    const loadEmployees = async () => {
-        try {
-            const response = await employeeService.getAll();
-            setEmployees(response.data);
-        } catch (error) {
-            console.error('Error loading employees:', error);
-            showError('Failed to load employees');
-        }
-    };
 
     const loadDeductionTypes = async () => {
         try {

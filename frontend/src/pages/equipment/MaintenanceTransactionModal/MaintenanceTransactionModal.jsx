@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import './MaintenanceTransactionModal.scss';
 import { siteService } from '../../../services/siteService';
 import { transactionService } from '../../../services/transactionService';
-import { useItemTypes } from '../../../hooks/queries';
+import { useItemTypes, useSites } from '../../../hooks/queries';
 import { Button, CloseButton } from '../../../components/common/Button';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
@@ -23,7 +23,7 @@ const MaintenanceTransactionModal = ({
     const [showTransactionForm, setShowTransactionForm] = useState(false);
 
     // States for transaction creation
-    const [sites, setSites] = useState([]);
+    const { data: sites = [] } = useSites();
     const [selectedSite, setSelectedSite] = useState('');
     const [warehouses, setWarehouses] = useState([]);
     const { data: allItemTypes = [] } = useItemTypes();
@@ -52,24 +52,12 @@ const MaintenanceTransactionModal = ({
     // Initialize
     useEffect(() => {
         if (isOpen) {
-            fetchSites();
             if (initialBatchNumber) {
                 setBatchNumber(initialBatchNumber);
                 verifyBatchNumber(initialBatchNumber);
             }
         }
     }, [isOpen, initialBatchNumber]);
-
-    // Fetch sites for transaction form
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAll();
-            setSites(response.data);
-        } catch (error) {
-            console.error("Error fetching sites:", error);
-            setError("Failed to load sites");
-        }
-    };
 
     // Fetch warehouses when site is selected
     const fetchWarehousesBySite = async (siteId) => {

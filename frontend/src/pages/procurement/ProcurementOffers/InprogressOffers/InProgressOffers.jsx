@@ -17,9 +17,8 @@ import ModifyRequestItemsModal from './ModifyRequestItems/ModifyRequestItemsModa
 import RFQExportDialog from './RFQExportDialog/RFQExportDialog.jsx';
 import RFQImportDialog from './RFQImportDialog/RFQImportDialog.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
-import { procurementService } from '../../../../services/procurement/procurementService.js';
 import { offerRequestItemService } from '../../../../services/procurement/offerRequestItemService.js';
-import { useItemTypes } from '../../../../hooks/queries';
+import { useItemTypes, useMerchants } from '../../../../hooks/queries';
 
 const InProgressOffers = ({
     offers,
@@ -33,7 +32,7 @@ const InProgressOffers = ({
     onDeleteOffer
 }) => {
     // State for InProgress tab
-    const [merchants, setMerchants] = useState([]);
+    const { data: merchants = [] } = useMerchants();
     const [selectedRequestItem, setSelectedRequestItem] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
@@ -69,21 +68,7 @@ const InProgressOffers = ({
     const [showDeleteOfferConfirm, setShowDeleteOfferConfirm] = useState(false);
     const [isDeletingOffer, setIsDeletingOffer] = useState(false);
 
-    // Fetch merchants for dropdown
-    useEffect(() => {
-        const fetchMerchants = async () => {
-            try {
-                const response = await procurementService.getAllMerchants();
-                const merchantsData = response.data || response;
-                setMerchants(Array.isArray(merchantsData) ? merchantsData : []);
-            } catch (error) {
-                console.error('Error fetching merchants:', error);
-                showSnackbar('error', 'Failed to load merchants. Please try again.');
-            }
-        };
-
-        fetchMerchants();
-    }, []);
+    // Merchants data provided by useMerchants() hook
 
 
 

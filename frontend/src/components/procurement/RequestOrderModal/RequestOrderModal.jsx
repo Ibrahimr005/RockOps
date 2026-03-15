@@ -1,11 +1,9 @@
 // RequestOrderModal.jsx
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTimes, FaCheck } from 'react-icons/fa';
-import { siteService } from '../../../services/siteService.js';
 import { warehouseService } from '../../../services/warehouse/warehouseService.js';
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService.js';
-import { useItemTypes } from '../../../hooks/queries';
-import { employeeService } from '../../../services/hr/employeeService.js';
+import { useItemTypes, useSites, useEmployees, useItemCategories } from '../../../hooks/queries';
 import { requestOrderService } from '../../../services/procurement/requestOrderService.js';
 import { equipmentPurchaseSpecService } from '../../../services/procurement/equipmentPurchaseSpecService.js';
 import EquipmentItemForm from '../EquipmentItemForm/EquipmentItemForm.jsx';
@@ -52,11 +50,11 @@ const RequestOrderModal = ({
     const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
     // Data states
-    const [employees, setEmployees] = useState([]);
-    const [sites, setSites] = useState([]);
+    const { data: employees = [] } = useEmployees();
+    const { data: sites = [] } = useSites();
     const { data: itemTypes = [] } = useItemTypes();
+    const { data: parentCategories = [] } = useItemCategories();
     const [warehouses, setWarehouses] = useState([]);
-    const [parentCategories, setParentCategories] = useState([]);
     const [childCategoriesByItem, setChildCategoriesByItem] = useState({});
 
     // Loading state
@@ -120,12 +118,7 @@ const RequestOrderModal = ({
 
     const fetchInitialData = async () => {
         try {
-            await Promise.all([
-                fetchSites(),
-                fetchEmployees(),
-                fetchParentCategories(),
-                fetchAllWarehouses()
-            ]);
+            await fetchAllWarehouses();
         } catch (error) {
             console.error('Error fetching initial data:', error);
             onError?.('Failed to load initial data');
@@ -239,39 +232,6 @@ const RequestOrderModal = ({
         } catch (error) {
             console.error('Error populating form:', error);
             onError?.('Failed to load order data');
-        }
-    };
-
-    const fetchSites = async () => {
-        try {
-            const response = await siteService.getAllSites();
-            const data = response.data || response;
-            setSites(Array.isArray(data) ? data : []);
-        } catch (err) {
-            console.error('Error fetching sites:', err);
-            setSites([]);
-        }
-    };
-
-
-    const fetchEmployees = async () => {
-        try {
-            const response = await employeeService.getAll();
-            const employeesData = response.data || response;
-            setEmployees(Array.isArray(employeesData) ? employeesData : []);
-        } catch (err) {
-            console.error('Error fetching employees:', err);
-            setEmployees([]);
-        }
-    };
-
-    const fetchParentCategories = async () => {
-        try {
-            const data = await itemCategoryService.getParents();
-            setParentCategories(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error('Error fetching parent categories:', error);
-            setParentCategories([]);
         }
     };
 
